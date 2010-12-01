@@ -1,0 +1,112 @@
+diff -r dc4fc5c8b306 src/server/game/Chat/Chat.cpp
+--- a/src/server/game/Chat/Chat.cpp	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/game/Chat/Chat.cpp	Tue Nov 30 17:04:01 2010 -0500
+@@ -437,6 +437,12 @@
+         { "bindsight",      SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleBindSightCommand>,           "", NULL },
+         { "unbindsight",    SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnbindSightCommand>,         "", NULL },
+         { "playall",        SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandlePlayAllCommand>,             "", NULL },
++		// Written by LordPsyan from www.flaminglegion.net - very unstable
++        // {
++        { "item_template",  SEC_ADMINISTRATOR, true,  OldHandler<&ChatHandler::HandleReloadItemPrototypesCommand>,          "", NULL },
++        { "gameobject_template",SEC_ADMINISTRATOR, true,  OldHandler<&ChatHandler::HandleReloadGameobjectInfoCommand>,          "", NULL },
++        { "creature_template",SEC_ADMINISTRATOR, true,  OldHandler<&ChatHandler::HandleReloadCreatureTemplatesCommand>,       "", NULL },
++        // }
+         { NULL,             0,                  false, NULL,                                           "", NULL }
+     };
+ 
+diff -r dc4fc5c8b306 src/server/game/Chat/Chat.h
+--- a/src/server/game/Chat/Chat.h	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/game/Chat/Chat.h	Tue Nov 30 17:04:01 2010 -0500
+@@ -373,7 +373,12 @@
+         std::string GenerateDeletedCharacterGUIDsWhereStr(DeletedInfoList::const_iterator& itr, DeletedInfoList::const_iterator const& itr_end);
+         void HandleCharacterDeletedListHelper(DeletedInfoList const& foundList);
+         void HandleCharacterDeletedRestoreHelper(DeletedInfo const& delInfo);
+-
++		// Written by LordPsyan from www.flaminglegion.net - very unstable
++        // {
++        bool HandleReloadItemPrototypesCommand(const char* args);
++        bool HandleReloadGameobjectInfoCommand(const char* args);
++        bool HandleReloadCreatureTemplatesCommand(const char* args);
++        // }
+     private:
+         WorldSession * m_session;                           // != NULL for chat command call and NULL for CLI command
+ 
+diff -r dc4fc5c8b306 src/server/game/Chat/Commands/Level3.cpp
+--- a/src/server/game/Chat/Commands/Level3.cpp	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/game/Chat/Commands/Level3.cpp	Tue Nov 30 17:04:01 2010 -0500
+@@ -172,6 +172,30 @@
+     return true;
+ }
+ 
++bool ChatHandler::HandleReloadItemPrototypesCommand(const char * /*args*/)
++{
++    sLog.outString( "Loading Item Data... (`item_template`)" );
++    sObjectMgr.LoadItemPrototypes();
++    SendGlobalSysMessage("DB table `item_template` reloaded.");
++    return true;
++}
++
++bool ChatHandler::HandleReloadGameobjectInfoCommand(const char * /*args*/)
++{
++    sLog.outString( "Loading Gameobject Data... (`gameobject_template`)" );
++    sObjectMgr.LoadGameobjectInfo();
++    SendGlobalSysMessage("DB table `gameobject_template` (gameobject data) reloaded.");
++    return true;
++}
++
++bool ChatHandler::HandleReloadCreatureTemplatesCommand(const char * /*args*/)
++{
++    sLog.outString( "Loading Creature Data... (`creature_template`)" );
++    sObjectMgr.LoadCreatureTemplates();
++    SendGlobalSysMessage("DB table `creature_template` (creature data) reloaded.");
++      return true;
++  }
++  
+ bool ChatHandler::HandleCooldownCommand(const char *args)
+ {
+     Player* target = getSelectedPlayer();
+diff -r dc4fc5c8b306 src/server/game/World/World.cpp
+--- a/src/server/game/World/World.cpp	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/game/World/World.cpp	Tue Nov 30 17:04:01 2010 -0500
+@@ -1011,6 +1011,10 @@
+     m_float_configs[CONFIG_LISTEN_RANGE_SAY]       = sConfig.GetFloatDefault("ListenRange.Say", 25.0f);
+     m_float_configs[CONFIG_LISTEN_RANGE_TEXTEMOTE] = sConfig.GetFloatDefault("ListenRange.TextEmote", 25.0f);
+     m_float_configs[CONFIG_LISTEN_RANGE_YELL]      = sConfig.GetFloatDefault("ListenRange.Yell", 300.0f);
++    // Written by Lordpsyan from www.samcclive.com - reload item_template, gameobject_template, creature_template
++    m_bool_configs[CONFIG_UINT32_DEV_RELOAD_TEMPLATES]    = sConfig.GetBoolDefault("Dev.ReloadTemplates", false);
++    if (m_bool_configs[CONFIG_UINT32_DEV_RELOAD_TEMPLATES])
++        sLog.outString("WORLD: Dev.ReloadTemplates enabled; may be unstable.");
+ 
+     m_bool_configs[CONFIG_BATTLEGROUND_CAST_DESERTER]                = sConfig.GetBoolDefault("Battleground.CastDeserter", true);
+     m_bool_configs[CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_ENABLE]       = sConfig.GetBoolDefault("Battleground.QueueAnnouncer.Enable", false);
+diff -r dc4fc5c8b306 src/server/game/World/World.h
+--- a/src/server/game/World/World.h	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/game/World/World.h	Tue Nov 30 17:04:02 2010 -0500
+@@ -130,6 +130,7 @@
+     CONFIG_DEATH_BONES_BG_OR_ARENA,
+     CONFIG_DIE_COMMAND_MODE,
+     CONFIG_DECLINED_NAMES_USED,
++	CONFIG_UINT32_DEV_RELOAD_TEMPLATES,
+     CONFIG_BATTLEGROUND_CAST_DESERTER,
+     CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_ENABLE,
+     CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_PLAYERONLY,
+diff -r dc4fc5c8b306 src/server/worldserver/worldserver.conf.dist
+--- a/src/server/worldserver/worldserver.conf.dist	Tue Nov 30 21:32:00 2010 +0100
++++ b/src/server/worldserver/worldserver.conf.dist	Tue Nov 30 17:04:02 2010 -0500
+@@ -1366,8 +1366,16 @@
+ #        Description: Dungeon and raid finder system.
+ #        Default:     0 - (Disabled)
+ #                     1 - (Enabled, Experimental as of still being in development)
++#
++#    Dev.ReloadTemplates
++#        Enable/disable reloading of *_template tables from in-game.
++#        Note: Does not work fully.
++#        Default: 0 - disable
++#                 1 - enable (unsafe)
++#
+ 
+ DungeonFinder.Enable = 0
++Dev.ReloadTemplates = 0
+ 
+ #
+ ###################################################################################################
