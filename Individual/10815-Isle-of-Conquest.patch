@@ -1,6 +1,17 @@
-diff -r dc4fc5c8b306 sql/IoC.sql
+diff -r d93bf965dff7 sql/CMakeLists.txt
+--- a/sql/CMakeLists.txt	Sat Dec 25 06:28:38 2010 +0100
++++ b/sql/CMakeLists.txt	Sat Dec 25 13:59:46 2010 -0500
+@@ -15,6 +15,7 @@
+       scripts
+       base
+       create
++	  IoC
+     DESTINATION
+       shared/trinity/sql
+   )
+diff -r d93bf965dff7 sql/IoC/IoC.sql
 --- /dev/null	Thu Jan 01 00:00:00 1970 +0000
-+++ b/sql/IoC.sql	Tue Nov 30 21:38:03 2010 -0500
++++ b/sql/IoC/IoC.sql	Sat Dec 25 13:59:46 2010 -0500
 @@ -0,0 +1,118 @@
 +UPDATE gameobject_template SET size=2.151325 WHERE entry=195451;
 +UPDATE gameobject_template SET size=2.151325 WHERE entry=195452;
@@ -120,10 +131,10 @@ diff -r dc4fc5c8b306 sql/IoC.sql
 +(250182, 23472, 628, 3, 1, 0, 0, 324.262, -745.282, 49.4923, 1.55901, 300, 0, 0, 4120, 0, 0, 0),
 +(250180, 23472, 628, 3, 1, 0, 0, 311.937, -918.894, 48.6856, 4.76736, 300, 0, 0, 4120, 0, 0, 0),
 +(250186, 23472, 628, 3, 1, 0, 0, 430.61, -857.491, 48.198, 0.074609, 300, 0, 0, 4120, 0, 0, 0);
-diff -r dc4fc5c8b306 src/server/game/Battlegrounds/BattlegroundMgr.cpp
---- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp	Tue Nov 30 21:38:03 2010 -0500
-@@ -332,6 +332,10 @@
+diff -r d93bf965dff7 src/server/game/Battlegrounds/BattlegroundMgr.cpp
+--- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp	Sat Dec 25 13:59:46 2010 -0500
+@@ -331,6 +331,10 @@
                          *data << uint32(((BattlegroundSAScore*)itr2->second)->demolishers_destroyed);
                          *data << uint32(((BattlegroundSAScore*)itr2->second)->gates_destroyed);
                          break;
@@ -134,7 +145,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/BattlegroundMgr.cpp
                      default:
                          *data << uint32(0);
                          break;
-@@ -363,13 +367,17 @@
+@@ -362,13 +366,17 @@
                  *data << uint32(((BattlegroundSAScore*)itr2->second)->demolishers_destroyed);
                  *data << uint32(((BattlegroundSAScore*)itr2->second)->gates_destroyed);
                  break;
@@ -154,9 +165,9 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/BattlegroundMgr.cpp
                  *data << uint32(0);
                  break;
              default:
-diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
---- a/src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp	Tue Nov 30 21:38:03 2010 -0500
+diff -r d93bf965dff7 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
+--- a/src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp	Sat Dec 25 13:59:46 2010 -0500
 @@ -17,19 +17,41 @@
   */
  
@@ -456,7 +467,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +		      case STATE_BANNER_ALLY:  BanneAura=BG_IC_OBJECTID_AURA_A;break;
 +		      case STATE_BANNER_HORDE: BanneAura=BG_IC_OBJECTID_AURA_H;break;
 +		      default:
-+			  sLog.outError("BattlegroundIC::SetupBattleground() Object: %i, bad state: %u",i,BG_IC_OBJ[i].state);
++			  sLog->outError("BattlegroundIC::SetupBattleground() Object: %i, bad state: %u",i,BG_IC_OBJ[i].state);
 +			  return false;
 +		  }
 +                
@@ -641,7 +652,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +    for(int i=BG_IC_ALLIANCE_KEEP;i<BG_IC_ALL_NODES_COUNT;i++)
 +        if (!AddSpiritGuide(i, BG_IC_SpiritGuidePos[i][0], BG_IC_SpiritGuidePos[i][1], BG_IC_SpiritGuidePos[i][2], BG_IC_SpiritGuidePos[i][3], BG_IC_graveInitTeam[i]))
 +        {
-+            sLog.outError("Failed to spawn spirit guide! point: %u, team: %u,", i, BG_IC_graveInitTeam[i]);
++            sLog->outError("Failed to spawn spirit guide! point: %u, team: %u,", i, BG_IC_graveInitTeam[i]);
 +            return false;    
 +        }
 +    
@@ -673,7 +684,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +    //Send transport init packet to all player in map
 +    for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end();itr++)
 +        {
-+            if (Player* p = sObjectMgr.GetPlayer(itr->first))
++            if (Player* p = sObjectMgr->GetPlayer(itr->first))
 +            {
 +                SendTransportInit(p);
 +            }
@@ -775,11 +786,11 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        uint32 entry = gobentry;
 +        std::string name = nametransport;
 +
-+        const GameObjectInfo *goinfo = sObjectMgr.GetGameObjectInfo(entry);
++        const GameObjectInfo *goinfo = sObjectMgr->GetGameObjectInfo(entry);
 +
 +        if (!goinfo)
 +        {
-+            sLog.outErrorDb("Transport ID:%u, Name: %s, will not be loaded, gameobject_template missing", entry, name.c_str());
++            sLog->outErrorDb("Transport ID:%u, Name: %s, will not be loaded, gameobject_template missing", entry, name.c_str());
 +            delete t;
 +            return NULL;
 +        }
@@ -788,7 +799,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        if (!t->GenerateWaypoints(goinfo->moTransport.taxiPathId, mapsUsed))
 +            // skip transports with empty waypoints list
 +        {
-+            sLog.outErrorDb("Transport (path id %u) path size = 0. Transport ignored, check DBC files or transport GO data0 field.",goinfo->moTransport.taxiPathId);
++            sLog->outErrorDb("Transport (path id %u) path size = 0. Transport ignored, check DBC files or transport GO data0 field.",goinfo->moTransport.taxiPathId);
 +            delete t;
 +            return NULL;
 +        }
@@ -798,7 +809,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        x = t->m_WayPoints[0].x; y = t->m_WayPoints[0].y; z = t->m_WayPoints[0].z; mapid = t->m_WayPoints[0].mapid; o = 1;
 +
 +         // creates the Gameobject
-+        if (!t->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT),entry, mapid, x, y, z, o, 100, 0))
++        if (!t->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_GAMEOBJECT),entry, mapid, x, y, z, o, 100, 0))
 +        {
 +            delete t;
 +            return NULL;
@@ -838,7 +849,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +
 +    if(node != BG_IC_NODE_QUARRY && node != BG_IC_NODE_REFINERY)
 +        if (!AddSpiritGuide(node, BG_IC_SpiritGuidePos[node][0], BG_IC_SpiritGuidePos[node][1], BG_IC_SpiritGuidePos[node][2], BG_IC_SpiritGuidePos[node][3], team))
-+            sLog.outError("Failed to spawn spirit guide! point: %u, team: %u,", node, team);
++            sLog->outError("Failed to spawn spirit guide! point: %u, team: %u,", node, team);
 +
 +
 +    if (node == BG_IC_NODE_QUARRY)
@@ -848,11 +859,11 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        {
 +            if (itr->second.OfflineRemoveTime)
 +                continue;
-+            Player *plr = sObjectMgr.GetPlayer(itr->first);
++            Player *plr = sObjectMgr->GetPlayer(itr->first);
 +
 +            if (!plr)
 +            {
-+                sLog.outError("Battleground:CastSpellOnTeam: Player (GUID: %u) not found!", GUID_LOPART(itr->first));
++                sLog->outError("Battleground:CastSpellOnTeam: Player (GUID: %u) not found!", GUID_LOPART(itr->first));
 +                continue;
 +            }
 +
@@ -872,11 +883,11 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        {
 +            if (itr->second.OfflineRemoveTime)
 +                continue;
-+            Player *plr = sObjectMgr.GetPlayer(itr->first);
++            Player *plr = sObjectMgr->GetPlayer(itr->first);
 +
 +            if (!plr)
 +            {
-+                sLog.outError("Battleground:CastSpellOnTeam: Player (GUID: %u) not found!", GUID_LOPART(itr->first));
++                sLog->outError("Battleground:CastSpellOnTeam: Player (GUID: %u) not found!", GUID_LOPART(itr->first));
 +                continue;
 +            }
 +
@@ -952,7 +963,7 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +        WorldSafeLocsEntry const *ClosestGrave = NULL;
 +        for (std::vector<uint64>::const_iterator itr = ghost_list.begin(); itr != ghost_list.end(); ++itr)
 +        {
-+            Player* plr = sObjectMgr.GetPlayer(*itr);
++            Player* plr = sObjectMgr->GetPlayer(*itr);
 +            if (!plr)
 +                continue;
 +
@@ -1298,9 +1309,9 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 +    Battleground::HandleKillPlayer(player, killer);
 +    UpdateScore(player->GetTeam(),-1);
 +}
-diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.h
---- a/src/server/game/Battlegrounds/Zones/BattlegroundIC.h	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Battlegrounds/Zones/BattlegroundIC.h	Tue Nov 30 21:38:03 2010 -0500
+diff -r d93bf965dff7 src/server/game/Battlegrounds/Zones/BattlegroundIC.h
+--- a/src/server/game/Battlegrounds/Zones/BattlegroundIC.h	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Battlegrounds/Zones/BattlegroundIC.h	Sat Dec 25 13:59:46 2010 -0500
 @@ -19,7 +19,575 @@
  #ifndef __BATTLEGROUNDIC_H
  #define __BATTLEGROUNDIC_H
@@ -1960,10 +1971,10 @@ diff -r dc4fc5c8b306 src/server/game/Battlegrounds/Zones/BattlegroundIC.h
 +        Transport *m_GunshipA,*m_GunshipH;
  };
  #endif
-diff -r dc4fc5c8b306 src/server/game/Entities/Player/Player.cpp
---- a/src/server/game/Entities/Player/Player.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Entities/Player/Player.cpp	Tue Nov 30 21:38:03 2010 -0500
-@@ -1876,7 +1876,7 @@
+diff -r d93bf965dff7 src/server/game/Entities/Player/Player.cpp
+--- a/src/server/game/Entities/Player/Player.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Entities/Player/Player.cpp	Sat Dec 25 13:59:47 2010 -0500
+@@ -1884,7 +1884,7 @@
      if (duel && GetMapId() != mapid && GetMap()->GetGameObject(GetUInt64Value(PLAYER_DUEL_ARBITER)))
          DuelComplete(DUEL_FLED);
  
@@ -1972,7 +1983,7 @@ diff -r dc4fc5c8b306 src/server/game/Entities/Player/Player.cpp
      {
          //lets reset far teleport flag if it wasn't reset during chained teleports
          SetSemaphoreTeleportFar(false);
-@@ -8695,6 +8695,9 @@
+@@ -8728,6 +8728,9 @@
              break;
          case 4384:
              NumberOfFields = 30;
@@ -1982,7 +1993,7 @@ diff -r dc4fc5c8b306 src/server/game/Entities/Player/Player.cpp
              break;
           default:
              NumberOfFields = 12;
-@@ -9188,6 +9191,32 @@
+@@ -9221,6 +9224,32 @@
                  data << uint32(0xe1a) << uint32(0x0);           // 9 show
              }
              break;
@@ -2015,9 +2026,9 @@ diff -r dc4fc5c8b306 src/server/game/Entities/Player/Player.cpp
          default:
              data << uint32(0x914) << uint32(0x0);           // 7
              data << uint32(0x913) << uint32(0x0);           // 8
-diff -r dc4fc5c8b306 src/server/game/Scripting/ScriptLoader.cpp
---- a/src/server/game/Scripting/ScriptLoader.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Scripting/ScriptLoader.cpp	Tue Nov 30 21:38:03 2010 -0500
+diff -r d93bf965dff7 src/server/game/Scripting/ScriptLoader.cpp
+--- a/src/server/game/Scripting/ScriptLoader.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Scripting/ScriptLoader.cpp	Sat Dec 25 13:59:47 2010 -0500
 @@ -483,6 +483,7 @@
  void AddSC_storm_peaks();
  void AddSC_zuldrak();
@@ -2034,10 +2045,10 @@ diff -r dc4fc5c8b306 src/server/game/Scripting/ScriptLoader.cpp
  #endif
  }
  
-diff -r dc4fc5c8b306 src/server/game/Spells/Auras/SpellAuraEffects.cpp
---- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp	Tue Nov 30 21:38:03 2010 -0500
-@@ -2244,6 +2244,16 @@
+diff -r d93bf965dff7 src/server/game/Spells/Auras/SpellAuraEffects.cpp
+--- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp	Sat Dec 25 13:59:47 2010 -0500
+@@ -2279,6 +2279,16 @@
                          creatureTarget->ForcedDespawn();
                          return;
                      }
@@ -2054,10 +2065,10 @@ diff -r dc4fc5c8b306 src/server/game/Spells/Auras/SpellAuraEffects.cpp
                      // Tear of Azzinoth Summon Channel - it's not really supposed to do anything,and this only prevents the console spam
                      case 39857:
                          triggerSpellId = 39856;
-diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
---- a/src/server/game/Spells/SpellEffects.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Spells/SpellEffects.cpp	Tue Nov 30 21:38:03 2010 -0500
-@@ -1558,6 +1558,34 @@
+diff -r d93bf965dff7 src/server/game/Spells/SpellEffects.cpp
+--- a/src/server/game/Spells/SpellEffects.cpp	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/game/Spells/SpellEffects.cpp	Sat Dec 25 13:59:47 2010 -0500
+@@ -1567,6 +1567,34 @@
  
  void Spell::EffectForceCast(SpellEffIndex effIndex)
  {
@@ -2092,7 +2103,7 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
      if (!unitTarget)
          return;
  
-@@ -1576,6 +1604,32 @@
+@@ -1585,6 +1613,32 @@
      {
          switch(m_spellInfo->Id)
          {
@@ -2125,7 +2136,7 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
              case 52588: // Skeletal Gryphon Escape
              case 48598: // Ride Flamebringer Cue
                  unitTarget->RemoveAura(damage);
-@@ -1883,6 +1937,8 @@
+@@ -1892,6 +1946,8 @@
      uint8 uiMaxSafeLevel = 0;
      switch (m_spellInfo->Id)
      {
@@ -2134,9 +2145,9 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
          case 48129:  // Scroll of Recall
              uiMaxSafeLevel = 40;
          case 60320:  // Scroll of Recall II
-diff -r dc4fc5c8b306 src/server/scripts/Northrend/CMakeLists.txt
---- a/src/server/scripts/Northrend/CMakeLists.txt	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/scripts/Northrend/CMakeLists.txt	Tue Nov 30 21:38:03 2010 -0500
+diff -r d93bf965dff7 src/server/scripts/Northrend/CMakeLists.txt
+--- a/src/server/scripts/Northrend/CMakeLists.txt	Sat Dec 25 06:28:38 2010 +0100
++++ b/src/server/scripts/Northrend/CMakeLists.txt	Sat Dec 25 13:59:47 2010 -0500
 @@ -1,6 +1,7 @@
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
@@ -2145,9 +2156,9 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/CMakeLists.txt
    Northrend/Ulduar/HallsOfLightning/instance_halls_of_lightning.cpp
    Northrend/Ulduar/HallsOfLightning/boss_bjarngrim.cpp
    Northrend/Ulduar/HallsOfLightning/halls_of_lightning.h
-diff -r dc4fc5c8b306 src/server/scripts/Northrend/isle_of_conquest.cpp
+diff -r d93bf965dff7 src/server/scripts/Northrend/isle_of_conquest.cpp
 --- /dev/null	Thu Jan 01 00:00:00 1970 +0000
-+++ b/src/server/scripts/Northrend/isle_of_conquest.cpp	Tue Nov 30 21:38:03 2010 -0500
++++ b/src/server/scripts/Northrend/isle_of_conquest.cpp	Sat Dec 25 13:59:47 2010 -0500
 @@ -0,0 +1,125 @@
 +/*
 + * Copyright (C) 2008-2010 TrinityCore <http://www.trinitycore.org/>
