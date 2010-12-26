@@ -1,6 +1,17 @@
-diff -r dc4fc5c8b306 sql/world_argenttournament.sql
+diff -r 56a14e0d7a5f sql/CMakeLists.txt
+--- a/sql/CMakeLists.txt	Sun Dec 26 05:45:20 2010 +0100
++++ b/sql/CMakeLists.txt	Sun Dec 26 10:12:54 2010 -0500
+@@ -15,6 +15,7 @@
+       scripts
+       base
+       create
++	  argent
+     DESTINATION
+       shared/trinity/sql
+   )
+diff -r 56a14e0d7a5f sql/argent/world_argenttournament.sql
 --- /dev/null	Thu Jan 01 00:00:00 1970 +0000
-+++ b/sql/world_argenttournament.sql	Tue Nov 30 17:15:16 2010 -0500
++++ b/sql/argent/world_argenttournament.sql	Sun Dec 26 10:12:54 2010 -0500
 @@ -0,0 +1,403 @@
 +-- Horde
 +-- Premiere quete : Le tournoi d'argent
@@ -405,9 +416,9 @@ diff -r dc4fc5c8b306 sql/world_argenttournament.sql
 +(0, -1850010, 'I am defeated. Nice fight!','I am defeated. Nice fight!',''),
 +(0, -1850011, 'Looks like I underestimated your skills. Well done.','Looks like I underestimated your skills. Well done.',''),
 +(0, -1850012, 'I won. You\'ll probably have more luck next time.','I won. You\'ll probably have more luck next time.','');
-diff -r dc4fc5c8b306 src/server/game/Globals/ObjectMgr.h
---- a/src/server/game/Globals/ObjectMgr.h	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Globals/ObjectMgr.h	Tue Nov 30 17:15:16 2010 -0500
+diff -r 56a14e0d7a5f src/server/game/Globals/ObjectMgr.h
+--- a/src/server/game/Globals/ObjectMgr.h	Sun Dec 26 05:45:20 2010 +0100
++++ b/src/server/game/Globals/ObjectMgr.h	Sun Dec 26 10:12:54 2010 -0500
 @@ -835,6 +835,10 @@
          {
              return &mCreatureQuestRelations;
@@ -419,12 +430,12 @@ diff -r dc4fc5c8b306 src/server/game/Globals/ObjectMgr.h
  
          QuestRelationBounds GetCreatureQuestRelationBounds(uint32 creature_entry)
          {
-diff -r dc4fc5c8b306 src/server/game/Server/Protocol/Handlers/PetHandler.cpp
---- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp	Tue Nov 30 17:15:16 2010 -0500
-@@ -748,6 +748,15 @@
+diff -r 56a14e0d7a5f src/server/game/Server/Protocol/Handlers/PetHandler.cpp
+--- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp	Sun Dec 26 05:45:20 2010 +0100
++++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp	Sun Dec 26 10:12:54 2010 -0500
+@@ -750,6 +750,15 @@
      {
-         sLog.outError("WORLD: unknown PET spell id %i", spellId);
+         sLog->outError("WORLD: unknown PET spell id %i", spellId);
          return;
 +    } 
 +    
@@ -438,10 +449,10 @@ diff -r dc4fc5c8b306 src/server/game/Server/Protocol/Handlers/PetHandler.cpp
      }
  
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
-diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
---- a/src/server/game/Spells/SpellEffects.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/game/Spells/SpellEffects.cpp	Tue Nov 30 17:15:17 2010 -0500
-@@ -4355,7 +4355,33 @@
+diff -r 56a14e0d7a5f src/server/game/Spells/SpellEffects.cpp
+--- a/src/server/game/Spells/SpellEffects.cpp	Sun Dec 26 05:45:20 2010 +0100
++++ b/src/server/game/Spells/SpellEffects.cpp	Sun Dec 26 10:12:54 2010 -0500
+@@ -4378,7 +4378,33 @@
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
@@ -476,7 +487,7 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
                  case 22539:
                  case 22972:
                  case 22975:
-@@ -4816,9 +4842,15 @@
+@@ -4839,9 +4865,15 @@
                          return;
  
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
@@ -494,7 +505,7 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5154,6 +5186,7 @@
+@@ -5177,6 +5209,7 @@
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
@@ -502,7 +513,7 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
                      Player *plr = unitTarget->ToPlayer();
-@@ -5164,6 +5197,7 @@
+@@ -5187,6 +5220,7 @@
                              return;
                      DoCreateItem(effIndex, itemId[urand(0,4)]);
                      return;
@@ -510,9 +521,9 @@ diff -r dc4fc5c8b306 src/server/game/Spells/SpellEffects.cpp
              }
              break;
          }
-diff -r dc4fc5c8b306 src/server/scripts/Northrend/grizzly_hills.cpp
---- a/src/server/scripts/Northrend/grizzly_hills.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/scripts/Northrend/grizzly_hills.cpp	Tue Nov 30 17:15:17 2010 -0500
+diff -r 56a14e0d7a5f src/server/scripts/Northrend/grizzly_hills.cpp
+--- a/src/server/scripts/Northrend/grizzly_hills.cpp	Sun Dec 26 05:45:20 2010 +0100
++++ b/src/server/scripts/Northrend/grizzly_hills.cpp	Sun Dec 26 10:12:54 2010 -0500
 @@ -29,6 +29,7 @@
  
  #include "ScriptPCH.h"
@@ -747,9 +758,9 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/grizzly_hills.cpp
 +    new npc_maiden_of_ashwood_lake;
 +    new npc_maiden_of_drak_mar;
  }
-diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
---- a/src/server/scripts/Northrend/icecrown.cpp	Tue Nov 30 21:32:00 2010 +0100
-+++ b/src/server/scripts/Northrend/icecrown.cpp	Tue Nov 30 17:15:17 2010 -0500
+diff -r 56a14e0d7a5f src/server/scripts/Northrend/icecrown.cpp
+--- a/src/server/scripts/Northrend/icecrown.cpp	Sun Dec 26 05:45:20 2010 +0100
++++ b/src/server/scripts/Northrend/icecrown.cpp	Sun Dec 26 10:12:54 2010 -0500
 @@ -157,7 +157,7 @@
  
      NPC_ARGENT_VALIANT                                  = 33448,
@@ -980,8 +991,8 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +	        if (pCreature->isQuestGiver())
 +		{	
 +			Object *pObject = (Object*)pCreature;
-+			QuestRelations* pObjectQR = sObjectMgr.GetCreatureQuestRelationMap();
-+			QuestRelations* pObjectQIR = sObjectMgr.GetCreatureQuestInvolvedRelation();
++			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
++			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
 +			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
@@ -1004,7 +1015,7 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
++				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
 +				if (!pQuest) continue;
 +
 +				switch(quest_id)
@@ -1222,8 +1233,8 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +		if (pCreature->isQuestGiver())
 +		{	
 +			Object *pObject = (Object*)pCreature;
-+			QuestRelations* pObjectQR = sObjectMgr.GetCreatureQuestRelationMap();
-+			QuestRelations* pObjectQIR = sObjectMgr.GetCreatureQuestInvolvedRelation();
++			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
++			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
 +			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
@@ -1243,7 +1254,7 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
++				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
 +				if (!pQuest) continue;
 +				QuestStatus status;
 +				bool allowed=false;
@@ -1294,8 +1305,8 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +		if (pCreature->isQuestGiver())
 +		{	
 +			Object *pObject = (Object*)pCreature;
-+			QuestRelations* pObjectQR = sObjectMgr.GetCreatureQuestRelationMap();
-+			QuestRelations* pObjectQIR = sObjectMgr.GetCreatureQuestInvolvedRelation();
++			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
++			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
 +			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
@@ -1315,7 +1326,7 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
++				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
 +				if (!pQuest) continue;
 +				QuestStatus status;
 +				bool allowed=false;
@@ -1367,8 +1378,8 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +		if (pCreature->isQuestGiver())
 +		{
 +			Object *pObject = (Object*)pCreature;
-+			QuestRelations* pObjectQR = sObjectMgr.GetCreatureQuestRelationMap();
-+			QuestRelations* pObjectQIR = sObjectMgr.GetCreatureQuestInvolvedRelation();
++			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
++			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
 +			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
@@ -1388,7 +1399,7 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
++				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
 +				if (!pQuest) continue;
 +				QuestStatus status;
 +				bool allowed=false;
@@ -1439,8 +1450,8 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +		if (pCreature->isQuestGiver())
 +		{
 +			Object *pObject = (Object*)pCreature;
-+			QuestRelations* pObjectQR = sObjectMgr.GetCreatureQuestRelationMap();
-+			QuestRelations* pObjectQIR = sObjectMgr.GetCreatureQuestInvolvedRelation();
++			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
++			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
 +			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
@@ -1460,7 +1471,7 @@ diff -r dc4fc5c8b306 src/server/scripts/Northrend/icecrown.cpp
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
++				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
 +				if (!pQuest) continue;
 +				QuestStatus status;
 +				bool allowed=false;
