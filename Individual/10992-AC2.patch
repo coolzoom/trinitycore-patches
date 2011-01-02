@@ -1,5 +1,5 @@
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index de2f5d1..7b2466d 100755
+index 1963201..04295c3 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -520,6 +520,26 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
@@ -29,7 +29,7 @@ index de2f5d1..7b2466d 100755
      m_mailsLoaded = false;
      m_mailsUpdated = false;
      unReadMails = 0;
-@@ -1886,6 +1906,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1887,6 +1907,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
      if (GetMapId() == mapid && !m_transport)
      {
@@ -37,7 +37,7 @@ index de2f5d1..7b2466d 100755
          //lets reset far teleport flag if it wasn't reset during chained teleports
          SetSemaphoreTeleportFar(false);
          //setup delayed teleport flag
-@@ -2044,6 +2065,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2045,6 +2066,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
              m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
              SetFallInformation(0, final_z);
@@ -46,10 +46,10 @@ index de2f5d1..7b2466d 100755
              // this will be used instead of the current location in SaveToDB
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index d1f217d..3881914 100755
+index caabac6..e1b6047 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2598,6 +2598,26 @@ class Player : public Unit, public GridObject<Player>
+@@ -2601,6 +2601,26 @@ class Player : public Unit, public GridObject<Player>
          float m_rest_bonus;
          RestType rest_type;
          ////////////////////Rest System/////////////////////
@@ -77,10 +77,10 @@ index d1f217d..3881914 100755
          time_t m_resetTalentsTime;
          uint32 m_usedTalentCount;
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 3c9de31..706e7b4 100755
+index 97599a4..a5d3ec2 100755
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
-@@ -2056,6 +2056,7 @@ class Unit : public WorldObject
+@@ -2058,6 +2058,7 @@ class Unit : public WorldObject
      protected:
          explicit Unit ();
  
@@ -89,7 +89,7 @@ index 3c9de31..706e7b4 100755
  
          void _UpdateSpells(uint32 time);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index a852d3e..b238996 100755
+index 27d9c73..3adda8c 100755
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
 @@ -5925,7 +5925,8 @@ void ObjectMgr::LoadAreaTriggerScripts()
@@ -143,7 +143,7 @@ index a852d3e..b238996 100755
  }
  
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 19eb575..f7ab5a4 100755
+index 4efbbc7..33985d7 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -680,7 +680,7 @@ class ObjectMgr
@@ -156,7 +156,7 @@ index 19eb575..f7ab5a4 100755
          uint32 GetTaxiMountDisplayId(uint32 id, uint32 team, bool allowed_alt_team = false);
  
 diff --git a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
-index 25cfed8..3d5c531 100755
+index c7483f1..e6ebcad 100755
 --- a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 @@ -31,6 +31,12 @@
@@ -425,8 +425,7 @@ index 25cfed8..3d5c531 100755
 +                    }
 +                    //plMover->FallGround(2);
 +                }
- 
--    /* process position-change */
++
 +                // multi jump checks
 +                if (opcode == MSG_MOVE_JUMP)
 +                {
@@ -546,7 +545,8 @@ index 25cfed8..3d5c531 100755
 +                    }
 +                    //plMover->FallGround(2);
 +                }
-+
+ 
+-    /* process position-change */
 +                // Teleport To Plane checks
 +                if (no_swim_in_water && movementInfo.pos.GetPositionZ() < 0.0001f && movementInfo.pos.GetPositionZ() > -0.0001f)
 +                {
@@ -608,7 +608,7 @@ index 25cfed8..3d5c531 100755
 +        }
 +        // end movement anticheat
 +	}
-+    }
+     }
 +    else if (plMover)
 +    {
 +        if (plMover->m_transport)
@@ -623,12 +623,12 @@ index 25cfed8..3d5c531 100755
 +        plMover->SendTeleportAckPacket();
 +        plMover->BuildHeartBeatMsg(&data);
 +        plMover->SendMessageToSet(&data, true);
-     }
++    }
 +
  }
  
  void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recv_data)
-@@ -679,6 +1064,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
+@@ -711,6 +1096,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
  
      MovementInfo movementInfo;
      ReadMovementInfo(recv_data, &movementInfo);
@@ -650,7 +650,7 @@ index 25cfed8..3d5c531 100755
  
  void WorldSession::HandleMoveHoverAck(WorldPacket& recv_data)
 diff --git a/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp b/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
-index 7b7c42a..dc379bf 100755
+index 0baca16..cbc5cb0 100755
 --- a/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
 @@ -49,7 +49,7 @@ void WorldSession::SendTaxiStatus(uint64 guid)
@@ -798,7 +798,7 @@ index 7b7c42a..dc379bf 100755
      uint32 destinationnode = GetPlayer()->m_taxi.NextTaxiDestination();
      if (destinationnode > 0)                              // if more destinations to go
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 899c42a..be3099f 100755
+index 1567277..5f99a01 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -83,7 +83,11 @@ float World::m_MaxVisibleDistanceInBGArenas   = DEFAULT_VISIBILITY_BGARENAS;
@@ -857,7 +857,7 @@ index 899c42a..be3099f 100755
  
      m_bool_configs[CONFIG_DURABILITY_LOSS_IN_PVP] = sConfig->GetBoolDefault("DurabilityLoss.InPvP", false);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 6e5b639..e28fe57 100755
+index 87c37b0..4c9152f 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -711,6 +711,12 @@ class World
