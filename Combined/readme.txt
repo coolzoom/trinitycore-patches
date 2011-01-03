@@ -17,7 +17,7 @@ XP After Level 100
 
 Not Included:
 Icecrown Citadel by bolvor (crappy patch. doesn't work and is worthless without gunship)
-AC2
+AC2 (Added a patch that does include this.)
 BOTS
 
 
