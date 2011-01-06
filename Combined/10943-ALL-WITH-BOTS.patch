@@ -1,7 +1,7 @@
-From c531ba5dd15220031bb4e762bed33e3adfa98a1a Mon Sep 17 00:00:00 2001
+From e25d95c7680704a4cee8d8bf568363408e0aa838 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Thu, 6 Jan 2011 01:37:11 -0500
-Subject: [PATCH] ALL-WITH-BOTS
+Date: Thu, 6 Jan 2011 06:27:35 -0500
+Subject: [PATCH] 10943-ALL-WITH_BOTS
 
 ---
  README.NPCTELEPORT                                 |   14 +
@@ -77,7 +77,7 @@ Subject: [PATCH] ALL-WITH-BOTS
  src/server/game/OutdoorPvP/OutdoorPvP.h            |    3 +-
  src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    1 +
  src/server/game/Quests/QuestDef.h                  |    4 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   52 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   57 +-
  src/server/game/Scripting/ScriptMgr.cpp            |   23 +-
  src/server/game/Scripting/ScriptMgr.h              |    3 +
  .../Protocol/Handlers/AuctionHouseHandler.cpp      |    1 +
@@ -151,7 +151,7 @@ Subject: [PATCH] ALL-WITH-BOTS
  .../Database/Implementation/LoginDatabase.cpp      |    3 +-
  .../shared/Database/Implementation/LoginDatabase.h |    1 +
  src/server/worldserver/worldserver.conf.dist       |  435 ++
- 147 files changed, 34424 insertions(+), 702 deletions(-)
+ 147 files changed, 34429 insertions(+), 702 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/ALL/ALL_characters.sql
@@ -21816,7 +21816,7 @@ index 37358c7..63c1e81 100755
      MAX_QUEST_STATUS
  };
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 48056f7..4170030 100755
+index 48056f7..87b2c58 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -25,6 +25,9 @@ void AddSC_example_gossip_codebox();
@@ -21829,7 +21829,17 @@ index 48056f7..4170030 100755
  // spells
  void AddSC_deathknight_spell_scripts();
  void AddSC_druid_spell_scripts();
-@@ -76,6 +79,20 @@ void AddSC_npc_innkeeper();
+@@ -61,6 +64,9 @@ void AddSC_tele_commandscript();
+ void AddSC_titles_commandscript();
+ void AddSC_wp_commandscript();
+ 
++// Custom
++void AddSC_Reset();
++
+ #ifdef SCRIPTS
+ //world
+ void AddSC_areatrigger_scripts();
+@@ -76,6 +82,20 @@ void AddSC_npc_innkeeper();
  void AddSC_npcs_special();
  void AddSC_npc_taxi();
  void AddSC_achievement_scripts();
@@ -21850,7 +21860,7 @@ index 48056f7..4170030 100755
  
  //eastern kingdoms
  void AddSC_alterac_valley();                 //Alterac Valley
-@@ -484,6 +501,13 @@ void AddSC_sholazar_basin();
+@@ -484,6 +504,13 @@ void AddSC_sholazar_basin();
  void AddSC_storm_peaks();
  void AddSC_zuldrak();
  void AddSC_crystalsong_forest();
@@ -21864,7 +21874,7 @@ index 48056f7..4170030 100755
  
  //outland
  void AddSC_boss_exarch_maladaar();           //Auchindoun Auchenai Crypts
-@@ -566,6 +590,7 @@ void AddSC_shadowmoon_valley();
+@@ -566,6 +593,7 @@ void AddSC_shadowmoon_valley();
  void AddSC_shattrath_city();
  void AddSC_terokkar_forest();
  void AddSC_zangarmarsh();
@@ -21872,7 +21882,7 @@ index 48056f7..4170030 100755
  
  // battlegrounds
  
-@@ -576,6 +601,7 @@ void AddSC_outdoorpvp_na();
+@@ -576,6 +604,7 @@ void AddSC_outdoorpvp_na();
  void AddSC_outdoorpvp_si();
  void AddSC_outdoorpvp_tf();
  void AddSC_outdoorpvp_zm();
@@ -21880,7 +21890,7 @@ index 48056f7..4170030 100755
  
  // player
  void AddSC_chat_log();
-@@ -663,6 +689,19 @@ void AddWorldScripts()
+@@ -663,6 +692,19 @@ void AddWorldScripts()
      AddSC_npcs_special();
      AddSC_npc_taxi();
      AddSC_achievement_scripts();
@@ -21900,7 +21910,7 @@ index 48056f7..4170030 100755
      AddSC_chat_log();
  #endif
  }
-@@ -1170,6 +1209,13 @@ void AddNorthrendScripts()
+@@ -1170,6 +1212,13 @@ void AddNorthrendScripts()
      AddSC_storm_peaks();
      AddSC_zuldrak();
      AddSC_crystalsong_forest();
@@ -21914,7 +21924,7 @@ index 48056f7..4170030 100755
  #endif
  }
  
-@@ -1182,6 +1228,7 @@ void AddOutdoorPvPScripts()
+@@ -1182,6 +1231,7 @@ void AddOutdoorPvPScripts()
      AddSC_outdoorpvp_si();
      AddSC_outdoorpvp_tf();
      AddSC_outdoorpvp_zm();
@@ -21922,7 +21932,7 @@ index 48056f7..4170030 100755
  #endif
  }
  
-@@ -1200,6 +1247,9 @@ void AddCustomScripts()
+@@ -1200,6 +1250,11 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -21931,6 +21941,8 @@ index 48056f7..4170030 100755
 +	AddSC_guildmaster();
 +    //TeleNPC2
 +    AddSC_npc_teleport();
++	//Reset onDuelEnd
++	AddSC_Reset();
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
