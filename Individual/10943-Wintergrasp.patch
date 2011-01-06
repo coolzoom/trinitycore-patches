@@ -1,3 +1,41 @@
+From f04b4110d4f443acc61f0da2d74cc4152a4484c3 Mon Sep 17 00:00:00 2001
+From: root <root@deb.privatedns.com>
+Date: Thu, 6 Jan 2011 00:35:09 -0500
+Subject: [PATCH] Wintergrasp
+
+---
+ sql/CMakeLists.txt                                 |    1 +
+ sql/Wintergrasp/Wintergrasp_world.sql              |  113 +
+ src/server/game/CMakeLists.txt                     |    1 +
+ src/server/game/Chat/Chat.cpp                      |   12 +
+ src/server/game/Chat/Chat.h                        |    7 +
+ src/server/game/Chat/Commands/Level2.cpp           |  146 ++
+ src/server/game/Entities/Player/Player.cpp         |    8 +
+ src/server/game/Miscellaneous/Language.h           |   23 +
+ src/server/game/OutdoorPvP/OutdoorPvP.h            |    3 +-
+ src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    1 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    4 +
+ .../Protocol/Handlers/BattleGroundHandler.cpp      |   25 +
+ .../Server/Protocol/Handlers/CharacterHandler.cpp  |   20 +
+ src/server/game/Spells/Auras/SpellAuraEffects.cpp  |    8 +
+ src/server/game/Spells/Spell.cpp                   |   12 +
+ src/server/game/Spells/SpellEffects.cpp            |   35 +
+ src/server/game/Spells/SpellMgr.cpp                |   20 +
+ src/server/game/World/World.cpp                    |   43 +
+ src/server/game/World/World.h                      |   28 +
+ src/server/scripts/CMakeLists.txt                  |    1 +
+ src/server/scripts/Northrend/CMakeLists.txt        |    1 +
+ src/server/scripts/Northrend/wintergrasp.cpp       |   89 +
+ src/server/scripts/OutdoorPvP/CMakeLists.txt       |    2 +
+ src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2290 ++++++++++++++++++++
+ src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  339 +++
+ src/server/worldserver/worldserver.conf.dist       |  127 ++
+ 26 files changed, 3358 insertions(+), 1 deletions(-)
+ create mode 100644 sql/Wintergrasp/Wintergrasp_world.sql
+ create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
+ create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
+ create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.h
+
 diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
 index e1b0921..b8bb2b0 100644
 --- a/sql/CMakeLists.txt
@@ -142,7 +180,7 @@ index 323a3ac..7d94186 100644
    ${MYSQL_INCLUDE_DIR}
    ${OPENSSL_INCLUDE_DIR}
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index c962a2f..18186c2 100755
+index 30fe5de..99ad729 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
 @@ -351,6 +351,17 @@ ChatCommand * ChatHandler::getCommandTable()
@@ -172,7 +210,7 @@ index c962a2f..18186c2 100755
      };
  
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index cd9633c..e540e49 100755
+index 486987d..69de003 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -246,6 +246,13 @@ class ChatHandler
@@ -190,7 +228,7 @@ index cd9633c..e540e49 100755
          bool HandleCommandsCommand(const char* args);
          bool HandleStartCommand(const char* args);
 diff --git a/src/server/game/Chat/Commands/Level2.cpp b/src/server/game/Chat/Commands/Level2.cpp
-index 9071469..9ead378 100755
+index 00962a9..b726dbf 100755
 --- a/src/server/game/Chat/Commands/Level2.cpp
 +++ b/src/server/game/Chat/Commands/Level2.cpp
 @@ -39,6 +39,7 @@
@@ -354,7 +392,7 @@ index 9071469..9ead378 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index de2f5d1..eb9d75c 100755
+index 1963201..e7f63f2 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -55,6 +55,7 @@
@@ -365,7 +403,7 @@ index de2f5d1..eb9d75c 100755
  #include "ArenaTeam.h"
  #include "Chat.h"
  #include "Spell.h"
-@@ -8769,6 +8770,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
+@@ -8770,6 +8771,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
      data << uint32(0x8d3) << uint32(0x0);                   // 6
                                                              // 7 1 - Arena season in progress, 0 - end of season
      data << uint32(0xC77) << uint32(sWorld->getBoolConfig(CONFIG_ARENA_SEASON_IN_PROGRESS));
@@ -380,7 +418,7 @@ index de2f5d1..eb9d75c 100755
      data << uint32(0xF3D) << uint32(sWorld->getIntConfig(CONFIG_ARENA_SEASON_ID));
  
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 628ea16..26a1c3d 100755
+index 4afb315..a2da8ee 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -702,6 +702,29 @@ enum TrinityStrings
@@ -414,7 +452,7 @@ index 628ea16..26a1c3d 100755
      LANG_ARENA_TESTING                  = 785,
      LANG_AUTO_ANN                       = 786,
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
-index 406f5ec..9a19d64 100755
+index 1da710a..96666d1 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvP.h
 +++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
 @@ -32,9 +32,10 @@ enum OutdoorPvPTypes
@@ -430,7 +468,7 @@ index 406f5ec..9a19d64 100755
  const uint8 CapturePointArtKit[3] = {2, 1, 21};
  
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
-index 9e82b6d..c675e5f 100755
+index 4ccc31a..d91366c 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 +++ b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 @@ -16,6 +16,7 @@
@@ -442,7 +480,7 @@ index 9e82b6d..c675e5f 100755
  #include "Player.h"
  #include "DisableMgr.h"
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index ec534b6..8f2c624 100755
+index 48056f7..119a0fa 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -566,6 +566,7 @@ void AddSC_shadowmoon_valley();
@@ -478,7 +516,7 @@ index ec534b6..8f2c624 100755
  }
  
 diff --git a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-index 63e9a6f..3114b38 100755
+index 0641007..c0d02fc 100755
 --- a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
 @@ -35,6 +35,9 @@
@@ -530,7 +568,7 @@ index 63e9a6f..3114b38 100755
  
  
 diff --git a/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp b/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
-index a07756f..57dd643 100755
+index 80682ff..4b4c4a2 100755
 --- a/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
 @@ -41,6 +41,9 @@
@@ -568,7 +606,7 @@ index a07756f..57dd643 100755
  
      CharacterDatabase.PExecute("UPDATE characters SET online = 1 WHERE guid = '%u'", pCurrChar->GetGUIDLow());
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 3afd452..8af0d22 100755
+index 511dcbb..4b7b1f6 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 @@ -30,6 +30,7 @@
@@ -579,7 +617,7 @@ index 3afd452..8af0d22 100755
  #include "Formulas.h"
  #include "GridNotifiers.h"
  #include "GridNotifiersImpl.h"
-@@ -5868,6 +5869,13 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
+@@ -5879,6 +5880,13 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
                              if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
                                  target->CastSpell(target, 58601, true);
                              break;
@@ -594,7 +632,7 @@ index 3afd452..8af0d22 100755
                      break;
                  case SPELLFAMILY_MAGE:
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 51498ff..a7f1037 100755
+index c3076ae..1a31a09 100755
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -51,6 +51,8 @@
@@ -633,7 +671,7 @@ index 51498ff..a7f1037 100755
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 4213239..a9ede50 100755
+index 4535b3c..1986097 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -48,6 +48,7 @@
@@ -644,7 +682,7 @@ index 4213239..a9ede50 100755
  #include "Language.h"
  #include "SocialMgr.h"
  #include "Util.h"
-@@ -4317,6 +4318,25 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4321,6 +4322,25 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
              switch(m_spellInfo->Id)
              {
@@ -670,7 +708,7 @@ index 4213239..a9ede50 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -6989,9 +7009,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex /*effIndex*/)
+@@ -6993,9 +7013,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex /*effIndex*/)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
@@ -696,7 +734,7 @@ index 4213239..a9ede50 100755
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index db34245..f5e51c2 100755
+index e7d0682..b030442 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
 @@ -27,6 +27,8 @@
@@ -748,7 +786,7 @@ index db34245..f5e51c2 100755
      }
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 899c42a..a39465f 100755
+index 1567277..dd5ba0a 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -48,6 +48,7 @@
@@ -814,7 +852,7 @@ index 899c42a..a39465f 100755
 +}
 \ No newline at end of file
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 6e5b639..92f3924 100755
+index 87c37b0..b114ee5 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -160,6 +160,9 @@ enum WorldBoolConfigs
@@ -3787,3 +3825,6 @@ index 188d6d8..0a1e6c5 100644
  # PLAYER INTERACTION
  #
  #    AllowTwoSide.Accounts
+-- 
+1.5.6.5
+
