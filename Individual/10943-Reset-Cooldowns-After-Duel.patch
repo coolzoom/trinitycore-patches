@@ -1,0 +1,57 @@
+From f236310282028161d7d698adfd385141e518103a Mon Sep 17 00:00:00 2001
+From: root <root@deb.privatedns.com>
+Date: Thu, 6 Jan 2011 02:24:21 -0500
+Subject: [PATCH] Reset-Cooldowns-After-Duel
+
+---
+ src/server/scripts/Custom/CMakeLists.txt      |    1 +
+ src/server/scripts/Custom/Reset_OnDuelEnd.cpp |   26 +++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
+ create mode 100644 src/server/scripts/Custom/Reset_OnDuelEnd.cpp
+
+diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
+index 0dec843..25cf3ec 100644
+--- a/src/server/scripts/Custom/CMakeLists.txt
++++ b/src/server/scripts/Custom/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
++  Custom/Reset_OnDuelEnd.cpp
+ )
+ 
+ message("  -> Prepared: Custom")
+diff --git a/src/server/scripts/Custom/Reset_OnDuelEnd.cpp b/src/server/scripts/Custom/Reset_OnDuelEnd.cpp
+new file mode 100644
+index 0000000..25c8ea3
+--- /dev/null
++++ b/src/server/scripts/Custom/Reset_OnDuelEnd.cpp
+@@ -0,0 +1,26 @@
++#include "ScriptPCH.h"
++
++class Reset_OnDuelEnd : public PlayerScript
++{
++    public:
++        Reset_OnDuelEnd() : PlayerScript("Reset_OnDuelEnd") {}
++
++    void OnDuelEnd(Player *winner, Player *looser, DuelCompleteType type)
++    {
++        // reset cooldowns in zone 0, 41 and 616
++                if (winner->GetZoneId() == 0 || winner->GetZoneId() == 41 || winner->GetZoneId() == 616)
++                {
++                        winner->RemoveArenaSpellCooldowns();
++                        looser->RemoveArenaSpellCooldowns();
++                        winner->SetHealth(winner->GetMaxHealth());
++                        winner->SetPower(POWER_MANA, winner->GetMaxPower(POWER_MANA));
++                        looser->SetHealth(looser->GetMaxHealth());
++                        looser->SetPower(POWER_MANA, looser->GetMaxPower(POWER_MANA));
++                }
++    }
++};
++
++void AddSC_Reset()
++{
++    new Reset_OnDuelEnd;
++}
+-- 
+1.5.6.5
+
