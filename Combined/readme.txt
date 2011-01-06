@@ -17,8 +17,6 @@ XP After Level 100
 
 Not Included:
 Icecrown Citadel by bolvor (crappy patch. doesn't work and is worthless without gunship)
-AC2 (Added a patch that does include this.)
+AC2
 BOTS (Added another patch that includes BOTS. If you want a patch with BOTS and without AC2 let me know. VIPAccounts makes it very hard to compile other patches in.)
 City Conquest
-
-Only reason AC2 and BOTS haven't been added... haven't had time. it is 7am now and I have been up all night fighting BOTS... didn't get no XP either....
