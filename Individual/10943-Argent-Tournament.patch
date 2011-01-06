@@ -1,3 +1,19 @@
+From 661c55625fb54b95d7199bdb5607e4b861e4da14 Mon Sep 17 00:00:00 2001
+From: root <root@deb.privatedns.com>
+Date: Thu, 6 Jan 2011 00:50:22 -0500
+Subject: [PATCH] Argent-Tournament
+
+---
+ sql/CMakeLists.txt                                 |    1 +
+ sql/argent/world_argenttournament.sql              |  425 ++++++++
+ src/server/game/Globals/ObjectMgr.h                |    4 +
+ .../game/Server/Protocol/Handlers/PetHandler.cpp   |    9 +
+ src/server/game/Spells/SpellEffects.cpp            |   38 +-
+ src/server/scripts/Northrend/grizzly_hills.cpp     |  215 ++++
+ src/server/scripts/Northrend/icecrown.cpp          | 1051 +++++++++++++++++++-
+ 7 files changed, 1723 insertions(+), 20 deletions(-)
+ create mode 100644 sql/argent/world_argenttournament.sql
+
 diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
 index e1b0921..d2c54f0 100644
 --- a/sql/CMakeLists.txt
@@ -458,7 +474,7 @@ index 4efbbc7..b80462a 100755
          QuestRelationBounds GetCreatureQuestRelationBounds(uint32 creature_entry)
          {
 diff --git a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-index c3b11dd..b3f039a 100755
+index eefb866..5d0a560 100755
 --- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 @@ -750,6 +750,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
@@ -478,10 +494,10 @@ index c3b11dd..b3f039a 100755
  
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 0f90f9b..a5dbd5f 100755
+index 4535b3c..3047365 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -4390,7 +4390,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4394,7 +4394,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
@@ -516,7 +532,7 @@ index 0f90f9b..a5dbd5f 100755
                  case 22539:
                  case 22972:
                  case 22975:
-@@ -4851,9 +4877,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4855,9 +4881,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                          return;
  
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
@@ -533,7 +549,7 @@ index 0f90f9b..a5dbd5f 100755
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5195,6 +5227,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5199,6 +5231,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
@@ -541,7 +557,7 @@ index 0f90f9b..a5dbd5f 100755
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
                      Player *plr = unitTarget->ToPlayer();
-@@ -5205,6 +5238,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5209,6 +5242,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                              return;
                      DoCreateItem(effIndex, itemId[urand(0,4)]);
                      return;
@@ -550,7 +566,7 @@ index 0f90f9b..a5dbd5f 100755
              break;
          }
 diff --git a/src/server/scripts/Northrend/grizzly_hills.cpp b/src/server/scripts/Northrend/grizzly_hills.cpp
-index c030c60..3d3376e 100644
+index 67e0ad5..3580b19 100644
 --- a/src/server/scripts/Northrend/grizzly_hills.cpp
 +++ b/src/server/scripts/Northrend/grizzly_hills.cpp
 @@ -29,6 +29,7 @@ EndContentData */
@@ -788,7 +804,7 @@ index c030c60..3d3376e 100644
 +    new npc_maiden_of_drak_mar;
  }
 diff --git a/src/server/scripts/Northrend/icecrown.cpp b/src/server/scripts/Northrend/icecrown.cpp
-index a5226e7..cfcb8aa 100644
+index 808717a..cfcb8aa 100644
 --- a/src/server/scripts/Northrend/icecrown.cpp
 +++ b/src/server/scripts/Northrend/icecrown.cpp
 @@ -157,7 +157,7 @@ enum eSquireDavid
@@ -886,7 +902,7 @@ index a5226e7..cfcb8aa 100644
 -                uiDamage = 0;
 -                CAST_PLR(pDoneBy)->KilledMonsterCredit(NPC_ARGENT_VALIANT_CREDIT,0);
 -                me->setFaction(35);
--                me->ForcedDespawn(5000);
+-                me->DespawnOrUnsummon(5000);
 -                me->SetHomePosition(me->GetPositionX(),me->GetPositionY(),me->GetPositionZ(),me->GetOrientation());
 -                EnterEvadeMode();
 -            }
@@ -1916,3 +1932,6 @@ index a5226e7..cfcb8aa 100644
 +    new npc_squire_danny;
 +    new npc_argent_champion;
  }
+-- 
+1.5.6.5
+
