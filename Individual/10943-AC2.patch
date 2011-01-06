@@ -1,3 +1,21 @@
+From 666a6f4249db0efa1852ea138a33b38ab10e4c52 Mon Sep 17 00:00:00 2001
+From: root <root@deb.privatedns.com>
+Date: Thu, 6 Jan 2011 01:24:02 -0500
+Subject: [PATCH] AC2
+
+---
+ src/server/game/Entities/Player/Player.cpp         |   22 +
+ src/server/game/Entities/Player/Player.h           |   20 +
+ src/server/game/Entities/Unit/Unit.h               |    1 +
+ src/server/game/Globals/ObjectMgr.cpp              |   22 +-
+ src/server/game/Globals/ObjectMgr.h                |    2 +-
+ .../Server/Protocol/Handlers/MovementHandler.cpp   |  417 +++++++++++++++++++-
+ .../game/Server/Protocol/Handlers/TaxiHandler.cpp  |  101 +++++-
+ src/server/game/World/World.cpp                    |   41 ++-
+ src/server/game/World/World.h                      |   12 +-
+ src/server/worldserver/worldserver.conf.dist       |   24 ++
+ 10 files changed, 640 insertions(+), 22 deletions(-)
+
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
 index 1963201..04295c3 100755
 --- a/src/server/game/Entities/Player/Player.cpp
@@ -156,7 +174,7 @@ index 4efbbc7..33985d7 100755
          uint32 GetTaxiMountDisplayId(uint32 id, uint32 team, bool allowed_alt_team = false);
  
 diff --git a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
-index adab712..cef06ec 100755
+index e138301..2c9a9b0 100755
 --- a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 @@ -31,6 +31,12 @@
@@ -425,7 +443,8 @@ index adab712..cef06ec 100755
 +                    }
 +                    //plMover->FallGround(2);
 +                }
-+
+ 
+-    /* process position-change */
 +                // multi jump checks
 +                if (opcode == MSG_MOVE_JUMP)
 +                {
@@ -545,8 +564,7 @@ index adab712..cef06ec 100755
 +                    }
 +                    //plMover->FallGround(2);
 +                }
- 
--    /* process position-change */
++
 +                // Teleport To Plane checks
 +                if (no_swim_in_water && movementInfo.pos.GetPositionZ() < 0.0001f && movementInfo.pos.GetPositionZ() > -0.0001f)
 +                {
@@ -608,7 +626,7 @@ index adab712..cef06ec 100755
 +        }
 +        // end movement anticheat
 +	}
-     }
++    }
 +    else if (plMover)
 +    {
 +        if (plMover->m_transport)
@@ -623,12 +641,12 @@ index adab712..cef06ec 100755
 +        plMover->SendTeleportAckPacket();
 +        plMover->BuildHeartBeatMsg(&data);
 +        plMover->SendMessageToSet(&data, true);
-+    }
+     }
 +
  }
  
  void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recv_data)
-@@ -711,6 +1096,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
+@@ -730,6 +1115,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
  
      MovementInfo movementInfo;
      ReadMovementInfo(recv_data, &movementInfo);
@@ -921,3 +939,6 @@ index 188d6d8..88c3ea0 100644
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
+-- 
+1.5.6.5
+
