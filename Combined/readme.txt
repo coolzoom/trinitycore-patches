@@ -16,8 +16,12 @@ XP After Level 100
 
 
 Not Included:
-Icecrown Citadel by bolvor (crappy patch. doesn't work and is worthless without gunship)
+Icecrown Citadel by bolvor (crappy patch. doesn't work and is worthless without gunship. completely removed from repo.)
 AC2
 BOTS (Added another patch that includes BOTS. If you want a patch with BOTS and without AC2 let me know. VIPAccounts makes it very hard to compile other patches in.)
 City Conquest
 TrinityJail
+Gamble
+
+
+There is a 3rd all patch that has everything listed except gamble.
