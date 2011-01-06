@@ -20,3 +20,4 @@ Icecrown Citadel by bolvor (crappy patch. doesn't work and is worthless without 
 AC2
 BOTS (Added another patch that includes BOTS. If you want a patch with BOTS and without AC2 let me know. VIPAccounts makes it very hard to compile other patches in.)
 City Conquest
+TrinityJail
