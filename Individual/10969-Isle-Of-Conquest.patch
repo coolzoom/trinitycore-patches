@@ -1,7 +1,7 @@
-From 8be89e815f2763f57afaed49ed3c52e0d299b2a4 Mon Sep 17 00:00:00 2001
+From 52087eaf5a3217da4960f52626a9566901183cf6 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Thu, 6 Jan 2011 01:11:56 -0500
-Subject: [PATCH] Isle-of-Conquest
+Date: Fri, 7 Jan 2011 10:36:43 -0500
+Subject: [PATCH] 10969-Isle-Of-Conquest
 
 ---
  sql/CMakeLists.txt                                 |    1 +
@@ -196,7 +196,7 @@ index f072e16..ee79cb6 100755
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundIC.cpp
 @@ -17,19 +17,41 @@
   */
- 
+
  #include "Player.h"
 +#include "BattlegroundMgr.h"
  #include "Battleground.h"
@@ -207,7 +207,7 @@ index f072e16..ee79cb6 100755
 +#include "ObjectMgr.h"
 +#include "Vehicle.h"
 +#include "Transport.h"
- 
+
  BattlegroundIC::BattlegroundIC()
  {
 -    m_BgCreatures.resize(2);
@@ -241,12 +241,12 @@ index f072e16..ee79cb6 100755
 +    m_Team_Scores[TEAM_ALLIANCE] = 300;
 +    m_Team_Scores[TEAM_HORDE]     = 300;
  }
- 
+
  BattlegroundIC::~BattlegroundIC()
 @@ -37,17 +59,105 @@ BattlegroundIC::~BattlegroundIC()
- 
+
  }
- 
+
 +//Update method, call in BattlegroundMgr
  void BattlegroundIC::Update(uint32 diff)
  {
@@ -266,7 +266,7 @@ index f072e16..ee79cb6 100755
 +            }
 +			else m_uiOpenDoorTimer -= diff;
 +        }
- 
+
 -void BattlegroundIC::StartingEventCloseDoors()
 -{
 +        if(m_ActivMODoors)
@@ -322,7 +322,7 @@ index f072e16..ee79cb6 100755
 +		}
 +    }
  }
- 
+
  void BattlegroundIC::StartingEventOpenDoors()
  {
 +    for (int i = 0 ; i < MAX_BG_IC_OBJ; i++)
@@ -334,7 +334,7 @@ index f072e16..ee79cb6 100755
 +            if(GetBGObject(id)) GetBGObject(id)->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE); //Bombe utilisable
 +            break;
 +        case IC_TYPE_TOWER_DOOR:
-+            if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE); 
++            if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE);
 +            break;
 +        case IC_TYPE_DOOR_A:
 +        case IC_TYPE_DOOR_H:
@@ -350,7 +350,7 @@ index f072e16..ee79cb6 100755
 +    m_OpenDoors=true;
 +    m_uiOpenDoorTimer=BG_IC_TIMER_OPEN_DOOR;
  }
- 
+
  void BattlegroundIC::AddPlayer(Player *plr)
 @@ -55,65 +165,364 @@ void BattlegroundIC::AddPlayer(Player *plr)
      Battleground::AddPlayer(plr);
@@ -371,17 +371,17 @@ index f072e16..ee79cb6 100755
 +    }
 +    SendTransportInit(plr);
  }
- 
+
 -void BattlegroundIC::RemovePlayer(Player* /*plr*/,uint64 /*guid*/)
 +void BattlegroundIC::SendTransportInit(Player *player)
  {
 -
 +    if(!m_GunshipA)
 +        return;
-+		
++
 +    if(!m_GunshipH)
 +        return;
-+    
++
 +    UpdateData transData;
 +    m_GunshipA->BuildCreateUpdateBlockForPlayer(&transData, player);
 +    m_GunshipH->BuildCreateUpdateBlockForPlayer(&transData, player);
@@ -389,7 +389,7 @@ index f072e16..ee79cb6 100755
 +    transData.BuildPacket(&packet);
 +    player->GetSession()->SendPacket(&packet);
  }
- 
+
 -void BattlegroundIC::HandleAreaTrigger(Player * /*Source*/, uint32 /*Trigger*/)
 +void BattlegroundIC::RemovePlayer(Player* plr,uint64 /*guid*/)
  {
@@ -399,15 +399,15 @@ index f072e16..ee79cb6 100755
 +    plr->RemoveAura(OIL_REFINERY);
 +    plr->RemoveAura(QUARRY);
  }
- 
+
  void BattlegroundIC::UpdatePlayerScore(Player* Source, uint32 type, uint32 value, bool doAddHonor)
  {
 -
      std::map<uint64, BattlegroundScore*>::iterator itr = m_PlayerScores.find(Source->GetGUID());
- 
+
      if (itr == m_PlayerScores.end())                         // player not found...
          return;
- 
+
 -    Battleground::UpdatePlayerScore(Source,type,value, doAddHonor);
 +    switch(type)
 +    {
@@ -422,7 +422,7 @@ index f072e16..ee79cb6 100755
 +            break;
 +    }
  }
- 
+
 -bool BattlegroundIC::SetupBattleground()
 +void BattlegroundIC::FillInitialWorldStates(WorldPacket& data)
  {
@@ -448,7 +448,7 @@ index f072e16..ee79cb6 100755
 +    for (uint8 i = 0 ; i < BG_IC_DYNAMIC_NODES_COUNT ; i++)
 +        data << uint32(m_IC_NodeData[i].worldstate[m_IC_NodeData[i].current]) << uint32(1);
  }
- 
+
 -void BattlegroundIC::SpawnLeader(uint32 teamid)
 +bool BattlegroundIC::SetupBattleground()
  {
@@ -459,7 +459,7 @@ index f072e16..ee79cb6 100755
 +    // Spawn all GameObjects
 +    for (uint8 i = 0 ; i < MAX_BG_IC_OBJ; i++)
 +    {
-+    	//Coordinate of GameObject
++		//Coordinate of GameObject
 +        float x,y,z,o;
 +        x=BG_IC_OBJ[i].x;
 +        y=BG_IC_OBJ[i].y;
@@ -503,7 +503,7 @@ index f072e16..ee79cb6 100755
 +			  sLog->outError("BattlegroundIC::SetupBattleground() Object: %i, bad state: %u",i,BG_IC_OBJ[i].state);
 +			  return false;
 +		  }
-+                
++
 +		  BannerFlag=m_IC_NodeData[NodeId].gobentry[state];
 +
 +		  //Spawn the pillar
@@ -646,7 +646,7 @@ index f072e16..ee79cb6 100755
 +		   //Disable bomb, active on start
 +		   GetBGObject(id)->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE);
 +		   //TODO: 10 sec respawn time ?
-+		   
++
 +		   break;
 +		    }
 +		  //Decoration like bonfire
@@ -663,7 +663,7 @@ index f072e16..ee79cb6 100755
 +			case IC_TYPE_LAST_DOOR_A:	//Open when one of three door of Alliance keep is destroy
 +			case IC_TYPE_TOWER_DOOR:	//Open on battleground start
 +            {
-+            	//Spawn GameObject
++				//Spawn GameObject
 +                if(!AddObject(id,BG_IC_OBJ[i].entry,x,y,z,o,0,0,0,0,RESPAWN_ONE_DAY))
 +                    return false;
 +
@@ -686,9 +686,9 @@ index f072e16..ee79cb6 100755
 +        if (!AddSpiritGuide(i, BG_IC_SpiritGuidePos[i][0], BG_IC_SpiritGuidePos[i][1], BG_IC_SpiritGuidePos[i][2], BG_IC_SpiritGuidePos[i][3], BG_IC_graveInitTeam[i]))
 +        {
 +            sLog->outError("Failed to spawn spirit guide! point: %u, team: %u,", i, BG_IC_graveInitTeam[i]);
-+            return false;    
++            return false;
 +        }
-+    
++
 +    //Npc spawning
 +    for (int i = 0 ; i < MAX_BG_IC_NPC; ++i)
 +    {
@@ -724,14 +724,14 @@ index f072e16..ee79cb6 100755
 +        }
 +    return true;
  }
- 
+
 -void BattlegroundIC::HandleKillUnit(Creature *unit, Player * /*killer*/)
 +//Called when a player kill a Creature, used for know if one of two boss is killed
 +void BattlegroundIC::HandleKillUnit(Creature *pUnit, Player * /*killer*/)
  {
      if (GetStatus() != STATUS_IN_PROGRESS)
         return;
- 
+
 -    uint32 entry = unit->GetEntry();
 -    if (entry == 34924)
 +    uint32 entry = pUnit->GetEntry();
@@ -748,7 +748,7 @@ index f072e16..ee79cb6 100755
 @@ -125,8 +534,587 @@ void BattlegroundIC::EndBattleground(uint32 winner)
      Battleground::EndBattleground(winner);
  }
- 
+
 -void BattlegroundIC::EventPlayerClickedOnFlag(Player * /*source*/, GameObject* /*target_obj*/)
 +//This method is used for spawn all npc of the same type, like vehicle in node.
 +void BattlegroundIC::SpawnNpcType(uint32 type)
@@ -853,7 +853,7 @@ index f072e16..ee79cb6 100755
 +                t->AddNPCPassenger(fields[0].GetUInt32(), fields[1].GetFloat(), fields[2].GetFloat(), fields[3].GetFloat(), fields[4].GetFloat(),fields[5].GetUInt32(),fields[6].GetUInt32());
 +            } while( npc_transport->NextRow() );
 +        }
-+		
++
 +        return t;
 +}
 +
@@ -950,10 +950,10 @@ index f072e16..ee79cb6 100755
 +            SpawnNpcType(IC_TYPE_DOCKVEHICLE_H);
 +        break ;
 +    case BG_IC_NODE_HANGAR:
-+    	//Activate transport
++		//Activate transport
 +        if (m_GunshipA)
 +            m_GunshipA->BuildStartMovePacket(GetBgMap());
-+        if (m_GunshipH)    
++        if (m_GunshipH)
 +            m_GunshipH->BuildStartMovePacket(GetBgMap());
 +
 +        for (int i = 0 ; i < MAX_BG_IC_OBJ; ++i)
@@ -972,7 +972,7 @@ index f072e16..ee79cb6 100755
 +                GetBGObject(id)->SetUInt32Value(GAMEOBJECT_FACTION, team==ALLIANCE?FACTION_GOB_ALLIANCE:FACTION_GOB_HORDE);
 +                SpawnBGObject(id, RESPAWN_IMMEDIATELY);
 +            }
-+        }        
++        }
 +        break ;
 +    }
 +}
@@ -1020,7 +1020,7 @@ index f072e16..ee79cb6 100755
 +        {
 +            if(BG_IC_OBJ[i].type == IC_TYPE_GUNSHIPTELEPORTER)
 +                DelObject(BG_IC_OBJ[i].id);
-+        }        
++        }
 +        break ;
 +    }
 +}
@@ -1080,7 +1080,7 @@ index f072e16..ee79cb6 100755
 +        }
 +    if(selectednode<0)
 +        return;
-+    
++
 +    uint8 currentstate=m_IC_NodeData[selectednode].current;
 +    uint8 previousstate=m_IC_NodeData[selectednode].previous;
 +    if(currentstate==previousstate)
@@ -1091,7 +1091,7 @@ index f072e16..ee79cb6 100755
 +        m_IC_NodeData[selectednode].previous=currentstate;
 +        if(previousstate==STATE_BANNER_CONT_A || previousstate==STATE_BANNER_CONT_H || previousstate==STATE_NEUTRAL)
 +            m_IC_NodeData[selectednode].current=(source->GetTeamId()==TEAM_ALLIANCE?STATE_BANNER_CONT_A:STATE_BANNER_CONT_H);
-+        else 
++        else
 +            m_IC_NodeData[selectednode].current=previousstate;
 +    }
 +	else
@@ -1111,7 +1111,7 @@ index f072e16..ee79cb6 100755
 +    }
 +    else
 +	{
-+        
++
 +        if(previousstate==STATE_NEUTRAL){
 +            UpdatePlayerScore(source, SCORE_BASES_ASSAULTED, 1);
 +            sound = BG_IC_SOUND_NODE_CLAIMED;
@@ -1133,7 +1133,7 @@ index f072e16..ee79cb6 100755
 +    _CreateBanner(selectednode,0,0,true);
 +    _NodeOccupied(selectednode,(teamIndex == TEAM_ALLIANCE) ?ALLIANCE:HORDE);
 +    _SendNodeUpdate(selectednode);
-+    
++
 +    PlaySoundToAll(sound);
 +}
 +
@@ -1141,7 +1141,7 @@ index f072e16..ee79cb6 100755
 +{
 +    plr->AddAura(66656,plr);
 +    plr->AddAura(12438,plr);
-+    
++
 +    if(plr->GetTeamId()==TEAM_ALLIANCE)
 +    {
 +        if(m_GunshipA){
@@ -1151,7 +1151,7 @@ index f072e16..ee79cb6 100755
 +        plr->m_movementInfo.t_pos.m_positionZ=34.51022;
 +        plr->m_movementInfo.t_guid=m_GunshipA->GetGUID();
 +        plr->TeleportTo(GetMapId(),661,-1244,288,0,TELE_TO_NOT_LEAVE_TRANSPORT);
-+        }       
++        }
 +    }
 +    else
 +    {
@@ -1216,7 +1216,7 @@ index f072e16..ee79cb6 100755
 +        good_entry = sWorldSafeLocsStore.LookupEntry(BG_IC_GraveyardIds[teamIndex+BG_IC_DYNAMIC_NODES_COUNT]);
 +    //BG_IC_DYNAMIC_NODES_COUNT=7 Alliance : teamIndex=0 et BG_IC_LAST_RESORT_GV_ALLIANCE=7 Horde:teamIndex=1 et BG_IC_LAST_RESORT_GV_HORDE=8
 +
-+    return good_entry; 
++    return good_entry;
 +}
 +
 +uint32 BattlegroundIC::GetGateIDFromDestroyEventID(uint32 id)
@@ -1261,7 +1261,7 @@ index f072e16..ee79cb6 100755
 +                    switch(BG_IC_OBJ[i].type)
 +                    {
 +                    case IC_TYPE_LAST_DOOR_H:
-+                        if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE);         
++                        if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE);
 +                    }
 +                }
 +                if (GetBGObject(m_IC_NodeData[BG_IC_ALLIANCE_KEEP].object_flag))
@@ -1279,7 +1279,7 @@ index f072e16..ee79cb6 100755
 +                    switch(BG_IC_OBJ[i].type)
 +                    {
 +                    case IC_TYPE_LAST_DOOR_A:
-+                        if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE);         
++                        if(GetBGObject(id)) GetBGObject(id)->SetGoState(GO_STATE_ACTIVE);
 +                    }
 +                }
 +                if (GetBGObject(m_IC_NodeData[BG_IC_HORDE_KEEP].object_flag))
@@ -1341,7 +1341,7 @@ index 82b2c0d..7d94c78 100755
 @@ -19,18 +19,580 @@
  #ifndef __BATTLEGROUNDIC_H
  #define __BATTLEGROUNDIC_H
- 
+
 +#include "Battleground.h"
 +
 +enum eBGICtext
@@ -1353,7 +1353,7 @@ index 82b2c0d..7d94c78 100755
 +};
 +
  class Battleground;
- 
+
 -enum Buffs
 +class Transport;
 +
@@ -1364,15 +1364,15 @@ index 82b2c0d..7d94c78 100755
 +const uint32 BG_IC_TickPoints[2]            = {300, 600} ;
 +
 +//##########################################
-+//#Structure utilis? pour stock? les donn?e# 
++//#Structure utilis? pour stock? les donn?e#
 +//##########################################
 +//Structure pour les game object pop au d?marage
 +struct ICObject{
 +    uint8 id;        //Id de l'objet dans le BG
 +    float x;        //Position x,y,z,et orientation
-+    float y;        
-+    float z;        
-+    float o;        
++    float y;
++    float z;
++    float o;
 +    uint32 entry;    //Id du gameobject
 +    uint16 state;    //Etat (pour les flag) eBannerState
 +    bool usable;    //Utilisable au d?but
@@ -1398,9 +1398,9 @@ index 82b2c0d..7d94c78 100755
 +struct ICNpc{
 +    uint8 id;        //Id du npc par rapport au bg
 +    float x;        //Position x,y,z,et orientation
-+    float y;        
-+    float z;        
-+    float o;    
++    float y;
++    float z;
++    float o;
 +    uint32 entry;
 +    uint32 faction;
 +    uint32 type;
@@ -1432,7 +1432,7 @@ index 82b2c0d..7d94c78 100755
 +};
 +//Voir si utile
 +enum eIC_BannerElement
-+{    
++{
 +    BANNER_POLE,
 +    BANNER_FLAG,
 +    BANNER_AURA,
@@ -1454,11 +1454,11 @@ index 82b2c0d..7d94c78 100755
 +    BG_IC_DYNAMIC_NODES_COUNT      = 7,    // dynamic nodes that can be captured
 +
 +    BG_IC_LAST_RESORT_GV_ALLIANCE = 7,
-+    BG_IC_LAST_RESORT_GV_HORDE      = 8,                    
++    BG_IC_LAST_RESORT_GV_HORDE      = 8,
 +
 +    BG_IC_ALL_NODES_COUNT         = 9,    // all nodes (dynamic and static)
  };
- 
+
 -enum BG_IC_Objectives
 +enum eIC_BannerState
  {
@@ -1666,7 +1666,7 @@ index 82b2c0d..7d94c78 100755
 +
 +#define MAX_BG_IC_OBJ 51
 +const ICObject BG_IC_OBJ[MAX_BG_IC_OBJ]=
-+{                  
++{
 +    {BG_IC_OBJECT_DOCK,        725.3065f, -362.270538f, 17.8154f, 0.0f            ,BG_IC_OBJECTID_FLAGPOLE,STATE_NEUTRAL,true,FACTION_GOB_NEUTRAL,IC_TYPE_FLAG,BG_IC_NODE_DOCK},         // dock
 +    {BG_IC_OBJECT_HANGAR,    808.452f, -999.6443f, 132.381f, 0.0f            ,BG_IC_OBJECTID_FLAGPOLE,STATE_NEUTRAL,true,FACTION_GOB_NEUTRAL,IC_TYPE_FLAG,BG_IC_NODE_HANGAR},         // hangar
 +    {BG_IC_OBJECT_QUARRY,    225.70f, -1188.39f, 8.03f, 5.58f                ,BG_IC_OBJECTID_FLAGPOLE,STATE_NEUTRAL,true,FACTION_GOB_NEUTRAL,IC_TYPE_FLAG,BG_IC_NODE_QUARRY},         // quarry
@@ -1681,24 +1681,24 @@ index 82b2c0d..7d94c78 100755
 +    {BG_IC_OBJECT_DOOR_A_FRONT, 413.479156, -833.949646, 48.5237579, 3.14159274    ,BG_IC_OBJECTID_GATE_FRONT_A,STATE_NEUTRAL,false,FACTION_DOOR_ALLIANCE,IC_TYPE_DOOR_A,BG_IC_A_FRONT},
 +    {BG_IC_OBJECT_DOOR_A_WEST, 351.6146, -762.75, 48.91625, -1.57079577        ,BG_IC_OBJECTID_GATE_WEST_A,STATE_NEUTRAL,false,FACTION_DOOR_ALLIANCE,IC_TYPE_DOOR_A,BG_IC_A_WEST},
 +    {BG_IC_OBJECT_DOOR_A_EAST, 351.024323, -903.3264, 48.9247169, 1.57079577,BG_IC_OBJECTID_GATE_EAST_A,STATE_NEUTRAL,false,FACTION_DOOR_ALLIANCE,IC_TYPE_DOOR_A,BG_IC_A_EAST},
-+    {BG_IC_OBJECT_TELEPORT_H_FRONT_IN,1143.25, -779.598, 48.628, 1.640        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0}, 
++    {BG_IC_OBJECT_TELEPORT_H_FRONT_IN,1143.25, -779.598, 48.628, 1.640        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
 +    {BG_IC_OBJECT_TELEPORT_H_EAST_IN,1235.08, -857.8, 48.916, 3.071            ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
 +    {BG_IC_OBJECT_TELEPORT_H_WEST_IN, 1236.531, -669.41, 48.272, 0.1047        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
-+    {BG_IC_OBJECT_TELEPORT_H_FRONT_OUT,1158.76, -746.182, 48.627, -1.518    ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0}, 
++    {BG_IC_OBJECT_TELEPORT_H_FRONT_OUT,1158.76, -746.182, 48.627, -1.518    ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
 +    {BG_IC_OBJECT_TELEPORT_H_EAST_OUT, 1233.27, -844.526, 48.882, -0.017    ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
 +    {BG_IC_OBJECT_TELEPORT_H_WEST_OUT, 1235.52, -683.871, 49.3039, -3.089    ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_H,STATE_NEUTRAL,false,FACTION_GOB_HORDE,IC_TYPE_TELEPORT_H,0},
 +    {BG_IC_OBJECT_TELEPORT_A_FRONT_IN, 397.088, -859.381, 48.899, 1.640        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
 +    {BG_IC_OBJECT_TELEPORT_A_EAST_IN, 323.539, -888.361, 48.919, 0.034        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
 +    {BG_IC_OBJECT_TELEPORT_A_WEST_IN, 326.284, -777.366, 49.0208, 3.124        ,BG_IC_OBJECTID_TELEPORTER_IN_OUT_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
-+    {BG_IC_OBJECT_TELEPORT_A_FRONT_OUT,425.675, -857.090, 48.510,-1.605        ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},    
++    {BG_IC_OBJECT_TELEPORT_A_FRONT_OUT,425.675, -857.090, 48.510,-1.605        ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
 +    {BG_IC_OBJECT_TELEPORT_A_EAST_OUT, 311.920, -913.972, 48.815, 3.089        ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
 +    {BG_IC_OBJECT_TELEPORT_A_WEST_OUT, 324.635, -749.128, 49.360, 0.017        ,BG_IC_OBJECTID_TELEPORTER_OUT_IN_A,STATE_NEUTRAL,false,FACTION_GOB_ALLIANCE,IC_TYPE_TELEPORT_A,0},
 +    {BG_IC_OBJECT_BONFIRE_1,1281.06,-732.978,87.7611,4.63149                ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
 +    {BG_IC_OBJECT_BONFIRE_2,1281.26,-800.212,87.6619,4.9535                    ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
 +    {BG_IC_OBJECT_BONFIRE_3,1358.13,-798.515,87.7575,1.96114                ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
 +    {BG_IC_OBJECT_BONFIRE_4,1358.01,-731.696,87.7261,3.43297                ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
-+    {BG_IC_OBJECT_BONFIRE_5,1161.225f, -790.863f, 48.947f,3.43297            ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},    
-+    {BG_IC_OBJECT_BONFIRE_6,1161.225f, -736.131f, 48.844f,3.43297            ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},    
++    {BG_IC_OBJECT_BONFIRE_5,1161.225f, -790.863f, 48.947f,3.43297            ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
++    {BG_IC_OBJECT_BONFIRE_6,1161.225f, -736.131f, 48.844f,3.43297            ,BG_IC_OBJECTID_BONFIRE,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_DECORATION,0},
 +    {BG_IC_OBJECT_BOMB_1,1268.30908, -745.783, 48.9187775, 0.785396755        ,BG_IC_OBJECTID_SEAFORIUM,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_BOMB,0},
 +    {BG_IC_OBJECT_BOMB_2,1268.50867, -738.1215, 48.9175, -1.04719758        ,BG_IC_OBJECTID_SEAFORIUM,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_BOMB,0},
 +    {BG_IC_OBJECT_BOMB_3,1273.066, -786.572937, 48.9419174, -0.94247663        ,BG_IC_OBJECTID_SEAFORIUM,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_BOMB,0},
@@ -1718,7 +1718,7 @@ index 82b2c0d..7d94c78 100755
 +    {BG_IC_GUNSHIP_TP_3,672.152f, -1157.334f, 133.704f, 5.628f                ,0    ,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_GUNSHIPTELEPORTER,0},
 +    {BG_IC_LAST_DOOR_H,1283.181f, -765.937f, 51.042f, 0                        ,BG_IC_OBJECTID_LAST_DOOR_H,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_LAST_DOOR_H,0},
 +    {BG_IC_LAST_DOOR_A_1,288.084f,-832.6593f, 51.466f,  0                    ,BG_IC_OBJECTID_LAST_DOOR_A,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_LAST_DOOR_A,0},
-+    {BG_IC_LAST_DOOR_A_2,273.1746f, -832.2653f, 51.4671f, 0                    ,BG_IC_OBJECTID_LAST_DOOR_A,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_LAST_DOOR_A,0},    
++    {BG_IC_LAST_DOOR_A_2,273.1746f, -832.2653f, 51.4671f, 0                    ,BG_IC_OBJECTID_LAST_DOOR_A,STATE_NEUTRAL,false,FACTION_GOB_NEUTRAL,IC_TYPE_LAST_DOOR_A,0},
 +};
 +
 +//######################
@@ -1845,7 +1845,7 @@ index 82b2c0d..7d94c78 100755
 +#define MAX_BG_IC_NPC 56
 +
 +const ICNpc BG_IC_NPC[MAX_BG_IC_NPC]=
-+{    
++{
 +    {BG_IC_TOWER_A_GUN_1,415.277,-911.552,87.9619,4.64663    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_A_GUN_2,406.047,-755.747,87.7159,1.60951    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_A_GUN_3,416.925,-754.642,87.7161,1.66841    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
@@ -1857,7 +1857,7 @@ index 82b2c0d..7d94c78 100755
 +    {BG_IC_TOWER_A_GUN_9,426.734,-885.28,87.9622,0.408575    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_A_GUN_10,429.368,-891.332,87.9622,0.413433    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_A_GUN_11,411.235,-755.277,87.7156,1.64348    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
-+    {BG_IC_TOWER_A_GUN_12,430.576,-776.358,87.7164,5.84359    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},    
++    {BG_IC_TOWER_A_GUN_12,430.576,-776.358,87.7164,5.84359    ,BG_IC_NPCID_KEEP_CANNON,FACTION_ALLIANCE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_H_GUN_1,1135.32,-841.482,87.8928,2.33312    ,BG_IC_NPCID_KEEP_CANNON,FACTION_HORDE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_H_GUN_2,1143.94,-833.972,87.8754,2.3565    ,BG_IC_NPCID_KEEP_CANNON,FACTION_HORDE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
 +    {BG_IC_TOWER_H_GUN_3,1138.4,-836.268,88.3325,2.33312    ,BG_IC_NPCID_KEEP_CANNON,FACTION_HORDE,IC_TYPE_KEEP_GUN,RESPAWN_ONE_DAY},
@@ -1911,7 +1911,7 @@ index 82b2c0d..7d94c78 100755
 +/*
 +const float BG_IC_GunshipPortalPositions[4] = {735.34f, -1107.86f, 134.46f, 0.0f};
 +
-+const float BG_IC_KeepDoorPositions[2][4] = 
++const float BG_IC_KeepDoorPositions[2][4] =
 +{
 +    {1283.17,-765.92,50.8184,3.14159},    // keep door A
 +    {288.079,-832.54,51.4686,3.14159}    // keep door H
@@ -1923,7 +1923,7 @@ index 82b2c0d..7d94c78 100755
 +    OIL_REFINERY        = 68719,
 +    QUARRY            = 68720
  };
- 
+
  class BattlegroundICScore : public BattlegroundScore
 @@ -38,6 +600,8 @@ class BattlegroundICScore : public BattlegroundScore
      public:
@@ -1932,10 +1932,10 @@ index 82b2c0d..7d94c78 100755
 +        uint32 BasesAssaulted;
 +        uint32 BasesDefended;
  };
- 
+
  class BattlegroundIC : public Battleground
 @@ -51,20 +615,58 @@ class BattlegroundIC : public Battleground
- 
+
          /* inherited from BattlegroundClass */
          virtual void AddPlayer(Player *plr);
 -        virtual void StartingEventCloseDoors();
@@ -1943,7 +1943,7 @@ index 82b2c0d..7d94c78 100755
          virtual void StartingEventOpenDoors();
 -
 +        virtual void Reset();
-+		
++
 +        void FillInitialWorldStates(WorldPacket& data);
          void RemovePlayer(Player *plr,uint64 guid);
 -        void HandleAreaTrigger(Player *Source, uint32 Trigger);
@@ -1956,19 +1956,19 @@ index 82b2c0d..7d94c78 100755
          void EventPlayerClickedOnFlag(Player *source, GameObject* /*target_obj*/);
 -
 +		void EventPlayerCapturedFlag(Player* plr);
-+		
++
          /* Scorekeeping */
          void UpdatePlayerScore(Player *Source, uint32 type, uint32 value, bool doAddHonor = true);
- 
+
 +		virtual WorldSafeLocsEntry const* GetClosestGraveYard(Player* player);
 +
 +        void UpdateScore(uint16 team, int16 points);
 +        Transport* MakeTransport(uint32 entry,uint32 period,std::string name);
 +        uint32 GetGateIDFromDestroyEventID(uint32 id);
 +        void SendTransportInit(Player *player);
-+		
++
      private:
-+	
++
 +		void SpawnNpcType(uint32 type);
 +        void DeSpawnNpcType(uint32 type);
 +        void _NodeOccupied(uint8 node,Team team);
@@ -1998,13 +1998,13 @@ index 82b2c0d..7d94c78 100755
  };
  #endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 1963201..8a8d272 100755
+index 5618bf5..c5c35ff 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -1885,7 +1885,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
      if (duel && GetMapId() != mapid && GetMap()->GetGameObject(GetUInt64Value(PLAYER_DUEL_ARBITER)))
          DuelComplete(DUEL_FLED);
- 
+
 -    if (GetMapId() == mapid && !m_transport)
 +    if (GetMapId() == mapid && !m_transport    || (GetTransport() && GetMapId()==628))
      {
@@ -2062,7 +2062,7 @@ index 48056f7..1303620 100755
  void AddSC_zuldrak();
  void AddSC_crystalsong_forest();
 +void AddSC_isle_of_conquest();
- 
+
  //outland
  void AddSC_boss_exarch_maladaar();           //Auchindoun Auchenai Crypts
 @@ -1170,6 +1171,7 @@ void AddNorthrendScripts()
@@ -2072,12 +2072,12 @@ index 48056f7..1303620 100755
 +	AddSC_isle_of_conquest();
  #endif
  }
- 
+
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 511dcbb..a8007e6 100755
+index f811b20..6463260 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-@@ -2282,6 +2282,16 @@ void AuraEffect::TriggerSpell(Unit * target, Unit * caster) const
+@@ -2306,6 +2306,16 @@ void AuraEffect::TriggerSpell(Unit * target, Unit * caster) const
                          creatureTarget->DespawnOrUnsummon();
                          return;
                      }
@@ -2085,21 +2085,21 @@ index 511dcbb..a8007e6 100755
 +                    {
 +                    if(!(caster->GetTypeId()==TYPEID_PLAYER))
 +                            return;
-+                    
++
 +                        if(caster->ToPlayer()->m_movementInfo.fallTime>2000)
 +                            caster->AddAura(66657,caster);
-+        
++
 +                        return;
 +                    }
                      // Tear of Azzinoth Summon Channel - it's not really supposed to do anything,and this only prevents the console spam
                      case 39857:
                          triggerSpellId = 39856;
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 4535b3c..cf5b6d0 100755
+index 862aa99..e0863a9 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -1567,6 +1567,34 @@ void Spell::EffectTriggerRitualOfSummoning(SpellEffIndex effIndex)
- 
+@@ -1608,6 +1608,34 @@ void Spell::EffectTriggerRitualOfSummoning(SpellEffIndex effIndex)
+
  void Spell::EffectForceCast(SpellEffIndex effIndex)
  {
 +      switch(m_spellInfo->Id)
@@ -2114,7 +2114,7 @@ index 4535b3c..cf5b6d0 100755
 +                                       return;
 +                               m_caster->ToPlayer()->TeleportTo(628,x,y,z,o);
 +                       }
-+                       return;        
++                       return;
 +               }
 +               case 66549:
 +               {
@@ -2132,8 +2132,8 @@ index 4535b3c..cf5b6d0 100755
 +
      if (!unitTarget)
          return;
- 
-@@ -1585,6 +1613,32 @@ void Spell::EffectForceCast(SpellEffIndex effIndex)
+
+@@ -1626,6 +1654,32 @@ void Spell::EffectForceCast(SpellEffIndex effIndex)
      {
          switch(m_spellInfo->Id)
          {
@@ -2146,8 +2146,8 @@ index 4535b3c..cf5b6d0 100755
 +                        float x, y, z;
 +                        m_targets.m_dstPos.GetPosition(x, y, z);
 +                        passenger->GetMotionMaster()->MoveJump(x, y, z, m_targets.GetSpeedXY(), m_targets.GetSpeedZ());
-+                    }                    
-+                return;    
++                    }
++                return;
 +            case 66629:
 +            case 66638:
 +            {
@@ -2160,13 +2160,13 @@ index 4535b3c..cf5b6d0 100755
 +                            bg->EventPlayerCapturedFlag(plr);
 +                        return;
 +                    }
-+                
++
 +                return;
 +            }
              case 52588: // Skeletal Gryphon Escape
              case 48598: // Ride Flamebringer Cue
                  unitTarget->RemoveAura(damage);
-@@ -1901,6 +1955,8 @@ void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
+@@ -1942,6 +1996,8 @@ void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
      uint8 uiMaxSafeLevel = 0;
      switch (m_spellInfo->Id)
      {
@@ -2318,6 +2318,6 @@ index 0000000..832d7a2
 +{
 +    new boss_isle_of_conquest;
 +}
--- 
+--
 1.5.6.5
 
