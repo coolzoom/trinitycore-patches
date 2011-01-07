@@ -1,7 +1,7 @@
-From b20e334161a96d8e3b99799a818461e01a2ee26e Mon Sep 17 00:00:00 2001
+From 77a0606ebefa15846fb3329df9f9c663ce770d70 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Thu, 6 Jan 2011 01:17:33 -0500
-Subject: [PATCH] Ruby-Sanctum
+Date: Fri, 7 Jan 2011 10:54:42 -0500
+Subject: [PATCH] 10969-Ruby-Sanctum
 
 ---
  sql/CMakeLists.txt                                 |    1 +
@@ -46,14 +46,14 @@ index 0000000..040f01e
 +DELETE FROM `script_texts` WHERE `entry` <= -1752017 AND `entry` >= -1752036;
 +
 +INSERT INTO `script_texts` (`entry`, `content_default`, `content_loc3`, `sound`, `type`, `language`) VALUES
-+('-1752008', 'Help! I am trapped within this tree! I require aid!', '0', '17490', '1', '0'),        
-+('-1752009', 'Thank you! I could not have held out for much longer.... A terrible thing has happened here.', '0', '17491', '1', '0'),       
-+('-1752010', 'We believed the Sanctum was well-fortified, but we were not prepared for the nature of this assault.', '0', '17492', '0', '0'),       
-+('-1752011', 'The Black dragonkin materialized from thin air, and set upon us before we could react.', '0', '17493', '0', '0'),     
-+('-1752012', 'We did not stand a chance. As my brethren perished around me, I managed to retreat here and bar the entrance.', '0', '17494', '0', '0'),      
-+('-1752013', 'They slaughtered us with cold efficiency, but the true focus of their interest seemed to be the eggs kept here in the Sanctum.', '0', '17495', '0', '0'),     
-+('-1752014', 'The commander of the forces on the ground here is a cruel brute named Zarithrian, but I fear there are greater powers at work.', '0', '17496', '0', '0'),     
-+('-1752015', 'In their initial assault, I caught a glimpse of their true leader, a fearsome full-grown twilight dragon.', '0', '17497', '0', '0'),  
++('-1752008', 'Help! I am trapped within this tree! I require aid!', '0', '17490', '1', '0'),
++('-1752009', 'Thank you! I could not have held out for much longer.... A terrible thing has happened here.', '0', '17491', '1', '0'),
++('-1752010', 'We believed the Sanctum was well-fortified, but we were not prepared for the nature of this assault.', '0', '17492', '0', '0'),
++('-1752011', 'The Black dragonkin materialized from thin air, and set upon us before we could react.', '0', '17493', '0', '0'),
++('-1752012', 'We did not stand a chance. As my brethren perished around me, I managed to retreat here and bar the entrance.', '0', '17494', '0', '0'),
++('-1752013', 'They slaughtered us with cold efficiency, but the true focus of their interest seemed to be the eggs kept here in the Sanctum.', '0', '17495', '0', '0'),
++('-1752014', 'The commander of the forces on the ground here is a cruel brute named Zarithrian, but I fear there are greater powers at work.', '0', '17496', '0', '0'),
++('-1752015', 'In their initial assault, I caught a glimpse of their true leader, a fearsome full-grown twilight dragon.', '0', '17497', '0', '0'),
 +('-1752016', 'I know not the extent of their plans, heroes, but I know this: They cannot be allowed to succeed!', '0', '17498', '0', '0'),
 +
 +( -1752001, "Ah, the entertainment has arrived.", 0, 17520, 1, 0),
@@ -115,7 +115,7 @@ index 48056f7..7df5d55 100755
 @@ -485,6 +485,13 @@ void AddSC_storm_peaks();
  void AddSC_zuldrak();
  void AddSC_crystalsong_forest();
- 
+
 +void AddSC_boss_baltharus();	//RubySanctum
 +void AddSC_boss_halion();
 +void AddSC_boss_ragefire();
@@ -138,7 +138,7 @@ index 48056f7..7df5d55 100755
 +    AddSC_instance_ruby_sanctum();
  #endif
  }
- 
+
 diff --git a/src/server/scripts/Northrend/CMakeLists.txt b/src/server/scripts/Northrend/CMakeLists.txt
 index cad7688..57c2aec 100644
 --- a/src/server/scripts/Northrend/CMakeLists.txt
@@ -153,9 +153,9 @@ index cad7688..57c2aec 100644
 +  Northrend/RubySanctum/boss_zarithrian.cpp
 +  Northrend/RubySanctum/instance_ruby_sanctum.cpp
 +  Northrend/RubySanctum/ruby_sanctum.h
-+  
++
  )
- 
+
  message("  -> Prepared: Northrend")
 diff --git a/src/server/scripts/Northrend/RubySanctum/boss_baltharus.cpp b/src/server/scripts/Northrend/RubySanctum/boss_baltharus.cpp
 new file mode 100644
@@ -217,7 +217,7 @@ index 0000000..f6ba7c3
 +    EVENT_CAST_ENERVATING_BRAND = 3,
 +    EVENT_CAST_BLADE_TEMPEST    = 4,
 +    EVENT_CAST_SUMMON_CLONE     = 5,
-+    
++
 +    ACTION_START_EVENT          = 6,
 +    EVENT_XERESTRASZA_3         = 7,
 +    EVENT_XERESTRASZA_4         = 8,
@@ -238,104 +238,104 @@ index 0000000..f6ba7c3
 +        struct boss_baltharusAI : public BossAI
 +        {
 +            boss_baltharusAI(Creature* pCreature) : BossAI(pCreature, DATA_BALTHARUS)
-+    	    {
-+                ASSERT(instance);
-+    	    }
++			{
++				ASSERT(instance);
++			}
 +
-+    	    void Reset()
-+    	    {
-+                instance->SetBossState(DATA_BALTHARUS, NOT_STARTED);
-+                bClone = false;
-+                events.Reset();
-+                events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
-+                events.ScheduleEvent(EVENT_CAST_REPELLING_WAVE, urand(20000,30000));
-+                events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
-+                events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(7000,7500));
-+    	    }
++				void Reset()
++			{
++				instance->SetBossState(DATA_BALTHARUS, NOT_STARTED);
++				bClone = false;
++				events.Reset();
++				events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
++				events.ScheduleEvent(EVENT_CAST_REPELLING_WAVE, urand(20000,30000));
++				events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
++				events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(7000,7500));
++			}
 +
-+    	    void EnterCombat(Unit*)
-+    	    {
-+                instance->SetBossState(DATA_BALTHARUS, IN_PROGRESS);
-+                DoScriptText(SAY_AGGRO, me);
-+    	    }
++				void EnterCombat(Unit*)
++			{
++				instance->SetBossState(DATA_BALTHARUS, IN_PROGRESS);
++				DoScriptText(SAY_AGGRO, me);
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
-+    		    if (!UpdateVictim() || !CheckInRoom())
-+                    return;
++				void UpdateAI(const uint32 diff)
++			{
++				if (!UpdateVictim() || !CheckInRoom())
++					return;
 +
-+                if (me->HasUnitState(UNIT_STAT_CASTING))
-+                    return;
++				if (me->HasUnitState(UNIT_STAT_CASTING))
++					return;
 +
-+                events.Update(diff);
++				events.Update(diff);
 +
-+                while (uint32 eventId = events.ExecuteEvent())
-+                {
-+                    switch (eventId)
-+                    {
-+                        case EVENT_CAST_CLEAVE:
-+                            DoCastVictim(SPELL_CLEAVE);
-+                            events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
-+                            break;
-+                        case EVENT_CAST_REPELLING_WAVE:
-+                            DoCast(SPELL_REPELLING_WAVE);
-+                            events.ScheduleEvent(EVENT_CAST_REPELLING_WAVE, urand(20000,30000));
-+                            break;
-+                        case EVENT_CAST_ENERVATING_BRAND:
-+                            DoCastVictim(SPELL_ENERVATING_BRAND);
-+                            events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
-+                            break;
-+                        case EVENT_CAST_BLADE_TEMPEST:
-+                            DoCast(SPELL_BLADE_TEMPEST);
-+                            events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(30000,45000));
-+                            break;
-+                    }
-+                }
++				while (uint32 eventId = events.ExecuteEvent())
++					{
++					switch (eventId)
++					{
++						case EVENT_CAST_CLEAVE:
++							DoCastVictim(SPELL_CLEAVE);
++							events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
++							break;
++						case EVENT_CAST_REPELLING_WAVE:
++							DoCast(SPELL_REPELLING_WAVE);
++							events.ScheduleEvent(EVENT_CAST_REPELLING_WAVE, urand(20000,30000));
++							break;
++						case EVENT_CAST_ENERVATING_BRAND:
++							DoCastVictim(SPELL_ENERVATING_BRAND);
++							events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
++							break;
++						case EVENT_CAST_BLADE_TEMPEST:
++							DoCast(SPELL_BLADE_TEMPEST);
++							events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(30000,45000));
++							break;
++					}
++				}
 +
-+                if(!bClone)
-+                {
-+                    if(me->GetHealth() <= ((me->GetMaxHealth() / 100) * 50))
-+				    {
-+					    bClone = true;
-+					    DoCast(SPELL_SUMMON_CLONE);
-+					    DoScriptText(SAY_SUMMON_CLONE, me);
-+				    }
-+                }
++				if(!bClone)
++				{
++						if(me->GetHealth() <= ((me->GetMaxHealth() / 100) * 50))
++					{
++						bClone = true;
++						DoCast(SPELL_SUMMON_CLONE);
++						DoScriptText(SAY_SUMMON_CLONE, me);
++					}
++				}
 +
-+    		    DoMeleeAttackIfReady();
-+    	    }
++				DoMeleeAttackIfReady();
++			}
 +
-+            void JustSummoned(Creature *summon)
-+            {
-+                summons.Summon(summon);
-+            }
++				void JustSummoned(Creature *summon)
++			{
++				summons.Summon(summon);
++			}
 +
-+    	    void KilledUnit(Unit *victim)
-+    	    {
-+                DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
-+    	    }
++				void KilledUnit(Unit *victim)
++			{
++				DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
++			}
 +
-+            void JustReachedHome()
-+            {
-+                summons.DespawnAll();
-+                instance->SetData(DATA_BALTHARUS, FAIL);
-+            }
++				void JustReachedHome()
++			{
++				summons.DespawnAll();
++				instance->SetData(DATA_BALTHARUS, FAIL);
++			}
 +
-+    	    void JustDied(Unit*)
-+    	    {
-+                DoScriptText(SAY_DEATH, me);
-+                pXerestrasza->AI()->DoAction(ACTION_START_EVENT);
-+                _JustDied();
-+    	    }
++				void JustDied(Unit*)
++			{
++				DoScriptText(SAY_DEATH, me);
++				pXerestrasza->AI()->DoAction(ACTION_START_EVENT);
++				_JustDied();
++			}
 +
-+        private:
-+            bool bClone;
-+        };
++			private:
++			bool bClone;
++		};
 +
-+        CreatureAI* GetAI(Creature *pCreature) const
-+        {
-+    	    return new boss_baltharusAI(pCreature);
-+        }
++			CreatureAI* GetAI(Creature *pCreature) const
++		{
++			return new boss_baltharusAI(pCreature);
++		}
 +
 +};
 +
@@ -347,60 +347,60 @@ index 0000000..f6ba7c3
 +        struct boss_baltharus_summonAI : public ScriptedAI
 +        {
 +            boss_baltharus_summonAI(Creature* pCreature) : ScriptedAI(pCreature)
-+    	    {
-+                pInstance = me->GetInstanceScript();
-+    	    }
++			{
++				pInstance = me->GetInstanceScript();
++			}
 +
-+    	    void Reset()
-+    	    {
-+                events.Reset();
-+                events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
-+                events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
-+                events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(7000,7500));
-+    	    }
++				void Reset()
++			{
++				events.Reset();
++				events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
++				events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
++				events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(7000,7500));
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
-+    		    if (!UpdateVictim())
-+                    return;
++				void UpdateAI(const uint32 diff)
++			{
++				if (!UpdateVictim())
++					return;
 +
-+                if (me->HasUnitState(UNIT_STAT_CASTING))
-+                    return;
++				if (me->HasUnitState(UNIT_STAT_CASTING))
++					return;
 +
-+                events.Update(diff);
++				events.Update(diff);
 +
-+                while (uint32 eventId = events.ExecuteEvent())
-+                {
-+                    switch (eventId)
-+                    {
-+                        case EVENT_CAST_CLEAVE:
-+                            DoCastVictim(SPELL_CLEAVE);
-+                            events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
-+                            break;
-+                        case EVENT_CAST_ENERVATING_BRAND:
-+                            DoCastVictim(SPELL_ENERVATING_BRAND);
-+                            events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
-+                            break;
-+                        case EVENT_CAST_BLADE_TEMPEST:
-+                            DoCast(SPELL_BLADE_TEMPEST);
-+                            events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(30000,45000));
-+                            break;
-+                    }
-+                }
++				while (uint32 eventId = events.ExecuteEvent())
++				{
++					switch (eventId)
++					{
++						case EVENT_CAST_CLEAVE:
++							DoCastVictim(SPELL_CLEAVE);
++							events.ScheduleEvent(EVENT_CAST_CLEAVE, urand(2000,3000));
++							break;
++						case EVENT_CAST_ENERVATING_BRAND:
++							DoCastVictim(SPELL_ENERVATING_BRAND);
++							events.ScheduleEvent(EVENT_CAST_ENERVATING_BRAND, urand(30000,45000));
++							break;
++						case EVENT_CAST_BLADE_TEMPEST:
++							DoCast(SPELL_BLADE_TEMPEST);
++							events.ScheduleEvent(EVENT_CAST_BLADE_TEMPEST, urand(30000,45000));
++							break;
++					}
++				}
 +
-+    		    DoMeleeAttackIfReady();
-+    	    }
++				DoMeleeAttackIfReady();
++			}
 +
-+        private:
-+            EventMap events;
-+            InstanceScript* pInstance;
++		private:
++			EventMap events;
++			InstanceScript* pInstance;
 +
-+        };
++		};
 +
-+        CreatureAI* GetAI(Creature *pCreature) const
-+        {
-+    	    return new boss_baltharus_summonAI(pCreature);
-+        }
++			CreatureAI* GetAI(Creature *pCreature) const
++		{
++			return new boss_baltharus_summonAI(pCreature);
++		}
 +
 +};
 +
@@ -411,28 +411,28 @@ index 0000000..f6ba7c3
 +
 +        struct npc_xerestraszaAI : public ScriptedAI
 +        {
-+    	    npc_xerestraszaAI(Creature *pCreature) : ScriptedAI(pCreature)
-+    	    {
-+    		    pInstance = me->GetInstanceScript();
-+                pXerestrasza = me;
-+    	    }
++			npc_xerestraszaAI(Creature *pCreature) : ScriptedAI(pCreature)
++			{
++				pInstance = me->GetInstanceScript();
++				pXerestrasza = me;
++			}
 +
-+            void Reset()
-+            {
-+                events.Reset();
-+                bIntro = false;
-+                pInstance->SetData(DATA_XERESTRASZA,NOT_STARTED);
-+            }
++			void Reset()
++			{
++				events.Reset();
++				bIntro = false;
++				pInstance->SetData(DATA_XERESTRASZA,NOT_STARTED);
++			}
 +
-+            void MoveInLineOfSight(Unit*)
-+    	    {
-+    		    if(!bIntro)
-+    		    {
-+    			    DoScriptText(SAY_XERESTRASZA_1, me);
-+                    pInstance->SetData(DATA_XERESTRASZA,NOT_STARTED);
-+    			    bIntro = true;
-+    		    }
-+    	    }
++			void MoveInLineOfSight(Unit*)
++			{
++				if(!bIntro)
++				{
++					DoScriptText(SAY_XERESTRASZA_1, me);
++					pInstance->SetData(DATA_XERESTRASZA,NOT_STARTED);
++					bIntro = true;
++				}
++			}
 +
 +            void DoAction(const int32 action)
 +            {
@@ -441,13 +441,13 @@ index 0000000..f6ba7c3
 +                    me->GetMotionMaster()->MovePoint(1, 3153.5490f, 385.53f, 86.33f);
 +                    pInstance->SetData(DATA_XERESTRASZA,IN_PROGRESS);
 +                    DoScriptText(SAY_XERESTRASZA_2, me);
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_3,9000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_4,20000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_5,31000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_6,42000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_7,53000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_8,64000); 
-+                    events.ScheduleEvent(EVENT_XERESTRASZA_9,75000); 
++                    events.ScheduleEvent(EVENT_XERESTRASZA_3,9000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_4,20000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_5,31000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_6,42000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_7,53000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_8,64000);
++                    events.ScheduleEvent(EVENT_XERESTRASZA_9,75000);
 +                }
 +            }
 +
@@ -484,16 +484,16 @@ index 0000000..f6ba7c3
 +                }
 +            }
 +
-+    	private:
++			private:
 +            bool bIntro;
 +            EventMap events;
 +            InstanceScript* pInstance;
 +        };
-+        
++
 +        CreatureAI* GetAI(Creature *pCreature) const
-+        {
-+    	    return new npc_xerestraszaAI(pCreature);
-+        }
++		{
++			return new npc_xerestraszaAI(pCreature);
++		}
 +};
 +
 +
@@ -568,7 +568,7 @@ index 0000000..3cdc6be
 +    SPELL_DARK_BREATH_25_HEROIC     = 75956,
 +
 +    SPELL_CORPOREALITY_EVEN         = 74826,
-+    SPELL_CORPOREALITY_20I          = 74827, 
++    SPELL_CORPOREALITY_20I          = 74827,
 +    SPELL_CORPOREALITY_40I          = 74828,
 +    SPELL_CORPOREALITY_60I          = 74829,
 +    SPELL_CORPOREALITY_80I          = 74830,
@@ -626,7 +626,7 @@ index 0000000..3cdc6be
 +                }
 +
 +            void Reset()
-+    	    {
++			{
 +                if (instance->GetData(DATA_TWILIGHT_HALION)==IN_PROGRESS)
 +                {
 +                    pHalion->SetHealth(pTwilight->GetHealth());
@@ -643,24 +643,24 @@ index 0000000..3cdc6be
 +                events.ScheduleEvent(SPELL_BERSEK, 9999999,PHASE_ALL);
 +                PercentDamage = 0;
 +                HalionDamage = 0;
-+    	    }
++		}
 +
-+    	    void EnterCombat(Unit*)
-+    	    {
++			void EnterCombat(Unit*)
++			{
 +                instance->SetBossState(DATA_HALION, IN_PROGRESS);
-+                
++
 +                if(events.GetPhaseMask() & PHASE_3_MASK)
 +                {
 +                    pHalion->SetHealth(pTwilight->GetHealth());
 +                    return;
 +                }
-+                
++
 +                events.ScheduleEvent(EVENT_FLAME_WALL, 1000,PHASE_1);
 +                DoScriptText(SAY_AGGRO, me);
-+    	    }
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
++			void UpdateAI(const uint32 diff)
++			{
 +                if (!UpdateVictim() || !CheckInRoom())
 +                    return;
 +
@@ -709,29 +709,29 @@ index 0000000..3cdc6be
 +                                break;
 +                            case EVENT_CAST_FIERY_COMBUSTION:
 +                                Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM,0);
-+    				            if (pTarget && !pTarget->HasAura(SPELL_FIERY_COMBUSTION))
-+    					            DoCast(pTarget, SPELL_FIERY_COMBUSTION);
++								if (pTarget && !pTarget->HasAura(SPELL_FIERY_COMBUSTION))
++									DoCast(pTarget, SPELL_FIERY_COMBUSTION);
 +                                events.ScheduleEvent(EVENT_CAST_FIERY_COMBUSTION, 15000,PHASE_ALL);
 +                                break;
 +                        }
 +                    }
 +                }
 +
-+                if ((events.GetPhaseMask() & PHASE_1_MASK) && ((me->GetHealth()*100) / me->GetMaxHealth() <= 75))
-+    			{
-+                    events.SetPhase(PHASE_2);
-+    				DoScriptText(SAY_PHASE2, me);
-+    				me->SetReactState(REACT_PASSIVE);
-+    				me->AttackStop();
-+    				me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-+                    DoCast(me, SPELL_SUMMON_TWILIGHT_PORTAL);
-+    				DoCast(me, SPELL_TWILIGHT_DIVISION);
-+                    me->SummonCreature(NPC_TWILIGHT_HALION,SpawnPos);
-+                    me->SetVisible(false);
-+                    instance->SetBossState(DATA_HALION, SPECIAL);
-+    			}
-+                DoMeleeAttackIfReady();
-+    	    }
++				if ((events.GetPhaseMask() & PHASE_1_MASK) && ((me->GetHealth()*100) / me->GetMaxHealth() <= 75))
++				{
++					events.SetPhase(PHASE_2);
++					DoScriptText(SAY_PHASE2, me);
++					me->SetReactState(REACT_PASSIVE);
++					me->AttackStop();
++					me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
++					DoCast(me, SPELL_SUMMON_TWILIGHT_PORTAL);
++					DoCast(me, SPELL_TWILIGHT_DIVISION);
++					me->SummonCreature(NPC_TWILIGHT_HALION,SpawnPos);
++					me->SetVisible(false);
++					instance->SetBossState(DATA_HALION, SPECIAL);
++				}
++					DoMeleeAttackIfReady();
++		}
 +
 +            void CastCorporeality()
 +            {
@@ -820,8 +820,8 @@ index 0000000..3cdc6be
 +            {
 +                if (!(events.GetPhaseMask() & PHASE_3_MASK))
 +                        return;
-+                HalionDamage += dmg;	
-+                
++					HalionDamage += dmg;
++
 +                instance->SetData(DATA_DAMAGE, me->GetHealth() >= dmg ? me->GetHealth() - dmg : 0);
 +            }
 +
@@ -834,16 +834,16 @@ index 0000000..3cdc6be
 +                summons.Summon(summon);
 +            }
 +
-+    	    void KilledUnit(Unit *victim)
-+    	    {
-+                DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
-+    	    }
++			void KilledUnit(Unit *victim)
++			{
++				DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
++			}
 +
-+    	    void JustDied(Unit*)
-+    	    {
-+                _JustDied();
-+                DoScriptText(SAY_DEATH, me);
-+    	    }
++			void JustDied(Unit*)
++			{
++				_JustDied();
++				DoScriptText(SAY_DEATH, me);
++			}
 +
 +        private:
 +            uint32 PercentDamage;
@@ -869,33 +869,33 @@ index 0000000..3cdc6be
 +                    pTwilight = me;
 +                }
 +
-+            void Reset()
-+    	    {
-+                me->SetReactState(REACT_AGGRESSIVE);
-+                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-+                events.Reset();
-+                events.SetPhase(PHASE_2);
-+                events.ScheduleEvent(EVENT_CAST_TWILIGHT_PRECISION, 1,PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_CLEAVE, 15000,PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_TAIL_LASH, urand(10000,15000),PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_DUSK_SHROUD, urand(15000,20000),PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_DARK_BREATH, urand(20000,25000),PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_SOUL_CONSUMPTION, urand(15000,25000),PHASE_ALL);
-+                events.ScheduleEvent(EVENT_CAST_BERSEK, 9999999,PHASE_ALL);
-+                me->SetMaxHealth(pHalion->GetMaxHealth());
-+                TwilightDamage = 0;
-+    	    }
++				void Reset()
++			{
++				me->SetReactState(REACT_AGGRESSIVE);
++				me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
++				events.Reset();
++				events.SetPhase(PHASE_2);
++				events.ScheduleEvent(EVENT_CAST_TWILIGHT_PRECISION, 1,PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_CLEAVE, 15000,PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_TAIL_LASH, urand(10000,15000),PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_DUSK_SHROUD, urand(15000,20000),PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_DARK_BREATH, urand(20000,25000),PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_SOUL_CONSUMPTION, urand(15000,25000),PHASE_ALL);
++				events.ScheduleEvent(EVENT_CAST_BERSEK, 9999999,PHASE_ALL);
++				me->SetMaxHealth(pHalion->GetMaxHealth());
++				TwilightDamage = 0;
++			}
 +
-+    	    void EnterCombat(Unit*)
-+    	    {
-+                me->SetHealth(pHalion->GetHealth());
-+                pInstance->SetData(DATA_TWILIGHT_HALION,IN_PROGRESS);
-+    	    }
++				void EnterCombat(Unit*)
++			{
++				me->SetHealth(pHalion->GetHealth());
++				pInstance->SetData(DATA_TWILIGHT_HALION,IN_PROGRESS);
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
-+                if (!UpdateVictim())
-+                    return;
++				void UpdateAI(const uint32 diff)
++			{
++				if (!UpdateVictim())
++					return;
 +
 +                if (events.GetPhaseMask() & PHASE_3_MASK)
 +                {
@@ -949,45 +949,45 @@ index 0000000..3cdc6be
 +                    }
 +                }
 +
-+                if ((events.GetPhaseMask() & PHASE_2_MASK) && ((me->GetHealth()*100) / me->GetMaxHealth() <= 50))
-+    			{
-+                    events.SetPhase(PHASE_3);
-+    				DoScriptText(SAY_PHASE3, me);
-+                    pHalion->SetReactState(REACT_AGGRESSIVE);
-+    				pHalion->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-+                    pHalion->SetVisible(true);
-+                    CAST_AI(boss_halion::boss_halionAI, pHalion->AI())->SetPhase3();
-+                    events.ScheduleEvent(EVENT_DPS, 5000,PHASE_3);
-+    			}
++					if ((events.GetPhaseMask() & PHASE_2_MASK) && ((me->GetHealth()*100) / me->GetMaxHealth() <= 50))
++				{
++					events.SetPhase(PHASE_3);
++					DoScriptText(SAY_PHASE3, me);
++					pHalion->SetReactState(REACT_AGGRESSIVE);
++					pHalion->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
++					pHalion->SetVisible(true);
++					CAST_AI(boss_halion::boss_halionAI, pHalion->AI())->SetPhase3();
++					events.ScheduleEvent(EVENT_DPS, 5000,PHASE_3);
++				}
 +
-+                DoMeleeAttackIfReady();
-+    	    }
++					DoMeleeAttackIfReady();
++			}
 +
-+            void DamageTaken(Unit *who, uint32 &dmg)
-+            {
-+                if (!(events.GetPhaseMask() & PHASE_3_MASK))
-+                        return;
-+                TwilightDamage += dmg;	
++				void DamageTaken(Unit *who, uint32 &dmg)
++			{
++				if (!(events.GetPhaseMask() & PHASE_3_MASK))
++					return;
++				TwilightDamage += dmg;
 +
-+                pInstance->SetData(DATA_DAMAGE, me->GetHealth() >= dmg ? me->GetHealth() - dmg : 0);
-+            }
++				pInstance->SetData(DATA_DAMAGE, me->GetHealth() >= dmg ? me->GetHealth() - dmg : 0);
++			}
 +
-+    	    void KilledUnit(Unit *victim)
-+    	    {
-+                DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
-+    	    }
++				void KilledUnit(Unit *victim)
++			{
++				DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
++			}
 +
-+    	    void JustDied(Unit*)
-+    	    {
-+                DoScriptText(SAY_DEATH, me);
-+                
-+                pInstance->SetData(DATA_TWILIGHT_HALION,DONE);
-+    	    }
++				void JustDied(Unit*)
++			{
++				DoScriptText(SAY_DEATH, me);
 +
-+        private:
-+            EventMap events;
-+            InstanceScript* pInstance;
-+        };
++				pInstance->SetData(DATA_TWILIGHT_HALION,DONE);
++			}
++
++			private:
++				EventMap events;
++				InstanceScript* pInstance;
++			};
 +
 +        CreatureAI* GetAI(Creature *pCreature) const
 +        {
@@ -1003,7 +1003,7 @@ index 0000000..3cdc6be
 +
 +        class spell_halion_portal_SpellScript : public SpellScript
 +        {
-+        	PrepareSpellScript(spell_halion_portal_SpellScript)
++			PrepareSpellScript(spell_halion_portal_SpellScript)
 +            void HandleScript(SpellEffIndex /*effIndex*/)
 +            {
 +                //PreventHitDefaultEffect(EFFECT_0);
@@ -1092,30 +1092,30 @@ index 0000000..8b3b248
 +
 +        struct boss_ragefireAI : public BossAI
 +        {
-+            boss_ragefireAI(Creature *pCreature) : BossAI(pCreature, DATA_RAGEFIRE)
-+    	    {
-+                ASSERT(instance);
-+                me->SetUnitMovementFlags(MOVEMENTFLAG_CAN_FLY);
-+    	    }
++			boss_ragefireAI(Creature *pCreature) : BossAI(pCreature, DATA_RAGEFIRE)
++			{
++				ASSERT(instance);
++				me->SetUnitMovementFlags(MOVEMENTFLAG_CAN_FLY);
++			}
 +
-+    	    void Reset()
-+    	    {
-+                instance->SetBossState(DATA_RAGEFIRE, NOT_STARTED);
-+                playerList.clear();
-+                bConflagration = false;
-+                events.Reset();
-+                events.ScheduleEvent(EVENT_CAST_CONFLAGRATION, urand(45000,55000));
-+                events.ScheduleEvent(EVENT_CAST_ENRAGE, urand(25000,35000));
-+                events.ScheduleEvent(EVENT_CAST_FLAME_BREATH, urand(10000,15000));
-+    	    }
++			void Reset()
++			{
++				instance->SetBossState(DATA_RAGEFIRE, NOT_STARTED);
++				playerList.clear();
++				bConflagration = false;
++				events.Reset();
++				events.ScheduleEvent(EVENT_CAST_CONFLAGRATION, urand(45000,55000));
++				events.ScheduleEvent(EVENT_CAST_ENRAGE, urand(25000,35000));
++				events.ScheduleEvent(EVENT_CAST_FLAME_BREATH, urand(10000,15000));
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
-+                if(!UpdateVictim() || !CheckInRoom())
-+    			    return;
++				void UpdateAI(const uint32 diff)
++			{
++				if(!UpdateVictim() || !CheckInRoom())
++					return;
 +
-+                if (me->HasUnitState(UNIT_STAT_CASTING))
-+                    return;
++				if (me->HasUnitState(UNIT_STAT_CASTING))
++					return;
 +
 +                events.Update(diff);
 +
@@ -1171,37 +1171,37 @@ index 0000000..8b3b248
 +                    }
 +                }
 +
-+    		    DoMeleeAttackIfReady();
-+    	    }
++				DoMeleeAttackIfReady();
++			}
 +
-+    	    void EnterCombat(Unit*)
-+    	    {
-+                instance->SetBossState(DATA_RAGEFIRE, IN_PROGRESS);
-+                DoScriptText(SAY_AGGRO, me);
-+    	    }
++				void EnterCombat(Unit*)
++			{
++				instance->SetBossState(DATA_RAGEFIRE, IN_PROGRESS);
++				DoScriptText(SAY_AGGRO, me);
++			}
 +
-+    	    void KilledUnit(Unit *victim)
-+    	    {
-+    		    DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
-+    	    }
++				void KilledUnit(Unit *victim)
++			{
++				DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
++			}
 +
-+    	    void JustDied(Unit*)
-+    	    {
-+                _JustDied();
-+        		DoScriptText(SAY_DEATH, me);
-+                instance->SetBossState(DATA_RAGEFIRE, DONE);
-+    	    }
++				void JustDied(Unit*)
++			{
++				_JustDied();
++				DoScriptText(SAY_DEATH, me);
++				instance->SetBossState(DATA_RAGEFIRE, DONE);
++			}
 +
-+        private:
-+            bool bConflagration;
-+            std::list<Unit *> playerList;
++			private:
++			bool bConflagration;
++			std::list<Unit *> playerList;
 +
-+        };
++			};
 +
-+        CreatureAI* GetAI(Creature *pCreature) const
-+        {
-+    	    return new boss_ragefireAI(pCreature);
-+        }
++			CreatureAI* GetAI(Creature *pCreature) const
++			{
++			return new boss_ragefireAI(pCreature);
++			}
 +
 +};
 +
@@ -1263,28 +1263,28 @@ index 0000000..e932686
 +        struct boss_zarithrianAI : public BossAI
 +        {
 +            boss_zarithrianAI(Creature *pCreature) : BossAI(pCreature, DATA_ZARITHRIAN)
-+    	    {
-+                ASSERT(instance);
-+    	    }
++			{
++				ASSERT(instance);
++			}
 +
-+    	    void Reset()
-+    	    {
-+                instance->SetBossState(DATA_ZARITHRIAN, NOT_STARTED);
-+                events.Reset();
-+                events.ScheduleEvent(EVENT_CAST_CLEAVE_ARMOR, urand(3500,4500));
-+                events.ScheduleEvent(EVENT_CAST_INTIMIDATING_ROAR, urand(10000,11000));
-+    	    }
++				void Reset()
++			{
++				instance->SetBossState(DATA_ZARITHRIAN, NOT_STARTED);
++				events.Reset();
++				events.ScheduleEvent(EVENT_CAST_CLEAVE_ARMOR, urand(3500,4500));
++				events.ScheduleEvent(EVENT_CAST_INTIMIDATING_ROAR, urand(10000,11000));
++			}
 +
-+    	    void EnterCombat(Unit*)
-+    	    {
-+                instance->SetBossState(DATA_ZARITHRIAN, IN_PROGRESS);
-+                DoScriptText(SAY_AGGRO, me);
-+    	    }
++				void EnterCombat(Unit*)
++			{
++				instance->SetBossState(DATA_ZARITHRIAN, IN_PROGRESS);
++				DoScriptText(SAY_AGGRO, me);
++			}
 +
-+    	    void UpdateAI(const uint32 diff)
-+    	    {
-+                if(!UpdateVictim() || !CheckInRoom())
-+			        return;
++				void UpdateAI(const uint32 diff)
++			{
++				if(!UpdateVictim() || !CheckInRoom())
++					return;
 +
 +                if (me->HasUnitState(UNIT_STAT_CASTING))
 +                    return;
@@ -1306,25 +1306,25 @@ index 0000000..e932686
 +                    }
 +                }
 +
-+    		    DoMeleeAttackIfReady();
-+    	    }
++				DoMeleeAttackIfReady();
++			}
 +
-+    	    void KilledUnit(Unit *victim)
-+    	    {
-+                DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
-+    	    }
++				void KilledUnit(Unit *victim)
++			{
++				DoScriptText(RAND(SAY_SLAY1,SAY_SLAY2), me);
++			}
 +
-+    	    void JustDied(Unit*)
-+    	    {
-+                _JustDied();
-+                DoScriptText(SAY_DEATH, me);
-+    	    }
-+        };
++				void JustDied(Unit*)
++			{
++				_JustDied();
++				DoScriptText(SAY_DEATH, me);
++			}
++		};
 +
-+        CreatureAI* GetAI(Creature *pCreature) const
-+        {
-+    	    return new boss_zarithrianAI(pCreature);
-+        }
++			CreatureAI* GetAI(Creature *pCreature) const
++			{
++			return new boss_zarithrianAI(pCreature);
++			}
 +
 +};
 +
@@ -1404,7 +1404,7 @@ index 0000000..cf6c19c
 +                        pCreature->SetReactState(REACT_PASSIVE);
 +                        pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 +                        break;
-+                    case NPC_HALION:        
++                    case NPC_HALION:
 +                        m_uiHalionGUID = pCreature->GetGUID();
 +                        pCreature->SetVisible(false);
 +                        pCreature->SetReactState(REACT_PASSIVE);
@@ -1431,27 +1431,27 @@ index 0000000..cf6c19c
 +
 +            void SetData(uint32 uiType, uint32 uiData)
 +            {
-+                switch(uiType)
-+    		    {
-+                    case DATA_XERESTRASZA:     m_uiXerestrasza    = uiData; break;
-+                    case DATA_TWILIGHT_HALION: m_uiTwilightHalion = uiData; break;
-+                    case DATA_DAMAGE:          m_uiDataDamage     = uiData; break;   
-+                }
-+            }
++					switch(uiType)
++				{
++					case DATA_XERESTRASZA:     m_uiXerestrasza    = uiData; break;
++					case DATA_TWILIGHT_HALION: m_uiTwilightHalion = uiData; break;
++					case DATA_DAMAGE:          m_uiDataDamage     = uiData; break;
++				}
++			}
 +
 +            uint32 GetData(uint32 uiType)
-+    	    {
-+    		    switch(uiType)
-+                {
-+    			    case DATA_XERESTRASZA:     return m_uiXerestrasza;    break;
-+                    case DATA_TWILIGHT_HALION: return m_uiTwilightHalion; break;
-+                    case DATA_DAMAGE:          return m_uiDataDamage;     break;
-+                }
-+                return 0;
-+    	    }
++			{
++				switch(uiType)
++				{
++					case DATA_XERESTRASZA:     return m_uiXerestrasza;    break;
++					case DATA_TWILIGHT_HALION: return m_uiTwilightHalion; break;
++					case DATA_DAMAGE:          return m_uiDataDamage;     break;
++				}
++				return 0;
++			}
 +
-+            void BossZarithrian()
-+            {
++				void BossZarithrian()
++			{
 +                if (Creature* Zarithrian = instance->GetCreature(GetData64(DATA_ZARITHRIAN)))
 +                {
 +                    Zarithrian->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -1475,7 +1475,7 @@ index 0000000..cf6c19c
 +                            }
 +                        }
 +                        break;
-+                    case DATA_RAGEFIRE: 
++                    case DATA_RAGEFIRE:
 +                        if(state==DONE)
 +                        {
 +                            if(GetBossState(DATA_BALTHARUS)==DONE)
@@ -1504,20 +1504,20 @@ index 0000000..cf6c19c
 +                return true;
 +            }
 +
-+    	    uint64 GetData64(uint32 uiData)
-+            {
-+                switch(uiData)
-+                {
-+                    case DATA_BALTHARUS:       return m_uiBaltharusGUID;      break;
-+                    case DATA_ZARITHRIAN:      return m_uiZarithrianGUID;     break;
-+                    case DATA_RAGEFIRE:        return m_uiRagefireGUID;       break;
-+                    case DATA_HALION:          return m_uiHalionGUID;         break;
-+                    case DATA_TWILIGHT_HALION: return m_uiTwilightHalionGUID; break;
-+                    case DATA_XERESTRASZA:     return m_uiXerestraszaGUID;    break;
-+                    default: break;
-+                }
-+                return 0;
-+    	    }
++				uint64 GetData64(uint32 uiData)
++			{
++				switch(uiData)
++				{
++					case DATA_BALTHARUS:       return m_uiBaltharusGUID;      break;
++					case DATA_ZARITHRIAN:      return m_uiZarithrianGUID;     break;
++					case DATA_RAGEFIRE:        return m_uiRagefireGUID;       break;
++					case DATA_HALION:          return m_uiHalionGUID;         break;
++					case DATA_TWILIGHT_HALION: return m_uiTwilightHalionGUID; break;
++					case DATA_XERESTRASZA:     return m_uiXerestraszaGUID;    break;
++					default: break;
++				}
++					return 0;
++			}
 +
 +            std::string GetSaveData()
 +            {
@@ -1536,7 +1536,7 @@ index 0000000..cf6c19c
 +                std::istringstream loadStream(strIn);
 +
 +                uint32 tmpState;
-+                
++
 +                for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
 +                {
 +                    loadStream >> tmpState;
@@ -1560,7 +1560,7 @@ index 0000000..cf6c19c
 +                uint64 m_uiXerestraszaGUID;
 +                uint64 m_uiTwilightHalionGUID;
 +        };
-+        
++
 +        InstanceScript* GetInstanceScript (InstanceMap *pMap) const
 +        {
 +            return new instance_ruby_sanctum_InstanceMapScript(pMap);
@@ -1600,14 +1600,14 @@ index 0000000..03c247f
 +DELETE FROM script_texts where `entry` <= -1752017 AND `entry` >= -1752036;
 +
 +INSERT INTO script_texts (`entry`, `content_default`, `npc_entry`, `content_loc3`, `sound`, `type`, `language`) VALUES
-+('-1752008', 'Help! I am trapped within this tree! I require aid!', '0', '', '17490', '1', '0'),	 	
-+('-1752009', 'Thank you! I could not have held out for much longer.... A terrible thing has happened here.', '0', '', '17491', '1', '0'),	 	
-+('-1752010', 'We believed the Sanctum was well-fortified, but we were not prepared for the nature of this assault.', '0', '', '17492', '0', '0'),	 	
-+('-1752011', 'The Black dragonkin materialized from thin air, and set upon us before we could react.', '0', '', '17493', '0', '0'), 	
-+('-1752012', 'We did not stand a chance. As my brethren perished around me, I managed to retreat here and bar the entrance.', '0', '', '17494', '0', '0'), 	
-+('-1752013', 'They slaughtered us with cold efficiency, but the true focus of their interest seemed to be the eggs kept here in the Sanctum.', '0', '', '17495', '0', '0'),	
-+('-1752014', 'The commander of the forces on the ground here is a cruel brute named Zarithrian, but I fear there are greater powers at work.', '0', '', '17496', '0', '0'),	
-+('-1752015', 'In their initial assault, I caught a glimpse of their true leader, a fearsome full-grown twilight dragon.', '0', '', '17497', '0', '0'),	
++('-1752008', 'Help! I am trapped within this tree! I require aid!', '0', '', '17490', '1', '0'),
++('-1752009', 'Thank you! I could not have held out for much longer.... A terrible thing has happened here.', '0', '', '17491', '1', '0'),
++('-1752010', 'We believed the Sanctum was well-fortified, but we were not prepared for the nature of this assault.', '0', '', '17492', '0', '0'),
++('-1752011', 'The Black dragonkin materialized from thin air, and set upon us before we could react.', '0', '', '17493', '0', '0'),
++('-1752012', 'We did not stand a chance. As my brethren perished around me, I managed to retreat here and bar the entrance.', '0', '', '17494', '0', '0'),
++('-1752013', 'They slaughtered us with cold efficiency, but the true focus of their interest seemed to be the eggs kept here in the Sanctum.', '0', '', '17495', '0', '0'),
++('-1752014', 'The commander of the forces on the ground here is a cruel brute named Zarithrian, but I fear there are greater powers at work.', '0', '', '17496', '0', '0'),
++('-1752015', 'In their initial assault, I caught a glimpse of their true leader, a fearsome full-grown twilight dragon.', '0', '', '17497', '0', '0'),
 +('-1752016', 'I know not the extent of their plans, heroes, but I know this: They cannot be allowed to succeed!', '0', '', '17498', '0', '0'),
 +
 +( -1752001, "Ah, the entertainment has arrived.", 0, "", 17520, 1, 0),
@@ -1708,6 +1708,6 @@ index 0000000..03c247f
 +
 +#endif
 +
--- 
+--
 1.5.6.5
 
