@@ -1,7 +1,7 @@
-From d4e8f4295b50e2d84c9cd8aebfec460487a927e2 Mon Sep 17 00:00:00 2001
+From b25dc96fdaea75aa2caeca6cc60bcc6dd50da907 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Thu, 6 Jan 2011 01:29:04 -0500
-Subject: [PATCH] City-Conquest
+Date: Fri, 7 Jan 2011 14:24:44 -0500
+Subject: [PATCH] 10969-City-Conquest
 
 ---
  sql/CMakeLists.txt                                 |    1 +
@@ -9,13 +9,14 @@ Subject: [PATCH] City-Conquest
  src/server/game/CMakeLists.txt                     |    3 +
  src/server/game/CityConquest/CityConquestMgr.cpp   |  319 ++++++++++++++++++++
  src/server/game/CityConquest/CityConquestMgr.h     |   84 +++++
+ src/server/game/Scripting/ScriptLoader.cpp         |   11 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
  src/server/scripts/Custom/CMakeLists.txt           |    4 +
  src/server/scripts/Custom/city_conquest_boss.cpp   |   75 +++++
  .../scripts/Custom/city_conquest_generic.cpp       |   49 +++
  src/server/scripts/Custom/city_conquest_portal.cpp |  197 ++++++++++++
  .../scripts/Custom/city_conquest_spawner.cpp       |   75 +++++
- 11 files changed, 927 insertions(+), 0 deletions(-)
+ 12 files changed, 937 insertions(+), 1 deletions(-)
  create mode 100644 sql/CityConquest/world-example_gmisland.sql
  create mode 100644 src/server/game/CityConquest/CityConquestMgr.cpp
  create mode 100644 src/server/game/CityConquest/CityConquestMgr.h
@@ -189,7 +190,7 @@ index 323a3ac..b3c73d3 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Combat
 diff --git a/src/server/game/CityConquest/CityConquestMgr.cpp b/src/server/game/CityConquest/CityConquestMgr.cpp
 new file mode 100644
-index 0000000..a32634f
+index 0000000..94ada46
 --- /dev/null
 +++ b/src/server/game/CityConquest/CityConquestMgr.cpp
 @@ -0,0 +1,319 @@
@@ -241,7 +242,7 @@ index 0000000..a32634f
 +		sprintf(msg, "City Conquest: %s declared war to %s. Opposite team has got 30 minutes to engage commander of %s!", fname, nm, nm);
 +		sWorld->SendWorldText(LANG_SYSTEMMESSAGE, msg);
 +
-+		WorldDatabase.PExecute("REPLACE INTO city_capture_progress (city_id, time) VALUES (%u, %u)", 
++		WorldDatabase.PExecute("REPLACE INTO city_capture_progress (city_id, time) VALUES (%u, %u)",
 +			id, time (NULL));
 +
 +		//OpenPortal(id);
@@ -254,7 +255,7 @@ index 0000000..a32634f
 +	if (!city->active)
 +		return;
 +	city->active = false;
-+	WorldDatabase.PExecute("REPLACE INTO city_capture_progress (city_id, time) VALUES (%u, %u, %u)", 
++	WorldDatabase.PExecute("REPLACE INTO city_capture_progress (city_id, time) VALUES (%u, %u, %u)",
 +			id, time (NULL));
 +
 +	WorldDatabase.PExecute("UPDATE city_capture_bosses SET spawn_timer =  1 WHERE city_id = %u", id);
@@ -388,7 +389,7 @@ index 0000000..a32634f
 +			city->LoadPorts();
 +
 +		}
-+    	while (result->NextRow());
++		while (result->NextRow());
 +	}
 +}
 +
@@ -398,9 +399,9 @@ index 0000000..a32634f
 +	if (type == 0)
 +	{
 +		sLog->outString("CQM: Creature Registered - %u", creature->GetEntry());
-+		result 
++		result
 +			= WorldDatabase.PQuery("SELECT city_id, faction_A, faction_H FROM city_capture_creatures WHERE entry = %u",
-+			//                             0        1          2           
++			//                             0        1          2
 +			creature->GetEntry());
 +		if (result)
 +		{
@@ -449,7 +450,7 @@ index 0000000..a32634f
 +	}
 +	else if (type == 1 || type == 2)
 +	{
-+		result 
++		result
 +			= WorldDatabase.PQuery("SELECT city_id, spawner_entry, spawn_timer FROM city_capture_bosses WHERE boss_entry_A = %u OR boss_entry_H = %u OR "
 +			//                             0        1              2
 +			"spawner_entry = %u", creature->GetEntry(), creature->GetEntry(), creature->GetEntry());
@@ -478,7 +479,7 @@ index 0000000..a32634f
 +							}
 +							else
 +								EndSiege(ct->id);
-+							
++
 +						}
 +					}
 +					return;
@@ -509,12 +510,12 @@ index 0000000..a32634f
 +			else if (fields[5].GetInt32() == 1)
 +				port_attack = coords;
 +		}
-+    	while (result->NextRow());
++		while (result->NextRow());
 +	}
 +}
 diff --git a/src/server/game/CityConquest/CityConquestMgr.h b/src/server/game/CityConquest/CityConquestMgr.h
 new file mode 100644
-index 0000000..c37c140
+index 0000000..cc4735e
 --- /dev/null
 +++ b/src/server/game/CityConquest/CityConquestMgr.h
 @@ -0,0 +1,84 @@
@@ -568,8 +569,8 @@ index 0000000..c37c140
 +	//   false - not under siege
 +	City(void);
 +	void LoadPorts(void);									// done
-+															
-+															
++
++
 +};
 +
 +typedef std::list<City *> Cities;
@@ -592,7 +593,7 @@ index 0000000..c37c140
 +	//						   0 aliance
 +	//                         1 horde
 +	void EndSiege(int id);									// done
-+	void OpenPortal(int id);								// todo														
++	void OpenPortal(int id);								// todo
 +	void SwitchFaction(int id);				                // done
 +	//							   0 aliance
 +	//                             1 horde
@@ -602,6 +603,34 @@ index 0000000..c37c140
 +extern CityConquestMgr CityConquest;
 +
 +#endif
+diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
+index 48056f7..92d8e48 100755
+--- a/src/server/game/Scripting/ScriptLoader.cpp
++++ b/src/server/game/Scripting/ScriptLoader.cpp
+@@ -61,6 +61,12 @@ void AddSC_tele_commandscript();
+ void AddSC_titles_commandscript();
+ void AddSC_wp_commandscript();
+ 
++// Custom
++void AddSC_city_conquest_boss();
++void AddSC_city_conquest_generic();
++void AddSC_city_conquest_portal();
++void AddSC_city_conquest_spawner();
++
+ #ifdef SCRIPTS
+ //world
+ void AddSC_areatrigger_scripts();
+@@ -1200,6 +1206,9 @@ void AddCustomScripts()
+ {
+ #ifdef SCRIPTS
+     /* This is where custom scripts should be added. */
+-
++	AddSC_city_conquest_boss();
++	AddSC_city_conquest_generic();
++	AddSC_city_conquest_portal();
++	AddSC_city_conquest_spawner();
+ #endif
+ }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
 index a0a1c82..121aff5 100755
 --- a/src/server/game/Scripting/ScriptMgr.cpp
@@ -639,7 +668,7 @@ index 0dec843..741bc52 100644
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/city_conquest_boss.cpp b/src/server/scripts/Custom/city_conquest_boss.cpp
 new file mode 100644
-index 0000000..e45453e
+index 0000000..9d12711
 --- /dev/null
 +++ b/src/server/scripts/Custom/city_conquest_boss.cpp
 @@ -0,0 +1,75 @@
@@ -652,7 +681,7 @@ index 0000000..e45453e
 +
 +struct city_conquest_bossAI : public ScriptedAI
 +{
-+    city_conquest_bossAI(Creature *c) : ScriptedAI(c) 
++    city_conquest_bossAI(Creature *c) : ScriptedAI(c)
 +	{
 +		CityConquest.RegisterCreature(me, 1);
 +		entry = me->GetEntry();
@@ -679,9 +708,9 @@ index 0000000..e45453e
 +
 +	void JustDied(Unit* Killer)
 +    {
-+		QueryResult result 
++		QueryResult result
 +			= WorldDatabase.PQuery("SELECT city_id, boss_entry_A, boss_entry_H FROM city_capture_bosses WHERE boss_entry_A = %u OR boss_entry_H = %u OR "
-+			//                             0        1             2        
++			//                             0        1             2
 +			"spawner_entry = %u", entry, entry, entry);
 +
 +		if (result)
@@ -720,7 +749,7 @@ index 0000000..e45453e
 +}
 diff --git a/src/server/scripts/Custom/city_conquest_generic.cpp b/src/server/scripts/Custom/city_conquest_generic.cpp
 new file mode 100644
-index 0000000..fcdf5c2
+index 0000000..74ca61d
 --- /dev/null
 +++ b/src/server/scripts/Custom/city_conquest_generic.cpp
 @@ -0,0 +1,49 @@
@@ -729,7 +758,7 @@ index 0000000..fcdf5c2
 +
 +struct city_conquest_genericAI : public ScriptedAI
 +{
-+    city_conquest_genericAI(Creature *c) : ScriptedAI(c) 
++    city_conquest_genericAI(Creature *c) : ScriptedAI(c)
 +	{
 +		CityConquest.RegisterCreature(me, 0);
 +	}
@@ -978,7 +1007,7 @@ index 0000000..0bb43bc
 +}
 diff --git a/src/server/scripts/Custom/city_conquest_spawner.cpp b/src/server/scripts/Custom/city_conquest_spawner.cpp
 new file mode 100644
-index 0000000..daa4fce
+index 0000000..63b7dd0
 --- /dev/null
 +++ b/src/server/scripts/Custom/city_conquest_spawner.cpp
 @@ -0,0 +1,75 @@
@@ -991,7 +1020,7 @@ index 0000000..daa4fce
 +
 +struct city_conquest_spawnerAI : public ScriptedAI
 +{
-+    city_conquest_spawnerAI(Creature *c) : ScriptedAI(c) 
++    city_conquest_spawnerAI(Creature *c) : ScriptedAI(c)
 +	{
 +		CityConquest.RegisterCreature(me, 2);
 +		entry = me->GetEntry();
@@ -1013,9 +1042,9 @@ index 0000000..daa4fce
 +
 +	void SummonedCreatureDespawn(Creature *pSummoned)
 +    {
-+		QueryResult result 
++		QueryResult result
 +			= WorldDatabase.PQuery("SELECT city_id FROM city_capture_bosses WHERE  "
-+			//                             0               
++			//                             0
 +			"spawner_entry = %u", entry);
 +
 +		if (result)
