@@ -1,7 +1,7 @@
-From 69e6aa275eb636010669fb347db6493c83571a8b Mon Sep 17 00:00:00 2001
+From 6476988c19874520c1b9b33501e01924ce674d4e Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Thu, 6 Jan 2011 01:20:57 -0500
-Subject: [PATCH] TrinityJail
+Date: Fri, 7 Jan 2011 14:28:51 -0500
+Subject: [PATCH] 10969-TrinityJail
 
 ---
  sql/CMakeLists.txt                         |    1 +
@@ -90,7 +90,7 @@ index 0000000..1c33c58
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Jail table for Trinitycore by WarHead Edited by SPGM';
 +
 +-- ----------------------------
-+-- Records 
++-- Records
 +-- ----------------------------
 +DROP TABLE IF EXISTS `jail_conf`;
 +SET FOREIGN_KEY_CHECKS=0;
@@ -109,7 +109,7 @@ index 0000000..1c33c58
 +) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=utf8;
 +
 +-- ----------------------------
-+-- Records 
++-- Records
 +-- ----------------------------
 +INSERT INTO `jail_conf` VALUES ('1', 'm_jailconf_max_jails', '3', null, 'Hier legst ihre fest nach wie fielen Jails der Char gelöscht werden \r\nStandart = 3\r\n ', 'How many time the characters can be Jailed before being deleted\r\nDefault = 3');
 +INSERT INTO `jail_conf` VALUES ('2', 'm_jailconf_max_duration', '672', null, 'Hier legst ihre fest wie hoch der maximale Jail Time in Stunden \r\nStandart = 672\r\n', 'Here put how high the maximum Jail Time in hours\r\nDefault = 672');
@@ -218,7 +218,7 @@ index 30fe5de..abd9434 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
 @@ -367,6 +367,11 @@ ChatCommand * ChatHandler::getCommandTable()
- 
+
          { "pet",            SEC_GAMEMASTER,     false, NULL,                                           "", petCommandTable },
          { "ticket",         SEC_MODERATOR,      false,  NULL,                                          "", ticketCommandTable },
 +	     // Jail by WarHead Edited by LordPsyan
@@ -226,7 +226,7 @@ index 30fe5de..abd9434 100755
 +        { "jailinfo",       SEC_PLAYER,         false, OldHandler<&ChatHandler::HandleJailInfoCommand>,            "", NULL },
 +        { "unjail",         SEC_MODERATOR,      false, OldHandler<&ChatHandler::HandleUnJailCommand>,              "", NULL },
 +        { "jailreload",     SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleJailReloadCommand>,          "", NULL },
- 
+
          { "aura",           SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleAuraCommand>,                "", NULL },
          { "unaura",         SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnAuraCommand>,              "", NULL },
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
@@ -235,17 +235,17 @@ index 486987d..1ba8175 100755
 +++ b/src/server/game/Chat/Chat.h
 @@ -335,6 +335,12 @@ class ChatHandler
          bool HandleSendMessageCommand(const char * args);*/
- 
+
          bool HandleFlushArenaPointsCommand(const char *args);
 +        // Jail by WarHead Edited by spgm
 +        bool HandleJailCommand(const char* args);
 +		bool HandleJailInfoCommand(const char* args);
 +		bool HandleUnJailCommand(const char* args);
 +		bool HandleJailReloadCommand(const char* args);
-+		
++
          bool HandlePlayAllCommand(const char* args);
          bool HandleRepairitemsCommand(const char* args);
- 
+
 diff --git a/src/server/game/Chat/Commands/Level0.cpp b/src/server/game/Chat/Commands/Level0.cpp
 index 5deed67..6555088 100755
 --- a/src/server/game/Chat/Commands/Level0.cpp
@@ -255,11 +255,11 @@ index 5deed67..6555088 100755
  #include "revision.h"
  #include "Util.h"
 +#include "math.h"
- 
+
  bool ChatHandler::HandleHelpCommand(const char* args)
  {
 @@ -54,6 +55,13 @@ bool ChatHandler::HandleCommandsCommand(const char* /*args*/)
- 
+
  bool ChatHandler::HandleStartCommand(const char* /*args*/)
  {
 +		// Jail by WarHead edited by spgm
@@ -268,32 +268,32 @@ index 5deed67..6555088 100755
 +        SendSysMessage(LANG_JAIL_DENIED);
 +        return true;
 +    }
-+    
++
      Player *chr = m_session->GetPlayer();
- 
+
      if (chr->isInFlight())
 @@ -78,7 +86,7 @@ bool ChatHandler::HandleStartCommand(const char* /*args*/)
      }
- 
+
      // cast spell Stuck
 -    chr->CastSpell(chr, 7355, false);
 +    chr->CastSpell(chr, 8690, false);
      return true;
  }
- 
+
 @@ -127,7 +135,14 @@ bool ChatHandler::HandleDismountCommand(const char* /*args*/)
  bool ChatHandler::HandleSaveCommand(const char* /*args*/)
  {
      Player *player = m_session->GetPlayer();
 -
-+    
++
 +		// Jail by WarHead edited by LordPsyan
 +    if (player->m_jail_isjailed)
 +    {
 +        SendSysMessage(LANG_JAIL_DENIED);
 +        return true;
 +    }
-+    
++
      // save GM account without delay and output message
      if (m_session->GetSecurity() > SEC_PLAYER)
      {
@@ -335,7 +335,7 @@ index 5deed67..6555088 100755
 +    }
 +    return false;
 +}
- 
+
 diff --git a/src/server/game/Chat/Commands/Level1.cpp b/src/server/game/Chat/Commands/Level1.cpp
 index d5acf4b..0ab86fb 100755
 --- a/src/server/game/Chat/Commands/Level1.cpp
@@ -343,7 +343,7 @@ index d5acf4b..0ab86fb 100755
 @@ -715,6 +715,292 @@ bool ChatHandler::HandleSaveAllCommand(const char* /*args*/)
      return true;
  }
- 
+
 +// Jail by WarHead edited by spgm
 +bool ChatHandler::HandleJailCommand(const char *args)
 +{
@@ -587,7 +587,7 @@ index d5acf4b..0ab86fb 100755
 +            }
 +
 +            PSendSysMessage(LANG_JAIL_WAS_UNJAILED, cname.c_str());
-+            ChatHandler(chr).PSendSysMessage(LANG_JAIL_YOURE_UNJAILED, m_session->GetPlayerName());    
++            ChatHandler(chr).PSendSysMessage(LANG_JAIL_YOURE_UNJAILED, m_session->GetPlayerName());
 +            chr->CastSpell(chr,8690,false);
 +            //chr->GetSession()->LogoutPlayer(false);
 +        } else PSendSysMessage(LANG_JAIL_CHAR_NOTJAILED, cname.c_str());
@@ -663,7 +663,7 @@ index 00962a9..00f7dd3 100755
 +    std::string p_jail_lasttime;
 +    uint32 p_jail_duration;
 +    std::string gmname;
-+    
++
      // get additional information from Player object
      if (target)
      {
@@ -703,10 +703,10 @@ index 00962a9..00f7dd3 100755
          accId = fields[3].GetUInt32();
          race = fields[4].GetUInt8();
          Class = fields[5].GetUInt8();
-+        		}
-+		
++				}
++
 +		QueryResult row = CharacterDatabase.PQuery("SELECT * FROM `jail` WHERE `guid`='%u' LIMIT 1", GUID_LOPART(target_guid));
-+	    
++
 +		if (!row)
 +		{
 +			 p_jail_isjailed = false;
@@ -729,12 +729,12 @@ index 00962a9..00f7dd3 100755
 +			gmname = "";
 +		}
      }
- 
+
      std::string username = GetTrinityString(LANG_ERROR);
 @@ -354,6 +408,39 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
      uint32 copp = (money % GOLD) % SILVER;
      PSendSysMessage(LANG_PINFO_LEVEL, race_s.c_str(), Class_s.c_str(), timeStr.c_str(), level, gold, silv, copp);
- 
+
 +	if (p_jail_times > 0)
 +        {
 +            if (p_jail_release > 0)
@@ -767,10 +767,10 @@ index 00962a9..00f7dd3 100755
 +            PSendSysMessage(LANG_JAIL_GM_NOINFO, gmname.c_str());
 +            return true;
 +        }
-+        
++
      return true;
  }
- 
+
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
 index 4043aa9..3e3ace8 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
@@ -778,7 +778,7 @@ index 4043aa9..3e3ace8 100755
 @@ -597,6 +597,13 @@ bool ChatHandler::HandleListItemCommand(const char *args)
      return true;
  }
- 
+
 +	bool ChatHandler::HandleJailReloadCommand(const char* arg)
 +{
 +    sObjectMgr->LoadJailConf();
@@ -790,13 +790,13 @@ index 4043aa9..3e3ace8 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 1963201..ee4f7eb 100755
+index 5618bf5..ffe0696 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -395,6 +395,21 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
  #pragma warning(default:4355)
  #endif
- 
+
 +	m_jail_guid     = 0;
 +    m_jail_char     = "";
 +    m_jail_amnestie = false;
@@ -814,25 +814,25 @@ index 1963201..ee4f7eb 100755
 +
      m_speakTime = 0;
      m_speakCount = 0;
- 
+
 @@ -1284,6 +1299,79 @@ void Player::Update(uint32 p_time)
      Unit::Update(p_time);
      SetCanDelayTeleport(false);
- 
+
 +	if (m_jail_isjailed)
 +    {
 +        time_t localtime;
 +        localtime = time(NULL);
-+		
++
 +        if (m_jail_release <= localtime)
 +        {
 +            m_jail_isjailed = false;
 +            m_jail_release = 0;
 +
 +            _SaveJail();
-+            
++
 +            sWorld->SendWorldText(LANG_JAIL_CHAR_FREE, GetName());
-+            
++
 +			CastSpell(this,8690,false);
 +
 +            return;
@@ -855,14 +855,14 @@ index 1963201..ee4f7eb 100755
 +                    sObjectMgr->m_jailconf_horde_y, sObjectMgr->m_jailconf_horde_z, sObjectMgr->m_jailconf_horde_o);
 +                return;
 +            }
-+			
++
 +        }
 +    }
-+	
++
 +	if (m_jail_warning == true)
 +	{
 +		m_jail_warning  = false;
-+		
++
 +		if (sObjectMgr->m_jailconf_warn_player == m_jail_times || sObjectMgr->m_jailconf_warn_player <= m_jail_times)
 +		{
 +			if ((sObjectMgr->m_jailconf_max_jails-1 == m_jail_times-1) && sObjectMgr->m_jailconf_ban-1)
@@ -873,7 +873,7 @@ index 1963201..ee4f7eb 100755
 +			{
 +				ChatHandler(this).PSendSysMessage(LANG_JAIL_WARNING, m_jail_times , sObjectMgr->m_jailconf_max_jails);
 +			}
-+		        
++
 +		}
 +				return;
 +	}
@@ -882,9 +882,9 @@ index 1963201..ee4f7eb 100755
 +	m_jail_amnestie =false;
 +	time_t localtime;
 +    localtime    = time(NULL);
-+	
++
 +	if (localtime >  m_jail_amnestietime)
-+	{   
++	{
 +		CharacterDatabase.PExecute("DELETE FROM `jail` WHERE `guid` = '%u'",GetGUIDLow());
 +		ChatHandler(this).PSendSysMessage(LANG_JAIL_AMNESTII);
 +	}
@@ -893,11 +893,11 @@ index 1963201..ee4f7eb 100755
 +
 +
      time_t now = time(NULL);
- 
+
      UpdatePvPFlag(now);
 @@ -1463,9 +1551,15 @@ void Player::Update(uint32 p_time)
      }
- 
+
      if (m_deathState == JUST_DIED)
 -        KillPlayer();
 +        // Prevent death of jailed players
@@ -907,7 +907,7 @@ index 1963201..ee4f7eb 100755
 +            m_deathState = ALIVE;
 +            RegenerateAll();
 +        }
- 
+
 -    if (m_nextSave > 0)
 +    if (m_nextSave > 0 && !m_jail_isjailed)
      {
@@ -918,19 +918,19 @@ index 1963201..ee4f7eb 100755
              trans->PAppend("DELETE FROM character_talent WHERE guid = '%u'",guid);
              trans->PAppend("DELETE FROM character_skills WHERE guid = '%u'",guid);
 +            trans->PAppend("DELETE FROM `jail` WHERE `guid` = '%u'",guid);
- 
+
              CharacterDatabase.CommitTransaction(trans);
              break;
-@@ -16730,10 +16825,77 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -16731,10 +16826,77 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      m_achievementMgr.CheckAllAchievementCriteria();
- 
+
      _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
 +	// Loads the jail datas and if jailed it corrects the position to the corresponding jail
 +    _LoadJail();
- 
+
      return true;
  }
- 
+
 +void Player::_LoadJail(void)
 +{
 +    SQLTransaction trans = CharacterDatabase.BeginTransaction();
@@ -991,7 +991,7 @@ index 1963201..ee4f7eb 100755
 +            TeleportTo(sObjectMgr->m_jailconf_horde_m, sObjectMgr->m_jailconf_horde_x,
 +                sObjectMgr->m_jailconf_horde_y, sObjectMgr->m_jailconf_horde_z, sObjectMgr->m_jailconf_horde_o);
 +        }
-+         
++
 +        sWorld->SendWorldText(LANG_JAIL_CHAR_TELE, GetName());
 +    }
 +}
@@ -999,10 +999,10 @@ index 1963201..ee4f7eb 100755
  bool Player::isAllowedToLoot(const Creature* creature)
  {
      if (!creature->isDead() || !creature->IsDamageEnoughForLootingAndReward())
-@@ -17895,8 +18057,21 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
+@@ -17896,8 +18058,21 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
  /***                   SAVE SYSTEM                     ***/
  /*********************************************************/
- 
+
 +// Saves the jail datas (added by WarHead) edited by spgm.
 +void Player::_SaveJail(void)
 +{
@@ -1020,15 +1020,15 @@ index 1963201..ee4f7eb 100755
 +
      // delay auto save at any saves (manual, in code, or autosave)
      m_nextSave = sWorld->getIntConfig(CONFIG_INTERVAL_SAVE);
- 
+
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index caabac6..d3f7db9 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -2179,6 +2179,26 @@ class Player : public Unit, public GridObject<Player>
- 
+
          uint32 EnvironmentalDamage(EnviromentalDamage type, uint32 damage);
- 
+
 +	    // Jail by WarHead edited by spgm
 +        // ---------------
 +        // Char datas...
@@ -1059,7 +1059,7 @@ index 27d9c73..54e56b4 100755
 @@ -7065,6 +7065,121 @@ uint32 ObjectMgr::GeneratePetNumber()
      return ++m_hiPetNumber;
  }
- 
+
 +// Loads the jail conf out of the database
 +void ObjectMgr::LoadJailConf(void)
 +{
@@ -1185,7 +1185,7 @@ index 4efbbc7..515f6fb 100755
 @@ -927,6 +927,29 @@ class ObjectMgr
          void LoadTrainerSpell();
          void AddSpellToTrainer(uint32 entry, uint32 spell, uint32 spellCost, uint32 reqSkill, uint32 reqSkillValue, uint32 reqLevel);
- 
+
 +		// Loads the jail conf out of the database
 +		void LoadJailConf(void);
 +
@@ -1217,7 +1217,7 @@ index 4afb315..6412e20 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -21,6 +21,42 @@
- 
+
  enum TrinityStrings
  {
 +		// Added by WarHead for the Jail edited by spgm
@@ -1268,11 +1268,11 @@ index 1567277..3839673 100755
      sLog->outString("Returning old mails...");
      sObjectMgr->ReturnOrDeleteOldMails(false);
 +	// Loads the jail conf out of the database
-+    sLog->outString("Loading JailConfing...");    
++    sLog->outString("Loading JailConfing...");
 +    sObjectMgr->LoadJailConf();
- 
+
      sLog->outString("Loading Autobroadcasts...");
      LoadAutobroadcasts();
--- 
+--
 1.5.6.5
 
