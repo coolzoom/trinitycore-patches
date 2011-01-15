@@ -1,7 +1,7 @@
-From d8ae985286c798846e73da4b098e4fb3416a42f1 Mon Sep 17 00:00:00 2001
+From f67f079b4e1cd8eac54851164eb480037ee63d90 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Fri, 7 Jan 2011 15:17:38 -0500
-Subject: [PATCH] 10969-AC2
+Date: Fri, 14 Jan 2011 21:15:44 -0500
+Subject: [PATCH 2/2] 11025-AC2
 
 ---
  src/server/game/Entities/Player/Player.cpp         |   22 +
@@ -10,14 +10,14 @@ Subject: [PATCH] 10969-AC2
  src/server/game/Globals/ObjectMgr.cpp              |   22 +-
  src/server/game/Globals/ObjectMgr.h                |    2 +-
  .../Server/Protocol/Handlers/MovementHandler.cpp   |  417 +++++++++++++++++++-
- .../game/Server/Protocol/Handlers/TaxiHandler.cpp  |  101 +++++-
+ .../game/Server/Protocol/Handlers/TaxiHandler.cpp  |   99 +++++-
  src/server/game/World/World.cpp                    |   41 ++-
  src/server/game/World/World.h                      |   12 +-
  src/server/worldserver/worldserver.conf.dist       |   24 ++
- 10 files changed, 640 insertions(+), 22 deletions(-)
+ 10 files changed, 639 insertions(+), 21 deletions(-)
 
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 5618bf5..0f4137d 100755
+index 404b3d9..4278c9b 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -520,6 +520,26 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
@@ -47,15 +47,15 @@ index 5618bf5..0f4137d 100755
      m_mailsLoaded = false;
      m_mailsUpdated = false;
      unReadMails = 0;
-@@ -1887,6 +1907,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1889,6 +1909,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
-     if (GetMapId() == mapid && !m_transport)
+     if ((GetMapId() == mapid && !m_transport) || (GetTransport() && GetMapId() == 628))
      {
 +        m_anti_JumpBaseZ = 0;
          //lets reset far teleport flag if it wasn't reset during chained teleports
          SetSemaphoreTeleportFar(false);
          //setup delayed teleport flag
-@@ -2045,6 +2066,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2047,6 +2068,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
              m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
              SetFallInformation(0, final_z);
@@ -107,7 +107,7 @@ index 97599a4..a5d3ec2 100755
  
          void _UpdateSpells(uint32 time);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 27d9c73..3adda8c 100755
+index 0866297..87d965e 100755
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
 @@ -5925,7 +5925,8 @@ void ObjectMgr::LoadAreaTriggerScripts()
@@ -174,7 +174,7 @@ index 4efbbc7..33985d7 100755
          uint32 GetTaxiMountDisplayId(uint32 id, uint32 team, bool allowed_alt_team = false);
  
 diff --git a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
-index e138301..2c9a9b0 100755
+index ef82569..fb5d184 100755
 --- a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 @@ -31,6 +31,12 @@
@@ -646,7 +646,7 @@ index e138301..2c9a9b0 100755
  }
  
  void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recv_data)
-@@ -730,6 +1115,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
+@@ -732,6 +1117,20 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket & recv_data)
  
      MovementInfo movementInfo;
      ReadMovementInfo(recv_data, &movementInfo);
@@ -668,7 +668,7 @@ index e138301..2c9a9b0 100755
  
  void WorldSession::HandleMoveHoverAck(WorldPacket& recv_data)
 diff --git a/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp b/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
-index 0baca16..cbc5cb0 100755
+index 0baca16..c0831af 100755
 --- a/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/TaxiHandler.cpp
 @@ -49,7 +49,7 @@ void WorldSession::SendTaxiStatus(uint64 guid)
@@ -717,8 +717,6 @@ index 0baca16..cbc5cb0 100755
      uint32 curDest = GetPlayer()->m_taxi.GetTaxiDestination();
      if (!curDest)
 -        return;
--
--    TaxiNodesEntry const* curDestNode = sTaxiNodesStore.LookupEntry(curDest);
 +    {
 +        // movement anticheat code
 +        GetPlayer()->SetPosition(movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ(), movementInfo.pos.GetOrientation());
@@ -736,6 +734,7 @@ index 0baca16..cbc5cb0 100755
 +        else
 +            GetPlayer()->m_anti_LastClientTime = movementInfo.time;
  
+-    TaxiNodesEntry const* curDestNode = sTaxiNodesStore.LookupEntry(curDest);
 +        const uint64 cServerTime = getMSTime();
 +        uint32 cServerTimeDelta = 0;
 +        if (GetPlayer()->m_anti_LastServerTime != 0)
@@ -776,7 +775,7 @@ index 0baca16..cbc5cb0 100755
 +    }
 +    else
 +        GetPlayer()->m_anti_LastClientTime = movementInfo.time;
-+
+ 
 +    const uint64 cServerTime = getMSTime();
 +    uint32 cServerTimeDelta = 0;
 +    if (GetPlayer()->m_anti_LastServerTime != 0)
@@ -816,7 +815,7 @@ index 0baca16..cbc5cb0 100755
      uint32 destinationnode = GetPlayer()->m_taxi.NextTaxiDestination();
      if (destinationnode > 0)                              // if more destinations to go
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 1567277..5f99a01 100755
+index 0f99fc3..7823ca7 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -83,7 +83,11 @@ float World::m_MaxVisibleDistanceInBGArenas   = DEFAULT_VISIBILITY_BGARENAS;
@@ -940,5 +939,5 @@ index 188d6d8..88c3ea0 100644
  # CONSOLE AND REMOTE ACCESS
  #
 -- 
-1.5.6.5
+1.7.2.3
 
