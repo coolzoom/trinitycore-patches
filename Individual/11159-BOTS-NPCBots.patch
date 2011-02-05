@@ -1,7 +1,7 @@
-From 33b83230be02b0e2d05c7eea48fbbf26463d144d Mon Sep 17 00:00:00 2001
+From 0c3e8ec138d839ceebd8880de46f497d928d7170 Mon Sep 17 00:00:00 2001
 From: root <root@deb.privatedns.com>
-Date: Wed, 26 Jan 2011 01:03:11 -0500
-Subject: [PATCH] 11080-BOTS-NPCBots
+Date: Sat, 5 Feb 2011 09:14:43 -0500
+Subject: [PATCH] 11159-BOTS-NPCBots
 
 ---
  sql/Bots/CMakeLists.txt                            |    4 +
@@ -11714,7 +11714,7 @@ index 649e1ce..fc19850 100755
  {
      return HandleBanHelper(BAN_ACCOUNT,args);
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 81fef99..4198419 100755
+index 03b3773..4d21563 100755
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -152,6 +152,9 @@ m_formation(NULL)
@@ -11728,10 +11728,10 @@ index 81fef99..4198419 100755
      m_CreatureCategoryCooldowns.clear();
      m_GlobalCooldown = 0;
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 5794167..a607fe1 100755
+index 360522c..ae7f65b 100755
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
-@@ -481,6 +481,18 @@ class Creature : public Unit, public GridObject<Creature>
+@@ -482,6 +482,18 @@ class Creature : public Unit, public GridObject<Creature>
          void AI_SendMoveToPacket(float x, float y, float z, uint32 time, uint32 MovementFlags, uint8 type);
          CreatureAI * AI() const { return (CreatureAI*)i_AI; }
  
@@ -11750,7 +11750,7 @@ index 5794167..a607fe1 100755
          uint32 GetShieldBlockValue() const                  //dunno mob block value
          {
              return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
-@@ -723,6 +735,9 @@ class Creature : public Unit, public GridObject<Creature>
+@@ -724,6 +736,9 @@ class Creature : public Unit, public GridObject<Creature>
  
          bool isVisibleForInState(WorldObject const* seer) const;
      private:
@@ -11837,11 +11837,11 @@ index ff08de3..4031e42 100755
          default:    return NULL;
      }
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index dcfb2be..17de1d0 100755
+index a6a8e9a..40ceff4 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -70,6 +70,12 @@
- #include "CharacterDatabaseCleaner.h"
+@@ -71,6 +71,12 @@
+ #include "InstanceScript.h"
  #include <cmath>
  
 +// Playerbot mod
@@ -11853,7 +11853,7 @@ index dcfb2be..17de1d0 100755
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
  #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
-@@ -389,8 +395,11 @@ UpdateMask Player::updateVisualBits;
+@@ -390,8 +396,11 @@ UpdateMask Player::updateVisualBits;
  #ifdef _MSC_VER
  #pragma warning(disable:4355)
  #endif
@@ -11866,7 +11866,7 @@ index dcfb2be..17de1d0 100755
  #ifdef _MSC_VER
  #pragma warning(default:4355)
  #endif
-@@ -608,6 +617,22 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
+@@ -609,6 +618,22 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
  
      m_ChampioningFaction = 0;
  
@@ -11889,7 +11889,7 @@ index dcfb2be..17de1d0 100755
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -653,6 +678,12 @@ Player::~Player ()
+@@ -654,6 +679,12 @@ Player::~Player ()
  
      delete m_declinedname;
      delete m_runes;
@@ -11902,7 +11902,7 @@ index dcfb2be..17de1d0 100755
  
      sWorld->DecreasePlayerCount();
  }
-@@ -667,6 +698,27 @@ void Player::CleanupsBeforeDelete(bool finalCleanup)
+@@ -668,6 +699,27 @@ void Player::CleanupsBeforeDelete(bool finalCleanup)
      if (m_transport)
          m_transport->RemovePassenger(this);
  
@@ -11930,7 +11930,7 @@ index dcfb2be..17de1d0 100755
      // clean up player-instance binds, may unload some instance saves
      for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
          for (BoundInstancesMap::iterator itr = m_boundInstances[i].begin(); itr != m_boundInstances[i].end(); ++itr)
-@@ -1465,6 +1517,22 @@ void Player::Update(uint32 p_time)
+@@ -1466,6 +1518,22 @@ void Player::Update(uint32 p_time)
          RegenerateAll();
      }
  
@@ -11953,7 +11953,7 @@ index dcfb2be..17de1d0 100755
      if (m_deathState == JUST_DIED)
          KillPlayer();
  
-@@ -1550,6 +1618,9 @@ void Player::Update(uint32 p_time)
+@@ -1551,6 +1619,9 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && isAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -11963,7 +11963,7 @@ index dcfb2be..17de1d0 100755
  }
  
  void Player::setDeathState(DeathState s)
-@@ -1806,7 +1877,8 @@ void Player::SendTeleportPacket(Position &oldPos)
+@@ -1807,7 +1878,8 @@ void Player::SendTeleportPacket(Position &oldPos)
      WorldPacket data2(MSG_MOVE_TELEPORT, 38);
      data2.append(GetPackGUID());
      BuildMovementPacket(&data2);
@@ -11973,7 +11973,7 @@ index dcfb2be..17de1d0 100755
      SendMessageToSet(&data2, false);
  }
  
-@@ -1856,6 +1928,16 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1857,6 +1929,16 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -11990,7 +11990,7 @@ index dcfb2be..17de1d0 100755
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -1905,6 +1987,33 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1906,6 +1988,33 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          }
      }
  
@@ -12024,7 +12024,7 @@ index dcfb2be..17de1d0 100755
      // The player was ported to another map and loses the duel immediately.
      // We have to perform this check before the teleport, otherwise the
      // ObjectAccessor won't find the flag.
-@@ -2081,6 +2190,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2082,6 +2191,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          else
              return false;
      }
@@ -12045,7 +12045,7 @@ index dcfb2be..17de1d0 100755
      return true;
  }
  
-@@ -2195,6 +2318,1094 @@ void Player::RemoveFromWorld()
+@@ -2196,6 +2319,1094 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -13140,7 +13140,7 @@ index dcfb2be..17de1d0 100755
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2470,7 +3681,7 @@ Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2471,7 +3682,7 @@ Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
                      return NULL;
  
      // not too far
@@ -13149,7 +13149,7 @@ index dcfb2be..17de1d0 100755
          return NULL;
  
      return unit;
-@@ -2658,6 +3869,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2659,6 +3870,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -13181,7 +13181,7 @@ index dcfb2be..17de1d0 100755
          if (group->RemoveMember(guid, method, kicker, reason) <= 1)
          {
              // group->Disband(); already disbanded in RemoveMember
-@@ -6888,6 +8124,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -6889,6 +8125,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
          {
              Player *pVictim = uVictim->ToPlayer();
  
@@ -13192,7 +13192,7 @@ index dcfb2be..17de1d0 100755
              if (GetTeam() == pVictim->GetTeam() && !sWorld->IsFFAPvPRealm())
                  return false;
  
-@@ -13294,7 +14534,6 @@ void Player::ApplyEnchantment(Item *item, EnchantmentSlot slot, bool apply, bool
+@@ -13303,7 +14543,6 @@ void Player::ApplyEnchantment(Item *item, EnchantmentSlot slot, bool apply, bool
              uint32 enchant_display_type = pEnchant->type[s];
              uint32 enchant_amount = pEnchant->amount[s];
              uint32 enchant_spell_id = pEnchant->spellid[s];
@@ -13200,7 +13200,7 @@ index dcfb2be..17de1d0 100755
              switch(enchant_display_type)
              {
                  case ITEM_ENCHANTMENT_TYPE_NONE:
-@@ -13918,7 +15157,6 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
+@@ -13927,7 +15166,6 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
              return;
          }
      }
@@ -13208,7 +13208,7 @@ index dcfb2be..17de1d0 100755
      GossipMenuItemData pMenuData = gossipmenu.GetItemData(gossipListId);
  
      switch(gossipOptionId)
-@@ -15549,6 +16787,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
+@@ -15556,6 +16794,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
              }
          }
      }
@@ -13218,7 +13218,7 @@ index dcfb2be..17de1d0 100755
  }
  
  void Player::CastedCreatureOrGO(uint32 entry, uint64 guid, uint32 spell_id)
-@@ -15674,6 +16915,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
+@@ -15681,6 +16922,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
                              m_QuestStatusSave[questid] = true;
  
                              SendQuestUpdateAddCreatureOrGo(qInfo, guid, j, curTalkCount, addTalkCount);
@@ -13226,7 +13226,7 @@ index dcfb2be..17de1d0 100755
                          }
                          if (CanCompleteQuest(questid))
                              CompleteQuest(questid);
-@@ -18019,6 +19261,18 @@ void Player::SaveToDB()
+@@ -18030,6 +19272,18 @@ void Player::SaveToDB()
  
      if (!IsBeingTeleported())
      {
@@ -13245,7 +13245,7 @@ index dcfb2be..17de1d0 100755
          ss << GetMapId() << ", "
          << (uint32)GetInstanceId() << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18026,9 +19280,22 @@ void Player::SaveToDB()
+@@ -18037,9 +19291,22 @@ void Player::SaveToDB()
          << finiteAlways(GetPositionY()) << ", "
          << finiteAlways(GetPositionZ()) << ", "
          << finiteAlways(GetOrientation()) << ", ";
@@ -13268,7 +13268,7 @@ index dcfb2be..17de1d0 100755
          ss << GetTeleportDest().GetMapId() << ", "
          << (uint32)0 << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18036,6 +19303,7 @@ void Player::SaveToDB()
+@@ -18047,6 +19314,7 @@ void Player::SaveToDB()
          << finiteAlways(GetTeleportDest().GetPositionY()) << ", "
          << finiteAlways(GetTeleportDest().GetPositionZ()) << ", "
          << finiteAlways(GetTeleportDest().GetOrientation()) << ", ";
@@ -13276,7 +13276,7 @@ index dcfb2be..17de1d0 100755
      }
  
      ss << m_taxi << ", ";                                   // string with TaxiMaskSize numbers
-@@ -19028,7 +20296,7 @@ void Player::StopCastingCharm()
+@@ -19039,7 +20307,7 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -13453,10 +13453,10 @@ index a4f5b42..633ae96 100755
          float  m_lastFallZ;
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 08138c5..3e17c7f 100755
+index e143ac0..d33f4a4 100755
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -15549,6 +15549,17 @@ void Unit::RemoveCharmedBy(Unit *charmer)
+@@ -15590,6 +15590,17 @@ void Unit::RemoveCharmedBy(Unit *charmer)
              case CHARM_TYPE_CONVERT:
                  break;
          }
@@ -13766,7 +13766,7 @@ index d7fb7c7..97a751a 100755
          Difficulty GetRaidDifficulty() const;
          void SetDungeonDifficulty(Difficulty difficulty);
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index c4187ff..75c1dee 100755
+index 1e2e55a..d8eebd6 100755
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
 @@ -2208,12 +2208,14 @@ void InstanceMap::InitVisibilityDistance()
@@ -13823,7 +13823,7 @@ index c4187ff..75c1dee 100755
                                  sLog->outError("MapSave players: %d, group count: %d", mapSave->GetPlayerCount(), mapSave->GetGroupCount());
                              else
 diff --git a/src/server/game/Quests/QuestDef.h b/src/server/game/Quests/QuestDef.h
-index 1ddc5af..b311816 100755
+index 9c5e6b5..3b6187f 100755
 --- a/src/server/game/Quests/QuestDef.h
 +++ b/src/server/game/Quests/QuestDef.h
 @@ -96,9 +96,9 @@ enum QuestStatus
@@ -13839,7 +13839,7 @@ index 1ddc5af..b311816 100755
      QUEST_STATUS_REWARDED       = 6,        // Not used in DB
      MAX_QUEST_STATUS
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index e4cb375..4993fa6 100755
+index adbfbe6..72a0741 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -77,6 +77,18 @@ void AddSC_npcs_special();
@@ -13861,7 +13861,7 @@ index e4cb375..4993fa6 100755
  //eastern kingdoms
  void AddSC_alterac_valley();                 //Alterac Valley
  void AddSC_boss_balinda();
-@@ -665,6 +677,19 @@ void AddWorldScripts()
+@@ -666,6 +678,19 @@ void AddWorldScripts()
      AddSC_npcs_special();
      AddSC_npc_taxi();
      AddSC_achievement_scripts();
@@ -14572,7 +14572,7 @@ index b191b85..13903fe 100755
      m_grade = 0;
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 0819386..81ea3be 100755
+index ab5071a..eac3491 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1051,6 +1051,8 @@ void World::LoadConfigSettings(bool reload)
