@@ -1,7 +1,7 @@
-From f67f079b4e1cd8eac54851164eb480037ee63d90 Mon Sep 17 00:00:00 2001
-From: root <root@deb.privatedns.com>
-Date: Fri, 14 Jan 2011 21:15:44 -0500
-Subject: [PATCH 2/2] 11025-AC2
+From 6bef727c434717d46b4865a74ca751ce1ddf2679 Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Tue, 8 Feb 2011 02:15:05 -0500
+Subject: [PATCH] 11185-AC2
 
 ---
  src/server/game/Entities/Player/Player.cpp         |   22 +
@@ -17,10 +17,10 @@ Subject: [PATCH 2/2] 11025-AC2
  10 files changed, 639 insertions(+), 21 deletions(-)
 
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 404b3d9..4278c9b 100755
+index a6a8e9a..f79bca4 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -520,6 +520,26 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
+@@ -521,6 +521,26 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
      rest_type=REST_TYPE_NO;
      ////////////////////Rest System/////////////////////
  
@@ -47,7 +47,7 @@ index 404b3d9..4278c9b 100755
      m_mailsLoaded = false;
      m_mailsUpdated = false;
      unReadMails = 0;
-@@ -1889,6 +1909,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1914,6 +1934,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
      if ((GetMapId() == mapid && !m_transport) || (GetTransport() && GetMapId() == 628))
      {
@@ -55,7 +55,7 @@ index 404b3d9..4278c9b 100755
          //lets reset far teleport flag if it wasn't reset during chained teleports
          SetSemaphoreTeleportFar(false);
          //setup delayed teleport flag
-@@ -2047,6 +2068,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2072,6 +2093,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
              m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
              SetFallInformation(0, final_z);
@@ -64,10 +64,10 @@ index 404b3d9..4278c9b 100755
              // this will be used instead of the current location in SaveToDB
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index caabac6..e1b6047 100755
+index a4f5b42..37b1922 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2601,6 +2601,26 @@ class Player : public Unit, public GridObject<Player>
+@@ -2621,6 +2621,26 @@ class Player : public Unit, public GridObject<Player>
          float m_rest_bonus;
          RestType rest_type;
          ////////////////////Rest System/////////////////////
@@ -95,10 +95,10 @@ index caabac6..e1b6047 100755
          time_t m_resetTalentsTime;
          uint32 m_usedTalentCount;
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 97599a4..a5d3ec2 100755
+index cf885ff..878b5dd 100755
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
-@@ -2058,6 +2058,7 @@ class Unit : public WorldObject
+@@ -2060,6 +2060,7 @@ class Unit : public WorldObject
      protected:
          explicit Unit ();
  
@@ -107,10 +107,10 @@ index 97599a4..a5d3ec2 100755
  
          void _UpdateSpells(uint32 time);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 0866297..87d965e 100755
+index 940f3c5..2d6663a 100755
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -5925,7 +5925,8 @@ void ObjectMgr::LoadAreaTriggerScripts()
+@@ -6002,7 +6002,8 @@ void ObjectMgr::LoadAreaTriggerScripts()
      sLog->outString();
  }
  
@@ -120,7 +120,7 @@ index 0866297..87d965e 100755
  {
      bool found = false;
      float dist = 10000;
-@@ -5935,7 +5936,18 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
+@@ -6012,7 +6013,18 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
      {
          TaxiNodesEntry const* node = sTaxiNodesStore.LookupEntry(i);
  
@@ -140,7 +140,7 @@ index 0866297..87d965e 100755
              continue;
  
          uint8  field   = (uint8)((i - 1) / 32);
-@@ -5945,7 +5957,7 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
+@@ -6022,7 +6034,7 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
          if ((sTaxiNodesMask[field] & submask) == 0)
              continue;
  
@@ -149,7 +149,7 @@ index 0866297..87d965e 100755
          if (found)
          {
              if (dist2 < dist)
-@@ -5961,7 +5973,9 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
+@@ -6038,7 +6050,9 @@ uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, ui
              id = i;
          }
      }
@@ -161,10 +161,10 @@ index 0866297..87d965e 100755
  }
  
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 4efbbc7..33985d7 100755
+index 13d3a3e..1a2fadf 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -680,7 +680,7 @@ class ObjectMgr
+@@ -700,7 +700,7 @@ class ObjectMgr
          uint32 GetPlayerAccountIdByGUID(const uint64 &guid) const;
          uint32 GetPlayerAccountIdByPlayerName(const std::string& name) const;
  
@@ -174,7 +174,7 @@ index 4efbbc7..33985d7 100755
          uint32 GetTaxiMountDisplayId(uint32 id, uint32 team, bool allowed_alt_team = false);
  
 diff --git a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
-index ef82569..fb5d184 100755
+index 1090f3c..d5b5f9e 100755
 --- a/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/MovementHandler.cpp
 @@ -31,6 +31,12 @@
@@ -815,7 +815,7 @@ index 0baca16..c0831af 100755
      uint32 destinationnode = GetPlayer()->m_taxi.NextTaxiDestination();
      if (destinationnode > 0)                              // if more destinations to go
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 0f99fc3..7823ca7 100755
+index ab5071a..df3561b 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -83,7 +83,11 @@ float World::m_MaxVisibleDistanceInBGArenas   = DEFAULT_VISIBILITY_BGARENAS;
@@ -874,10 +874,10 @@ index 0f99fc3..7823ca7 100755
  
      m_bool_configs[CONFIG_DURABILITY_LOSS_IN_PVP] = sConfig->GetBoolDefault("DurabilityLoss.InPvP", false);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 87c37b0..4c9152f 100755
+index 7e052ed..0dda97e 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -711,6 +711,12 @@ class World
+@@ -712,6 +712,12 @@ class World
          static int32 GetVisibilityNotifyPeriodOnContinents(){ return m_visibility_notify_periodOnContinents; }
          static int32 GetVisibilityNotifyPeriodInInstances() { return m_visibility_notify_periodInInstances;  }
          static int32 GetVisibilityNotifyPeriodInBGArenas()  { return m_visibility_notify_periodInBGArenas;   }
@@ -890,7 +890,7 @@ index 87c37b0..4c9152f 100755
  
          void ProcessCliCommands();
          void QueueCliCommand(CliCommandHolder* commandHolder) { cliCmdQueue.add(commandHolder); }
-@@ -807,7 +813,11 @@ class World
+@@ -808,7 +814,11 @@ class World
          static int32 m_visibility_notify_periodOnContinents;
          static int32 m_visibility_notify_periodInInstances;
          static int32 m_visibility_notify_periodInBGArenas;
@@ -904,10 +904,10 @@ index 87c37b0..4c9152f 100755
          ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 188d6d8..88c3ea0 100644
+index d0ccc61..f67297a 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2484,6 +2484,30 @@ Network.TcpNodelay = 1
+@@ -2491,6 +2491,30 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
