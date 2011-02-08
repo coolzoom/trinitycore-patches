@@ -1,12 +1,12 @@
-From 2946c2d866a100477d5f7a82fa7e7ec03c3d451b Mon Sep 17 00:00:00 2001
-From: root <root@deb.privatedns.com>
-Date: Fri, 14 Jan 2011 22:47:11 -0500
-Subject: [PATCH 2/2] 11025-TeleNPC2
+From 38b06c06c1012d1fff169ffc3806905a5566d795 Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Tue, 8 Feb 2011 02:24:11 -0500
+Subject: [PATCH] 11185-TeleNPC2
 
 ---
  README.NPCTELEPORT                                |   14 +
+ sql/All/setup_npc_teleport.sql                    |  119 +++++++
  sql/CMakeLists.txt                                |    1 +
- sql/telenpc2/setup_npc_teleport.sql               |  119 +++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp |  373 +++++++++++++++++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h   |  151 +++++++++
  src/server/game/Scripting/ScriptLoader.cpp        |    6 +-
@@ -15,7 +15,7 @@ Subject: [PATCH 2/2] 11025-TeleNPC2
  src/server/scripts/Custom/npc_teleport.cpp        |  222 ++++++++++++
  9 files changed, 891 insertions(+), 1 deletions(-)
  create mode 100644 README.NPCTELEPORT
- create mode 100644 sql/telenpc2/setup_npc_teleport.sql
+ create mode 100644 sql/All/setup_npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/scripts/Custom/npc_teleport.cpp
@@ -40,23 +40,11 @@ index 0000000..015c9c2
 +
 +Run the query setup_npc_teleport.sql located in the trinity sql directory on
 +your world DB. This will setup the DB and you can customize from there.
-diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
-index e1b0921..8fca495 100644
---- a/sql/CMakeLists.txt
-+++ b/sql/CMakeLists.txt
-@@ -15,6 +15,7 @@ if( WITH_SQL )
-       scripts
-       base
-       create
-+	  telenpc2
-     DESTINATION
-       shared/trinity/sql
-   )
-diff --git a/sql/telenpc2/setup_npc_teleport.sql b/sql/telenpc2/setup_npc_teleport.sql
+diff --git a/sql/All/setup_npc_teleport.sql b/sql/All/setup_npc_teleport.sql
 new file mode 100644
 index 0000000..03b9e93
 --- /dev/null
-+++ b/sql/telenpc2/setup_npc_teleport.sql
++++ b/sql/All/setup_npc_teleport.sql
 @@ -0,0 +1,119 @@
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
@@ -177,6 +165,18 @@ index 0000000..03b9e93
 +
 +-- `creature_template`
 +INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 'npc_teleport', 1);
+diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
+index e1b0921..4562748 100644
+--- a/sql/CMakeLists.txt
++++ b/sql/CMakeLists.txt
+@@ -15,6 +15,7 @@ if( WITH_SQL )
+       scripts
+       base
+       create
++	  All
+     DESTINATION
+       shared/trinity/sql
+   )
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
 index 0000000..68565db
@@ -714,7 +714,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 794bb10..8dcac68 100755
+index e4bb431..02fd537 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -25,6 +25,9 @@ void AddSC_example_gossip_codebox();
@@ -727,7 +727,7 @@ index 794bb10..8dcac68 100755
  // spells
  void AddSC_deathknight_spell_scripts();
  void AddSC_druid_spell_scripts();
-@@ -1202,6 +1205,7 @@ void AddCustomScripts()
+@@ -1208,6 +1211,7 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -737,7 +737,7 @@ index 794bb10..8dcac68 100755
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index a0a1c82..66ce84b 100755
+index 8b97aa2..8b7e69f 100755
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -25,6 +25,7 @@
@@ -756,7 +756,7 @@ index a0a1c82..66ce84b 100755
 +	LoadNpcTele();
  
      sLog->outString("Loading C++ scripts");
-     
+ 
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index 17d4bfc..90eae34 100644
 --- a/src/server/scripts/CMakeLists.txt
