@@ -1,7 +1,7 @@
-From 734aefdbb86b66bf5a3e348e1dcb1c8c718b4276 Mon Sep 17 00:00:00 2001
-From: root <root@deb.privatedns.com>
-Date: Fri, 7 Jan 2011 10:44:29 -0500
-Subject: [PATCH] 10969-Argent-Tournament
+From 38bda719d822d463583c8ec6e87fb450dd0f274b Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Tue, 8 Feb 2011 01:36:50 -0500
+Subject: [PATCH] 11185-Argent-Tournament
 
 ---
  sql/CMakeLists.txt                                 |    1 +
@@ -28,7 +28,7 @@ index e1b0921..d2c54f0 100644
    )
 diff --git a/sql/argent/world_argenttournament.sql b/sql/argent/world_argenttournament.sql
 new file mode 100644
-index 0000000..06aff31
+index 0000000..4379f9d
 --- /dev/null
 +++ b/sql/argent/world_argenttournament.sql
 @@ -0,0 +1,425 @@
@@ -459,10 +459,10 @@ index 0000000..06aff31
 +UPDATE `creature_template` SET `ScriptName` = 'npc_onyx_flamecaller' WHERE `entry` = '39814'
 \ No newline at end of file
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 4efbbc7..b80462a 100755
+index 13d3a3e..2268544 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -835,6 +835,10 @@ class ObjectMgr
+@@ -863,6 +863,10 @@ class ObjectMgr
          {
              return &mCreatureQuestRelations;
          }
@@ -470,19 +470,17 @@ index 4efbbc7..b80462a 100755
 +        {
 +            return &mCreatureQuestInvolvedRelations;
 +        }
-
+ 
          QuestRelationBounds GetCreatureQuestRelationBounds(uint32 creature_entry)
          {
 diff --git a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-index eefb866..5d0a560 100755
+index eefb866..c65bdeb 100755
 --- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-@@ -750,6 +750,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
-     {
-         sLog->outError("WORLD: unknown PET spell id %i", spellId);
+@@ -752,6 +752,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
          return;
-+    }
-+
+     }
+ 
 +    switch(spellId)
 +    {
 +	    case 64077:
@@ -490,14 +488,16 @@ index eefb866..5d0a560 100755
 +		    _player->CastSpell(caster, spellId, true);
 +		    return;
 +	    }
-     }
-
++    }
++
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
+         if (caster->GetTypeId() == TYPEID_UNIT && caster->ToCreature()->GetGlobalCooldown() > 0)
+         {
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 862aa99..fba7f54 100755
+index 86268cf..1889198 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -4435,7 +4435,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4451,7 +4451,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
@@ -532,9 +532,9 @@ index 862aa99..fba7f54 100755
                  case 22539:
                  case 22972:
                  case 22975:
-@@ -4896,9 +4922,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4912,9 +4938,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                          return;
-
+ 
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
 +			{
                          m_caster->CastSpell(m_caster, 63914, true);
@@ -549,7 +549,7 @@ index 862aa99..fba7f54 100755
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5250,6 +5282,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5256,6 +5288,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
@@ -557,7 +557,7 @@ index 862aa99..fba7f54 100755
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
                      Player *plr = unitTarget->ToPlayer();
-@@ -5260,6 +5293,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5266,6 +5299,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                              return;
                      DoCreateItem(effIndex, itemId[urand(0,4)]);
                      return;
@@ -566,21 +566,21 @@ index 862aa99..fba7f54 100755
              break;
          }
 diff --git a/src/server/scripts/Northrend/grizzly_hills.cpp b/src/server/scripts/Northrend/grizzly_hills.cpp
-index 67e0ad5..3580b19 100644
+index 67e0ad5..94dfc7e 100644
 --- a/src/server/scripts/Northrend/grizzly_hills.cpp
 +++ b/src/server/scripts/Northrend/grizzly_hills.cpp
 @@ -29,6 +29,7 @@ EndContentData */
-
+ 
  #include "ScriptPCH.h"
  #include "ScriptedEscortAI.h"
 +#include "ScriptedFollowerAI.h"
-
+ 
  #define GOSSIP_ITEM1 "You're free to go Orsonn, but first tell me what's wrong with the furbolg."
  #define GOSSIP_ITEM2 "What happened then?"
 @@ -798,6 +799,217 @@ public:
      };
  };
-
+ 
 +/*######
 +## Quest 13666 & 13673:  Une lame digne d'un champion!
 +######*/
@@ -804,27 +804,27 @@ index 67e0ad5..3580b19 100644
 +    new npc_maiden_of_drak_mar;
  }
 diff --git a/src/server/scripts/Northrend/icecrown.cpp b/src/server/scripts/Northrend/icecrown.cpp
-index 808717a..cfcb8aa 100644
+index 808717a..53c18a1 100644
 --- a/src/server/scripts/Northrend/icecrown.cpp
 +++ b/src/server/scripts/Northrend/icecrown.cpp
 @@ -157,7 +157,7 @@ enum eSquireDavid
-
+ 
      NPC_ARGENT_VALIANT                                  = 33448,
-
+ 
 -    GOSSIP_TEXTID_SQUIRE                                = 14407
 +    GOSSIP_TEXTID_SQUIRE_DAVID                                = 14407
  };
-
+ 
  #define GOSSIP_SQUIRE_ITEM_1 "I am ready to fight!"
 @@ -177,19 +177,20 @@ public:
              pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
          }
-
+ 
 -        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE, pCreature->GetGUID());
 +        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE_DAVID, pCreature->GetGUID());
          return true;
      }
-
+ 
      bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
      {
 -        pPlayer->PlayerTalkClass->ClearMenus();
@@ -844,17 +844,17 @@ index 808717a..cfcb8aa 100644
 +	    return true;
      }
  };
-
+ 
 @@ -201,10 +202,25 @@ enum eArgentValiant
  {
      SPELL_CHARGE                = 63010,
      SPELL_SHIELD_BREAKER        = 65147,
 +    SPELL_DEFEND		= 62719,
 +    SPELL_THRUST		= 62544,
-
+ 
      NPC_ARGENT_VALIANT_CREDIT   = 24108
  };
-
+ 
 +enum eValiantText
 +{
 +	NPC_FACTION_VAILIANT_TEXT_SAY_START_1 	= -1850004,//	Tenez-vous prêt !
@@ -880,21 +880,21 @@ index 808717a..cfcb8aa 100644
              pCreature->GetMotionMaster()->MovePoint(0,8599.258f,963.951f,547.553f);
              pCreature->setFaction(35); //wrong faction in db?
          }
-
+ 
          uint32 uiChargeTimer;
          uint32 uiShieldBreakerTimer;
 +	uint32 uiDefendTimer;
-
+ 
          void Reset()
          {
              uiChargeTimer = 7000;
              uiShieldBreakerTimer = 10000;
 +	    uiDefendTimer = 10000;
          }
-
+ 
          void MovementInform(uint32 uiType, uint32 /*uiId*/)
 @@ -237,15 +257,54 @@ public:
-
+ 
          void DamageTaken(Unit* pDoneBy, uint32& uiDamage)
          {
 -            if (uiDamage > me->GetHealth() && pDoneBy->GetTypeId() == TYPEID_PLAYER)
@@ -955,12 +955,12 @@ index 808717a..cfcb8aa 100644
 +        {
 +		DoScriptText(NPC_ARGENT_VAILIANT_TEXT_SAY_START, me);
          }
-
+ 
          void UpdateAI(const uint32 uiDiff)
 @@ -265,6 +324,12 @@ public:
                  uiShieldBreakerTimer = 10000;
              } else uiShieldBreakerTimer -= uiDiff;
-
+ 
 +            if (uiDefendTimer <= uiDiff)
 +            {
 +	        me->CastSpell(me, SPELL_DEFEND, true);
@@ -973,7 +973,7 @@ index 808717a..cfcb8aa 100644
 @@ -423,6 +488,943 @@ public:
      }
  };
-
+ 
 +/*######
 +## npc_vendor_argent_tournament
 +######*/
@@ -1932,6 +1932,6 @@ index 808717a..cfcb8aa 100644
 +    new npc_squire_danny;
 +    new npc_argent_champion;
  }
---
-1.5.6.5
+-- 
+1.7.2.3
 
