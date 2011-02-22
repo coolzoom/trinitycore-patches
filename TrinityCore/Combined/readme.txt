@@ -16,7 +16,7 @@ Wintergrasp
 XP After Level 100
 rest on duel (resets your hp's mana etc, and should reset cooldown timers after duel ends)
 TrinityJail
-Playerbots\npc bots (buggy)
+
 
 Not Included:
 AC2
