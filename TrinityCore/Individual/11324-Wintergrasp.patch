@@ -1,60 +1,49 @@
-From bacbd320cd6c09f8231df9f17fa8362653b39152 Mon Sep 17 00:00:00 2001
+From 785385ad9af3c88061668188aa41658f9c103c40 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Wed, 23 Feb 2011 10:10:57 -0500
-Subject: [PATCH] 11282-wintergrasp
+Date: Mon, 28 Feb 2011 15:11:17 -0500
+Subject: [PATCH] 11324-Wintergrasp
 
 ---
- sql/CMakeLists.txt                                 |    1 +
- sql/extras/Wintergrasp_world.sql                   |  153 ++
+ sql/Wintergrasp_world.sql                          |  134 ++
  src/server/game/CMakeLists.txt                     |    1 +
  src/server/game/Chat/Chat.cpp                      |   12 +
  src/server/game/Chat/Chat.h                        |    8 +
  src/server/game/Chat/Commands/Level2.cpp           |  146 ++
- src/server/game/Entities/GameObject/GameObject.cpp |    4 +-
+ src/server/game/Entities/GameObject/GameObject.cpp |    9 +-
  src/server/game/Entities/Player/Player.cpp         |    8 +
+ src/server/game/Entities/Vehicle/Vehicle.cpp       |   26 +
+ src/server/game/Entities/Vehicle/Vehicle.h         |    2 +
  src/server/game/Miscellaneous/Language.h           |   23 +
  src/server/game/OutdoorPvP/OutdoorPvP.h            |    3 +-
  src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    1 +
  src/server/game/Scripting/ScriptLoader.cpp         |    5 +
  .../Protocol/Handlers/BattleGroundHandler.cpp      |   14 +
- src/server/game/Spells/Auras/SpellAuraEffects.cpp  |    2 +
+ src/server/game/Spells/Auras/SpellAuraEffects.cpp  |    7 +
  src/server/game/Spells/Spell.cpp                   |   12 +
- src/server/game/Spells/SpellEffects.cpp            |   31 +
+ src/server/game/Spells/SpellEffects.cpp            |   34 +
  src/server/game/Spells/SpellMgr.cpp                |   17 +
  src/server/game/World/World.cpp                    |   44 +
  src/server/game/World/World.h                      |   27 +
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Northrend/CMakeLists.txt        |    1 +
  .../VaultOfArchavon/instance_vault_of_archavon.cpp |   17 +
- src/server/scripts/Northrend/wintergrasp.cpp       |  417 ++++
+ src/server/scripts/Northrend/wintergrasp.cpp       |  111 +
  src/server/scripts/OutdoorPvP/CMakeLists.txt       |    2 +
- src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2532 ++++++++++++++++++++
- src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  343 +++
+ src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2301 ++++++++++++++++++++
+ src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  341 +++
  src/server/worldserver/worldserver.conf.dist       |   96 +
- 27 files changed, 3918 insertions(+), 3 deletions(-)
- create mode 100644 sql/extras/Wintergrasp_world.sql
+ 28 files changed, 3400 insertions(+), 3 deletions(-)
+ create mode 100644 sql/Wintergrasp_world.sql
  create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.h
 
-diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
-index e1b0921..4562748 100644
---- a/sql/CMakeLists.txt
-+++ b/sql/CMakeLists.txt
-@@ -15,6 +15,7 @@ if( WITH_SQL )
-       scripts
-       base
-       create
-+	  All
-     DESTINATION
-       shared/trinity/sql
-   )
-diff --git a/sql/extras/Wintergrasp_world.sql b/sql/extras/Wintergrasp_world.sql
+diff --git a/sql/Wintergrasp_world.sql b/sql/Wintergrasp_world.sql
 new file mode 100644
-index 0000000..78d6601
+index 0000000..a9b3a2e
 --- /dev/null
-+++ b/sql/extras/Wintergrasp_world.sql
-@@ -0,0 +1,153 @@
++++ b/sql/Wintergrasp_world.sql
+@@ -0,0 +1,134 @@
 +/*NOTE! Included Cyrillic Fonts - open it in UTF8 coding*/
 +
 +SET NAMES 'utf8';
@@ -116,6 +105,7 @@ index 0000000..78d6601
 +* 194323 - [Wintergrasp Keep Collision Wall X:5396.209961 Y:2840.010010 Z:432.268005 MapId:571
 +* 194162 - [Doodad_WG_Keep_Door01_collision01 X:5397.109863 Y:2841.540039 Z:425.901001 MapId:571]*/
 +DELETE FROM gameobject WHERE id IN ('194323', '194162');
++UPDATE `gameobject_template` SET `type` = 6, `faction` = 0, `data2` = 10, `data3` = 54643, `ScriptName` = 'go_wg_veh_teleporter' WHERE `entry` = 192951;
 +
 +/* Titan Relic remove */
 +DELETE FROM `gameobject` WHERE `id`=192829;
@@ -145,6 +135,7 @@ index 0000000..78d6601
 +
 +/* Workshop */
 +UPDATE `gameobject_template` SET `faction` = 35 WHERE `entry` IN (192028,192029,192030,192031,192032,192033);
++
 +
 +/*WG Spell area Data */
 +/*For wg antifly */
@@ -187,27 +178,6 @@ index 0000000..78d6601
 +(57940, 4494, 0, 0, 0, 0, 0, 2, 1),
 +(57940, 4603, 0, 0, 0, 0, 0, 2, 1),
 +(58045, 4197, 0, 0, 0, 0, 0, 2, 1);
-+
-+/* Portal Dalaran->WG */
-+DELETE FROM `gameobject` WHERE `id`=193772;
-+INSERT INTO `gameobject` (`guid`,`id`,`map`,`spawnMask`,`phaseMask`,`position_x`,`position_y`,`position_z`,`orientation`,`rotation0`,`rotation1`,`rotation2`,`rotation3`,`spawntimesecs`,`animprogress`,`state`) VALUES
-+('', 193772, 571, 1, 65535, 5924.11, 573.387, 661.087, 4.43208, 0, 0, 0.798953, -0.601393, 300, 0, 1),
-+('', 193772, 571, 1, 65535, 5686.57, 772.921, 647.754, 5.62225, 0, 0, 0.324484, -0.945891, 600, 0, 1),
-+('', 193772, 571, 1, 65535, 5930.82, 548.961, 640.632, 1.88506, 0, 0, 0.809047, 0.587744, 300, 0, 1);
-+
-+
-+/* Wintergrasp Battle-Mage */
-+DELETE FROM `creature` WHERE `id`=32170;
-+INSERT INTO `creature` (`guid`,`id`,`map`,`spawnMask`,`phaseMask`,`modelid`,`equipment_id`,`position_x`,`position_y`,`position_z`,`orientation`,`spawntimesecs`,`spawndist`,`currentwaypoint`,`curhealth`,`curmana`,`DeathState`,`MovementType`,`npcflag`,`unit_flags`,`dynamicflags`) VALUES
-+('', 32170, 571, 1, 65535, 27801, 0, 5925.34, 573.71, 661.087, 4.06662, 300, 0, 0, 504000, 440700, 0, 0, 0, 0, 0),
-+('', 32170, 571, 1, 64, 0, 918, 5932.96, 549.906, 641.595, 2.09189, 300, 0, 0, 504000, 440700, 0, 0, 0, 0, 0);
-+UPDATE `creature_template` SET `ScriptName`='npc_wg_ally_battle_mage' WHERE `entry`=32169;
-+UPDATE `creature_template` SET `ScriptName`='npc_wg_horde_battle_mage' WHERE `entry`=32170;
-+DELETE FROM `spell_target_position` WHERE id IN (58633, 58632, 59096);
-+INSERT INTO `spell_target_position` (`id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`) VALUES 
-+(58632, 571, 5095.104980, 2170.985840, 365.603210, 2.367906),
-+(58633, 571, 5025.775879, 3673.123779, 362.671295, 4.197887),
-+(59096, 571, 5324.776367, 2841.025391, 406.280334, 3.143867);
 \ No newline at end of file
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
 index 323a3ac..7d94186 100644
@@ -435,10 +405,22 @@ index 00962a9..7de2a19 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/GameObject/GameObject.cpp b/src/server/game/Entities/GameObject/GameObject.cpp
-index 6bbb178..2075503 100755
+index 6bbb178..74b4c8c 100755
 --- a/src/server/game/Entities/GameObject/GameObject.cpp
 +++ b/src/server/game/Entities/GameObject/GameObject.cpp
-@@ -1693,7 +1693,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
+@@ -451,6 +451,11 @@ void GameObject::Update(uint32 diff)
+                         if (goInfo->trap.spellId)
+                             CastSpell(ok, goInfo->trap.spellId);
+ 
++                        // allow to use scripts
++                        if (ok->GetTypeId() == TYPEID_PLAYER)
++                            if (sScriptMgr->OnGossipHello(ok->ToPlayer(), this))
++                                return;
++
+                         m_cooldownTime = time(NULL) + 4;        // 4 seconds
+ 
+                         if (owner)  // || goInfo->trap.charges == 1)
+@@ -1693,7 +1698,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
              RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
  
              SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DESTROYED);
@@ -447,7 +429,7 @@ index 6bbb178..2075503 100755
              EventInform(m_goInfo->building.destroyedEvent);
              if (pwho)
                  if (Battleground* bg = pwho->GetBattleground())
-@@ -1719,7 +1719,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
+@@ -1719,7 +1724,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
                  m_goValue->building.health = 1;
  
              SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
@@ -457,7 +439,7 @@ index 6bbb178..2075503 100755
              hitType = BG_OBJECT_DMG_HIT_TYPE_JUST_HIGH_DAMAGED;
          }
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 1179eef..5410035 100755
+index 9a850fd..e70d272 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -70,6 +70,7 @@
@@ -468,7 +450,7 @@ index 1179eef..5410035 100755
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -8806,6 +8807,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
+@@ -8808,6 +8809,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                                                              // 8 Arena season id
      data << uint32(0xF3D) << uint32(sWorld->getIntConfig(CONFIG_ARENA_SEASON_ID));
  
@@ -482,6 +464,62 @@ index 1179eef..5410035 100755
      if (mapid == 530)                                       // Outland
      {
          data << uint32(0x9bf) << uint32(0x0);               // 7
+diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Entities/Vehicle/Vehicle.cpp
+index 74006d5..10ce39c 100755
+--- a/src/server/game/Entities/Vehicle/Vehicle.cpp
++++ b/src/server/game/Entities/Vehicle/Vehicle.cpp
+@@ -541,4 +541,30 @@ uint8 Vehicle::GetAvailableSeatCount() const
+             ++ret;
+ 
+     return ret;
++}
++
++void Vehicle::Relocate(Position pos)
++{
++    sLog->outDebug(LOG_FILTER_VEHICLES, "Vehicle::Relocate %u", me->GetEntry());
++
++    std::set<Unit*> vehiclePlayers;
++    for (int8 i = 0; i < 8; i++)
++        vehiclePlayers.insert(GetPassenger(i));
++
++    // passengers should be removed or they will have movement stuck
++    RemoveAllPassengers();
++
++    for (std::set<Unit*>::const_iterator itr = vehiclePlayers.begin(); itr != vehiclePlayers.end(); ++itr)
++    {
++        if (Unit* plr = (*itr))
++        {
++            // relocate/setposition doesn't work for player
++            plr->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
++            //plr->TeleportTo(pPlayer->GetMapId(), triggerPos.GetPositionX(), triggerPos.GetPositionY(), triggerPos.GetPositionZ(), triggerPos.GetOrientation(), TELE_TO_NOT_LEAVE_COMBAT);
++        }
++    }
++
++    me->SetPosition(pos, true);
++    // problems, and impossible to do delayed enter
++    //pPlayer->EnterVehicle(veh);
+ }
+\ No newline at end of file
+diff --git a/src/server/game/Entities/Vehicle/Vehicle.h b/src/server/game/Entities/Vehicle/Vehicle.h
+index 16ff0ca..824be68 100755
+--- a/src/server/game/Entities/Vehicle/Vehicle.h
++++ b/src/server/game/Entities/Vehicle/Vehicle.h
+@@ -23,6 +23,7 @@
+ 
+ struct VehicleEntry;
+ struct VehicleSeatEntry;
++struct Position;
+ class Unit;
+ 
+ enum PowerType
+@@ -136,6 +137,7 @@ class Vehicle
+         void RelocatePassengers(float x, float y, float z, float ang);
+         void RemoveAllPassengers();
+         void Dismiss();
++        void Relocate(Position pos);
+         bool IsVehicleInUse() { return m_Seats.begin() != m_Seats.end(); }
+ 
+         SeatMap m_Seats;
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 24c4114..1b00629 100755
 --- a/src/server/game/Miscellaneous/Language.h
@@ -608,7 +646,7 @@ index 12f4597..974d9c9 100755
  
  
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 1681f6f..fb80037 100755
+index 470fffb..921ca35 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 @@ -35,6 +35,7 @@
@@ -619,14 +657,19 @@ index 1681f6f..fb80037 100755
  
  class Aura;
  //
-@@ -5925,6 +5926,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
-                             target->CastSpell((Unit*)NULL, GetAmount(), true, NULL, this);
-                             break;
-                         case 58600: // Restricted Flight Area
-+                        case 58730: // Restricted Wintergrasp Flight Area
+@@ -5928,6 +5929,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
                              if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
                                  target->CastSpell(target, 58601, true);
                              break;
++                        case 58730: // Restricted Flight Area
++                            if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
++                            {
++                                target->CastSpell(target, 58601, true);
++                                target->CastSpell(target, 45472, true);
++                            }
+                     }
+                     break;
+                 case SPELLFAMILY_MAGE:
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
 index 4d6459b..ae9ccdb 100755
 --- a/src/server/game/Spells/Spell.cpp
@@ -667,7 +710,7 @@ index 4d6459b..ae9ccdb 100755
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 4c0fec1..06d4e1f 100755
+index 727a619..1eb90b2 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -61,6 +61,7 @@
@@ -678,7 +721,7 @@ index 4c0fec1..06d4e1f 100755
  
  pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
  {
-@@ -4378,6 +4379,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4382,6 +4383,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
              switch(m_spellInfo->Id)
              {
@@ -686,7 +729,7 @@ index 4c0fec1..06d4e1f 100755
 +                case 58622:
 +                   {
 +                  if(OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197))
-+                        if(unitTarget->getLevel() > 74)
++                        if(pvpWG->isWarTime() || pvpWG->m_timer<300000)
 +                        {
 +                        if ((pvpWG->getDefenderTeam()==TEAM_ALLIANCE) && (unitTarget->ToPlayer()->GetTeam() == ALLIANCE))
 +                        unitTarget->CastSpell(unitTarget, SPELL_TELEPORT_FORTRESS, true);
@@ -703,7 +746,7 @@ index 4c0fec1..06d4e1f 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -7044,9 +7063,21 @@ void Spell::EffectPlayerNotification(SpellEffIndex /*effIndex*/)
+@@ -7048,9 +7067,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex /*effIndex*/)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
@@ -712,21 +755,24 @@ index 4c0fec1..06d4e1f 100755
      switch(m_spellInfo->Id)
      {
          case 58730: // Restricted Flight Area
++           {
 +             if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+             {
-+                if (pvpWG->isWarTime()==true)
-+                {
-+                   unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
-+                   unitTarget->PlayDirectSound(9417); // Fel Reaver sound
-+                   unitTarget->MonsterTextEmote("The air is too thin in Wintergrasp for normal flight. You will be ejected in 9 sec.",unitTarget->GetGUID(),true);
-+                } else unitTarget->RemoveAura(58730);
++              {
++              if (pvpWG->isWarTime()==true)
++               {
++                unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
++                unitTarget->PlayDirectSound(9417); // Fel Reaver sound
++                unitTarget->MonsterTextEmote("The air is too thin in Wintergrasp for normal flight. You will be ejected in 9 sec.",unitTarget->GetGUID(),true);
++               break;
++               } else unitTarget->RemoveAura(58730);
 +              }
 +            break;
++            }
          case 58600: // Restricted Flight Area
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index d0b6fef..6932771 100755
+index e0f50ba..5df2004 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
 @@ -28,6 +28,8 @@
@@ -758,8 +804,8 @@ index d0b6fef..6932771 100755
 +				  if ((pvpWG->isWarTime()==false) || !player || (!player->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED) && !player->HasAuraType(SPELL_AURA_FLY)) || player->HasAura(45472) || player->HasAura(44795) || player->GetPositionZ() > 619.2f || player->isInFlight())
 +				    return false;
 +				}
-+                break;
 +			}
++            break;
 +        case 58045: // Essence of Wintergrasp - Wintergrasp
 +        case 57940: // Essence of Wintergrasp - Northrend
 +             if (!player || player->GetTeamId() != sWorld->getWorldState(WORLDSTATE_WINTERGRASP_CONTROLING_FACTION))
@@ -835,7 +881,7 @@ index 586a931..16da4c9 100755
 +}
 \ No newline at end of file
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7e052ed..5419397 100755
+index 7e052ed..79ea81e 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -163,6 +163,9 @@ enum WorldBoolConfigs
@@ -848,10 +894,10 @@ index 7e052ed..5419397 100755
      BOOL_CONFIG_VALUE_COUNT
  };
  
-@@ -310,6 +313,18 @@ enum WorldIntConfigs
+@@ -309,6 +312,18 @@ enum WorldIntConfigs
+     CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
      CONFIG_PERSISTENT_CHARACTER_CLEAN_FLAGS,
-     CONFIG_MAX_INSTANCES_PER_HOUR,
 +    CONFIG_OUTDOORPVP_WINTERGRASP_START_TIME,
 +    CONFIG_OUTDOORPVP_WINTERGRASP_BATTLE_TIME,
 +    CONFIG_OUTDOORPVP_WINTERGRASP_INTERVAL,
@@ -864,9 +910,9 @@ index 7e052ed..5419397 100755
 +    CONFIG_OUTDOORPVP_WINTERGRASP_SAVESTATE_PERIOD,
 +    CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ATK,
 +    CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_DEF,
+     CONFIG_MAX_INSTANCES_PER_HOUR,
      INT_CONFIG_VALUE_COUNT
  };
- 
 @@ -741,6 +756,18 @@ class World
  
          uint32 GetCleaningFlags() { return m_CleaningFlags; }
@@ -947,10 +993,10 @@ index 904566e..09b6bf6 100644
                  switch (creature->GetEntry())
 diff --git a/src/server/scripts/Northrend/wintergrasp.cpp b/src/server/scripts/Northrend/wintergrasp.cpp
 new file mode 100644
-index 0000000..208c9a7
+index 0000000..b819aee
 --- /dev/null
 +++ b/src/server/scripts/Northrend/wintergrasp.cpp
-@@ -0,0 +1,417 @@
+@@ -0,0 +1,111 @@
 +/* Copyright (C) 2008 - 2009 Trinity <http://www.trinitycore.org/>
 +*
 + * Patch supported by ChaosUA & TCRU community http://trinity-core.ru/
@@ -972,7 +1018,6 @@ index 0000000..208c9a7
 +
 +#include "ScriptPCH.h"
 +#include "OutdoorPvPWG.h"
-+#include "OutdoorPvPMgr.h"
 +
 +#define GOSSIP_HELLO_DEMO1  "Build catapult."
 +#define GOSSIP_HELLO_DEMO2  "Build demolisher."
@@ -1039,334 +1084,29 @@ index 0000000..208c9a7
 +
 +};
 +
-+enum eWintergraspBattleMage
-+{
-+    SPELL_PORTAL_VISUAL        = 60223,
-+    GO_WINTERGRASP_PORTAL    = 193772
-+};
-+
-+class npc_wg_ally_battle_mage : public CreatureScript
++class go_wg_veh_teleporter : public GameObjectScript
 +{
 +public:
-+    npc_wg_ally_battle_mage() : CreatureScript("npc_wg_ally_battle_mage") { }
++    go_wg_veh_teleporter() : GameObjectScript("go_wg_veh_teleporter") { }
 +
-+    CreatureAI *GetAI(Creature *creature) const
++    bool OnGossipHello(Player *pPlayer, GameObject * pGO)
 +    {
-+        return new npc_wg_ally_battle_mageAI(creature);
-+    }
-+
-+    bool OnGossipHello(Player* pPlayer, Creature* pCreature)
-+    {
-+        if (!sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+            return false;
-+
-+        if (OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197))
-+        {
-+            if (pvpWG->isWarTime())
++        if (GameObject* trigger = pGO->FindNearestGameObject(190375, 500)) // Wintergrasp Fortress Gate
++            if (Vehicle * veh = pPlayer->GetVehicle())
 +            {
-+                if (pvpWG->getDefenderTeam() == TEAM_HORDE)
-+                    pPlayer->SEND_GOSSIP_MENU(14777, pCreature->GetGUID());
-+                else
-+                    pPlayer->SEND_GOSSIP_MENU(14781, pCreature->GetGUID());
++                Position triggerPos;
++                trigger->GetPosition(&triggerPos);
++                triggerPos.m_positionX -= 30;
++                veh->Relocate(triggerPos);
 +            }
-+            else
-+            {
-+                if (pvpWG->getDefenderTeam() == TEAM_HORDE)
-+                    pPlayer->SEND_GOSSIP_MENU(14775, pCreature->GetGUID());
-+                else
-+                    pPlayer->SEND_GOSSIP_MENU(14782, pCreature->GetGUID());
-+            }
-+        }
++        
 +        return true;
 +    }
-+
-+    struct npc_wg_ally_battle_mageAI : public ScriptedAI
-+    {
-+        npc_wg_ally_battle_mageAI(Creature* pCreature) : ScriptedAI(pCreature)
-+        {
-+            uiPortalTimer = 0;
-+            uiPortalPhase = 0;
-+            Check = true;
-+        }
-+
-+        uint32 uiPortalTimer;
-+        uint8 uiPortalPhase;
-+        GameObject* WintergraspPortal;
-+        bool Player;
-+        bool Check;
-+        bool Check2;
-+
-+        void UpdateAI(const uint32 diff)
-+        {
-+            // If WG is disabled, don't do anything.
-+            if (!sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+                return;
-+
-+            if (OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197))
-+            {
-+                // Get playerlist if there is.
-+                if (pvpWG->isWarTime() && Check == true)
-+                {
-+                    Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
-+                    for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-+                    {
-+                        if (!PlayerList.isEmpty())
-+                        {
-+                            if (i->getSource()->GetDistance2d(me) <= 75)
-+                            {
-+                                Player = true;
-+                                Check = false;
-+                            }
-+                            else
-+                            {
-+                                Player = false;
-+                                Check = false;
-+                                Check2 = true;
-+                            }
-+                        }
-+                        else
-+                        {
-+                            Player = false;
-+                            Check = false;
-+                            Check2 = true;
-+                        }
-+                    }
-+                }
-+
-+                if (pvpWG->m_changeAlly != true) // If wg is switching (.wg switch)
-+                {
-+                    if (pvpWG->isWarTime())
-+                    {
-+                        if (Player == true) //(false) If there isn't any player, then, don't cast the portal spell. Just summon gameobject.
-+                        {
-+                            if (uiPortalTimer <= diff)
-+                            {
-+                                switch (uiPortalPhase)
-+                                {
-+                                case 0:
-+                                    me->SetOrientation(4.037271f);
-+                                    me->SendMovementFlagUpdate();
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 100;
-+                                    break;
-+                                case 1:
-+                                    me->AI()->DoCast(SPELL_PORTAL_VISUAL);
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 900;
-+                                    break;
-+                                case 2:
-+                                    WintergraspPortal = me->SummonGameObject(GO_WINTERGRASP_PORTAL, 5686.974609f, 773.303711f, 647.753235f, 5.572729f, 0, 0, 0.324484f, -0.945891f, 0);
-+                                    me->SetOrientation(5.515240f);
-+                                    me->SendMovementFlagUpdate();
-+                                    me->MonsterYell("Reinforcements are needed on the Wintergrasp battlefield! I have opened a portal for quick travel to the battle at The Silver Enclave.", LANG_UNIVERSAL, 0);
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 1000;
-+                                    break;
-+                                }
-+                            }else uiPortalTimer -= diff;
-+                        }
-+                        else
-+                        {
-+                            if (Check2 == true) // If the portal isn't exist
-+                            {
-+                                WintergraspPortal = me->SummonGameObject(GO_WINTERGRASP_PORTAL, 5686.974609f, 773.303711f, 647.753235f, 5.572729f, 0, 0, 0.324484f, -0.945891f, 0);
-+                                Check2 = false;
-+                            }
-+                        }
-+                    }
-+                    else
-+                    {
-+                        if (pvpWG->getDefenderTeam() == TEAM_ALLIANCE)
-+                        {
-+                            if (pvpWG->m_timer <= 3600000) // An hour before battle begin, the portal will disappear.
-+                            {
-+                                uiPortalTimer = 0;
-+                                uiPortalPhase = 0;
-+                                Check = true;
-+                                Check2 = false;
-+                                if (GameObject* WintergraspPortal = me->FindNearestGameObject(GO_WINTERGRASP_PORTAL, 5.0f)) // If the portal is exist
-+                                    WintergraspPortal->RemoveFromWorld();
-+                            }
-+                        }
-+                        else
-+                        {
-+                            uiPortalTimer = 0;
-+                            uiPortalPhase = 0;
-+                            Check = true;
-+                            Check2 = false;
-+                            if (GameObject* WintergraspPortal = me->FindNearestGameObject(GO_WINTERGRASP_PORTAL, 5.0f)) // If the portal is exist
-+                                WintergraspPortal->RemoveFromWorld();
-+                        }
-+                    }
-+                }
-+            }
-+        }
-+    };
-+};
-+
-+class npc_wg_horde_battle_mage : public CreatureScript
-+{
-+public:
-+    npc_wg_horde_battle_mage() : CreatureScript("npc_wg_horde_battle_mage") { }
-+
-+    CreatureAI *GetAI(Creature *creature) const
-+    {
-+        return new npc_wg_horde_battle_mageAI(creature);
-+    }
-+
-+    bool OnGossipHello(Player* pPlayer, Creature* pCreature)
-+    {
-+        if (!sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+            return false;
-+
-+        if (OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197))
-+        {
-+            if (pvpWG->isWarTime())
-+            {
-+                if (pvpWG->getDefenderTeam() == TEAM_HORDE)
-+                    pPlayer->SEND_GOSSIP_MENU(14777, pCreature->GetGUID());
-+                else
-+                    pPlayer->SEND_GOSSIP_MENU(14781, pCreature->GetGUID());
-+            }
-+            else
-+            {
-+                if (pvpWG->getDefenderTeam() == TEAM_HORDE)
-+                    pPlayer->SEND_GOSSIP_MENU(14775, pCreature->GetGUID());
-+                else
-+                    pPlayer->SEND_GOSSIP_MENU(14782, pCreature->GetGUID());
-+            }
-+        }
-+        return true;
-+    }
-+
-+    struct npc_wg_horde_battle_mageAI : public ScriptedAI
-+    {
-+        npc_wg_horde_battle_mageAI(Creature* pCreature) : ScriptedAI(pCreature)
-+        {
-+            uiPortalTimer = 0;
-+            uiPortalPhase = 0;
-+            Check = true;
-+        }
-+
-+        uint32 uiPortalTimer;
-+        uint8 uiPortalPhase;
-+        GameObject* WintergraspPortal;
-+        bool Player;
-+        bool Check;
-+        bool Check2;
-+
-+        void UpdateAI(const uint32 diff)
-+        {
-+            // If WG is disabled, don't do anything.
-+            if (!sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+                return;
-+
-+            if (OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197))
-+            {
-+                // Get playerlist if there is.
-+                if (pvpWG->isWarTime() && Check == true)
-+                {
-+                    Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
-+                    for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-+                    {
-+                        if (!PlayerList.isEmpty())
-+                        {
-+                            if (i->getSource()->GetDistance2d(me) <= 75)
-+                            {
-+                                Player = true;
-+                                Check = false;
-+                            }
-+                            else
-+                            {
-+                                Player = false;
-+                                Check = false;
-+                                Check2 = true;
-+                            }
-+                        }
-+                        else
-+                        {
-+                            Player = false;
-+                            Check = false;
-+                            Check2 = true;
-+                        }
-+                    }
-+                }
-+
-+                if (pvpWG->m_changeHorde != true) // If wg is switching (.wg switch)
-+                {
-+                    if (pvpWG->isWarTime())
-+                    {
-+                        if (Player == true) //(false) If there isn't any player, then, don't cast the portal spell. Just summon gameobject.
-+                        {
-+                            if (uiPortalTimer <= diff)
-+                            {
-+                                switch (uiPortalPhase)
-+                                {
-+                                case 0:
-+                                    me->SetOrientation(4.356160f);
-+                                    me->SendMovementFlagUpdate();
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 100;
-+                                    break;
-+                                case 1:
-+                                    me->AI()->DoCast(SPELL_PORTAL_VISUAL);
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 900;
-+                                    break;
-+                                case 2:
-+                                    WintergraspPortal = me->SummonGameObject(GO_WINTERGRASP_PORTAL, 5924.042969f, 570.354492f, 661.087280f, 5.930885f, 0, 0, 0.324484f, -0.945891f, 0);
-+                                    me->SetOrientation(6.003930f);
-+                                    me->SendMovementFlagUpdate();
-+                                    ++uiPortalPhase;
-+                                    uiPortalTimer = 1000;
-+                                    break;
-+                                }
-+                            }else uiPortalTimer -= diff;
-+                        }
-+                        else
-+                        {
-+                            if (Check2 == true) // If the portal isn't exist
-+                            {
-+                                WintergraspPortal = me->SummonGameObject(GO_WINTERGRASP_PORTAL, 5686.974609f, 773.303711f, 647.753235f, 5.572729f, 0, 0, 0.324484f, -0.945891f, 0);
-+                                Check2 = false;
-+                            }
-+                        }
-+                    }
-+                    else
-+                    {
-+                        if (pvpWG->getDefenderTeam() == TEAM_HORDE)
-+                        {
-+                            if (pvpWG->m_timer <= 3600000) // An hour before battle begin, the portal will disappear.
-+                            {
-+                                uiPortalTimer = 0;
-+                                uiPortalPhase = 0;
-+                                Check = true;
-+                                Check2 = false;
-+                                if (GameObject* WintergraspPortal = me->FindNearestGameObject(GO_WINTERGRASP_PORTAL, 5.0f)) // If the portal is exist
-+                                    WintergraspPortal->RemoveFromWorld();
-+                            }
-+                        }
-+                        else
-+                        {
-+                            uiPortalTimer = 0;
-+                            uiPortalPhase = 0;
-+                            Check = true;
-+                            Check2 = false;
-+                            if (GameObject* WintergraspPortal = me->FindNearestGameObject(GO_WINTERGRASP_PORTAL, 5.0f)) // If the portal is exist
-+                                WintergraspPortal->RemoveFromWorld();
-+                        }
-+                    }
-+                }
-+            }
-+        }
-+    };
 +};
 +
 +void AddSC_wintergrasp()
 +{
 +    new npc_demolisher_engineerer();
-+    new npc_wg_ally_battle_mage();
-+    new npc_wg_horde_battle_mage();
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/OutdoorPvP/CMakeLists.txt b/src/server/scripts/OutdoorPvP/CMakeLists.txt
@@ -1384,10 +1124,10 @@ index 5232705..7c39e9f 100644
  message("  -> Prepared: Outdoor PVP Zones")
 diff --git a/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
 new file mode 100644
-index 0000000..a3e15eb
+index 0000000..2f8c81b
 --- /dev/null
 +++ b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
-@@ -0,0 +1,2532 @@
+@@ -0,0 +1,2301 @@
 +/*
 + * Copyright (C) 2008 - 2010 Trinity <http://www.trinitycore.org/>
 + *
@@ -1425,9 +1165,6 @@ index 0000000..a3e15eb
 +uint32 guide_entry_fortress_horde;
 +uint32 guide_entry_fortress_alliance;
 +
-+/* Vehicle teleport system*/
-+Map* pMap;
-+
 +OutdoorPvPWG::OutdoorPvPWG()
 +{
 +    m_TypeId = OUTDOOR_PVP_WG;
@@ -1449,8 +1186,6 @@ index 0000000..a3e15eb
 +    if (cr)
 +    {
 +        cr->UpdateEntry(entry); // SetOriginalEntry as used before may lead to crash
-+       if (cr->GetAreaId() == 4575)
-+           cr->AI()->EnterEvadeMode();
 +        if (entry != cr->GetEntry() || !cr->isAlive())
 +            cr->Respawn(true);
 +        cr->SetVisible(true);
@@ -2178,7 +1913,6 @@ index 0000000..a3e15eb
 +        }
 +        case CREATURE_QUESTGIVER:
 +            m_questgivers[creature->GetDBTableGUIDLow()] = creature;
-+            creature->SetReactState(REACT_PASSIVE);
 +            break;
 +        case CREATURE_ENGINEER:
 +            for (OutdoorPvP::OPvPCapturePointMap::iterator itr = m_capturePoints.begin(); itr != m_capturePoints.end(); ++itr)
@@ -2298,25 +2032,6 @@ index 0000000..a3e15eb
 +            }
 +        }
 +    }
-+
-+   switch(go->GetGOInfo()->displayId)
-+   {
-+       case 8244: // Defender's Portal - Vehicle Teleporter
-+       case 7967: // Titan relic
-+       case 8165: // Wintergrasp Keep Door
-+       case 7877: // Wintergrasp Fortress Wall
-+       case 7878: // Wintergrasp Keep Tower
-+       case 7906: // Wintergrasp Fortress Gate
-+       case 7909: // Wintergrasp Wall
-+       case 7900: // Flamewatch Tower - Shadowsight Tower - Winter's Edge Tower
-+       case 8208: // Goblin Workshop
-+       case 8257: // Big Horde Flag
-+       case 8256: // Big Alliance Flag
-+       case 5652: // Small Horde Flag
-+       case 5651: // Small Alliance Flag
-+           m_gobjects.insert(go);
-+           break;
-+   }
 +}
 +
 +void OutdoorPvPWG::OnGameObjectRemove(GameObject *go)
@@ -2449,8 +2164,6 @@ index 0000000..a3e15eb
 +            }
 +            return false;
 +        case CREATURE_SPIRIT_GUIDE:
-+            /*Vehicle teleport system*/
-+            pMap = creature->GetMap();
 +            if (isWarTime())
 +            {
 +				/* Uncomment if want to enable ressurect for both factions at graveyard
@@ -2481,10 +2194,6 @@ index 0000000..a3e15eb
 +                creature->DisappearAndDie();
 +            }
 +            return false;
-+       case CREATURE_QUESTGIVER:
-+           if (creature)
-+               creature->AI()->EnterEvadeMode();
-+           return false;
 +        case CREATURE_GUARD:
 +        case CREATURE_SPECIAL:
 +        {
@@ -2520,8 +2229,6 @@ index 0000000..a3e15eb
 +            creature->getHostileRefManager().deleteReferences();
 +        }
 +        creature->SetHomePosition(pos);
-+       if (creature->GetEntry() != 30400 || creature->GetEntry() != 30499)
-+           creature->SetReactState(REACT_AGGRESSIVE);
 +        creature->DestroyForNearbyPlayers();
 +        if (!creature->GetMap()->IsLoaded(pos.GetPositionX(), pos.GetPositionY()))
 +            creature->GetMap()->LoadGrid(pos.GetPositionX(), pos.GetPositionY());
@@ -2539,18 +2246,13 @@ index 0000000..a3e15eb
 +//        true  = no need to rebuild (ie: Banners or teleporters)
 +bool OutdoorPvPWG::UpdateGameObjectInfo(GameObject *go) const
 +{
-+    uint32 attFaction;
-+    uint32 defFaction;
++    uint32 attFaction = 35;
++    uint32 defFaction = 35;
 +
 +    if (isWarTime())
 +    {
 +        attFaction = WintergraspFaction[getAttackerTeam()];
 +        defFaction = WintergraspFaction[getDefenderTeam()];
-+    }
-+    else
-+    {
-+        attFaction = 35;
-+        defFaction = 35;
 +    }
 +
 +    switch(go->GetGOInfo()->displayId)
@@ -2561,182 +2263,7 @@ index 0000000..a3e15eb
 +        case 7967: // Titan relic
 +            go->SetUInt32Value(GAMEOBJECT_FACTION, WintergraspFaction[getAttackerTeam()]);
 +            return true;
-+        case 8257: // Big Horde Flag
-+           if (getDefenderTeam() == TEAM_ALLIANCE)
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8256)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8256);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8257)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8257);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           else
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8257)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8257);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8256)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8256);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           return true;
-+        case 8256: // Big Alliance Flag
-+           if (getDefenderTeam() == TEAM_ALLIANCE)
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8257)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8257);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8256)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8256);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           else
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8256)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8256);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 8257)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 8257);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           return true;
-+        case 5652: // Small Horde Flag
-+           if (getDefenderTeam() == TEAM_ALLIANCE)
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5651)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5651);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5652)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5652);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           else
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5652)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5652);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5651)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5651);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           return true;
-+        case 5651: // Small Alliance Flag
-+           if (getDefenderTeam() == TEAM_ALLIANCE)
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5652)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5652);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5651)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5651);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           else
-+           {
-+               if (go->GetAreaId() == 4575 || go->GetAreaId() == 4539 || go->GetAreaId() == 4538) // Wintergrasp Fortress - The Broken Temple - The Sunken Ring
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5651)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5651);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+               else
-+               {
-+                   if (go->GetUInt32Value(GAMEOBJECT_DISPLAYID) != 5652)
-+                   {
-+                       go->SetUInt32Value(GAMEOBJECT_DISPLAYID, 5652);
-+                       go->SummonGameObject(go->GetEntry(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ(), go->GetOrientation(), 0, 0, 0, 0, 0);
-+                       go->RemoveFromWorld();
-+                   }
-+               }
-+           }
-+           return true;
++
 +        case 8165: // Wintergrasp Keep Door
 +        case 7877: // Wintergrasp Fortress Wall
 +        case 7878: // Wintergrasp Keep Tower
@@ -2912,12 +2439,10 @@ index 0000000..a3e15eb
 +    if (ok)
 +    {
 +        if (Group *pGroup = killer->GetGroup())
-+		{
 +            for (GroupReference *itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
 +                if (itr->getSource()->IsAtGroupRewardDistance(killer) && itr->getSource()->getLevel() > 74)
 +                    PromotePlayer(itr->getSource());
-+        }
-+		else if (killer->getLevel() > 74)
++        else if (killer->getLevel() > 74)
 +            PromotePlayer(killer);
 +    }
 +}
@@ -2943,9 +2468,9 @@ index 0000000..a3e15eb
 +
 +    if (allianceNum && hordeNum)
 +        if (allianceNum < hordeNum)
-+            newStack = int32((float(((hordeNum) - (allianceNum))/9.5))); // positive, should cast on alliance
++            newStack = int32((float(hordeNum) / float(allianceNum) - 1)*4); // positive, should cast on alliance
 +        else if (allianceNum > hordeNum)
-+            newStack = int32((float(((allianceNum) - (hordeNum))/9.5))); // negative, should cast on horde
++            newStack = int32((1 - float(allianceNum) / float(hordeNum))*4); // negative, should cast on horde
 + 
 +    if (newStack == m_tenacityStack)
 +        return;
@@ -3059,7 +2584,6 @@ index 0000000..a3e15eb
 +                                    if (Driver && Driver->isAlive())
 +                                    {
 +                                        Creature* New = i->getSource()->SummonCreature(Old->GetEntry(), 5141.191406f, 2841.045410f, 408.703217f, 3.163321f, TEMPSUMMON_MANUAL_DESPAWN);
-+                                        m_vehicles[TEAM_ALLIANCE].insert(New);
 +                                        New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
 +                                        New->SetPower(POWER_RAGE, Old->GetPower(POWER_RAGE));
 +                                        New->SetPower(POWER_FOCUS, Old->GetPower(POWER_FOCUS));
@@ -3100,7 +2624,6 @@ index 0000000..a3e15eb
 +                                    if (Driver && Driver->isAlive())
 +                                    {
 +                                        Creature* New = i->getSource()->SummonCreature(Old->GetEntry(), 5141.191406f, 2841.045410f, 408.703217f, 3.163321f, TEMPSUMMON_MANUAL_DESPAWN);
-+                                        m_vehicles[TEAM_ALLIANCE].insert(New);
 +                                        New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
 +                                        New->SetPower(POWER_RAGE, Old->GetPower(POWER_RAGE));
 +                                        New->SetPower(POWER_FOCUS, Old->GetPower(POWER_FOCUS));
@@ -3147,8 +2670,7 @@ index 0000000..a3e15eb
 +                                    if (Driver && Driver->isAlive())
 +                                    {
 +                                        Creature* New = i->getSource()->SummonCreature(Old->GetEntry(), 5141.191406f, 2841.045410f, 408.703217f, 3.163321f, TEMPSUMMON_MANUAL_DESPAWN);
-+                                        m_vehicles[TEAM_HORDE].insert(New);
-+										New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
++                                        New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
 +                                        New->SetPower(POWER_RAGE, Old->GetPower(POWER_RAGE));
 +                                        New->SetPower(POWER_FOCUS, Old->GetPower(POWER_FOCUS));
 +                                        New->SetPower(POWER_ENERGY, Old->GetPower(POWER_ENERGY));
@@ -3188,8 +2710,7 @@ index 0000000..a3e15eb
 +                                    if (Driver && Driver->isAlive())
 +                                    {
 +                                        Creature* New = i->getSource()->SummonCreature(Old->GetEntry(), 5141.191406f, 2841.045410f, 408.703217f, 3.163321f, TEMPSUMMON_MANUAL_DESPAWN);
-+                                        m_vehicles[TEAM_HORDE].insert(New);
-+										New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
++                                        New->SetPower(POWER_MANA, Old->GetPower(POWER_MANA));
 +                                        New->SetPower(POWER_RAGE, Old->GetPower(POWER_RAGE));
 +                                        New->SetPower(POWER_FOCUS, Old->GetPower(POWER_FOCUS));
 +                                        New->SetPower(POWER_ENERGY, Old->GetPower(POWER_ENERGY));
@@ -3286,12 +2807,6 @@ index 0000000..a3e15eb
 +            m_changeDefender = false;
 +            m_defender = getAttackerTeam();
 +            entry = LANG_BG_WG_CAPTURED;
-+           if (m_changeAlly == true || m_changeHorde == true) // If wg is switching (.wg switch)
-+           {
-+           RebuildAllBuildings();
-+           m_changeAlly = false;
-+           m_changeHorde = false;
-+           }
 +        }
 +        if (isWarTime())
 +        {
@@ -3354,9 +2869,6 @@ index 0000000..a3e15eb
 +{
 +    m_changeDefender = true;
 +    m_timer = 1;
-+    m_changeAlly = true;
-+    m_changeHorde = true;
-+
 +    sWorld->SendZoneText(ZONE_WINTERGRASP, fmtstring(sObjectMgr->GetTrinityStringForDBCLocale(LANG_BG_WG_SWITCH_FACTION), sObjectMgr->GetTrinityStringForDBCLocale(getAttackerTeam() == TEAM_ALLIANCE ? LANG_BG_AB_ALLY : LANG_BG_AB_HORDE)));
 +    if (isWarTime())
 +        forceStartBattle();
@@ -3629,9 +3141,6 @@ index 0000000..a3e15eb
 +    RemoveOfflinePlayerWGAuras();
 +    // Update timer in players battlegrounds tab
 +    sWorld->SendWintergraspState();
-+    // update go factions
-+    for (GameObjectSet::iterator itr = m_gobjects.begin(); itr != m_gobjects.end(); ++itr)
-+       UpdateGameObjectInfo(*itr);
 +}
 +
 +bool OutdoorPvPWG::CanBuildVehicle(OPvPCapturePointWG *workshop) const
@@ -3902,7 +3411,7 @@ index 0000000..a3e15eb
 +    else if (m_engineer)
 +        m_engineer->SetVisible(false);
 +
-+    sLog->outDebug(LOG_FILTER_NETWORKIO, "Wintergrasp workshop now belongs to %u.", (uint32)m_buildingState->GetTeam());
++    sLog->outDebug(LOG_FILTER_OUTDOORPVP, "Wintergrasp workshop now belongs to %u.", (uint32)m_buildingState->GetTeam());
 +}
 +
 +class OutdoorPvP_wintergrasp : public OutdoorPvPScript
@@ -3923,10 +3432,10 @@ index 0000000..a3e15eb
 \ No newline at end of file
 diff --git a/src/server/scripts/OutdoorPvP/OutdoorPvPWG.h b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.h
 new file mode 100644
-index 0000000..4260ebc
+index 0000000..2daa3b1
 --- /dev/null
 +++ b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.h
-@@ -0,0 +1,343 @@
+@@ -0,0 +1,341 @@
 +/*
 + * Copyright (C) 2008 - 2010 Trinity <http://www.trinitycore.org/>
 + *
@@ -4188,8 +3697,6 @@ index 0000000..4260ebc
 +        // BG end
 +        void SendInitWorldStatesTo(Player *player = NULL) const;
 +        uint32 m_timer;
-+       bool m_changeAlly;
-+       bool m_changeHorde;
 +
 +    protected:
 +        // Temporal BG specific till 3.2
