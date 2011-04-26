@@ -1,36 +1,23 @@
-From 38bda719d822d463583c8ec6e87fb450dd0f274b Mon Sep 17 00:00:00 2001
+From fbb2a05cf7ea3c7c2619fc2eb3bc10a520fc6577 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Tue, 8 Feb 2011 01:36:50 -0500
-Subject: [PATCH] 11185-Argent-Tournament
+Date: Mon, 25 Apr 2011 14:38:47 -0400
+Subject: [PATCH] 11761-ArgentTournament
 
 ---
- sql/CMakeLists.txt                                 |    1 +
- sql/argent/world_argenttournament.sql              |  425 ++++++++
+ sql/extra/world_argenttournament.sql               |  425 ++++++++
  src/server/game/Globals/ObjectMgr.h                |    4 +
  .../game/Server/Protocol/Handlers/PetHandler.cpp   |    9 +
  src/server/game/Spells/SpellEffects.cpp            |   38 +-
  src/server/scripts/Northrend/grizzly_hills.cpp     |  215 ++++
  src/server/scripts/Northrend/icecrown.cpp          | 1051 +++++++++++++++++++-
- 7 files changed, 1723 insertions(+), 20 deletions(-)
- create mode 100644 sql/argent/world_argenttournament.sql
+ 6 files changed, 1722 insertions(+), 20 deletions(-)
+ create mode 100644 sql/extra/world_argenttournament.sql
 
-diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
-index e1b0921..d2c54f0 100644
---- a/sql/CMakeLists.txt
-+++ b/sql/CMakeLists.txt
-@@ -15,6 +15,7 @@ if( WITH_SQL )
-       scripts
-       base
-       create
-+	  argent
-     DESTINATION
-       shared/trinity/sql
-   )
-diff --git a/sql/argent/world_argenttournament.sql b/sql/argent/world_argenttournament.sql
+diff --git a/sql/extra/world_argenttournament.sql b/sql/extra/world_argenttournament.sql
 new file mode 100644
 index 0000000..4379f9d
 --- /dev/null
-+++ b/sql/argent/world_argenttournament.sql
++++ b/sql/extra/world_argenttournament.sql
 @@ -0,0 +1,425 @@
 +-- Horde
 +-- Premiere quete : Le tournoi d'argent
@@ -459,10 +446,10 @@ index 0000000..4379f9d
 +UPDATE `creature_template` SET `ScriptName` = 'npc_onyx_flamecaller' WHERE `entry` = '39814'
 \ No newline at end of file
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 13d3a3e..2268544 100755
+index e2c3ea8..61ba1ef 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -863,6 +863,10 @@ class ObjectMgr
+@@ -879,6 +879,10 @@ class ObjectMgr
          {
              return &mCreatureQuestRelations;
          }
@@ -474,10 +461,10 @@ index 13d3a3e..2268544 100755
          QuestRelationBounds GetCreatureQuestRelationBounds(uint32 creature_entry)
          {
 diff --git a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-index eefb866..c65bdeb 100755
+index 5ad3889..c7f7583 100755
 --- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-@@ -752,6 +752,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
+@@ -753,6 +753,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
          return;
      }
  
@@ -491,13 +478,13 @@ index eefb866..c65bdeb 100755
 +    }
 +
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
-         if (caster->GetTypeId() == TYPEID_UNIT && caster->ToCreature()->GetGlobalCooldown() > 0)
+         if (caster->GetTypeId() == TYPEID_UNIT && caster->GetCharmInfo() && caster->GetCharmInfo()->GetGlobalCooldownMgr().HasGlobalCooldown(spellInfo))
          {
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 86268cf..1889198 100755
+index ff52e92..fb979d4 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -4451,7 +4451,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4433,7 +4433,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
@@ -532,7 +519,7 @@ index 86268cf..1889198 100755
                  case 22539:
                  case 22972:
                  case 22975:
-@@ -4912,9 +4938,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4885,9 +4911,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                          return;
  
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
@@ -549,7 +536,7 @@ index 86268cf..1889198 100755
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5256,6 +5288,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5223,6 +5255,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
@@ -557,7 +544,7 @@ index 86268cf..1889198 100755
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
                      Player *plr = unitTarget->ToPlayer();
-@@ -5266,6 +5299,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5233,6 +5266,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                              return;
                      DoCreateItem(effIndex, itemId[urand(0,4)]);
                      return;
@@ -804,7 +791,7 @@ index 67e0ad5..94dfc7e 100644
 +    new npc_maiden_of_drak_mar;
  }
 diff --git a/src/server/scripts/Northrend/icecrown.cpp b/src/server/scripts/Northrend/icecrown.cpp
-index 808717a..53c18a1 100644
+index b29e392..747bb53 100644
 --- a/src/server/scripts/Northrend/icecrown.cpp
 +++ b/src/server/scripts/Northrend/icecrown.cpp
 @@ -157,7 +157,7 @@ enum eSquireDavid
@@ -970,7 +957,7 @@ index 808717a..53c18a1 100644
              DoMeleeAttackIfReady();
          }
      };
-@@ -423,6 +488,943 @@ public:
+@@ -381,6 +446,943 @@ public:
      }
  };
  
@@ -1914,8 +1901,8 @@ index 808717a..53c18a1 100644
  void AddSC_icecrown()
  {
      new npc_arete;
-@@ -432,4 +1434,17 @@ void AddSC_icecrown()
-     new npc_argent_tournament_post;
+@@ -389,4 +1391,17 @@ void AddSC_icecrown()
+     new npc_argent_valiant;
      new npc_alorah_and_grimmin;
      new npc_guardian_pavilion;
 +    new npc_vendor_argent_tournament;

@@ -1,7 +1,7 @@
-From c815ac23acf982399f5ac27c27bb27877dba7a4d Mon Sep 17 00:00:00 2001
+From f3033468bf5a06f612b75a586bd1667b995e73f9 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 28 Feb 2011 17:15:46 -0500
-Subject: [PATCH] 11324-wintergrasp
+Date: Tue, 26 Apr 2011 02:43:34 -0400
+Subject: [PATCH] 11761-wintergrasp
 
 ---
  sql/Wintergrasp_world.sql                          |  134 ++
@@ -9,7 +9,7 @@ Subject: [PATCH] 11324-wintergrasp
  src/server/game/Chat/Chat.cpp                      |   12 +
  src/server/game/Chat/Chat.h                        |    8 +
  src/server/game/Chat/Commands/Level2.cpp           |  146 ++
- src/server/game/Entities/GameObject/GameObject.cpp |    9 +-
+ src/server/game/Entities/GameObject/GameObject.cpp |    5 +
  src/server/game/Entities/Player/Player.cpp         |    8 +
  src/server/game/Entities/Vehicle/Vehicle.cpp       |   26 +
  src/server/game/Entities/Vehicle/Vehicle.h         |    2 +
@@ -32,7 +32,7 @@ Subject: [PATCH] 11324-wintergrasp
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2141 ++++++++++++++++++++
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  342 ++++
  src/server/worldserver/worldserver.conf.dist       |   96 +
- 28 files changed, 3567 insertions(+), 3 deletions(-)
+ 28 files changed, 3565 insertions(+), 1 deletions(-)
  create mode 100644 sql/Wintergrasp_world.sql
  create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
@@ -40,7 +40,7 @@ Subject: [PATCH] 11324-wintergrasp
 
 diff --git a/sql/Wintergrasp_world.sql b/sql/Wintergrasp_world.sql
 new file mode 100644
-index 0000000..a9b3a2e
+index 0000000..b3b3129
 --- /dev/null
 +++ b/sql/Wintergrasp_world.sql
 @@ -0,0 +1,134 @@
@@ -67,8 +67,8 @@ index 0000000..a9b3a2e
 +('770', 'Wintergrasp outdoorPvP is enabled.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 +('771', 'You have reached Rank 1: Corporal', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Вы достигли Ранга 1: Капрал'),
 +('772', 'You have reached Rank 2: First Lieutenant', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Вы достигли Ранга 2: Лейтенант'),
-+('780', 'Before the Battle of  Wintergrasp left 30 minutes!', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'До битвы на  Озере Ледяных Оков осталось 30 минут!'),
-+('781', 'Before the Battle of  Wintergrasp left 10 minutes! Portal from Dalaran will work in 5 minutes.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'До битвы на  Озере Ледяных Оков осталось 10 минут! Портал с Даларана начнет роботу через 5 минут.'),
++('780', '30 minutes left before the  Battle of Wintergrasp begins!', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'До битвы на  Озере Ледяных Оков осталось 30 минут!'),
++('781', '10 minutes left before the  Battle of Wintergrasp begins! Portal from Dalaran will work in 5 minutes.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'До битвы на  Озере Ледяных Оков осталось 10 минут! Портал с Даларана начнет роботу через 5 минут.'),
 +('782', 'The battle for Wintergrasp  has stopped! Not enough defenders. Wintergrasp Fortress remains  Attackers.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Битва за Озеро Ледяных Оков Остановлена. Не хватает защитников. Крепость переходит атакующей  стороне.'),
 +('783', 'The battle for Wintergrasp  has stopped! Not enough attackers. Wintergrasp Fortress remains  Defenders.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Битва за Озеро Ледяных Оков Остановлена. Не хватает нападающих. Крепость остается защитникам.');
 +
@@ -192,10 +192,10 @@ index 323a3ac..7d94186 100644
    ${MYSQL_INCLUDE_DIR}
    ${OPENSSL_INCLUDE_DIR}
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index fedf1c3..48dcf0f 100755
+index 686697b..1e931bd 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -351,6 +351,17 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -358,6 +358,17 @@ ChatCommand * ChatHandler::getCommandTable()
          { NULL,             0,                  false, NULL,                                                "", NULL }
      };
  
@@ -213,7 +213,7 @@ index fedf1c3..48dcf0f 100755
      static ChatCommand commandTable[] =
      {
          { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
-@@ -437,6 +448,7 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -444,6 +455,7 @@ ChatCommand * ChatHandler::getCommandTable()
          { "bindsight",      SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleBindSightCommand>,           "", NULL },
          { "unbindsight",    SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnbindSightCommand>,         "", NULL },
          { "playall",        SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandlePlayAllCommand>,             "", NULL },
@@ -222,7 +222,7 @@ index fedf1c3..48dcf0f 100755
      };
  
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index 486987d..edfa7ff 100755
+index 442a741..b55c841 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -358,6 +358,14 @@ class ChatHandler
@@ -405,41 +405,23 @@ index 00962a9..7de2a19 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/GameObject/GameObject.cpp b/src/server/game/Entities/GameObject/GameObject.cpp
-index 6bbb178..74b4c8c 100755
+index ab6adf0..46f2b46 100755
 --- a/src/server/game/Entities/GameObject/GameObject.cpp
 +++ b/src/server/game/Entities/GameObject/GameObject.cpp
 @@ -451,6 +451,11 @@ void GameObject::Update(uint32 diff)
                          if (goInfo->trap.spellId)
                              CastSpell(ok, goInfo->trap.spellId);
  
-+                        // allow to use scripts
++						// allow to use scripts
 +                        if (ok->GetTypeId() == TYPEID_PLAYER)
 +                            if (sScriptMgr->OnGossipHello(ok->ToPlayer(), this))
 +                                return;
 +
-                         m_cooldownTime = time(NULL) + 4;        // 4 seconds
+                         m_cooldownTime = time(NULL) + goInfo->trap.cooldown ? goInfo->trap.cooldown :  uint32(4);   // template or 4 seconds
  
-                         if (owner)  // || goInfo->trap.charges == 1)
-@@ -1693,7 +1698,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
-             RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
- 
-             SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DESTROYED);
--            SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->building.destroyedDisplayId);
-+            //SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->building.destroyedDisplayId);
-             EventInform(m_goInfo->building.destroyedEvent);
-             if (pwho)
-                 if (Battleground* bg = pwho->GetBattleground())
-@@ -1719,7 +1724,7 @@ void GameObject::TakenDamage(uint32 damage, Unit *who)
-                 m_goValue->building.health = 1;
- 
-             SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
--            SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->building.damagedDisplayId);
-+            //SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->building.damagedDisplayId);
-             EventInform(m_goInfo->building.damagedEvent);
-             hitType = BG_OBJECT_DMG_HIT_TYPE_JUST_HIGH_DAMAGED;
-         }
+                         if (goInfo->trap.type == 1)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9a850fd..e70d272 100755
+index 280aef3..9f62b87 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -70,6 +70,7 @@
@@ -450,7 +432,7 @@ index 9a850fd..e70d272 100755
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -8808,6 +8809,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
+@@ -9045,6 +9046,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                                                              // 8 Arena season id
      data << uint32(0xF3D) << uint32(sWorld->getIntConfig(CONFIG_ARENA_SEASON_ID));
  
@@ -465,10 +447,10 @@ index 9a850fd..e70d272 100755
      {
          data << uint32(0x9bf) << uint32(0x0);               // 7
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Entities/Vehicle/Vehicle.cpp
-index 74006d5..10ce39c 100755
+index 71a9ad1..68bb57a 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.cpp
 +++ b/src/server/game/Entities/Vehicle/Vehicle.cpp
-@@ -541,4 +541,30 @@ uint8 Vehicle::GetAvailableSeatCount() const
+@@ -508,4 +508,30 @@ uint8 Vehicle::GetAvailableSeatCount() const
              ++ret;
  
      return ret;
@@ -501,7 +483,7 @@ index 74006d5..10ce39c 100755
  }
 \ No newline at end of file
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.h b/src/server/game/Entities/Vehicle/Vehicle.h
-index 16ff0ca..824be68 100755
+index 65bbd20..3063abe 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.h
 +++ b/src/server/game/Entities/Vehicle/Vehicle.h
 @@ -23,6 +23,7 @@
@@ -521,10 +503,10 @@ index 16ff0ca..824be68 100755
  
          SeatMap m_Seats;
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 24c4114..1b00629 100755
+index 56b9dfe..1dcc9a1 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -702,6 +702,29 @@ enum TrinityStrings
+@@ -701,6 +701,29 @@ enum TrinityStrings
  //  LANG_BG_AB_START_TWO_MINUTES        = 754, - defined above
  //  LANG_BG_EY_START_TWO_MINUTES        = 755, - defined above
  
@@ -555,7 +537,7 @@ index 24c4114..1b00629 100755
      LANG_ARENA_TESTING                  = 785,
      LANG_AUTO_ANN                       = 786,
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
-index 1da710a..96666d1 100755
+index 2a8927d..5fb4db6 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvP.h
 +++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
 @@ -32,9 +32,10 @@ enum OutdoorPvPTypes
@@ -568,8 +550,8 @@ index 1da710a..96666d1 100755
 -#define MAX_OUTDOORPVP_TYPES 7
 +#define MAX_OUTDOORPVP_TYPES 8
  
- const uint8 CapturePointArtKit[3] = {2, 1, 21};
- 
+ enum ObjectiveStates
+ {
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 index ac79831..e9062dc 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
@@ -583,10 +565,10 @@ index ac79831..e9062dc 100755
  OutdoorPvPMgr::OutdoorPvPMgr()
  {
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index cb1b2c8..49544ca 100755
+index 0119d65..75e6449 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -581,6 +581,8 @@ void AddSC_outdoorpvp_na();
+@@ -582,6 +582,8 @@ void AddSC_outdoorpvp_na();
  void AddSC_outdoorpvp_si();
  void AddSC_outdoorpvp_tf();
  void AddSC_outdoorpvp_zm();
@@ -595,7 +577,7 @@ index cb1b2c8..49544ca 100755
  
  // player
  void AddSC_chat_log();
-@@ -1180,6 +1182,8 @@ void AddNorthrendScripts()
+@@ -1183,6 +1185,8 @@ void AddNorthrendScripts()
      AddSC_zuldrak();
      AddSC_crystalsong_forest();
      AddSC_isle_of_conquest();
@@ -604,7 +586,7 @@ index cb1b2c8..49544ca 100755
  #endif
  }
  
-@@ -1192,6 +1196,7 @@ void AddOutdoorPvPScripts()
+@@ -1195,6 +1199,7 @@ void AddOutdoorPvPScripts()
      AddSC_outdoorpvp_si();
      AddSC_outdoorpvp_tf();
      AddSC_outdoorpvp_zm();
@@ -613,7 +595,7 @@ index cb1b2c8..49544ca 100755
  }
  
 diff --git a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-index 12f4597..974d9c9 100755
+index 51ca4d9..9a59795 100755
 --- a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
 @@ -35,6 +35,9 @@
@@ -644,9 +626,9 @@ index 12f4597..974d9c9 100755
 +    }
  }
  
- 
+ void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket & recv_data)
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 470fffb..921ca35 100755
+index dfb3c54..2dea3ed 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 @@ -35,6 +35,7 @@
@@ -657,7 +639,7 @@ index 470fffb..921ca35 100755
  
  class Aura;
  //
-@@ -5928,6 +5929,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
+@@ -5930,6 +5931,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const * aurApp, uint8 mode, boo
                              if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
                                  target->CastSpell(target, 58601, true);
                              break;
@@ -671,7 +653,7 @@ index 470fffb..921ca35 100755
                      break;
                  case SPELLFAMILY_MAGE:
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 4d6459b..ae9ccdb 100755
+index 5356b4f..fd02662 100755
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -52,6 +52,8 @@
@@ -683,7 +665,7 @@ index 4d6459b..ae9ccdb 100755
  
  #define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
  
-@@ -4659,6 +4661,8 @@ void Spell::HandleEffects(Unit *pUnitTarget,Item *pItemTarget,GameObject *pGOTar
+@@ -4668,6 +4670,8 @@ void Spell::HandleEffects(Unit *pUnitTarget,Item *pItemTarget,GameObject *pGOTar
  
  SpellCastResult Spell::CheckCast(bool strict)
  {
@@ -692,7 +674,7 @@ index 4d6459b..ae9ccdb 100755
      // check death state
      if (!m_IsTriggeredSpell && !m_caster->isAlive() && !(m_spellInfo->Attributes & SPELL_ATTR0_PASSIVE) && !(m_spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD))
          return SPELL_FAILED_CASTER_DEAD;
-@@ -5522,8 +5526,16 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -5543,8 +5547,16 @@ SpellCastResult Spell::CheckCast(bool strict)
                  if (m_originalCaster && m_originalCaster->GetTypeId() == TYPEID_PLAYER && m_originalCaster->isAlive())
                  {
                      if (AreaTableEntry const* pArea = GetAreaEntryByAreaID(m_originalCaster->GetAreaId()))
@@ -710,7 +692,7 @@ index 4d6459b..ae9ccdb 100755
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 727a619..1eb90b2 100755
+index ff52e92..7a4a763 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -61,6 +61,7 @@
@@ -721,7 +703,7 @@ index 727a619..1eb90b2 100755
  
  pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
  {
-@@ -4382,6 +4383,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4366,6 +4367,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
              switch(m_spellInfo->Id)
              {
@@ -746,7 +728,7 @@ index 727a619..1eb90b2 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -7048,9 +7067,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex /*effIndex*/)
+@@ -7017,9 +7036,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
@@ -772,7 +754,7 @@ index 727a619..1eb90b2 100755
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index e0f50ba..5df2004 100755
+index cf59e55..222f1f1 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
 @@ -28,6 +28,8 @@
@@ -784,7 +766,7 @@ index e0f50ba..5df2004 100755
  
  bool IsAreaEffectTarget[TOTAL_SPELL_TARGETS];
  SpellEffectTargetTypes EffectTargetType[TOTAL_SPELL_EFFECTS];
-@@ -3060,6 +3062,8 @@ bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
+@@ -3043,6 +3045,8 @@ bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
  
  bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32 newArea) const
  {
@@ -793,7 +775,7 @@ index e0f50ba..5df2004 100755
      if (gender != GENDER_NONE)                   // not in expected gender
          if (!player || gender != player->getGender())
              return false;
-@@ -3099,6 +3103,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
+@@ -3082,6 +3086,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
                      return false;
                  break;
              }
@@ -814,7 +796,7 @@ index e0f50ba..5df2004 100755
          case SPELL_QUARRY: // Quarry - Isle of Conquest.
              {
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 586a931..16da4c9 100755
+index 0590a45..44272fa 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -71,6 +71,7 @@
@@ -825,7 +807,7 @@ index 586a931..16da4c9 100755
  
  volatile bool World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1181,6 +1182,23 @@ void World::LoadConfigSettings(bool reload)
+@@ -1180,6 +1181,23 @@ void World::LoadConfigSettings(bool reload)
  
      // MySQL ping time interval
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfig->GetIntDefault("MaxPingTime", 30);
@@ -849,8 +831,8 @@ index 586a931..16da4c9 100755
  
      sScriptMgr->OnConfigLoad(reload);
  }
-@@ -2810,3 +2828,29 @@ void World::ProcessQueryCallbacks()
-         m_realmCharCallback.FreeResult();
+@@ -2830,3 +2848,29 @@ void World::ProcessQueryCallbacks()
+         }
      }
  }
 +
@@ -881,10 +863,10 @@ index 586a931..16da4c9 100755
 +}
 \ No newline at end of file
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7e052ed..79ea81e 100755
+index b793325..e138a91 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -163,6 +163,9 @@ enum WorldBoolConfigs
+@@ -159,6 +159,9 @@ enum WorldBoolConfigs
      CONFIG_ALLOW_TICKETS,
      CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
      CONFIG_PRESERVE_CUSTOM_CHANNELS,
@@ -894,7 +876,7 @@ index 7e052ed..79ea81e 100755
      BOOL_CONFIG_VALUE_COUNT
  };
  
-@@ -309,6 +312,18 @@ enum WorldIntConfigs
+@@ -305,6 +308,18 @@ enum WorldIntConfigs
      CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
      CONFIG_PERSISTENT_CHARACTER_CLEAN_FLAGS,
@@ -913,7 +895,7 @@ index 7e052ed..79ea81e 100755
      CONFIG_MAX_INSTANCES_PER_HOUR,
      INT_CONFIG_VALUE_COUNT
  };
-@@ -741,6 +756,18 @@ class World
+@@ -732,6 +747,18 @@ class World
  
          uint32 GetCleaningFlags() { return m_CleaningFlags; }
          void   SetCleaningFlags(uint32 flags) { m_CleaningFlags = flags; }

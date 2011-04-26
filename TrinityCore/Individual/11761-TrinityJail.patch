@@ -1,7 +1,7 @@
-From 1e2691d59ce2ed5f63a54f9ab456288bb73b496b Mon Sep 17 00:00:00 2001
+From a5ee61bf7c316e90187ef7f4c0982c6209440274 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 28 Feb 2011 15:36:11 -0500
-Subject: [PATCH] 11324-TrinityJail
+Date: Mon, 25 Apr 2011 14:52:08 -0400
+Subject: [PATCH] 11761-TrinityJail
 
 ---
  sql/All/characters_jail.sql                |   66 +++++++
@@ -9,7 +9,6 @@ Subject: [PATCH] 11324-TrinityJail
  sql/All/world_command_English.sql          |    7 +
  sql/All/world_command_Francais.sql         |    7 +
  sql/All/world_trinity_string.sql           |   41 ++++
- sql/CMakeLists.txt                         |    1 +
  src/server/game/Chat/Chat.cpp              |    7 +-
  src/server/game/Chat/Chat.h                |    6 +
  src/server/game/Chat/Commands/Level0.cpp   |   53 +++++-
@@ -22,7 +21,7 @@ Subject: [PATCH] 11324-TrinityJail
  src/server/game/Globals/ObjectMgr.h        |   23 +++
  src/server/game/Miscellaneous/Language.h   |   36 ++++
  src/server/game/World/World.cpp            |    4 +
- 18 files changed, 951 insertions(+), 8 deletions(-)
+ 17 files changed, 950 insertions(+), 8 deletions(-)
  create mode 100644 sql/All/characters_jail.sql
  create mode 100644 sql/All/world_command_Deutsch.sql
  create mode 100644 sql/All/world_command_English.sql
@@ -187,23 +186,11 @@ index 0000000..d5cc99c
 +('983', 'Your Jail status was reset to 0 ', null, 'Votre statut a été Jail à 0 ', 'Dein Jail status wurde auf 0 zurück gesatzt', null, null, null, null, null);
 +
 +
-diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
-index e1b0921..4562748 100644
---- a/sql/CMakeLists.txt
-+++ b/sql/CMakeLists.txt
-@@ -15,6 +15,7 @@ if( WITH_SQL )
-       scripts
-       base
-       create
-+	  All
-     DESTINATION
-       shared/trinity/sql
-   )
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index fedf1c3..3799823 100755
+index 686697b..9b626e7 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -367,7 +367,12 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -374,7 +374,12 @@ ChatCommand * ChatHandler::getCommandTable()
  
          { "pet",            SEC_GAMEMASTER,     false, NULL,                                           "", petCommandTable },
          { "ticket",         SEC_MODERATOR,      false,  NULL,                                          "", ticketCommandTable },
@@ -218,7 +205,7 @@ index fedf1c3..3799823 100755
          { "unaura",         SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnAuraCommand>,              "", NULL },
          { "nameannounce",   SEC_MODERATOR,      false, OldHandler<&ChatHandler::HandleNameAnnounceCommand>,        "", NULL },
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index 486987d..1ba8175 100755
+index 442a741..60f0e5c 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -335,6 +335,12 @@ class ChatHandler
@@ -760,7 +747,7 @@ index 00962a9..00f7dd3 100755
  }
  
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 6625d95..95ec06a 100755
+index d657781..2fa1449 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
 +++ b/src/server/game/Chat/Commands/Level3.cpp
 @@ -62,6 +62,15 @@
@@ -780,10 +767,10 @@ index 6625d95..95ec06a 100755
  {
      Player* SelectedPlayer = getSelectedPlayer();
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9a850fd..dc421d6 100755
+index 280aef3..8529d57 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -396,6 +396,21 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
+@@ -626,6 +626,21 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
  #pragma warning(default:4355)
  #endif
  
@@ -805,7 +792,7 @@ index 9a850fd..dc421d6 100755
      m_speakTime = 0;
      m_speakCount = 0;
  
-@@ -1287,6 +1302,79 @@ void Player::Update(uint32 p_time)
+@@ -1521,6 +1536,79 @@ void Player::Update(uint32 p_time)
      Unit::Update(p_time);
      SetCanDelayTeleport(false);
  
@@ -885,7 +872,7 @@ index 9a850fd..dc421d6 100755
      time_t now = time(NULL);
  
      UpdatePvPFlag(now);
-@@ -1467,9 +1555,15 @@ void Player::Update(uint32 p_time)
+@@ -1701,9 +1789,15 @@ void Player::Update(uint32 p_time)
      }
  
      if (m_deathState == JUST_DIED)
@@ -903,7 +890,7 @@ index 9a850fd..dc421d6 100755
      {
          if (p_time >= m_nextSave)
          {
-@@ -16787,10 +16881,77 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17001,10 +17095,77 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      m_achievementMgr.CheckAllAchievementCriteria();
  
      _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
@@ -981,7 +968,7 @@ index 9a850fd..dc421d6 100755
  bool Player::isAllowedToLoot(const Creature* creature)
  {
      if (!creature->isDead() || !creature->IsDamageEnoughForLootingAndReward())
-@@ -17947,11 +18108,23 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
+@@ -18149,11 +18310,23 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
  /***                   SAVE SYSTEM                     ***/
  /*********************************************************/
  
@@ -1006,7 +993,7 @@ index 9a850fd..dc421d6 100755
      //lets allow only players in world to be saved
      if (IsBeingTeleportedFar())
      {
-@@ -23084,6 +23257,7 @@ void Player::_LoadSkills(PreparedQueryResult result)
+@@ -23185,6 +23358,7 @@ void Player::_LoadSkills(PreparedQueryResult result)
              {
                  sLog->outError("Character %u has skill %u with value 0. Will be deleted.", GetGUIDLow(), skill);
                  CharacterDatabase.PExecute("DELETE FROM character_skills WHERE guid = '%u' AND skill = '%u' ", GetGUIDLow(), skill);
@@ -1015,10 +1002,10 @@ index 9a850fd..dc421d6 100755
              }
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 8ee626d..646a0f4 100755
+index a04494c..85bb640 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2182,6 +2182,26 @@ class Player : public Unit, public GridObject<Player>
+@@ -2213,6 +2213,26 @@ class Player : public Unit, public GridObject<Player>
  
          uint32 EnvironmentalDamage(EnviromentalDamage type, uint32 damage);
  
@@ -1046,10 +1033,10 @@ index 8ee626d..646a0f4 100755
          /***               FLOOD FILTER SYSTEM                 ***/
          /*********************************************************/
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 1ebf2fd..b7b2822 100755
+index 36b8b40..7f759f2 100755
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7170,6 +7170,121 @@ uint32 ObjectMgr::GeneratePetNumber()
+@@ -7179,6 +7179,121 @@ uint32 ObjectMgr::GeneratePetNumber()
      return ++m_hiPetNumber;
  }
  
@@ -1172,10 +1159,10 @@ index 1ebf2fd..b7b2822 100755
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index a593d36..1f8359a 100755
+index e2c3ea8..bfb98bd 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -961,6 +961,29 @@ class ObjectMgr
+@@ -971,6 +971,29 @@ class ObjectMgr
          void LoadTrainerSpell();
          void AddSpellToTrainer(uint32 entry, uint32 spell, uint32 spellCost, uint32 reqSkill, uint32 reqSkillValue, uint32 reqLevel);
  
@@ -1206,7 +1193,7 @@ index a593d36..1f8359a 100755
          uint32 GetBaseXP(uint8 level);
          uint32 GetXPForLevel(uint8 level);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 24c4114..c732374 100755
+index 56b9dfe..dc9a3e1 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -21,6 +21,42 @@
@@ -1253,10 +1240,10 @@ index 24c4114..c732374 100755
      LANG_SELECT_CHAR_OR_CREATURE        = 1,
      LANG_SELECT_CREATURE                = 2,
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 586a931..97fc938 100755
+index 0590a45..3fc7a71 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1572,6 +1572,10 @@ void World::SetInitialWorldSettings()
+@@ -1579,6 +1579,10 @@ void World::SetInitialWorldSettings()
      sLog->outString("Returning old mails...");
      sObjectMgr->ReturnOrDeleteOldMails(false);
  

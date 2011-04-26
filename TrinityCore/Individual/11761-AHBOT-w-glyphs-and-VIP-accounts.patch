@@ -1,7 +1,7 @@
-From 9740a47e329b9265a8747392c75cddc2a799352e Mon Sep 17 00:00:00 2001
+From d82e58c762b90f2aed4dc19db4a26a1e0c8905e7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 21 Feb 2011 20:20:33 -0500
-Subject: [PATCH] 11261-AHBOT-w-glyphs-and-VIP-Accounts
+Date: Tue, 26 Apr 2011 02:52:21 -0400
+Subject: [PATCH] 11761-AHBOT-w-glyphs-and-VIP-accounts
 
 ---
  doc/AuctionHouseBot.txt                            |  236 +++
@@ -3637,7 +3637,7 @@ index 0000000..a7da388
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index fff0509..0acbcad 100644
+index fa8381e..a95d190 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 @@ -218,7 +218,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry * auction, SQLTrans
@@ -3668,7 +3668,7 @@ index fff0509..0acbcad 100644
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->item_template);
  
-@@ -465,8 +468,10 @@ void AuctionHouseObject::AddAuction(AuctionEntry *auction)
+@@ -463,8 +466,10 @@ void AuctionHouseObject::AddAuction(AuctionEntry *auction)
      sScriptMgr->OnAuctionAdd(this, auction);
  }
  
@@ -3722,10 +3722,10 @@ index 323a3ac..c95cc4b 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds/Zones
    ${CMAKE_CURRENT_SOURCE_DIR}/Calendar
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index fedf1c3..886a8f8 100755
+index 686697b..7211627 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -367,6 +367,7 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -374,6 +374,7 @@ ChatCommand * ChatHandler::getCommandTable()
  
          { "pet",            SEC_GAMEMASTER,     false, NULL,                                           "", petCommandTable },
          { "ticket",         SEC_MODERATOR,      false,  NULL,                                          "", ticketCommandTable },
@@ -3734,7 +3734,7 @@ index fedf1c3..886a8f8 100755
          { "aura",           SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleAuraCommand>,                "", NULL },
          { "unaura",         SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnAuraCommand>,              "", NULL },
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index 486987d..bf56bc8 100755
+index 442a741..d99276a 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -131,6 +131,7 @@ class ChatHandler
@@ -3746,7 +3746,7 @@ index 486987d..bf56bc8 100755
          bool HandleGMNameAnnounceCommand(const char* args);
          bool HandleGMAnnounceCommand(const char* args);
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 6625d95..660cbf1 100755
+index d657781..f8a5367 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
 +++ b/src/server/game/Chat/Commands/Level3.cpp
 @@ -62,6 +62,496 @@
@@ -4247,10 +4247,10 @@ index 6625d95..660cbf1 100755
  {
      Player* SelectedPlayer = getSelectedPlayer();
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index d3d38ff..2dc3131 100755
+index 280aef3..0dfd53e 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -6609,7 +6609,8 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6829,7 +6829,8 @@ void Player::CheckAreaExploreAndOutdoor()
                  {
                      XP = uint32(sObjectMgr->GetBaseXP(p->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
@@ -4260,7 +4260,7 @@ index d3d38ff..2dc3131 100755
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area,XP);
              }
-@@ -14666,6 +14667,9 @@ void Player::RewardQuest(Quest const *pQuest, uint32 reward, Object* questGiver,
+@@ -14895,6 +14896,9 @@ void Player::RewardQuest(Quest const *pQuest, uint32 reward, Object* questGiver,
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPctN(XP, (*i)->GetAmount());
  
@@ -4271,7 +4271,7 @@ index d3d38ff..2dc3131 100755
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 0956fae..e94f9fa 100755
+index 8653db0..c1dc526 100755
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -26,6 +26,7 @@
@@ -4282,7 +4282,7 @@ index 0956fae..e94f9fa 100755
  
  MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery(stationery)
  {
-@@ -181,6 +182,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+@@ -180,6 +181,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
  
      uint32 mailId = sObjectMgr->GenerateMailID();
  
@@ -4312,7 +4312,7 @@ index 0cd45b9..65b8600 100755
  
              sScriptMgr->OnGainCalculation(gain, pl, u);
 diff --git a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
-index 61ff1fa..96ecfc4 100755
+index 099309b..44ede10 100755
 --- a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
 @@ -22,6 +22,7 @@
@@ -4324,7 +4324,7 @@ index 61ff1fa..96ecfc4 100755
  #include "Log.h"
  #include "Opcodes.h"
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index e041227..de320e1 100755
+index aa83b5f..7fcf397 100755
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -85,9 +85,9 @@ bool WorldSessionFilter::Process(WorldPacket *packet)
@@ -4340,10 +4340,10 @@ index e041227..de320e1 100755
  m_playerRecentlyLogout(false), m_playerSave(false),
  m_sessionDbcLocale(sWorld->GetAvailableDbcLocale(locale)),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index b16d61f..2ae508a 100755
+index 9cf9f4f..8156e7b 100755
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -180,7 +180,7 @@ class WorldSession
+@@ -179,7 +179,7 @@ class WorldSession
  {
      friend class CharacterHandler;
      public:
@@ -4352,7 +4352,7 @@ index b16d61f..2ae508a 100755
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -208,6 +208,7 @@ class WorldSession
+@@ -207,6 +207,7 @@ class WorldSession
          void SendClientCacheVersion(uint32 version);
  
          AccountTypes GetSecurity() const { return _security; }
@@ -4360,7 +4360,7 @@ index b16d61f..2ae508a 100755
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          char const* GetPlayerName() const;
-@@ -893,6 +894,7 @@ class WorldSession
+@@ -897,6 +898,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
@@ -4369,7 +4369,7 @@ index b16d61f..2ae508a 100755
          time_t _logoutTime;
          bool m_inQueue;                                     // session wait in auth.queue
 diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
-index e20430e..c88bdbd 100755
+index f1ea340..a536e95 100755
 --- a/src/server/game/Server/WorldSocket.cpp
 +++ b/src/server/game/Server/WorldSocket.cpp
 @@ -777,6 +777,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
@@ -4407,7 +4407,7 @@ index e20430e..c88bdbd 100755
      m_Crypt.Init(&K);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 586a931..70bb670 100755
+index 0590a45..4c0f3ca 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -71,6 +71,7 @@
@@ -4418,7 +4418,7 @@ index 586a931..70bb670 100755
  
  volatile bool World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -453,9 +454,13 @@ void World::LoadConfigSettings(bool reload)
+@@ -452,9 +453,13 @@ void World::LoadConfigSettings(bool reload)
      rate_values[RATE_DROP_ITEM_REFERENCED] = sConfig->GetFloatDefault("Rate.Drop.Item.Referenced", 1.0f);
      rate_values[RATE_DROP_ITEM_REFERENCED_AMOUNT] = sConfig->GetFloatDefault("Rate.Drop.Item.ReferencedAmount", 1.0f);
      rate_values[RATE_DROP_MONEY]  = sConfig->GetFloatDefault("Rate.Drop.Money", 1.0f);
@@ -4435,7 +4435,7 @@ index 586a931..70bb670 100755
      rate_values[RATE_REPAIRCOST]  = sConfig->GetFloatDefault("Rate.RepairCost", 1.0f);
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
-@@ -1706,6 +1711,9 @@ void World::SetInitialWorldSettings()
+@@ -1708,6 +1713,9 @@ void World::SetInitialWorldSettings()
      sLog->outString("Calculate random battleground reset time..." );
      InitRandomBGResetTime();
  
@@ -4445,7 +4445,7 @@ index 586a931..70bb670 100755
      // possibly enable db logging; avoid massive startup spam by doing it here.
      if (sLog->GetLogDBLater())
      {
-@@ -1872,6 +1880,7 @@ void World::Update(uint32 diff)
+@@ -1874,6 +1882,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -4454,10 +4454,10 @@ index 586a931..70bb670 100755
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7e052ed..726ad30 100755
+index b793325..6b4c10e 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -336,8 +336,11 @@ enum Rates
+@@ -332,8 +332,11 @@ enum Rates
      RATE_DROP_ITEM_REFERENCED_AMOUNT,
      RATE_DROP_MONEY,
      RATE_XP_KILL,
@@ -4470,25 +4470,23 @@ index 7e052ed..726ad30 100755
      RATE_REPUTATION_GAIN,
      RATE_REPUTATION_LOWLEVEL_KILL,
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-index 6f34700..c012a2a 100755
+index f40be21..11de21c 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-@@ -47,6 +47,7 @@ bool LoginDatabaseConnection::Open()
-     PREPARE_STATEMENT(LOGIN_SET_IP_NOT_BANNED, "DELETE FROM ip_banned WHERE ip = ?", CONNECTION_ASYNC)
-     PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_BANNED, "INSERT INTO account_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, ?, ?, 1)", CONNECTION_ASYNC)
+@@ -44,4 +44,5 @@ void LoginDatabaseConnection::DoPrepareStatements()
      PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_NOT_BANNED, "UPDATE account_banned SET active = 0 WHERE id = ? AND active != 0", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(LOGIN_DEL_REALMCHARACTERS, "DELETE FROM realmcharacters WHERE acctid = ? AND realmid = ?", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(LOGIN_ADD_REALMCHARACTERS, "INSERT INTO realmcharacters (numchars, acctid, realmid) VALUES (?, ?, ?)", CONNECTION_ASYNC)
 +	PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC)
- 
-     /* ############## END OF LOADING PREPARED STATEMENTS ############## */
- 
+ }
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.h b/src/server/shared/Database/Implementation/LoginDatabase.h
-index d512607..3182c02 100755
+index cb7cb2b..b23358c 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.h
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.h
-@@ -62,6 +62,7 @@ enum LoginDatabaseStatements
-     LOGIN_SET_IP_NOT_BANNED,
-     LOGIN_SET_ACCOUNT_BANNED,
+@@ -64,6 +64,7 @@ enum LoginDatabaseStatements
      LOGIN_SET_ACCOUNT_NOT_BANNED,
+     LOGIN_DEL_REALMCHARACTERS,
+     LOGIN_ADD_REALMCHARACTERS,
 +	LOGIN_SET_ACCOUNT_PREMIUM,
  
      MAX_LOGINDATABASE_STATEMENTS,
