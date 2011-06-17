@@ -1,11 +1,11 @@
-From 2da90b0deeb6905e52927105f9fd9b10fdabb6ed Mon Sep 17 00:00:00 2001
+From 2e0a0d0b2f6f7bf70a6ade4cb80afb808b74a4f2 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Fri, 17 Jun 2011 05:30:54 -0400
+Date: Fri, 17 Jun 2011 09:00:53 -0400
 Subject: [PATCH] 12394-Playerbots
 
 ---
  src/server/game/AI/CoreAI/PetAI.cpp                |    8 +
- src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 4353 ++++++++++++++++++++
+ src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 4354 ++++++++++++++++++++
  src/server/game/AI/PlayerBots/PlayerbotAI.h        |  284 ++
  src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp |  594 +++
  src/server/game/AI/PlayerBots/PlayerbotClassAI.h   |  162 +
@@ -34,13 +34,13 @@ Subject: [PATCH] 12394-Playerbots
  src/server/game/Chat/Chat.h                        |    7 +
  src/server/game/Chat/Commands/Level0.cpp           |  180 +
  src/server/game/Chat/Commands/Level1.cpp           |    5 +-
- src/server/game/Chat/Commands/Level3.cpp           |  204 +
+ src/server/game/Chat/Commands/Level3.cpp           |  205 +-
  src/server/game/Entities/Creature/Creature.cpp     |    3 +
  src/server/game/Entities/Creature/Creature.h       |   13 +
  src/server/game/Entities/Creature/GossipDef.h      |    1 +
  .../game/Entities/Creature/TemporarySummon.cpp     |    8 +
  src/server/game/Entities/Object/Object.cpp         |   27 +-
- src/server/game/Entities/Player/Player.cpp         |  340 ++-
+ src/server/game/Entities/Player/Player.cpp         |  316 ++-
  src/server/game/Entities/Player/Player.h           |  112 +-
  src/server/game/Entities/Unit/Unit.cpp             |    2 +
  src/server/game/Groups/Group.cpp                   |  104 +-
@@ -61,7 +61,7 @@ Subject: [PATCH] 12394-Playerbots
  src/server/scripts/Custom/script_bot_giver.cpp     |  163 +
  src/server/shared/Common.h                         |    4 +
  src/server/worldserver/worldserver.conf.dist       |   52 +
- 57 files changed, 12163 insertions(+), 36 deletions(-)
+ 57 files changed, 12139 insertions(+), 38 deletions(-)
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.cpp
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.h
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
@@ -123,10 +123,10 @@ index a4cc49b..9ce7318 100755
      // Check all pet states to decide if we can attack this target
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 new file mode 100644
-index 0000000..2606656
+index 0000000..82903ae
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
-@@ -0,0 +1,4353 @@
+@@ -0,0 +1,4354 @@
 +#include "Common.h"
 +#include "Database/DatabaseEnv.h"
 +#include "DBCStores.h"
@@ -154,6 +154,7 @@ index 0000000..2606656
 +#include "SharedDefines.h"
 +#include "GossipDef.h"
 +#include "Config.h"
++#include "GroupMgr.h"
 +#include "Group.h"
 +#include <ctime>
 +
@@ -235,12 +236,12 @@ index 0000000..2606656
 +        }
 +    } else {
 +        Group *m_group = new Group;
-+        if(!m_group->Create(master))
++       if(!m_group->Create(master))
 +        {
 +            delete m_group;
 +            return;
 +        }
-+        sObjectMgr->AddGroup(m_group);
++        sGroupMgr->AddGroup(m_group);
 +        if(!m_group->IsFull()) m_group->AddMember(bot);
 +    }
 +
@@ -552,9 +553,9 @@ index 0000000..2606656
 +        out << descr[equipSlot] << ": ";
 +        for(std::list<Item *>::iterator it = itemListForEqSlot->begin(); it != itemListForEqSlot->end(); ++it)
 +        {
-+            const ItemPrototype *const pItemProto = (*it)->GetProto();
-+            out << " |cffffffff|Hitem:" << pItemProto->ItemId
-+            << ":0:0:0:0:0:0:0" << "|h[" << pItemProto->Name1
++            const ItemTemplate *const pItemTemplate = (*it)->GetTemplate();
++            out << " |cffffffff|Hitem:" << pItemTemplate->ItemId
++            << ":0:0:0:0:0:0:0" << "|h[" << pItemTemplate->Name1
 +            << "]|h|r";
 +        }
 +        ch.SendSysMessage(out.str().c_str());
@@ -634,7 +635,7 @@ index 0000000..2606656
 +
 +            switch(emoteNum)
 +            {
-+                case TEXTEMOTE_BONK:
++                case TEXT_EMOTE_BONK:
 +                {
 +                    Player *const pPlayer = masterSession.GetPlayerBot(masterSession.GetPlayer()->GetSelection());
 +                    if(!pPlayer || !pPlayer->GetPlayerbotAI()) return;
@@ -690,8 +691,8 @@ index 0000000..2606656
 +                    return;
 +                }
 +
-+                case TEXTEMOTE_EAT:
-+                case TEXTEMOTE_DRINK:
++                case TEXT_EMOTE_EAT:
++                case TEXT_EMOTE_DRINK:
 +                {
 +                    Player *const bot = masterSession.GetPlayerBot(masterSession.GetPlayer()->GetSelection());
 +                    if(bot) bot->GetPlayerbotAI()->Stay();
@@ -706,7 +707,7 @@ index 0000000..2606656
 +                }
 +
 +                //emote to stay
-+                case TEXTEMOTE_STAND:
++                case TEXT_EMOTE_STAND:
 +                {
 +                    Player *const bot = masterSession.GetPlayerBot(masterSession.GetPlayer()->GetSelection());
 +                    if(bot) bot->GetPlayerbotAI()->Stay();
@@ -723,7 +724,7 @@ index 0000000..2606656
 +                //324 is the followme emote (not defined in enum)
 +                //if master has bot selected then only bot follows, else all bots follow
 +                case 324:
-+                case TEXTEMOTE_WAVE:
++                case TEXT_EMOTE_WAVE:
 +                {
 +                    Player *const bot = masterSession.GetPlayerBot(masterSession.GetPlayer()->GetSelection());
 +                    if(bot)
@@ -1098,9 +1099,9 @@ index 0000000..2606656
 +                            if (!item)
 +                                continue;
 +
-+                            if (item->CanBeTraded() && item->GetProto()->Quality == ITEM_QUALITY_POOR)
++                            if (item->CanBeTraded() && item->GetTemplate()->Quality == ITEM_QUALITY_POOR)
 +                            {
-+                                int32 cost = item->GetCount() * item->GetProto()->SellPrice;
++                                int32 cost = item->GetCount() * item->GetTemplate()->SellPrice;
 +                                bot->ModifyMoney(cost);
 +                                bot->MoveItemFromInventory(item->GetBagSlot(), item->GetSlot(), true);
 +                                bot->AddItemToBuyBackSlot(item);
@@ -1109,7 +1110,7 @@ index 0000000..2606656
 +                                TotalCost = TotalCost + cost;
 +
 +                                report << "Sold " << item->GetCount() << "x";
-+                                report << " |cffffffff|Hitem:" << item->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetProto()->Name1 << "]|h|r";
++                                report << " |cffffffff|Hitem:" << item->GetTemplate()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetTemplate()->Name1 << "]|h|r";
 +                                report << " for ";
 +
 +                                uint32 gold = uint32(cost / 10000);
@@ -1127,9 +1128,9 @@ index 0000000..2606656
 +                                }
 +                                report << cost << "|TInterface\\Icons\\INV_Misc_Coin_05:16|t\n";
 +                            }
-+                            else if (item->GetProto()->SellPrice > 0)
++                            else if (item->GetTemplate()->SellPrice > 0)
 +                            {
-+                                canSell << "|cffffffff|Hitem:" << item->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetProto()->Name1 << "]|h|r ";
++                                canSell << "|cffffffff|Hitem:" << item->GetTemplate()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetTemplate()->Name1 << "]|h|r ";
 +                            }
 +                        }
 +
@@ -1144,9 +1145,9 @@ index 0000000..2606656
 +                                    if (!item)
 +                                        continue;
 +
-+                                    if (item->CanBeTraded() && item->GetProto()->Quality == ITEM_QUALITY_POOR)
++                                    if (item->CanBeTraded() && item->GetTemplate()->Quality == ITEM_QUALITY_POOR)
 +                                    {
-+                                        int32 cost = item->GetCount() * item->GetProto()->SellPrice;
++                                        int32 cost = item->GetCount() * item->GetTemplate()->SellPrice;
 +                                        bot->ModifyMoney(cost);
 +                                        bot->MoveItemFromInventory(item->GetBagSlot(), item->GetSlot(), true);
 +                                        bot->AddItemToBuyBackSlot(item);
@@ -1155,7 +1156,7 @@ index 0000000..2606656
 +                                        TotalCost = TotalCost + cost;
 +
 +                                        report << "Sold " << item->GetCount() << "x";
-+                                        report << " |cffffffff|Hitem:" << item->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetProto()->Name1 << "]|h|r";
++                                        report << " |cffffffff|Hitem:" << item->GetTemplate()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetTemplate()->Name1 << "]|h|r";
 +                                        report << " for ";
 +
 +                                        uint32 gold = uint32(cost / 10000);
@@ -1172,9 +1173,9 @@ index 0000000..2606656
 +                                        }
 +                                        report << cost << "|TInterface\\Icons\\INV_Misc_Coin_05:16|t\n";
 +                                    }
-+                                    else if (item->GetProto()->SellPrice > 0)
++                                    else if (item->GetTemplate()->SellPrice > 0)
 +                                    {
-+                                        canSell << "|cffffffff|Hitem:" << item->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetProto()->Name1 << "]|h|r ";
++                                        canSell << "|cffffffff|Hitem:" << item->GetTemplate()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << item->GetTemplate()->Name1 << "]|h|r ";
 +                                    }
 +                                }
 +                            }
@@ -1497,10 +1498,10 @@ index 0000000..2606656
 +                    const Item *const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +                    if(pItem && pItem->CanBeTraded())
 +                    {
-+                        const ItemPrototype *const pItemProto = pItem->GetProto();
-+                        std::string name = pItemProto->Name1;
++                        const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++                        std::string name = pItemTemplate->Name1;
 +
-+                        out << " |cffffffff|Hitem:" << pItemProto->ItemId << ":0:0:0:0:0:0:0" << "|h[" << name << "]|h|r";
++                        out << " |cffffffff|Hitem:" << pItemTemplate->ItemId << ":0:0:0:0:0:0:0" << "|h[" << name << "]|h|r";
 +                        if(pItem->GetCount() > 1)
 +                            out << "x" << pItem->GetCount() << ' ';
 +                    }
@@ -1516,12 +1517,12 @@ index 0000000..2606656
 +                            const Item *const pItem = m_bot->GetItemByPos(bag, slot);
 +                            if(pItem && pItem->CanBeTraded())
 +                            {
-+                                const ItemPrototype *const pItemProto = pItem->GetProto();
-+                                const std::string name = pItemProto->Name1;
++                                const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++                                const std::string name = pItemTemplate->Name1;
 +
 +                                //item link format: http://www.wowwiki.com/ItemString
 +                                //itemId, enchantId, jewelId1, jewelId2, jewelId3, jewelId4, suffixId, uniqueId
-+                                out << " |cffffffff|Hitem:" << pItemProto->ItemId << ":0:0:0:0:0:0:0" << "|h[" << name << "]|h|r";
++                                out << " |cffffffff|Hitem:" << pItemTemplate->ItemId << ":0:0:0:0:0:0:0" << "|h[" << name << "]|h|r";
 +                                if(pItem->GetCount() > 1)
 +                                    out << "x" << pItem->GetCount() << ' ';
 +                            }
@@ -1587,7 +1588,7 @@ index 0000000..2606656
 +
 +            switch(text_emote)
 +            {
-+                case TEXTEMOTE_BOW:
++                case TEXT_EMOTE_BOW:
 +                {
 +                    //Buff anyone who bows before me. Useful for players not in bot's group
 +                    Player *pPlayer = sObjectMgr->GetPlayer(guid);
@@ -1841,15 +1842,15 @@ index 0000000..2606656
 +        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if (pItem)
 +        {
-+            const ItemPrototype* const pItemProto = pItem->GetProto();
-+            if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if (pItemProto->Class==ITEM_CLASS_CONSUMABLE &&
-+                (pItemProto->SubClass==ITEM_SUBCLASS_FOOD ||
-+                pItemProto->SubClass==ITEM_SUBCLASS_POTION ||
-+                pItemProto->SubClass==ITEM_SUBCLASS_ELIXIR))
++            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++            if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if (pItemTemplate->Class==ITEM_CLASS_CONSUMABLE &&
++                (pItemTemplate->SubClass==ITEM_SUBCLASS_FOOD ||
++                pItemTemplate->SubClass==ITEM_SUBCLASS_POTION ||
++                pItemTemplate->SubClass==ITEM_SUBCLASS_ELIXIR))
 +            {
 +                // if is FOOD
-+                if (pItemProto->Spells[0].SpellCategory == SPELL_CATEGORY_FOOD)
++                if (pItemTemplate->Spells[0].SpellCategory == SPELL_CATEGORY_FOOD)
 +                    return pItem;
 +            }
 +        }
@@ -1865,15 +1866,15 @@ index 0000000..2606656
 +                Item* const pItem = m_bot->GetItemByPos(bag, slot);
 +                if (pItem)
 +                {
-+                    const ItemPrototype* const pItemProto = pItem->GetProto();
-+                    if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if (pItemProto->Class==ITEM_CLASS_CONSUMABLE &&
-+                        (pItemProto->SubClass==ITEM_SUBCLASS_FOOD ||
-+                        pItemProto->SubClass==ITEM_SUBCLASS_POTION ||
-+                        pItemProto->SubClass==ITEM_SUBCLASS_ELIXIR))
++                    const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++                    if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if (pItemTemplate->Class==ITEM_CLASS_CONSUMABLE &&
++                        (pItemTemplate->SubClass==ITEM_SUBCLASS_FOOD ||
++                        pItemTemplate->SubClass==ITEM_SUBCLASS_POTION ||
++                        pItemTemplate->SubClass==ITEM_SUBCLASS_ELIXIR))
 +                    {
 +                        // if is FOOD
-+                        if (pItemProto->Spells[0].SpellCategory == SPELL_CATEGORY_FOOD)
++                        if (pItemTemplate->Spells[0].SpellCategory == SPELL_CATEGORY_FOOD)
 +                            return pItem;
 +                    }
 +                }
@@ -1891,15 +1892,15 @@ index 0000000..2606656
 +        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if (pItem)
 +        {
-+            const ItemPrototype* const pItemProto = pItem->GetProto();
-+            if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if (pItemProto->Class==ITEM_CLASS_CONSUMABLE &&
-+                (pItemProto->SubClass==ITEM_SUBCLASS_FOOD ||
-+                pItemProto->SubClass==ITEM_SUBCLASS_POTION ||
-+                pItemProto->SubClass==ITEM_SUBCLASS_ELIXIR))
++            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++            if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if (pItemTemplate->Class==ITEM_CLASS_CONSUMABLE &&
++                (pItemTemplate->SubClass==ITEM_SUBCLASS_FOOD ||
++                pItemTemplate->SubClass==ITEM_SUBCLASS_POTION ||
++                pItemTemplate->SubClass==ITEM_SUBCLASS_ELIXIR))
 +            {
-+                if (pItemProto->Spells[0].SpellCategory == SPELL_CATEGORY_DRINK ||
-+                    pItemProto->Spells[0].SpellCategory == 4)
++                if (pItemTemplate->Spells[0].SpellCategory == SPELL_CATEGORY_DRINK ||
++                    pItemTemplate->Spells[0].SpellCategory == 4)
 +                    return pItem;
 +            }
 +        }
@@ -1915,17 +1916,17 @@ index 0000000..2606656
 +                Item* const pItem = m_bot->GetItemByPos(bag, slot);
 +                if (pItem)
 +                {
-+                    const ItemPrototype* const pItemProto = pItem->GetProto();
++                    const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
 +
-+                    if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if (pItemProto->Class==ITEM_CLASS_CONSUMABLE &&
-+                        (pItemProto->SubClass==ITEM_SUBCLASS_FOOD ||
-+                        pItemProto->SubClass==ITEM_SUBCLASS_POTION ||
-+                        pItemProto->SubClass==ITEM_SUBCLASS_ELIXIR))
++                    if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if (pItemTemplate->Class==ITEM_CLASS_CONSUMABLE &&
++                        (pItemTemplate->SubClass==ITEM_SUBCLASS_FOOD ||
++                        pItemTemplate->SubClass==ITEM_SUBCLASS_POTION ||
++                        pItemTemplate->SubClass==ITEM_SUBCLASS_ELIXIR))
 +                    {
 +                        // if is WATER
-+                        if (pItemProto->Spells[0].SpellCategory == SPELL_CATEGORY_DRINK ||
-+                            pItemProto->Spells[0].SpellCategory == 4)
++                        if (pItemTemplate->Spells[0].SpellCategory == SPELL_CATEGORY_DRINK ||
++                            pItemTemplate->Spells[0].SpellCategory == 4)
 +                            return pItem;
 +                    }
 +                }
@@ -1944,9 +1945,9 @@ index 0000000..2606656
 +        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if (pItem)
 +        {
-+            const ItemPrototype* const pItemProto = pItem->GetProto();
-+            if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if (pItemProto->IsPotion())
++            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++            if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if (pItemTemplate->IsPotion())
 +            {
 +                    return pItem;
 +            }
@@ -1963,9 +1964,9 @@ index 0000000..2606656
 +                Item* const pItem = m_bot->GetItemByPos(bag, slot);
 +                if (pItem)
 +                {
-+                    const ItemPrototype* const pItemProto = pItem->GetProto();
-+                    if (! pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if (pItemProto->IsPotion())
++                    const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++                    if (! pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if (pItemTemplate->IsPotion())
 +                    {
 +                            return pItem;
 +                    }
@@ -1986,9 +1987,9 @@ index 0000000..2606656
 +        Item *const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if(pItem)
 +        {
-+            const ItemPrototype *const pItemProto = pItem->GetProto();
-+            if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_BANDAGE) return pItem;
++            const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++            if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_BANDAGE) return pItem;
 +        }
 +    }
 +    //list out items in other removable backpacks
@@ -2002,9 +2003,9 @@ index 0000000..2606656
 +                Item *const pItem = m_bot->GetItemByPos(bag, slot);
 +                if(pItem)
 +                {
-+                    const ItemPrototype *const pItemProto = pItem->GetProto();
-+                    if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_BANDAGE) return pItem;
++                    const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++                    if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_BANDAGE) return pItem;
 +                }
 +            }
 +        }
@@ -2021,9 +2022,9 @@ index 0000000..2606656
 +        Item *const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if(pItem)
 +        {
-+            const ItemPrototype *const pItemProto = pItem->GetProto();
-+            if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
++            const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++            if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
 +        }
 +    }
 +    //list out items in other removable backpacks
@@ -2037,9 +2038,9 @@ index 0000000..2606656
 +                Item *const pItem = m_bot->GetItemByPos(bag, slot);
 +                if(pItem)
 +                {
-+                    const ItemPrototype *const pItemProto = pItem->GetProto();
-+                    if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
++                    const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++                    if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
 +                }
 +            }
 +        }
@@ -2056,10 +2057,10 @@ index 0000000..2606656
 +        Item *const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +        if(pItem)
 +        {
-+            const ItemPrototype *const pItemProto = pItem->GetProto();
-+            if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+            if(pItemProto->Class == ITEM_CLASS_GLYPH) continue;
-+            if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
++            const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++            if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++            if(pItemTemplate->Class == ITEM_CLASS_GLYPH) continue;
++            if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
 +        }
 +    }
 +    //list out items in other removable backpacks
@@ -2073,10 +2074,10 @@ index 0000000..2606656
 +                Item *const pItem = m_bot->GetItemByPos(bag, slot);
 +                if(pItem)
 +                {
-+                    const ItemPrototype *const pItemProto = pItem->GetProto();
-+                    if(!pItemProto || m_bot->CanUseItem(pItemProto)!=EQUIP_ERR_OK) continue;
-+                    if(pItemProto->Class == ITEM_CLASS_GLYPH) continue;
-+                    if(pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
++                    const ItemTemplate *const pItemTemplate = pItem->GetTemplate();
++                    if(!pItemTemplate || m_bot->CanUseItem(pItemTemplate)!=EQUIP_ERR_OK) continue;
++                    if(pItemTemplate->Class == ITEM_CLASS_GLYPH) continue;
++                    if(pItemTemplate->Class == ITEM_CLASS_CONSUMABLE && pItemTemplate->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) return pItem;
 +                }
 +            }
 +        }
@@ -2263,8 +2264,8 @@ index 0000000..2606656
 +    if(thingToAttack->GetTypeId() != TYPEID_PLAYER)
 +    {
 +        //add thingToAttack to loot list
-+        CreatureInfo const *cInfo = ((Creature *)thingToAttack)->GetCreatureInfo();
-+        if(cInfo && cInfo->lootid) m_lootCreature.push_back(thingToAttack->GetGUID());
++        CreatureTemplate const *creatureInfo = ((Creature *)thingToAttack)->GetCreatureInfo();
++        if(creatureInfo && creatureInfo->lootid) m_lootCreature.push_back(thingToAttack->GetGUID());
 +    }
 +
 +    return;
@@ -2843,7 +2844,7 @@ index 0000000..2606656
 +
 +        for (std::list<uint32>::iterator it = itemIdSearchList.begin(); it != itemIdSearchList.end(); ++it)
 +        {
-+            if (pItem->GetProto()->ItemId != *it)
++            if (pItem->GetTemplate()->ItemId != *it)
 +                continue;
 +
 +            foundItemList.push_back(pItem);
@@ -2866,7 +2867,7 @@ index 0000000..2606656
 +        if(!pItem) continue;
 +        for(std::list<uint32>::iterator it = itemIdSearchList.begin(); it != itemIdSearchList.end(); ++it)
 +        {
-+            if(pItem->GetProto()->ItemId != *it) continue;
++            if(pItem->GetTemplate()->ItemId != *it) continue;
 +            foundItemList.push_back(pItem);
 +            itemIdSearchList.erase(it);
 +            break;
@@ -2884,7 +2885,7 @@ index 0000000..2606656
 +            if(!pItem) continue;
 +            for(std::list<uint32>::iterator it = itemIdSearchList.begin(); it != itemIdSearchList.end(); ++it)
 +            {
-+                if(pItem->GetProto()->ItemId != *it) continue;
++                if(pItem->GetTemplate()->ItemId != *it) continue;
 +                foundItemList.push_back(pItem);
 +                itemIdSearchList.erase(it);
 +                break;
@@ -2903,12 +2904,12 @@ index 0000000..2606656
 +        Item* const pItem = m_bot->GetItemByPos( INVENTORY_SLOT_BAG_0, slot );
 +        if (pItem )
 +        {
-+            const ItemPrototype* const pItemProto = pItem->GetProto();
++            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
 +
-+                if (!pItemProto )
++                if (!pItemTemplate )
 +                    continue;
 +
-+            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
++            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemTemplate->ItemId);
 +            if (result)
 +            {
 +                Field *fields = result->Fetch();
@@ -2927,10 +2928,10 @@ index 0000000..2606656
 +        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); // 255, 23 to 38
 +        if (pItem)
 +        {
-+            const ItemPrototype* const pItemProto = pItem->GetProto();
-+            if (!pItemProto )
++            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++            if (!pItemTemplate )
 +                continue;
-+            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
++            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemTemplate->ItemId);
 +            if (result)
 +            {
 +                Field *fields = result->Fetch();
@@ -2954,12 +2955,12 @@ index 0000000..2606656
 +                Item* const pItem = m_bot->GetItemByPos(bag, slot); // 20 to 23, 1 to bagsize
 +                if (pItem)
 +                {
-+                    const ItemPrototype* const pItemProto = pItem->GetProto();
++                    const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
 +
-+                    if (!pItemProto )
++                    if (!pItemTemplate )
 +                        continue;
 +
-+                    result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
++                    result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemTemplate->ItemId);
 +                    if (result)
 +                    {
 +
@@ -3318,7 +3319,7 @@ index 0000000..2606656
 +            return;
 +        }
 +
-+        PoisonWeapon(*poison, poison->GetProto()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_MAINHAND);
++        PoisonWeapon(*poison, poison->GetTemplate()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_MAINHAND);
 +    }
 +
 +    // poison offhand weapon
@@ -3332,7 +3333,7 @@ index 0000000..2606656
 +            return;
 +        }
 +
-+        PoisonWeapon(*poison, poison->GetProto()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_OFFHAND);
++        PoisonWeapon(*poison, poison->GetTemplate()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_OFFHAND);
 +    }
 +
 +    //equip items
@@ -3553,9 +3554,9 @@ index 0000000..2606656
 +             return;
 +         }
 +
-+         CreatureInfo const *ci = creature->GetCreatureInfo();
++         CreatureTemplate const *creatureInfo = creature->GetCreatureInfo();
 +
-+         if (!ci)
++         if (!creatureInfo)
 +         {
 +             TellMaster("This trainer can not train me anything at  all!");
 +             return;
@@ -3684,9 +3685,9 @@ index 0000000..2606656
 +             return;
 +         }
 +
-+         CreatureInfo const *ci = creature->GetCreatureInfo();
++         CreatureTemplate const *creatureInfo = creature->GetCreatureInfo();
 +
-+         if (!ci)
++         if (!creatureInfo)
 +         {
 +             TellMaster("This trainer can not train me anything at  all!");
 +             return;
@@ -3824,9 +3825,9 @@ index 0000000..2606656
 +        findItemsInInv(itemIds, itemList);
 +        for(std::list<Item *>::iterator it = itemList.begin(); it != itemList.end(); ++it)
 +        {
-+            if ((**it).GetProto()->SellPrice > 0)
++            if ((**it).GetTemplate()->SellPrice > 0)
 +            {
-+                int32 cost = (**it).GetCount() * (**it).GetProto()->SellPrice;
++                int32 cost = (**it).GetCount() * (**it).GetTemplate()->SellPrice;
 +                m_bot->ModifyMoney(cost);
 +                m_bot->MoveItemFromInventory((**it).GetBagSlot(), (**it).GetSlot(), true);
 +
@@ -3835,7 +3836,7 @@ index 0000000..2606656
 +
 +                if ((**it).GetCount() > 0) {
 +                    report << "Sold " << (**it).GetCount() << "x";
-+                    report << " |cffffffff|Hitem:" << (**it).GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << (**it).GetProto()->Name1 << "]|h|r";
++                    report << " |cffffffff|Hitem:" << (**it).GetTemplate()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << (**it).GetTemplate()->Name1 << "]|h|r";
 +                    report << " for ";
 +
 +                    uint32 gold = uint32(cost / 10000);
@@ -4040,9 +4041,9 @@ index 0000000..2606656
 +             float z = fields[4].GetFloat();
 +             int mapid = fields[5].GetUInt16();
 +
-+             GameObjectInfo const * gInfo = ObjectMgr::GetGameObjectInfo(entry);
++             GameObjectTemplate const * goinfo = sObjectMgr->GetGameObjectTemplate(entry);
 +
-+             if(!gInfo)
++             if(!goinfo)
 +                 continue;
 +
 +             uint64 objGuid = MAKE_NEW_GUID(guid, entry, HIGHGUID_GAMEOBJECT);
@@ -4050,7 +4051,7 @@ index 0000000..2606656
 +             if ( !go || (go && !go->isSpawned()) ) continue;
 +
 +             if(count < 12) // count, limits number of links
-+                  detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry << ":" << x << ":" << y << ":" << z  << ":" << mapid  << ":" <<  "|h[" << gInfo->name << "]|h|r";
++                  detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry << ":" << x << ":" << y << ":" << z  << ":" << mapid  << ":" <<  "|h[" << goinfo->name << "]|h|r";
 +             ++count;
 +         } while (result->NextRow());
 +
@@ -4087,11 +4088,11 @@ index 0000000..2606656
 +                return;
 +
 +            QuestMenu& questMenu = m_bot->PlayerTalkClass->GetQuestMenu();
-+            for (uint32 iI = 0; !wasRewarded && iI < questMenu.MenuItemCount(); ++iI)
++            for (uint32 iI = 0; !wasRewarded && iI < questMenu.GetMenuItemCount(); ++iI)
 +            {
 +                QuestMenuItem const& qItem = questMenu.GetItem(iI);
 +
-+                uint32 questID = qItem.m_qId;
++                uint32 questID = qItem.QuestId;
 +                Quest const* pQuest = sObjectMgr->GetQuestTemplate(questID);
 +                QuestStatus status = m_bot->GetQuestStatus(questID);
 +
@@ -4103,7 +4104,7 @@ index 0000000..2606656
 +                {
 +                    for (uint8 rewardIdx=0; !wasRewarded && rewardIdx < pQuest->GetRewChoiceItemsCount(); ++rewardIdx)
 +                    {
-+                        ItemPrototype const * const pRewardItem = sObjectMgr->GetItemPrototype(pQuest->RewChoiceItemId[rewardIdx]);
++                        ItemTemplate const * const pRewardItem = sObjectMgr->GetItemTemplate(pQuest->RewChoiceItemId[rewardIdx]);
 +                        if (itemId == pRewardItem->ItemId)
 +                        {
 +                            m_bot->RewardQuest(pQuest, rewardIdx, pNpc, false);
@@ -4384,10 +4385,10 @@ index 0000000..2606656
 +        // auto complete every completed quest this NPC has
 +        m_bot->PrepareQuestMenu(npcGUID);
 +        QuestMenu& questMenu = m_bot->PlayerTalkClass->GetQuestMenu();
-+        for (uint32 iI = 0; iI < questMenu.MenuItemCount(); ++iI)
++        for (uint32 iI = 0; iI < questMenu.GetMenuItemCount(); ++iI)
 +        {
 +            QuestMenuItem const& qItem = questMenu.GetItem(iI);
-+            uint32 questID = qItem.m_qId;
++            uint32 questID = qItem.QuestId;
 +            Quest const* pQuest = sObjectMgr->GetQuestTemplate(questID);
 +
 +            std::ostringstream out;
@@ -4419,7 +4420,7 @@ index 0000000..2606656
 +                    else if (pQuest->GetRewChoiceItemsCount() == 1)
 +                    {
 +                        int rewardIdx = 0;
-+                        ItemPrototype const *pRewardItem = sObjectMgr->GetItemPrototype(pQuest->RewChoiceItemId[rewardIdx]);
++                        ItemTemplate const *pRewardItem = sObjectMgr->GetItemTemplate(pQuest->RewChoiceItemId[rewardIdx]);
 +                        std::string itemName = pRewardItem->Name1;
 +                        m_bot->GetPlayerbotAI()->ItemLocalization(itemName, pRewardItem->ItemId);
 +                        if (m_bot->CanRewardQuest(pQuest, rewardIdx, false))
@@ -4450,7 +4451,7 @@ index 0000000..2606656
 +                            << "|h[" << questTitle << "]|h|r? ";
 +                        for (uint8 i=0; i < pQuest->GetRewChoiceItemsCount(); ++i)
 +                        {
-+                            ItemPrototype const * const pRewardItem = sObjectMgr->GetItemPrototype(pQuest->RewChoiceItemId[i]);
++                            ItemTemplate const * const pRewardItem = sObjectMgr->GetItemTemplate(pQuest->RewChoiceItemId[i]);
 +                            std::string itemName = pRewardItem->Name1;
 +                            m_bot->GetPlayerbotAI()->ItemLocalization(itemName, pRewardItem->ItemId);
 +                            out << "|cffffffff|Hitem:" << pRewardItem->ItemId << ":0:0:0:0:0:0:0" << "|h[" << itemName << "]|h|r";
@@ -4772,7 +4773,7 @@ index 0000000..e40d6ad
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
 new file mode 100644
-index 0000000..8e6cfbe
+index 0000000..713efd0
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
 @@ -0,0 +1,594 @@
@@ -4932,7 +4933,7 @@ index 0000000..8e6cfbe
 +            {
 +                if(aura->GetSpellProto()->Dispel == DISPEL_MAGIC)
 +                {
-+                    bool positive = aurApp->IsPositive() ? (!(aura->GetSpellProto()->AttributesEx & SPELL_ATTR0_UNK7)) : false;
++                    bool positive = aurApp->IsPositive() ? (!(aura->GetSpellProto()->AttributesEx & SPELL_ATTR0_HIDDEN_CLIENTSIDE)) : false;
 +
 +                    // do not remove positive auras if friendly target
 +                    //               negative auras if non-friendly target
@@ -5021,7 +5022,7 @@ index 0000000..8e6cfbe
 +                {
 +                    if(aura->GetSpellProto()->Dispel == DISPEL_MAGIC)
 +                    {
-+                        bool positive = aurApp->IsPositive() ? (!(aura->GetSpellProto()->AttributesEx & SPELL_ATTR0_UNK7)) : false;
++                        bool positive = aurApp->IsPositive() ? (!(aura->GetSpellProto()->AttributesEx & SPELL_ATTR0_HIDDEN_CLIENTSIDE)) : false;
 +                        if(positive)continue;
 +                    }
 +                    return CastSpell(dispelSpell, dTarget, false);
@@ -5126,8 +5127,8 @@ index 0000000..8e6cfbe
 +    //Do not try to go behind if ranged and creature is not boss like
 +    if (bDist > MELEE_RANGE && followTarget->GetTypeId() != TYPEID_PLAYER)
 +    {
-+        const CreatureInfo *cInfo = ((Creature*) followTarget)->GetCreatureInfo();
-+        if (!cInfo || cInfo->rank != 3) { omitAngle = true; }
++        const CreatureTemplate *creatureInfo = ((Creature*) followTarget)->GetCreatureInfo();
++        if (!creatureInfo || creatureInfo->rank != 3) { omitAngle = true; }
 +    }
 +
 +    //Move
@@ -6696,7 +6697,7 @@ index 0000000..35f4d54
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotHunterAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotHunterAI.cpp
 new file mode 100644
-index 0000000..c625f50
+index 0000000..471ffb5
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotHunterAI.cpp
 @@ -0,0 +1,561 @@
@@ -7179,15 +7180,15 @@ index 0000000..c625f50
 +                Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +                if (pItem)
 +                {
-+                    const ItemPrototype* const pItemProto = pItem->GetProto();
-+                    if (!pItemProto )
++                    const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++                    if (!pItemTemplate )
 +                        continue;
-+                    if(pet->HaveInDiet(pItemProto)) // is pItem in pets diet
++                    if(pet->HaveInDiet(pItemTemplate)) // is pItem in pets diet
 +                    {
-+                        //sLog.outDebug("Food for pet: %s",pItemProto->Name1);
++                        //sLog.outDebug("Food for pet: %s",pItemTemplate->Name1);
 +                        caster->CastSpell(caster,51284,true); // pet feed visual
 +                        uint32 count = 1; // number of items used
-+                        int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemProto->ItemLevel); // nutritional value of food
++                        int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemTemplate->ItemLevel); // nutritional value of food
 +                        m_bot->DestroyItemCount(pItem,count,true); // remove item from inventory
 +                        m_bot->CastCustomSpell(m_bot,PET_FEED,&benefit,NULL,NULL,true); // feed pet
 +                        ai->TellMaster( "feeding pet." );
@@ -7207,15 +7208,15 @@ index 0000000..c625f50
 +                        Item* const pItem = m_bot->GetItemByPos(bag, slot);
 +                        if (pItem)
 +                        {
-+                            const ItemPrototype* const pItemProto = pItem->GetProto();
-+                            if (!pItemProto )
++                            const ItemTemplate* const pItemTemplate = pItem->GetTemplate();
++                            if (!pItemTemplate )
 +                                continue;
-+                            if(pet->HaveInDiet(pItemProto)) // is pItem in pets diet
++                            if(pet->HaveInDiet(pItemTemplate)) // is pItem in pets diet
 +                            {
-+                                //sLog.outDebug("Food for pet: %s",pItemProto->Name1);
++                                //sLog.outDebug("Food for pet: %s",pItemTemplate->Name1);
 +                                caster->CastSpell(caster,51284,true); // pet feed visual
 +                                uint32 count = 1; // number of items used
-+                                int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemProto->ItemLevel); // nutritional value of food
++                                int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemTemplate->ItemLevel); // nutritional value of food
 +                                m_bot->DestroyItemCount(pItem,count,true); // remove item from inventory
 +                                m_bot->CastCustomSpell(m_bot,PET_FEED,&benefit,NULL,NULL,true); // feed pet
 +                                ai->TellMaster( "feeding pet." );
@@ -8893,7 +8894,7 @@ index 0000000..9670986
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotRogueAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotRogueAI.cpp
 new file mode 100644
-index 0000000..4dff2db
+index 0000000..2715d3f
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotRogueAI.cpp
 @@ -0,0 +1,266 @@
@@ -9150,7 +9151,7 @@ index 0000000..4dff2db
 +    {
 +        poison = GetAI()->FindPoisonForward();
 +        if(poison == NULL) return false;
-+        GetAI()->PoisonWeapon(*poison, poison->GetProto()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_MAINHAND);
++        GetAI()->PoisonWeapon(*poison, poison->GetTemplate()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_MAINHAND);
 +        return true;
 +    }
 +    weap = m_bot->GetWeaponForAttack(OFF_ATTACK);
@@ -9158,7 +9159,7 @@ index 0000000..4dff2db
 +    {
 +        poison = GetAI()->FindPoisonBackward();
 +        if(poison == NULL) return false;
-+        GetAI()->PoisonWeapon(*poison, poison->GetProto()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_OFFHAND);
++        GetAI()->PoisonWeapon(*poison, poison->GetTemplate()->Spells[0].SpellId, TARGET_FLAG_ITEM, EQUIPMENT_SLOT_OFFHAND);
 +        return true;
 +    }
 +    return false;
@@ -9212,7 +9213,7 @@ index 0000000..9c400f1
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotShamanAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotShamanAI.cpp
 new file mode 100644
-index 0000000..201776e
+index 0000000..4c032a4
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotShamanAI.cpp
 @@ -0,0 +1,555 @@
@@ -9682,7 +9683,7 @@ index 0000000..201776e
 +        if (!tSpell) continue;
 +        uint32 tEntry = (uint32) tSpell->EffectMiscValue[0];
 +        if (!tEntry) continue;
-+        CreatureInfo const *totemEntry = GetCreatureTemplateStore(tEntry);
++        CreatureTemplate const *totemEntry = sObjectMgr->GetCreatureTemplate(tEntry);
 +        if (!tEntry) continue;
 +
 +        if (CanCast(totz[i], m_bot) && !m_bot->FindNearestCreature(tEntry,30)) { return CastSpell(totz[i],m_bot,false); }
@@ -11097,10 +11098,21 @@ index 6ab312b..713d2c7 100755
              {
                  PSendSysMessage(LANG_CANNOT_SUMMON_TO_INST, nameLink.c_str());
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 94a9c59..43c3a14 100755
+index 94a9c59..d0b17a4 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
 +++ b/src/server/game/Chat/Commands/Level3.cpp
-@@ -2843,6 +2843,210 @@ bool ChatHandler::HandleServerIdleShutDownCommand(const char *args)
+@@ -263,8 +263,8 @@ bool ChatHandler::HandleAddItemCommand(const char *args)
+ 
+     sLog->outDetail(GetTrinityString(LANG_ADDITEM), itemId, count);
+ 
+-    ItemTemplate const *pProto = sObjectMgr->GetItemTemplate(itemId);
+-    if (!pProto)
++    ItemTemplate const *pTemplate = sObjectMgr->GetItemTemplate(itemId);
++    if (!pTemplate)
+     {
+         PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, itemId);
+         SetSentErrorMessage(true);
+@@ -2843,6 +2843,207 @@ bool ChatHandler::HandleServerIdleShutDownCommand(const char *args)
      return true;
  }
  
@@ -11132,15 +11144,12 @@ index 94a9c59..43c3a14 100755
 +    }
 +
 +    // check item starting quest (it can work incorrectly if added without item in inventory)
-+    for (uint32 id = 0; id < sItemStorage.MaxEntry; id++)
++    ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
++    for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
 +    {
-+        ItemPrototype const *pProto = sItemStorage.LookupEntry<ItemPrototype>(id);
-+        if (!pProto)
-+            continue;
-+
-+        if (pProto->StartQuest == entry)
++        if (itr->second.StartQuest == entry)
 +        {
-+            PSendSysMessage(LANG_COMMAND_QUEST_STARTFROMITEM, entry, pProto->ItemId);
++            PSendSysMessage(LANG_COMMAND_QUEST_STARTFROMITEM, entry, itr->second.ItemId);
 +            SetSentErrorMessage(true);
 +            return false;
 +        }
@@ -11268,9 +11277,9 @@ index 94a9c59..43c3a14 100755
 +        }
 +        else if (creature > 0)
 +        {
-+            if (CreatureInfo const* cInfo = sObjectMgr->GetCreatureTemplate(creature))
++            if (CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(creature))
 +                for (uint16 z = 0; z < creaturecount; ++z)
-+                    player->KilledMonster(cInfo,0);
++                    player->KilledMonster(creatureInfo,0);
 +        }
 +        else if (creature < 0)
 +        {
@@ -11433,7 +11442,7 @@ index 8694ac6..5aeaafe 100755
              summon = new Minion(properties, summoner);
              break;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a51a8c9..3f4f953 100755
+index a51a8c9..4987075 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -72,6 +72,11 @@
@@ -11498,7 +11507,7 @@ index a51a8c9..3f4f953 100755
  
      sWorld->DecreasePlayerCount();
  }
-@@ -898,6 +928,27 @@ void Player::CleanupsBeforeDelete(bool finalCleanup)
+@@ -898,6 +928,15 @@ void Player::CleanupsBeforeDelete(bool finalCleanup)
      if (m_transport)
          m_transport->RemovePassenger(this);
  
@@ -11506,18 +11515,6 @@ index a51a8c9..3f4f953 100755
 +    {
 +         Creature *m_bot = GetBot();
 +         Group *m_group = GetGroup();
-+
-+         //removing bot from group
-+         if(m_group->IsMember(m_bot->GetGUID()))
-+         {
-+             //deleting bot from group
-+             if(m_group->RemoveMember(m_bot->GetGUID(), GROUP_REMOVEMETHOD_DEFAULT) < 1) // 99 means I'm a bot
-+             {
-+                 //no one left in group so deleting group
-+                 delete m_group;
-+                 sObjectMgr->RemoveGroup(m_group);
-+             }
-+         }
 +         m_bot->SetCharmerGUID(0);
 +         m_bot->RemoveFromWorld();
 +         RemoveBot();
@@ -11526,7 +11523,7 @@ index a51a8c9..3f4f953 100755
      // clean up player-instance binds, may unload some instance saves
      for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
          for (BoundInstancesMap::iterator itr = m_boundInstances[i].begin(); itr != m_boundInstances[i].end(); ++itr)
-@@ -1704,6 +1755,16 @@ void Player::Update(uint32 p_time)
+@@ -1704,6 +1743,16 @@ void Player::Update(uint32 p_time)
          m_regenTimer += p_time;
          RegenerateAll();
      }
@@ -11543,7 +11540,7 @@ index a51a8c9..3f4f953 100755
  
      if (m_deathState == JUST_DIED)
          KillPlayer();
-@@ -1792,6 +1853,10 @@ void Player::Update(uint32 p_time)
+@@ -1792,6 +1841,10 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && isAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -11554,7 +11551,7 @@ index a51a8c9..3f4f953 100755
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2033,7 +2098,7 @@ void Player::SendTeleportPacket(Position &oldPos)
+@@ -2033,7 +2086,7 @@ void Player::SendTeleportPacket(Position &oldPos)
      WorldPacket data2(MSG_MOVE_TELEPORT, 38);
      data2.append(GetPackGUID());
      BuildMovementPacket(&data2);
@@ -11563,7 +11560,7 @@ index a51a8c9..3f4f953 100755
      SendMessageToSet(&data2, false);
  }
  
-@@ -2084,6 +2149,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2084,6 +2137,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -11578,7 +11575,7 @@ index a51a8c9..3f4f953 100755
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2133,6 +2206,31 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2133,6 +2194,19 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          }
      }
  
@@ -11589,18 +11586,6 @@ index a51a8c9..3f4f953 100755
 +
 +         Group *m_group = GetGroup();
 +         Creature *m_bot = GetBot();
-+
-+         //removing bot from group
-+         if(m_group->IsMember(m_bot->GetGUID()))
-+         {
-+             //deleting bot from group
-+             if(m_group->RemoveMember(m_bot->GetGUID(), GROUP_REMOVEMETHOD_DEFAULT) < 1) // 99 means I'm a bot
-+             {
-+                 //no one left in group so deleting group
-+                 delete m_group;
-+                 sObjectMgr->RemoveGroup(m_group);
-+             }
-+         }
 +         m_bot->SetCharmerGUID(0);
 +         m_bot->RemoveFromWorld();
 +         RemoveBot();
@@ -11610,7 +11595,7 @@ index a51a8c9..3f4f953 100755
      // The player was ported to another map and loses the duel immediately.
      // We have to perform this check before the teleport, otherwise the
      // ObjectAccessor won't find the flag.
-@@ -2312,6 +2410,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2312,6 +2386,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          else
              return false;
      }
@@ -11631,7 +11616,7 @@ index a51a8c9..3f4f953 100755
      return true;
  }
  
-@@ -2426,6 +2538,166 @@ void Player::RemoveFromWorld()
+@@ -2426,6 +2514,166 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -11798,7 +11783,7 @@ index a51a8c9..3f4f953 100755
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2712,7 +2984,7 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2712,7 +2960,7 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
                      return NULL;
  
      // not too far
@@ -11807,7 +11792,7 @@ index a51a8c9..3f4f953 100755
          return NULL;
  
      return creature;
-@@ -2902,6 +3174,30 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2902,6 +3150,30 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -11838,7 +11823,7 @@ index a51a8c9..3f4f953 100755
          group->RemoveMember(guid, method, kicker, reason);
          group = NULL;
      }
-@@ -7121,6 +7417,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -7121,6 +7393,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
          {
              Player *pVictim = uVictim->ToPlayer();
  
@@ -11849,7 +11834,7 @@ index a51a8c9..3f4f953 100755
              if (GetTeam() == pVictim->GetTeam() && !sWorld->IsFFAPvPRealm())
                  return false;
  
-@@ -15786,6 +16086,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
+@@ -15786,6 +16062,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
              }
          }
      }
@@ -11859,7 +11844,7 @@ index a51a8c9..3f4f953 100755
  }
  
  void Player::CastedCreatureOrGO(uint32 entry, uint64 guid, uint32 spell_id)
-@@ -15911,6 +16214,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
+@@ -15911,6 +16190,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
                              m_QuestStatusSave[questid] = true;
  
                              SendQuestUpdateAddCreatureOrGo(qInfo, guid, j, curTalkCount, addTalkCount);
@@ -11867,7 +11852,7 @@ index a51a8c9..3f4f953 100755
                          }
                          if (CanCompleteQuest(questid))
                              CompleteQuest(questid);
-@@ -18200,6 +18504,18 @@ void Player::SaveToDB()
+@@ -18200,6 +18480,18 @@ void Player::SaveToDB()
  
      if (!IsBeingTeleported())
      {
@@ -11886,7 +11871,7 @@ index a51a8c9..3f4f953 100755
          ss << GetMapId() << ", "
          << (uint32)GetInstanceId() << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18207,9 +18523,22 @@ void Player::SaveToDB()
+@@ -18207,9 +18499,22 @@ void Player::SaveToDB()
          << finiteAlways(GetPositionY()) << ", "
          << finiteAlways(GetPositionZ()) << ", "
          << finiteAlways(GetOrientation()) << ", ";
@@ -11909,7 +11894,7 @@ index a51a8c9..3f4f953 100755
          ss << GetTeleportDest().GetMapId() << ", "
          << (uint32)0 << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18217,6 +18546,7 @@ void Player::SaveToDB()
+@@ -18217,6 +18522,7 @@ void Player::SaveToDB()
          << finiteAlways(GetTeleportDest().GetPositionY()) << ", "
          << finiteAlways(GetTeleportDest().GetPositionZ()) << ", "
          << finiteAlways(GetTeleportDest().GetOrientation()) << ", ";
@@ -11917,7 +11902,7 @@ index a51a8c9..3f4f953 100755
      }
  
      ss << m_taxi << ", ";                                   // string with TaxiMaskSize numbers
-@@ -19216,7 +19546,7 @@ void Player::StopCastingCharm()
+@@ -19216,7 +19522,7 @@ void Player::StopCastingCharm()
      }
  }
  
