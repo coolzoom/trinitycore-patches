@@ -1,23 +1,23 @@
-From fbb2a05cf7ea3c7c2619fc2eb3bc10a520fc6577 Mon Sep 17 00:00:00 2001
+From 78de345ff626ba929f31459baa7f2a15b46ee683 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 25 Apr 2011 14:38:47 -0400
-Subject: [PATCH] 11761-ArgentTournament
+Date: Fri, 17 Jun 2011 06:01:59 -0400
+Subject: [PATCH] 12394-Argent-Tournament
 
 ---
- sql/extra/world_argenttournament.sql               |  425 ++++++++
- src/server/game/Globals/ObjectMgr.h                |    4 +
- .../game/Server/Protocol/Handlers/PetHandler.cpp   |    9 +
- src/server/game/Spells/SpellEffects.cpp            |   38 +-
+ sql/world_argenttournamentgrounds.sql              |  425 ++++++++
+ src/server/game/Globals/ObjectMgr.h                |    5 +
+ .../game/Server/Protocol/Handlers/PetHandler.cpp   |    8 +
+ src/server/game/Spells/SpellEffects.cpp            |   40 +-
  src/server/scripts/Northrend/grizzly_hills.cpp     |  215 ++++
- src/server/scripts/Northrend/icecrown.cpp          | 1051 +++++++++++++++++++-
- 6 files changed, 1722 insertions(+), 20 deletions(-)
- create mode 100644 sql/extra/world_argenttournament.sql
+ src/server/scripts/Northrend/icecrown.cpp          | 1050 +++++++++++++++++++-
+ 6 files changed, 1722 insertions(+), 21 deletions(-)
+ create mode 100644 sql/world_argenttournamentgrounds.sql
 
-diff --git a/sql/extra/world_argenttournament.sql b/sql/extra/world_argenttournament.sql
+diff --git a/sql/world_argenttournamentgrounds.sql b/sql/world_argenttournamentgrounds.sql
 new file mode 100644
-index 0000000..4379f9d
+index 0000000..28a3712
 --- /dev/null
-+++ b/sql/extra/world_argenttournament.sql
++++ b/sql/world_argenttournamentgrounds.sql
 @@ -0,0 +1,425 @@
 +-- Horde
 +-- Premiere quete : Le tournoi d'argent
@@ -34,7 +34,7 @@ index 0000000..4379f9d
 +-- Immune to Confuse
 +UPDATE `creature_template` SET `mechanic_immune_mask` = `mechanic_immune_mask` | 2 WHERE `entry` IN (33844, 33320, 33321, 33322, 33323, 33324);
 +
-+-- Ajouts des spellclick_spells pour les montures Ã  l'Ã©curie
++-- Ajouts des spellclick_spells pour les montures à l'écurie
 +DELETE FROM `npc_spellclick_spells` WHERE npc_entry IN (33842,33796,33798,33791,33792,33799);
 +INSERT INTO `npc_spellclick_spells` (`npc_entry`, `spell_id`, `quest_start`, `quest_start_active`, `quest_end`, `cast_flags`, `aura_required`, `aura_forbidden`, `user_type`) VALUES
 +(33842, 63791, 13668, 1, 13680, 1, 0, 0, 0), -- Aspirant
@@ -81,7 +81,7 @@ index 0000000..4379f9d
 +UPDATE `quest_template` SET `RequiredRaces`=16, `NextQuestId`=13721, `NextQuestInChain`=13721, `ExclusiveGroup`=13695 WHERE `entry`=13695;
 +UPDATE `quest_template` SET `RequiredRaces`=512, `NextQuestId`=13722, `NextQuestInChain`=13722, `ExclusiveGroup`=13696 WHERE `entry`=13696;
 +
-+-- INFOS DEV -- Premiere Quete (AdmissibilitÃ©) : 13687 -- Deuxieme Quete (Champion) : 13701
++-- INFOS DEV -- Premiere Quete (Admissibilité) : 13687 -- Deuxieme Quete (Champion) : 13701
 +UPDATE `quest_template` SET `PrevQuestId`=13701 WHERE `entry` IN (13707, 13708, 13709, 13710, 13711); -- TOScript into the core (check of 13687)
 +
 +UPDATE `quest_template` SET `NextQuestId`=13697, `NextQuestInChain`=13697, `ExclusiveGroup`=13691 WHERE `entry`=13707;
@@ -147,7 +147,7 @@ index 0000000..4379f9d
 +-- Immune to Confuse
 +UPDATE `creature_template` SET `mechanic_immune_mask` = `mechanic_immune_mask` | 2 WHERE `entry` IN (33845, 33319, 33317, 33318, 33217, 33316);
 +
-+-- Ajouts des spellclick_spells pour les montures Ã  l'Ã©curie
++-- Ajouts des spellclick_spells pour les montures à l'écurie
 +DELETE FROM `npc_spellclick_spells` WHERE npc_entry IN (33843,33800,33795,33790,33793,33794);
 +
 +INSERT INTO `npc_spellclick_spells` (`npc_entry`, `spell_id`, `quest_start`, `quest_start_active`, `quest_end`, `cast_flags`, `aura_required`, `aura_forbidden`, `user_type`) VALUES
@@ -196,7 +196,7 @@ index 0000000..4379f9d
 +UPDATE `quest_template` SET `RequiredRaces`=64, `NextQuestId`=13715, `NextQuestInChain`=13715, `ExclusiveGroup`=13688 WHERE `entry`=13688;
 +UPDATE `quest_template` SET `RequiredRaces`=1024, `NextQuestId`=13716, `NextQuestInChain`=13716, `ExclusiveGroup`=13690 WHERE `entry`=13690;
 +
-+-- INFOS DEV -- Premiere Quete (AdmissibilitÃ©) : 13686 -- Deuxieme Quete (Champion) : 13700
++-- INFOS DEV -- Premiere Quete (Admissibilité) : 13686 -- Deuxieme Quete (Champion) : 13700
 +UPDATE `quest_template` SET `PrevQuestId`=13700 WHERE `entry` IN (13593, 13703, 13706, 13704, 13705); -- TOScript into the core (check of 13686)
 +
 +UPDATE `quest_template` SET `NextQuestId`=13718, `NextQuestInChain`=13718, `ExclusiveGroup`=13718 WHERE `entry`=13593;
@@ -444,30 +444,30 @@ index 0000000..4379f9d
 +
 +UPDATE `creature_template` SET `name` = 'summon halion', `ScriptName` = 'npc_summon_halion', `flags_extra` = 128 WHERE `entry` = '40044';
 +UPDATE `creature_template` SET `ScriptName` = 'npc_onyx_flamecaller' WHERE `entry` = '39814'
-\ No newline at end of file
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index e2c3ea8..61ba1ef 100755
+index ab1c7f1..25c1305 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -879,6 +879,10 @@ class ObjectMgr
-         {
+@@ -847,6 +847,11 @@ class ObjectMgr
              return &mCreatureQuestRelations;
          }
+ 
 +        QuestRelations* GetCreatureQuestInvolvedRelation()
 +        {
 +            return &mCreatureQuestInvolvedRelations;
 +        }
- 
++		
          QuestRelationBounds GetCreatureQuestRelationBounds(uint32 creature_entry)
          {
+             return mCreatureQuestRelations.equal_range(creature_entry);
 diff --git a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-index 5ad3889..c7f7583 100755
+index 0c969c4..13ae339 100755
 --- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-@@ -753,6 +753,15 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
+@@ -756,6 +756,14 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
+         sLog->outError("WORLD: unknown PET spell id %i", spellId);
          return;
      }
- 
 +    switch(spellId)
 +    {
 +	    case 64077:
@@ -476,19 +476,19 @@ index 5ad3889..c7f7583 100755
 +		    return;
 +	    }
 +    }
-+
+ 
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
          if (caster->GetTypeId() == TYPEID_UNIT && caster->GetCharmInfo() && caster->GetCharmInfo()->GetGlobalCooldownMgr().HasGlobalCooldown(spellInfo))
-         {
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index ff52e92..fb979d4 100755
+index 9627b5c..488f50a 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -4433,7 +4433,33 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4405,8 +4405,34 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
 -                // Shadow Flame (All script effects, not just end ones to prevent player from dodging the last triggered spell)
+-                case 22539:
 +				case 62575:
 +				{
 +					if(m_caster->GetOwner())
@@ -516,17 +516,18 @@ index ff52e92..fb979d4 100755
 +					return;
 +				}
 +					// Shadow Flame (All script effects, not just end ones to prevent player from dodging the last triggered spell)
-                 case 22539:
++				case 22539:
                  case 22972:
                  case 22975:
-@@ -4885,9 +4911,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+                 case 22976:
+@@ -4857,9 +4883,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                          return;
  
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
-+			{
++					{
                          m_caster->CastSpell(m_caster, 63914, true);
 +			DoCreateItem(0,46069);
-+			}
++			}						
                      else
 -                        m_caster->CastSpell(m_caster, 63919, true);
 +			{
@@ -536,24 +537,24 @@ index ff52e92..fb979d4 100755
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5223,6 +5255,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5195,6 +5227,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
-+		{
++				{
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
                      Player *plr = unitTarget->ToPlayer();
-@@ -5233,6 +5266,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5205,6 +5238,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                              return;
-                     DoCreateItem(effIndex, itemId[urand(0,4)]);
+                     DoCreateItem(effIndex, itemId[urand(0, 4)]);
                      return;
-+		}
++				}
              }
              break;
          }
 diff --git a/src/server/scripts/Northrend/grizzly_hills.cpp b/src/server/scripts/Northrend/grizzly_hills.cpp
-index 67e0ad5..94dfc7e 100644
+index 1678e36..bd6b7d4 100644
 --- a/src/server/scripts/Northrend/grizzly_hills.cpp
 +++ b/src/server/scripts/Northrend/grizzly_hills.cpp
 @@ -29,6 +29,7 @@ EndContentData */
@@ -620,7 +621,7 @@ index 67e0ad5..94dfc7e 100644
 +			if(following) //Si la grenouille a dÃ©ja recu un /bisou il ne se passe rien
 +				return;
 +
-+			if(emote==TEXTEMOTE_KISS) // Si on fait /bisou
++			if(emote==TEXT_EMOTE_KISS) // Si on fait /bisou
 +			{
 +				if(!pPlayer->HasAura(SPELL_WARTSBGONE_LIP_BALM))
 +					pPlayer->AddAura(SPELL_WARTS,pPlayer);
@@ -791,7 +792,7 @@ index 67e0ad5..94dfc7e 100644
 +    new npc_maiden_of_drak_mar;
  }
 diff --git a/src/server/scripts/Northrend/icecrown.cpp b/src/server/scripts/Northrend/icecrown.cpp
-index b29e392..747bb53 100644
+index 6d6cf89..50bdfc6 100644
 --- a/src/server/scripts/Northrend/icecrown.cpp
 +++ b/src/server/scripts/Northrend/icecrown.cpp
 @@ -157,7 +157,7 @@ enum eSquireDavid
@@ -818,7 +819,7 @@ index b29e392..747bb53 100644
 -        if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
 -        {
 -            pPlayer->CLOSE_GOSSIP_MENU();
--            pCreature->SummonCreature(NPC_ARGENT_VALIANT,8575.451f,952.472f,547.554f,0.38f);
+-            pCreature->SummonCreature(NPC_ARGENT_VALIANT, 8575.451f, 952.472f, 547.554f, 0.38f);
 -        }
 -        return true;
 +	    if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
@@ -864,19 +865,19 @@ index b29e392..747bb53 100644
          {
 +	    me->CastSpell(me, SPELL_DEFEND, true);
 +	    me->CastSpell(me, SPELL_DEFEND, true);
-             pCreature->GetMotionMaster()->MovePoint(0,8599.258f,963.951f,547.553f);
+             pCreature->GetMotionMaster()->MovePoint(0, 8599.258f, 963.951f, 547.553f);
              pCreature->setFaction(35); //wrong faction in db?
          }
  
          uint32 uiChargeTimer;
          uint32 uiShieldBreakerTimer;
-+	uint32 uiDefendTimer;
++		uint32 uiDefendTimer;
  
          void Reset()
          {
              uiChargeTimer = 7000;
              uiShieldBreakerTimer = 10000;
-+	    uiDefendTimer = 10000;
++			uiDefendTimer = 10000;
          }
  
          void MovementInform(uint32 uiType, uint32 /*uiId*/)
@@ -887,10 +888,10 @@ index b29e392..747bb53 100644
 -            if (uiDamage > me->GetHealth() && pDoneBy->GetTypeId() == TYPEID_PLAYER)
 -            {
 -                uiDamage = 0;
--                CAST_PLR(pDoneBy)->KilledMonsterCredit(NPC_ARGENT_VALIANT_CREDIT,0);
+-                CAST_PLR(pDoneBy)->KilledMonsterCredit(NPC_ARGENT_VALIANT_CREDIT, 0);
 -                me->setFaction(35);
 -                me->DespawnOrUnsummon(5000);
--                me->SetHomePosition(me->GetPositionX(),me->GetPositionY(),me->GetPositionZ(),me->GetOrientation());
+-                me->SetHomePosition(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), me->GetOrientation());
 -                EnterEvadeMode();
 -            }
 +		if(pDoneBy)
@@ -944,20 +945,19 @@ index b29e392..747bb53 100644
          }
  
          void UpdateAI(const uint32 uiDiff)
-@@ -265,6 +324,12 @@ public:
+@@ -264,6 +323,11 @@ public:
+                 DoCastVictim(SPELL_SHIELD_BREAKER);
                  uiShieldBreakerTimer = 10000;
              } else uiShieldBreakerTimer -= uiDiff;
- 
 +            if (uiDefendTimer <= uiDiff)
 +            {
 +	        me->CastSpell(me, SPELL_DEFEND, true);
 +	        uiDefendTimer = 10000;
 +            } else uiDefendTimer -= uiDiff;
-+
+ 
              DoMeleeAttackIfReady();
          }
-     };
-@@ -381,6 +446,943 @@ public:
+@@ -381,6 +445,943 @@ public:
      }
  };
  
@@ -1002,7 +1002,7 @@ index b29e392..747bb53 100644
 +		}
 +
 +		if(questCheck || raceCheck)
-+			pPlayer->SEND_VENDORLIST(pCreature->GetGUID());
++			pPlayer->GetSession()->SendListInventory(pCreature->GetGUID());
 +		else
 +		    pPlayer->SEND_GOSSIP_MENU(textId, pCreature->GetGUID());
 +		return true;
@@ -1192,19 +1192,19 @@ index b29e392..747bb53 100644
 +
 +				if(m_Entry==33272 && !me->GetAura(SPELL_DEFEND_AURA_1))
 +						me->CastSpell(me,SPELL_DEFEND_AURA_1,true);
-+				ShielTimer = 8000;
++ 			ShielTimer = 8000;
 +			}
 +			else
 +				ShielTimer -= diff;
 +
-+		if (!UpdateVictim())
++	if (!UpdateVictim())
 +		    return;
-+		if (!me->HasUnitState(UNIT_STAT_STUNNED))
++	if (!me->HasUnitState(UNIT_STAT_STUNNED))
 +		    me->SetControlled(true,UNIT_STAT_STUNNED);//disable rotate
 +
 +		if (m_Entry != 2674 && m_Entry != 2673)
 +		{
-+		    if (ResetTimer <= diff)
++	    if (ResetTimer <= diff)
 +		    {
 +			EnterEvadeMode();
 +			ResetTimer = 10000;
@@ -1219,14 +1219,14 @@ index b29e392..747bb53 100644
 +			me->ForcedDespawn();
 +		    else
 +			DespawnTimer -= diff;
-+		}
++	}
 +	    }
 +	    void MoveInLineOfSight(Unit * /*who*/){return;}
 +	};
 +
 +	CreatureAI* GetAI(Creature* pCreature) const
 +	{
-+	    return new npc_training_dummy_argentAI(pCreature);
++    return new npc_training_dummy_argentAI(pCreature);
 +	}
 +
 +};
@@ -1238,17 +1238,17 @@ index b29e392..747bb53 100644
 +class npc_quest_givers_for_crusaders : public CreatureScript
 +{
 +public:
-+	npc_quest_givers_for_crusaders(): CreatureScript("npc_quest_givers_for_crusaders"){}
++       npc_quest_givers_for_crusaders(): CreatureScript("npc_quest_givers_for_crusaders"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
-+	{
-+		if (pPlayer->HasTitle(TITLE_CRUSADER))
-+			if (pCreature->isQuestGiver())
-+				pPlayer->PrepareQuestMenu(pCreature->GetGUID());
++       bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++       {
++               if (pPlayer->HasTitle(TITLE_CRUSADER))
++                       if (pCreature->isQuestGiver())
++                               pPlayer->PrepareQuestMenu(pCreature->GetGUID());
 +
-+		pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
-+		return true;
-+	}
++               pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++               return true;
++       }
 +
 +};
 +
@@ -1354,7 +1354,7 @@ index b29e392..747bb53 100644
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
-+				//else if (status == QUEST_STATUS_AVAILABLE)
++			//else if (status == QUEST_STATUS_AVAILABLE)
 +				//    qm.AddMenuItem(quest_id, 2);
 +			}
 +
@@ -1387,7 +1387,7 @@ index b29e392..747bb53 100644
 +							qm.AddMenuItem(quest_id, 4);
 +						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
-+						break;
++					break;
 +				}
 +			}
 +		}
@@ -1431,7 +1431,7 @@ index b29e392..747bb53 100644
 +				//    qm.AddMenuItem(quest_id, 2);
 +			}
 +
-+			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
++		for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
 +				Quest const* pQuest = sObjectMgr->GetQuestTemplate(quest_id);
@@ -1860,11 +1860,11 @@ index b29e392..747bb53 100644
 +		}
 +
 +	    void EnterCombat(Unit* /*who*/)
-+	    {
++    {
 +		DoScriptText(NPC_ARGENT_CHAMPION_TEXT_SAY_START, me);
 +	    }
 +
-+	    void UpdateAI(const uint32 uiDiff)
++    void UpdateAI(const uint32 uiDiff)
 +	    {
 +		if (!UpdateVictim())
 +		    return;
@@ -1884,15 +1884,15 @@ index b29e392..747bb53 100644
 +		if (uiDefendTimer <= uiDiff)
 +		{
 +		    me->CastSpell(me, SPELL_DEFEND_CHAMPION, true);
-+		    uiDefendTimer = 10000;
++	    uiDefendTimer = 10000;
 +		} else uiDefendTimer -= uiDiff;
 +
 +		DoMeleeAttackIfReady();
 +	    }
-+	};
++};
 +
 +	CreatureAI* GetAI(Creature* pCreature) const
-+	{
++{
 +	    return new npc_argent_championAI (pCreature);
 +	}
 +
@@ -1901,7 +1901,7 @@ index b29e392..747bb53 100644
  void AddSC_icecrown()
  {
      new npc_arete;
-@@ -389,4 +1391,17 @@ void AddSC_icecrown()
+@@ -389,4 +1390,17 @@ void AddSC_icecrown()
      new npc_argent_valiant;
      new npc_alorah_and_grimmin;
      new npc_guardian_pavilion;
@@ -1917,7 +1917,7 @@ index b29e392..747bb53 100644
 +    new npc_rugan_steelbelly;
 +    new npc_jeran_lockwood;
 +    new npc_squire_danny;
-+    new npc_argent_champion;
++    new npc_argent_champion;	
  }
 -- 
 1.7.2.3
