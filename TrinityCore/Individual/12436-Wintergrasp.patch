@@ -1,20 +1,21 @@
-From e0af4f7d746e569fd8167a4f5287c68b60b0f74f Mon Sep 17 00:00:00 2001
+From 6ad5d75e8005d584aacaf862f02046fd091e1ade Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Fri, 17 Jun 2011 05:40:13 -0400
-Subject: [PATCH] 12394-Wintergrasp
+Date: Sat, 18 Jun 2011 18:46:50 -0400
+Subject: [PATCH] 12436-Wintergrasp
 
 ---
  sql/Wintergrasp_world.sql                          |  134 ++
  src/server/game/CMakeLists.txt                     |    1 +
- src/server/game/Chat/Chat.cpp                      |   12 +
- src/server/game/Chat/Chat.h                        |    8 +
+ src/server/game/Chat/Chat.cpp                      |   44 +
+ src/server/game/Chat/Chat.h                        |   10 +
  src/server/game/Chat/Commands/Level2.cpp           |  146 ++
  src/server/game/Entities/GameObject/GameObject.cpp |    5 +
  src/server/game/Entities/Player/Player.cpp         |    8 +
  src/server/game/Entities/Vehicle/Vehicle.cpp       |   26 +
  src/server/game/Entities/Vehicle/Vehicle.h         |    2 +
  src/server/game/Miscellaneous/Language.h           |   23 +
- src/server/game/OutdoorPvP/OutdoorPvP.h            |    3 +-
+ src/server/game/Miscellaneous/SharedDefines.h      |    2 +
+ src/server/game/OutdoorPvP/OutdoorPvP.h            |    5 +-
  src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    1 +
  src/server/game/Scripting/ScriptLoader.cpp         |    5 +
  .../Protocol/Handlers/BattleGroundHandler.cpp      |   14 +
@@ -32,7 +33,7 @@ Subject: [PATCH] 12394-Wintergrasp
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2141 ++++++++++++++++++++
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  342 ++++
  src/server/worldserver/worldserver.conf.dist       |   96 +
- 28 files changed, 3565 insertions(+), 1 deletions(-)
+ 29 files changed, 3603 insertions(+), 1 deletions(-)
  create mode 100644 sql/Wintergrasp_world.sql
  create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
@@ -192,7 +193,7 @@ index 65ba160..b3f99f0 100644
    ${MYSQL_INCLUDE_DIR}
    ${OPENSSL_INCLUDE_DIR}
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index 6142f52..f22c9e0 100755
+index 6142f52..4d31058 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
 @@ -328,6 +328,17 @@ ChatCommand * ChatHandler::getCommandTable()
@@ -221,8 +222,47 @@ index 6142f52..f22c9e0 100755
          { NULL,             0,                  false, NULL,                                           "", NULL }
      };
  
+@@ -1151,6 +1163,38 @@ char* ChatHandler::extractKeyFromLink(char* text, char const* linkType, char** s
+     return cKey;
+ }
+ 
++char const *fmtstring(char const *format, ...)
++{
++    va_list        argptr;
++    #define    MAX_FMT_STRING    32000
++    static char        temp_buffer[MAX_FMT_STRING];
++    static char        string[MAX_FMT_STRING];
++    static int        index = 0;
++    char    *buf;
++    int len;
++
++    va_start(argptr, format);
++    vsnprintf(temp_buffer,MAX_FMT_STRING, format, argptr);
++    va_end(argptr);
++
++    len = strlen(temp_buffer);
++
++    if (len >= MAX_FMT_STRING)
++        return "ERROR";
++
++    if (len + index >= MAX_FMT_STRING-1)
++    {
++        index = 0;
++    }
++
++    buf = &string[index];
++    memcpy(buf, temp_buffer, len+1);
++
++    index += len + 1;
++
++    return buf;
++}
++
+ char* ChatHandler::extractKeyFromLink(char* text, char const* const* linkTypes, int* found_idx, char** something1)
+ {
+     // skip empty
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index dd845c1..91b65a7 100755
+index dd845c1..7f4d27a 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -358,6 +358,14 @@ class ChatHandler
@@ -240,6 +280,13 @@ index dd845c1..91b65a7 100755
          // Stores informations about a deleted character
          struct DeletedInfo
          {
+@@ -404,4 +412,6 @@ class CliHandler : public ChatHandler
+         Print* m_print;
+ };
+ 
++char const *fmtstring(char const *format, ...);
++
+ #endif
 diff --git a/src/server/game/Chat/Commands/Level2.cpp b/src/server/game/Chat/Commands/Level2.cpp
 index 9334716..46c331b 100755
 --- a/src/server/game/Chat/Commands/Level2.cpp
@@ -421,7 +468,7 @@ index 61b910f..43d3012 100755
  
                          if (goInfo->trap.type == 1)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a51a8c9..1a5a7cf 100755
+index 8ae8d65..2801406 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -73,6 +73,7 @@
@@ -534,11 +581,24 @@ index 41458ec..106d8e6 100755
      // Room for BG/ARENA                = 773-784, 788-799 not used
      LANG_ARENA_TESTING                  = 785,
      LANG_AUTO_ANN                       = 786,
+diff --git a/src/server/game/Miscellaneous/SharedDefines.h b/src/server/game/Miscellaneous/SharedDefines.h
+index e84eb56..4419005 100755
+--- a/src/server/game/Miscellaneous/SharedDefines.h
++++ b/src/server/game/Miscellaneous/SharedDefines.h
+@@ -654,6 +654,8 @@ enum Team
+     TEAM_OTHER               = 0,                         // if ReputationListId > 0 && Flags != FACTION_FLAG_TEAM_HEADER
+ };
+ 
++const Team TeamId2Team[3] = {ALLIANCE, HORDE, TEAM_OTHER};
++
+ enum SpellEffects
+ {
+     SPELL_EFFECT_INSTAKILL                 = 1,
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
-index e3cb9ee..5b10425 100755
+index e3cb9ee..d45994b 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvP.h
 +++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
-@@ -32,9 +32,10 @@ enum OutdoorPvPTypes
+@@ -32,9 +32,12 @@ enum OutdoorPvPTypes
      OUTDOOR_PVP_ZM = 4,
      OUTDOOR_PVP_SI = 5,
      OUTDOOR_PVP_EP = 6,
@@ -547,6 +607,8 @@ index e3cb9ee..5b10425 100755
  
 -#define MAX_OUTDOORPVP_TYPES 7
 +#define MAX_OUTDOORPVP_TYPES 8
++
++const uint8 CapturePointArtKit[3] = {2, 1, 21};
  
  enum ObjectiveStates
  {
@@ -626,7 +688,7 @@ index 3f6b743..fbc8b01 100755
  
  void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket & recv_data)
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index f776e9e..9b1b55a 100755
+index 8a6e8f5..cb8e9cc 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 @@ -35,6 +35,7 @@
@@ -690,7 +752,7 @@ index 4748c3e..48c052a 100755
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 9627b5c..5ce2c44 100755
+index 0fa3048..1e02de7 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -61,6 +61,7 @@
@@ -701,7 +763,7 @@ index 9627b5c..5ce2c44 100755
  
  pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
  {
-@@ -4338,6 +4339,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4335,6 +4336,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
              switch(m_spellInfo->Id)
              {
@@ -726,7 +788,7 @@ index 9627b5c..5ce2c44 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -6974,9 +6993,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
+@@ -6971,9 +6990,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
@@ -752,7 +814,7 @@ index 9627b5c..5ce2c44 100755
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index 656e5ac..383f7db 100755
+index 7f0b50f..ecf9cbb 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
 @@ -28,6 +28,8 @@
@@ -764,7 +826,7 @@ index 656e5ac..383f7db 100755
  
  bool IsAreaEffectTarget[TOTAL_SPELL_TARGETS];
  SpellEffectTargetTypes EffectTargetType[TOTAL_SPELL_EFFECTS];
-@@ -3067,6 +3069,8 @@ bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
+@@ -3103,6 +3105,8 @@ bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
  
  bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32 newArea) const
  {
@@ -773,7 +835,7 @@ index 656e5ac..383f7db 100755
      if (gender != GENDER_NONE)                   // not in expected gender
          if (!player || gender != player->getGender())
              return false;
-@@ -3106,6 +3110,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
+@@ -3142,6 +3146,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
                      return false;
                  break;
              }
