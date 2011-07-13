@@ -1,11 +1,11 @@
-From 2e0a0d0b2f6f7bf70a6ade4cb80afb808b74a4f2 Mon Sep 17 00:00:00 2001
+From ccfa1efb689544c568b0cc7f2101dadb897d2bd8 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Fri, 17 Jun 2011 09:00:53 -0400
-Subject: [PATCH] 12394-Playerbots
+Date: Wed, 13 Jul 2011 03:43:39 -0400
+Subject: [PATCH] 2011_07_13_playerbots
 
 ---
  src/server/game/AI/CoreAI/PetAI.cpp                |    8 +
- src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 4354 ++++++++++++++++++++
+ src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 4353 ++++++++++++++++++++
  src/server/game/AI/PlayerBots/PlayerbotAI.h        |  284 ++
  src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp |  594 +++
  src/server/game/AI/PlayerBots/PlayerbotClassAI.h   |  162 +
@@ -48,20 +48,20 @@ Subject: [PATCH] 12394-Playerbots
  src/server/game/Maps/Map.cpp                       |   20 +-
  src/server/game/Quests/QuestDef.h                  |    4 +-
  src/server/game/Scripting/ScriptLoader.cpp         |    2 +
- .../Server/Protocol/Handlers/CharacterHandler.cpp  |  175 +
+ .../Server/Protocol/Handlers/CharacterHandler.cpp  |  163 +
  .../game/Server/Protocol/Handlers/ChatHandler.cpp  |   28 +-
  .../game/Server/Protocol/Handlers/GroupHandler.cpp |   33 +-
  .../game/Server/Protocol/Handlers/NPCHandler.cpp   |    3 +-
- src/server/game/Server/WorldSession.cpp            |  116 +-
+ src/server/game/Server/WorldSession.cpp            |  115 +-
  src/server/game/Server/WorldSession.h              |   12 +
  src/server/game/Weather/Weather.cpp                |    2 +-
  src/server/game/World/World.cpp                    |    2 +
  src/server/game/World/World.h                      |    1 +
  src/server/scripts/Custom/CMakeLists.txt           |    1 +
- src/server/scripts/Custom/script_bot_giver.cpp     |  163 +
+ src/server/scripts/Custom/script_bot_giver.cpp     |  162 +
  src/server/shared/Common.h                         |    4 +
  src/server/worldserver/worldserver.conf.dist       |   52 +
- 57 files changed, 12139 insertions(+), 38 deletions(-)
+ 57 files changed, 12124 insertions(+), 38 deletions(-)
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.cpp
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.h
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
@@ -89,7 +89,7 @@ Subject: [PATCH] 12394-Playerbots
  create mode 100644 src/server/scripts/Custom/script_bot_giver.cpp
 
 diff --git a/src/server/game/AI/CoreAI/PetAI.cpp b/src/server/game/AI/CoreAI/PetAI.cpp
-index a4cc49b..9ce7318 100755
+index 3f4c467..6fb0c8e 100755
 --- a/src/server/game/AI/CoreAI/PetAI.cpp
 +++ b/src/server/game/AI/CoreAI/PetAI.cpp
 @@ -46,6 +46,7 @@ PetAI::PetAI(Creature *c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK)
@@ -123,10 +123,10 @@ index a4cc49b..9ce7318 100755
      // Check all pet states to decide if we can attack this target
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 new file mode 100644
-index 0000000..82903ae
+index 0000000..cfa5eb5
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
-@@ -0,0 +1,4354 @@
+@@ -0,0 +1,4353 @@
 +#include "Common.h"
 +#include "Database/DatabaseEnv.h"
 +#include "DBCStores.h"
@@ -238,7 +238,6 @@ index 0000000..82903ae
 +        Group *m_group = new Group;
 +       if(!m_group->Create(master))
 +        {
-+            delete m_group;
 +            return;
 +        }
 +        sGroupMgr->AddGroup(m_group);
@@ -4773,7 +4772,7 @@ index 0000000..e40d6ad
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
 new file mode 100644
-index 0000000..713efd0
+index 0000000..1e87fca
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
 @@ -0,0 +1,594 @@
@@ -4920,7 +4919,7 @@ index 0000000..713efd0
 +    {
 +        if (dSpell->Effect[i] != (uint32)SPELL_EFFECT_DISPEL) continue;
 +        uint32 dispel_type = dSpell->EffectMiscValue[i];
-+        uint32 dispelMask  = GetDispellMask(DispelType(dispel_type));
++        uint32 dispelMask  = GetDispelMask(DispelType(dispel_type));
 +        Unit::AuraMap const& auras = dTarget->GetOwnedAuras();
 +        for (Unit::AuraMap::const_iterator itr = auras.begin(); itr != auras.end(); itr++)
 +        {
@@ -5015,9 +5014,9 @@ index 0000000..713efd0
 +                if (!aurApp) continue;
 +
 +                if (aura->GetSpellProto() && (
-+                    (dSpell->Effect[i] == (uint32)SPELL_EFFECT_DISPEL  && ((1<<aura->GetSpellProto()->Dispel) & GetDispellMask(DispelType(dSpell->EffectMiscValue[i]))) )
++                    (dSpell->Effect[i] == (uint32)SPELL_EFFECT_DISPEL  && ((1<<aura->GetSpellProto()->Dispel) & GetDispelMask(DispelType(dSpell->EffectMiscValue[i]))) )
 +                    || (dSpell->EffectApplyAuraName[i] == (uint32) SPELL_AURA_MECHANIC_IMMUNITY && ( GetAllSpellMechanicMask(aura->GetSpellProto()) & ( 1 << dSpell->EffectMiscValue[i]) ) )
-+                    || (dSpell->EffectApplyAuraName[i] == (uint32) SPELL_AURA_DISPEL_IMMUNITY && ( (1<<aura->GetSpellProto()->Dispel) & GetDispellMask(DispelType(dSpell->EffectMiscValue[i])) ) )
++                    || (dSpell->EffectApplyAuraName[i] == (uint32) SPELL_AURA_DISPEL_IMMUNITY && ( (1<<aura->GetSpellProto()->Dispel) & GetDispelMask(DispelType(dSpell->EffectMiscValue[i])) ) )
 +                    ) )
 +                {
 +                    if(aura->GetSpellProto()->Dispel == DISPEL_MAGIC)
@@ -10822,10 +10821,10 @@ index 65ba160..29f1f10 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index 6142f52..79c7032 100755
+index 34c36ce..650858a 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -217,6 +217,14 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -216,6 +216,14 @@ ChatCommand * ChatHandler::getCommandTable()
          { NULL,             0,                  false, NULL,                                           "", NULL }
      };
  
@@ -10840,7 +10839,7 @@ index 6142f52..79c7032 100755
      static ChatCommand resetCommandTable[] =
      {
          { "achievements",   SEC_ADMINISTRATOR,  true,  OldHandler<&ChatHandler::HandleResetAchievementsCommand>,   "", NULL },
-@@ -414,6 +422,9 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -412,6 +420,9 @@ ChatCommand * ChatHandler::getCommandTable()
          { "bindsight",      SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleBindSightCommand>,           "", NULL },
          { "unbindsight",    SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnbindSightCommand>,         "", NULL },
          { "playall",        SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandlePlayAllCommand>,             "", NULL },
@@ -10851,7 +10850,7 @@ index 6142f52..79c7032 100755
      };
  
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index dd845c1..723c079 100755
+index 217bb95..d3d79ff 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -173,6 +173,9 @@ class ChatHandler
@@ -10876,7 +10875,7 @@ index dd845c1..723c079 100755
          bool HandleResetAllCommand(const char * args);
          bool HandleResetHonorCommand(const char * args);
 diff --git a/src/server/game/Chat/Commands/Level0.cpp b/src/server/game/Chat/Commands/Level0.cpp
-index 562ed80..120149c 100755
+index a61ae62..f861877 100755
 --- a/src/server/game/Chat/Commands/Level0.cpp
 +++ b/src/server/game/Chat/Commands/Level0.cpp
 @@ -21,6 +21,7 @@
@@ -11081,10 +11080,10 @@ index 562ed80..120149c 100755
  bool ChatHandler::HandleServerMotdCommand(const char* /*args*/)
  {
 diff --git a/src/server/game/Chat/Commands/Level1.cpp b/src/server/game/Chat/Commands/Level1.cpp
-index 6ab312b..713d2c7 100755
+index 6936f3e..5c6ee3e 100755
 --- a/src/server/game/Chat/Commands/Level1.cpp
 +++ b/src/server/game/Chat/Commands/Level1.cpp
-@@ -265,9 +265,10 @@ bool ChatHandler::HandleSummonCommand(const char* args)
+@@ -183,9 +183,10 @@ bool ChatHandler::HandleSummonCommand(const char* args)
                  target->UnbindInstance(pMap->GetInstanceId(), target->GetDungeonDifficulty(), true);
  
              // we are in instance, and can summon only player in our group with us as lead
@@ -11098,7 +11097,7 @@ index 6ab312b..713d2c7 100755
              {
                  PSendSysMessage(LANG_CANNOT_SUMMON_TO_INST, nameLink.c_str());
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 94a9c59..d0b17a4 100755
+index 1543bb3..572cd92 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
 +++ b/src/server/game/Chat/Commands/Level3.cpp
 @@ -263,8 +263,8 @@ bool ChatHandler::HandleAddItemCommand(const char *args)
@@ -11112,7 +11111,7 @@ index 94a9c59..d0b17a4 100755
      {
          PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, itemId);
          SetSentErrorMessage(true);
-@@ -2843,6 +2843,207 @@ bool ChatHandler::HandleServerIdleShutDownCommand(const char *args)
+@@ -2823,6 +2823,207 @@ bool ChatHandler::HandleServerIdleShutDownCommand(const char *args)
      return true;
  }
  
@@ -11321,10 +11320,10 @@ index 94a9c59..d0b17a4 100755
  {
      return HandleBanHelper(BAN_ACCOUNT, args);
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index e139c96..0ce6806 100755
+index 73f09dc..6c4a01e 100755
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
-@@ -152,6 +152,9 @@ m_formation(NULL)
+@@ -151,6 +151,9 @@ m_creatureInfo(NULL), m_creatureData(NULL), m_formation(NULL)
      for (uint8 i = 0; i < CREATURE_MAX_SPELLS; ++i)
          m_spells[i] = 0;
  
@@ -11335,10 +11334,10 @@ index e139c96..0ce6806 100755
      m_CreatureCategoryCooldowns.clear();
      DisableReputationGain = false;
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 45429a9..6216cb5 100755
+index 3a5b2d1..e4af239 100755
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
-@@ -492,6 +492,15 @@ class Creature : public Unit, public GridObject<Creature>
+@@ -491,6 +491,15 @@ class Creature : public Unit, public GridObject<Creature>
          void AI_SendMoveToPacket(float x, float y, float z, uint32 time, uint32 MovementFlags, uint8 type);
          CreatureAI * AI() const { return (CreatureAI*)i_AI; }
  
@@ -11354,7 +11353,7 @@ index 45429a9..6216cb5 100755
          uint32 GetShieldBlockValue() const                  //dunno mob block value
          {
              return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
-@@ -731,6 +740,10 @@ class Creature : public Unit, public GridObject<Creature>
+@@ -728,6 +737,10 @@ class Creature : public Unit, public GridObject<Creature>
          bool isVisibleForInState(WorldObject const* seer) const;
          bool canSeeAlways(WorldObject const* obj) const;
      private:
@@ -11366,7 +11365,7 @@ index 45429a9..6216cb5 100755
          uint32 m_waypointID;
          uint32 m_path_id;
 diff --git a/src/server/game/Entities/Creature/GossipDef.h b/src/server/game/Entities/Creature/GossipDef.h
-index 07ac942..e7c408e 100755
+index 1696696..0c321bc 100755
 --- a/src/server/game/Entities/Creature/GossipDef.h
 +++ b/src/server/game/Entities/Creature/GossipDef.h
 @@ -50,6 +50,7 @@ enum Gossip_Option
@@ -11397,10 +11396,10 @@ index 92c5700..1ac2cf5 100755
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index 8694ac6..5aeaafe 100755
+index ad0145a..c18077f 100755
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
-@@ -1576,9 +1576,16 @@ void WorldObject::GetRandomPoint(const Position &pos, float distance, float &ran
+@@ -1561,9 +1561,16 @@ void WorldObject::GetRandomPoint(const Position &pos, float distance, float &ran
  
  void WorldObject::UpdateGroundPositionZ(float x, float y, float &z) const
  {
@@ -11420,7 +11419,7 @@ index 8694ac6..5aeaafe 100755
  }
  
  bool Position::IsPositionValid() const
-@@ -2175,8 +2182,18 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2160,8 +2167,18 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
              summon = new Puppet(properties, summoner);
              break;
          case UNIT_MASK_TOTEM:
@@ -11442,7 +11441,7 @@ index 8694ac6..5aeaafe 100755
              summon = new Minion(properties, summoner);
              break;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a51a8c9..4987075 100755
+index eea6159..0a63bea 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -72,6 +72,11 @@
@@ -11523,7 +11522,7 @@ index a51a8c9..4987075 100755
      // clean up player-instance binds, may unload some instance saves
      for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
          for (BoundInstancesMap::iterator itr = m_boundInstances[i].begin(); itr != m_boundInstances[i].end(); ++itr)
-@@ -1704,6 +1743,16 @@ void Player::Update(uint32 p_time)
+@@ -1709,6 +1748,16 @@ void Player::Update(uint32 p_time)
          m_regenTimer += p_time;
          RegenerateAll();
      }
@@ -11540,7 +11539,7 @@ index a51a8c9..4987075 100755
  
      if (m_deathState == JUST_DIED)
          KillPlayer();
-@@ -1792,6 +1841,10 @@ void Player::Update(uint32 p_time)
+@@ -1797,6 +1846,10 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && isAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -11551,7 +11550,7 @@ index a51a8c9..4987075 100755
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2033,7 +2086,7 @@ void Player::SendTeleportPacket(Position &oldPos)
+@@ -2038,7 +2091,7 @@ void Player::SendTeleportPacket(Position &oldPos)
      WorldPacket data2(MSG_MOVE_TELEPORT, 38);
      data2.append(GetPackGUID());
      BuildMovementPacket(&data2);
@@ -11560,7 +11559,7 @@ index a51a8c9..4987075 100755
      SendMessageToSet(&data2, false);
  }
  
-@@ -2084,6 +2137,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2089,6 +2142,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -11575,7 +11574,7 @@ index a51a8c9..4987075 100755
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2133,6 +2194,19 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2138,6 +2199,19 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          }
      }
  
@@ -11595,7 +11594,7 @@ index a51a8c9..4987075 100755
      // The player was ported to another map and loses the duel immediately.
      // We have to perform this check before the teleport, otherwise the
      // ObjectAccessor won't find the flag.
-@@ -2312,6 +2386,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2317,6 +2391,20 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          else
              return false;
      }
@@ -11616,7 +11615,7 @@ index a51a8c9..4987075 100755
      return true;
  }
  
-@@ -2426,6 +2514,166 @@ void Player::RemoveFromWorld()
+@@ -2431,6 +2519,166 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -11783,7 +11782,7 @@ index a51a8c9..4987075 100755
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2712,7 +2960,7 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2717,7 +2965,7 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
                      return NULL;
  
      // not too far
@@ -11792,7 +11791,7 @@ index a51a8c9..4987075 100755
          return NULL;
  
      return creature;
-@@ -2902,6 +3150,30 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2907,6 +3155,30 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -11823,7 +11822,7 @@ index a51a8c9..4987075 100755
          group->RemoveMember(guid, method, kicker, reason);
          group = NULL;
      }
-@@ -7121,6 +7393,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -7126,6 +7398,10 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
          {
              Player *pVictim = uVictim->ToPlayer();
  
@@ -11834,7 +11833,7 @@ index a51a8c9..4987075 100755
              if (GetTeam() == pVictim->GetTeam() && !sWorld->IsFFAPvPRealm())
                  return false;
  
-@@ -15786,6 +16062,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
+@@ -15798,6 +16074,9 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
              }
          }
      }
@@ -11844,7 +11843,7 @@ index a51a8c9..4987075 100755
  }
  
  void Player::CastedCreatureOrGO(uint32 entry, uint64 guid, uint32 spell_id)
-@@ -15911,6 +16190,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
+@@ -15923,6 +16202,7 @@ void Player::TalkedToCreature(uint32 entry, uint64 guid)
                              m_QuestStatusSave[questid] = true;
  
                              SendQuestUpdateAddCreatureOrGo(qInfo, guid, j, curTalkCount, addTalkCount);
@@ -11852,7 +11851,7 @@ index a51a8c9..4987075 100755
                          }
                          if (CanCompleteQuest(questid))
                              CompleteQuest(questid);
-@@ -18200,6 +18480,18 @@ void Player::SaveToDB()
+@@ -18212,6 +18492,18 @@ void Player::SaveToDB()
  
      if (!IsBeingTeleported())
      {
@@ -11871,7 +11870,7 @@ index a51a8c9..4987075 100755
          ss << GetMapId() << ", "
          << (uint32)GetInstanceId() << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18207,9 +18499,22 @@ void Player::SaveToDB()
+@@ -18219,9 +18511,22 @@ void Player::SaveToDB()
          << finiteAlways(GetPositionY()) << ", "
          << finiteAlways(GetPositionZ()) << ", "
          << finiteAlways(GetOrientation()) << ", ";
@@ -11894,7 +11893,7 @@ index a51a8c9..4987075 100755
          ss << GetTeleportDest().GetMapId() << ", "
          << (uint32)0 << ", "
          << uint32(uint8(GetDungeonDifficulty()) | uint8(GetRaidDifficulty()) << 4) << ", "
-@@ -18217,6 +18522,7 @@ void Player::SaveToDB()
+@@ -18229,6 +18534,7 @@ void Player::SaveToDB()
          << finiteAlways(GetTeleportDest().GetPositionY()) << ", "
          << finiteAlways(GetTeleportDest().GetPositionZ()) << ", "
          << finiteAlways(GetTeleportDest().GetOrientation()) << ", ";
@@ -11902,7 +11901,7 @@ index a51a8c9..4987075 100755
      }
  
      ss << m_taxi << ", ";                                   // string with TaxiMaskSize numbers
-@@ -19216,7 +19522,7 @@ void Player::StopCastingCharm()
+@@ -19235,7 +19541,7 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -11912,7 +11911,7 @@ index a51a8c9..4987075 100755
      *data << uint8(msgtype);
      *data << uint32(language);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 6055b9f..525ee5a 100755
+index c7bdf1a..a51fb69 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -52,6 +52,9 @@ class PlayerSocial;
@@ -11940,7 +11939,7 @@ index 6055b9f..525ee5a 100755
          uint32 GetMoney() const { return GetUInt32Value (PLAYER_FIELD_COINAGE); }
          void ModifyMoney(int32 d);
          bool HasEnoughMoney(uint32 amount) const { return (GetMoney() >= amount); }
-@@ -1958,7 +1967,71 @@ class Player : public Unit, public GridObject<Player>
+@@ -1965,7 +1974,71 @@ class Player : public Unit, public GridObject<Player>
          uint16 GetSkillStep(uint16 skill) const;            // 0...6
          bool HasSkill(uint32 skill) const;
          void learnSkillRewardedSpells(uint32 id, uint32 value);
@@ -12012,7 +12011,7 @@ index 6055b9f..525ee5a 100755
          WorldLocation& GetTeleportDest() { return m_teleport_dest; }
          bool IsBeingTeleported() const { return mSemaphoreTeleport_Near || mSemaphoreTeleport_Far; }
          bool IsBeingTeleportedNear() const { return mSemaphoreTeleport_Near; }
-@@ -2425,6 +2498,11 @@ class Player : public Unit, public GridObject<Player>
+@@ -2432,6 +2505,11 @@ class Player : public Unit, public GridObject<Player>
          bool HasTitle(CharTitlesEntry const* title) { return HasTitle(title->bit_index); }
          void SetTitle(CharTitlesEntry const* title, bool lost = false);
  
@@ -12024,7 +12023,7 @@ index 6055b9f..525ee5a 100755
          //bool isActiveObject() const { return true; }
          bool canSeeSpellClickOn(Creature const* creature) const;
  
-@@ -2688,6 +2766,35 @@ class Player : public Unit, public GridObject<Player>
+@@ -2695,6 +2773,35 @@ class Player : public Unit, public GridObject<Player>
  
          bool isAlwaysDetectableFor(WorldObject const* seer) const;
      private:
@@ -12060,7 +12059,7 @@ index 6055b9f..525ee5a 100755
          // internal common parts for CanStore/StoreItem functions
          InventoryResult _CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const *pProto, uint32& count, bool swap, Item *pSrcItem) const;
          InventoryResult _CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const *pProto, uint32& count, bool merge, bool non_specialized, Item *pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
-@@ -2720,6 +2827,9 @@ class Player : public Unit, public GridObject<Player>
+@@ -2727,6 +2834,9 @@ class Player : public Unit, public GridObject<Player>
  
          void UpdateCharmedAI();
  
@@ -12071,10 +12070,10 @@ index 6055b9f..525ee5a 100755
          float  m_lastFallZ;
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 800a71d..1f73d95 100755
+index 52cb3b9..985bd97 100755
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -15851,7 +15851,9 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
+@@ -16019,7 +16019,9 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
              case CHARM_TYPE_CONVERT:
                  break;
          }
@@ -12085,7 +12084,7 @@ index 800a71d..1f73d95 100755
  }
  
 diff --git a/src/server/game/Groups/Group.cpp b/src/server/game/Groups/Group.cpp
-index 3c3b71d..20209b4 100755
+index 0e47034..423fbf9 100755
 --- a/src/server/game/Groups/Group.cpp
 +++ b/src/server/game/Groups/Group.cpp
 @@ -34,6 +34,10 @@
@@ -12362,10 +12361,10 @@ index 9c5e6b5..3b6187f 100755
      QUEST_STATUS_REWARDED       = 6,        // Not used in DB
      MAX_QUEST_STATUS
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 0293c35..b581fed 100755
+index 5149308..e300d7a 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -73,6 +73,7 @@ void AddSC_npc_innkeeper();
+@@ -74,6 +74,7 @@ void AddSC_npc_innkeeper();
  void AddSC_npcs_special();
  void AddSC_npc_taxi();
  void AddSC_achievement_scripts();
@@ -12373,7 +12372,7 @@ index 0293c35..b581fed 100755
  
  //eastern kingdoms
  void AddSC_alterac_valley();                 //Alterac Valley
-@@ -674,6 +675,7 @@ void AddWorldScripts()
+@@ -676,6 +677,7 @@ void AddWorldScripts()
      AddSC_npcs_special();
      AddSC_npc_taxi();
      AddSC_achievement_scripts();
@@ -12382,7 +12381,7 @@ index 0293c35..b581fed 100755
  #endif
  }
 diff --git a/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp b/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
-index 9119ef8..44f9229 100755
+index 97a1ea0..4f09cba 100755
 --- a/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/CharacterHandler.cpp
 @@ -42,6 +42,9 @@
@@ -12430,24 +12429,7 @@ index 9119ef8..44f9229 100755
  void WorldSession::HandleCharEnum(QueryResult result)
  {
      WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
-@@ -903,11 +934,121 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder * holder)
-         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
- 
-     m_playerLoading = false;
-+    //Check if it has an NPCBot
-+    QueryResult results;
-+    results = CharacterDatabase.PQuery("SELECT entry,race,class FROM character_npcbot WHERE owner='%u'", pCurrChar->GetGUIDLow());
-+    if(results)
-+    {
-+        Field *fields = results->Fetch();
-+        uint32 m_bot_entry = fields[0].GetUInt32();
-+        uint8 m_bot_race = fields[1].GetUInt8();
-+        uint8 m_bot_class = fields[2].GetUInt8();
-+        if(m_bot_entry && m_bot_race && m_bot_class) pCurrChar->SetBotMustBeCreated(m_bot_entry, m_bot_race, m_bot_class);
-+        //delete results;
-+    }
- 
-     sScriptMgr->OnPlayerLogin(pCurrChar);
+@@ -1018,6 +1049,104 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder * holder)
      delete holder;
  }
  
@@ -12552,7 +12534,7 @@ index 9119ef8..44f9229 100755
  void WorldSession::HandleSetFactionAtWar(WorldPacket & recv_data)
  {
      sLog->outStaticDebug("WORLD: Received CMSG_SET_FACTION_ATWAR");
-@@ -1087,6 +1228,40 @@ void WorldSession::HandleChangePlayerNameOpcodeCallBack(QueryResult result, std:
+@@ -1197,6 +1326,40 @@ void WorldSession::HandleChangePlayerNameOpcodeCallBack(QueryResult result, std:
      SendPacket(&data);
  }
  
@@ -12585,7 +12567,7 @@ index 9119ef8..44f9229 100755
 +        return;
 +    }
 +    //CharacterDatabase.DelayQueryHolder(&chrHandler, &CharacterHandler::HandlePlayerBotLoginCallback, holder);
-+	m_charBotLoginCallback = CharacterDatabase.DelayQueryHolder(holder);
++	_charBotLoginCallback = CharacterDatabase.DelayQueryHolder(holder);
 +
 +    chH.PSendSysMessage("Bot added successfully.");
 +}
@@ -12647,7 +12629,7 @@ index 6b056a3..200c19e 100755
              ChatHandler::FillMessageData(&data, this, uint8(type), lang, NULL, 0, msg.c_str(), NULL);
              group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetGUID()));
 diff --git a/src/server/game/Server/Protocol/Handlers/GroupHandler.cpp b/src/server/game/Server/Protocol/Handlers/GroupHandler.cpp
-index b906aab..d8d4c0e 100755
+index 098bd03..51828f4 100755
 --- a/src/server/game/Server/Protocol/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/GroupHandler.cpp
 @@ -303,6 +303,15 @@ void WorldSession::HandleGroupUninviteGuidOpcode(WorldPacket & recv_data)
@@ -12711,10 +12693,10 @@ index b906aab..d8d4c0e 100755
      {
          plr->UninviteFromGroup();
 diff --git a/src/server/game/Server/Protocol/Handlers/NPCHandler.cpp b/src/server/game/Server/Protocol/Handlers/NPCHandler.cpp
-index d46efb1..ff0a1e5 100755
+index 3332632..e1f832e 100755
 --- a/src/server/game/Server/Protocol/Handlers/NPCHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/NPCHandler.cpp
-@@ -342,8 +342,9 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket & recv_data)
+@@ -335,8 +335,9 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket & recv_data)
      {
  //        _player->TalkedToCreature(unit->GetEntry(), unit->GetGUID());
          _player->PrepareGossipMenu(unit, unit->GetCreatureInfo()->GossipMenuId, true);
@@ -12726,7 +12708,7 @@ index d46efb1..ff0a1e5 100755
  }
  
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 9883699..fcbd059 100755
+index fdae9f1..ce61f02 100755
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -42,6 +42,9 @@
@@ -12739,7 +12721,7 @@ index 9883699..fcbd059 100755
  
  bool MapSessionFilter::Process(WorldPacket* packet)
  {
-@@ -107,7 +110,11 @@ m_latency(0), m_TutorialsChanged(false), recruiterId(recruiter)
+@@ -109,7 +112,11 @@ m_latency(0), m_TutorialsChanged(false), recruiterId(recruiter)
  /// WorldSession destructor
  WorldSession::~WorldSession()
  {
@@ -12752,7 +12734,7 @@ index 9883699..fcbd059 100755
      if (_player)
          LogoutPlayer (true);
  
-@@ -142,6 +149,13 @@ char const *WorldSession::GetPlayerName() const
+@@ -144,6 +151,13 @@ char const *WorldSession::GetPlayerName() const
  /// Send a packet to the client
  void WorldSession::SendPacket(WorldPacket const *packet)
  {
@@ -12766,7 +12748,7 @@ index 9883699..fcbd059 100755
      if (!m_Socket)
          return;
  
-@@ -213,8 +227,8 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -215,8 +229,8 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
  
      ///- Before we process anything:
      /// If necessary, kick the player from the character select screen
@@ -12777,7 +12759,7 @@ index 9883699..fcbd059 100755
  
      ///- Retrieve packets from the receive queue and call the appropriate handlers
      /// not process packets if socket already closed
-@@ -246,6 +260,11 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -248,6 +262,11 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
                              (this->*opHandle.handler)(*packet);
                              if (sLog->IsOutDebug() && packet->rpos() < packet->wpos())
                                  LogUnprocessedTail(packet);
@@ -12789,7 +12771,7 @@ index 9883699..fcbd059 100755
                          }
                          // lag can cause STATUS_LOGGEDIN opcodes to arrive after the player started a transfer
                          break;
-@@ -330,7 +349,28 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -332,7 +351,28 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
          ///- If necessary, log the player out
          if (ShouldLogOut(currTime) && !m_playerLoading)
              LogoutPlayer(true);
@@ -12819,7 +12801,7 @@ index 9883699..fcbd059 100755
          ///- Cleanup socket pointer if need
          if (m_Socket && m_Socket->IsClosed())
          {
-@@ -347,6 +387,25 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -349,6 +389,25 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
  /// %Log the player out
  void WorldSession::LogoutPlayer(bool Save)
  {
@@ -12845,7 +12827,7 @@ index 9883699..fcbd059 100755
      // finish pending transfers before starting the logout
      while (_player && _player->IsBeingTeleportedFar())
          HandleMoveWorldportAckOpcode();
-@@ -467,7 +526,7 @@ void WorldSession::LogoutPlayer(bool Save)
+@@ -469,7 +528,7 @@ void WorldSession::LogoutPlayer(bool Save)
  
          // remove player from the group if he is:
          // a) in group; b) not in raid group; c) logging out normally (not being kicked or disconnected)
@@ -12854,7 +12836,7 @@ index 9883699..fcbd059 100755
              _player->RemoveFromGroup();
  
          ///- Send update to group and reset stored max enchanting level
-@@ -491,6 +550,7 @@ void WorldSession::LogoutPlayer(bool Save)
+@@ -493,6 +552,7 @@ void WorldSession::LogoutPlayer(bool Save)
          _player->CleanupsBeforeDelete();
          sLog->outChar("Account: %d (IP: %s) Logout Character:[%s] (GUID: %u)", GetAccountId(), GetRemoteAddress().c_str(), _player->GetName() , _player->GetGUIDLow());
          Map *_map = _player->GetMap();
@@ -12862,7 +12844,7 @@ index 9883699..fcbd059 100755
          _map->Remove(_player, true);
          SetPlayer(NULL);                                    // deleted in Remove call
  
-@@ -500,7 +560,7 @@ void WorldSession::LogoutPlayer(bool Save)
+@@ -502,7 +562,7 @@ void WorldSession::LogoutPlayer(bool Save)
  
          ///- Since each account can only have one online character at any given time, ensure all characters for active account are marked as offline
          //No SQL injection as AccountId is uint32
@@ -12871,7 +12853,7 @@ index 9883699..fcbd059 100755
          sLog->outDebug(LOG_FILTER_NETWORKIO, "SESSION: Sent SMSG_LOGOUT_COMPLETE Message");
      }
  
-@@ -602,6 +662,41 @@ void WorldSession::LoadGlobalAccountData()
+@@ -604,6 +664,40 @@ void WorldSession::LoadGlobalAccountData()
      LoadAccountData(CharacterDatabase.Query(stmt), GLOBAL_CACHE_MASK);
  }
  
@@ -12892,7 +12874,6 @@ index 9883699..fcbd059 100755
 +        Group* m_group = pPlayerBot->GetGroup();
 +        if (m_group) {
 +            if (m_group->RemoveMember(pPlayerBot->GetGUID(),GROUP_REMOVEMETHOD_DEFAULT) <= 1) {
-+                //delete m_group;
 +            }
 +        }
 +
@@ -12913,28 +12894,28 @@ index 9883699..fcbd059 100755
  void WorldSession::LoadAccountData(PreparedQueryResult result, uint32 mask)
  {
      for (uint32 i = 0; i < NUM_ACCOUNT_DATA_TYPES; ++i)
-@@ -977,6 +1072,15 @@ void WorldSession::ProcessQueryCallbacks()
-         m_charLoginCallback.cancel();
+@@ -1023,6 +1117,15 @@ void WorldSession::ProcessQueryCallbacks()
+         _charLoginCallback.cancel();
      }
  
 +    //! HandlePlayerBotLogin
-+    if (m_charBotLoginCallback.ready())
++    if (_charBotLoginCallback.ready())
 +    {
 +        SQLQueryHolder* param;
-+        m_charBotLoginCallback.get(param);
++        _charBotLoginCallback.get(param);
 +        HandlePlayerBotLogin((SQLQueryHolder*)param);
-+        m_charBotLoginCallback.cancel();
++        _charBotLoginCallback.cancel();
 +    }
 +
      //! HandleAddFriendOpcode
-     if (m_addFriendCallback.IsReady())
+     if (_addFriendCallback.IsReady())
      {
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 9721778..32c9aed 100755
+index f45ee79..86e5725 100755
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -174,6 +174,9 @@ public:
-     virtual bool Process(WorldPacket* packet);
+@@ -210,12 +210,22 @@ class CharacterCreateInfo
+         virtual ~CharacterCreateInfo(){};
  };
  
 +//Playerbot mod
@@ -12943,7 +12924,6 @@ index 9721778..32c9aed 100755
  /// Player session in the World
  class WorldSession
  {
-@@ -181,6 +184,13 @@ class WorldSession
      public:
          WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter);
          ~WorldSession();
@@ -12957,7 +12937,7 @@ index 9721778..32c9aed 100755
  
          bool PlayerLoading() const { return m_playerLoading; }
          bool PlayerLogout() const { return m_playerLogout; }
-@@ -369,6 +379,7 @@ class WorldSession
+@@ -405,6 +415,7 @@ class WorldSession
          void HandlePlayerLoginOpcode(WorldPacket& recvPacket);
          void HandleCharEnum(QueryResult result);
          void HandlePlayerLogin(LoginQueryHolder * holder);
@@ -12965,11 +12945,11 @@ index 9721778..32c9aed 100755
          void HandleCharFactionOrRaceChange(WorldPacket& recv_data);
  
          // played time
-@@ -870,6 +881,7 @@ class WorldSession
-         QueryCallback<QueryResult, uint32> m_stableSwapCallback;
-         QueryCallback<QueryResult, uint64> m_sendStabledPetCallback;
-         QueryResultHolderFuture m_charLoginCallback;
-+		QueryResultHolderFuture m_charBotLoginCallback;
+@@ -908,6 +919,7 @@ class WorldSession
+         QueryCallback<QueryResult, uint64> _sendStabledPetCallback;
+         QueryCallback<PreparedQueryResult, CharacterCreateInfo*> _charCreateCallback;
+         QueryResultHolderFuture _charLoginCallback;
++ 		QueryResultHolderFuture _charBotLoginCallback;
  
      private:
          // private trade methods
@@ -12987,10 +12967,10 @@ index 7ccfd58..e38e644 100755
      m_grade = 0;
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 97dda09..1d95652 100755
+index 91f6e25..f89a490 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1053,6 +1053,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1052,6 +1052,8 @@ void World::LoadConfigSettings(bool reload)
      if (m_int_configs[CONFIG_GUILD_BANK_EVENT_LOG_COUNT] > GUILD_BANKLOG_MAX_RECORDS)
          m_int_configs[CONFIG_GUILD_BANK_EVENT_LOG_COUNT] = GUILD_BANKLOG_MAX_RECORDS;
  
@@ -13000,7 +12980,7 @@ index 97dda09..1d95652 100755
      m_MaxVisibleDistanceOnContinents = sConfig->GetFloatDefault("Visibility.Distance.Continents", DEFAULT_VISIBILITY_DISTANCE);
      if (m_MaxVisibleDistanceOnContinents < 45*sWorld->getRate(RATE_CREATURE_AGGRO))
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 1f3cd3c..1210bcf 100755
+index b045ce6..e94f19c 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -87,6 +87,7 @@ enum WorldBoolConfigs
@@ -13025,10 +13005,10 @@ index 1570ca1..ce76fd4 100644
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/script_bot_giver.cpp b/src/server/scripts/Custom/script_bot_giver.cpp
 new file mode 100644
-index 0000000..3fd5a72
+index 0000000..5c61c39
 --- /dev/null
 +++ b/src/server/scripts/Custom/script_bot_giver.cpp
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,162 @@
 +#include "ScriptPCH.h"
 +#include <cstring>
 +#include "Group.h"
@@ -13158,7 +13138,6 @@ index 0000000..3fd5a72
 +						if(m_group->RemoveMember(m_bot->GetGUID(), GROUP_REMOVEMETHOD_DEFAULT) < 1) // 99 means I'm a bot
 +						{
 +							//no one left in group so deleting group
-+							delete m_group;
 +							//sObjectMgr.RemoveGroup(m_group);
 +						}
 +					}
@@ -13208,10 +13187,10 @@ index e0106ed..17b19d8 100755
  // TODO this thingy looks like hack , but its not, need to
  // make separate header however, because It makes mess here.
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 66ca764..73ea933 100644
+index d9ce9ee..01cac34 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2771,3 +2771,55 @@ LevelReq.Mail = 1
+@@ -2769,3 +2769,55 @@ LevelReq.Mail = 1
  
  #
  ###################################################################################################
