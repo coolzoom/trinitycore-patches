@@ -1,9 +1,10 @@
-From ccfa1efb689544c568b0cc7f2101dadb897d2bd8 Mon Sep 17 00:00:00 2001
+From f6b9954f6e8853116d257a75f8da484adcea42b3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Wed, 13 Jul 2011 03:43:39 -0400
+Date: Wed, 13 Jul 2011 05:59:28 -0400
 Subject: [PATCH] 2011_07_13_playerbots
 
 ---
+ sql/extras/world_playerbots.sql                    |    9 +
  src/server/game/AI/CoreAI/PetAI.cpp                |    8 +
  src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 4353 ++++++++++++++++++++
  src/server/game/AI/PlayerBots/PlayerbotAI.h        |  284 ++
@@ -61,7 +62,8 @@ Subject: [PATCH] 2011_07_13_playerbots
  src/server/scripts/Custom/script_bot_giver.cpp     |  162 +
  src/server/shared/Common.h                         |    4 +
  src/server/worldserver/worldserver.conf.dist       |   52 +
- 57 files changed, 12124 insertions(+), 38 deletions(-)
+ 58 files changed, 12133 insertions(+), 38 deletions(-)
+ create mode 100644 sql/extras/world_playerbots.sql
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.cpp
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotAI.h
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotClassAI.cpp
@@ -88,6 +90,21 @@ Subject: [PATCH] 2011_07_13_playerbots
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotWarriorAI.h
  create mode 100644 src/server/scripts/Custom/script_bot_giver.cpp
 
+diff --git a/sql/extras/world_playerbots.sql b/sql/extras/world_playerbots.sql
+new file mode 100644
+index 0000000..da229c8
+--- /dev/null
++++ b/sql/extras/world_playerbots.sql
+@@ -0,0 +1,9 @@
++-- Playerbots modified and fixed by LordPsyan
++
++DELETE FROM command where name='bot';
++INSERT INTO command (name, security, help) VALUES ('bot',0,'Syntax: .bot $subcommand $Name');
++
++delete from `creature_template` where entry = 60000;
++
++insert  into `creature_template`(`entry`,`difficulty_entry_1`,`difficulty_entry_2`,`difficulty_entry_3`,`KillCredit1`,`KillCredit2`,`modelid1`,`modelid2`,`modelid3`,`modelid4`,`name`,`subname`,`IconName`,`gossip_menu_id`,`minlevel`,`maxlevel`,`exp`,`faction_A`,`faction_H`,`npcflag`,`speed_walk`,`speed_run`,`scale`,`rank`,`mindmg`,`maxdmg`,`dmgschool`,`attackpower`,`dmg_multiplier`,`baseattacktime`,`rangeattacktime`,`unit_class`,`unit_flags`,`dynamicflags`,`family`,`trainer_type`,`trainer_spell`,`trainer_class`,`trainer_race`,`minrangedmg`,`maxrangedmg`,`rangedattackpower`,`type`,`type_flags`,`lootid`,`pickpocketloot`,`skinloot`,`resistance1`,`resistance2`,`resistance3`,`resistance4`,`resistance5`,`resistance6`,`spell1`,`spell2`,`spell3`,`spell4`,`spell5`,`spell6`,`spell7`,`spell8`,`PetSpellDataId`,`VehicleId`,`mingold`,`maxgold`,`AIName`,`MovementType`,`InhabitType`,`Health_mod`,`Mana_mod`,`Armor_mod`,`RacialLeader`,`questItem1`,`questItem2`,`questItem3`,`questItem4`,`questItem5`,`questItem6`,`movementId`,`RegenHealth`,`equipment_id`,`mechanic_immune_mask`,`flags_extra`,`ScriptName`,`WDBVerified`) values 
++(60000,0,0,0,0,0,169,0,169,0,'Recruitment Officer','','',0,80,80,0,35,35,1,1.4,1.14286,1,0,228,298,0,1837,1,2000,0,1,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,300,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,3,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,'script_bot_giver',0),
 diff --git a/src/server/game/AI/CoreAI/PetAI.cpp b/src/server/game/AI/CoreAI/PetAI.cpp
 index 3f4c467..6fb0c8e 100755
 --- a/src/server/game/AI/CoreAI/PetAI.cpp
