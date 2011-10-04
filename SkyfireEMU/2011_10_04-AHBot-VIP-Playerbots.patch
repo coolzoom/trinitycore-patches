@@ -1,7 +1,7 @@
-From d957c2e15ba6c6b2cb70cfb5a46b28acb52831b2 Mon Sep 17 00:00:00 2001
+From ba803ea820cde43cc48a611b1efca2b0dbe6b409 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 3 Oct 2011 07:49:28 -0500
-Subject: [PATCH] 2011_10_03-AHBot-VIP-Playerbots
+Date: Tue, 4 Oct 2011 05:27:50 -0500
+Subject: [PATCH] 2011_10_04-AHBot-VIP-Playerbots
 
 ---
  doc/AuctionHouseBot.txt                            |  236 ++
@@ -73,10 +73,10 @@ Subject: [PATCH] 2011_10_03-AHBot-VIP-Playerbots
  src/server/scripts/Custom/CMakeLists.txt           |    1 +
  src/server/scripts/Custom/script_bot_giver.cpp     |  162 +
  src/server/shared/Common.h                         |    4 +
- .../Database/Implementation/LoginDatabase.cpp      |    5 +-
+ .../Database/Implementation/LoginDatabase.cpp      |    1 +
  .../shared/Database/Implementation/LoginDatabase.h |    1 +
  src/server/worldserver/worldserver.conf.dist       |  348 ++-
- 72 files changed, 16510 insertions(+), 51 deletions(-)
+ 72 files changed, 16508 insertions(+), 49 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/extras/character_VIPAccount.sql
  create mode 100644 sql/extras/world_ahbot.sql
@@ -17544,24 +17544,12 @@ index 51a01d1..1bbdcff 100644
  // TODO this thingy looks like hack , but its not, need to
  // make separate header however, because It makes mess here.
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-index f192019..2d25f52 100644
+index f192019..1d73205 100644
 --- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-@@ -33,7 +33,7 @@ void LoginDatabaseConnection::DoPrepareStatements()
-     PREPARE_STATEMENT(LOGIN_GET_IPBANNED, "SELECT * FROM ip_banned WHERE ip = ?", CONNECTION_SYNCH);
-     PREPARE_STATEMENT(LOGIN_SET_IPAUTOBANNED, "INSERT INTO ip_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, 'Trinity realmd', 'Failed login autoban')", CONNECTION_ASYNC);
-     PREPARE_STATEMENT(LOGIN_GET_ACCBANNED, "SELECT bandate, unbandate FROM account_banned WHERE id = ? AND active = 1", CONNECTION_SYNCH);
--    PREPARE_STATEMENT(LOGIN_SET_ACCAUTOBANNED, "INSERT INTO account_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, 'Trinity realmd', 'Failed login autoban', 1)", CONNECTION_ASYNC);
-+    PREPARE_STATEMENT(LOGIN_SET_ACCAUTOBANNED, "INSERT INTO account_banned VALUES (?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, 'Trinity realmd', 'Failed login autoban', 1)", CONNECTION_ASYNC);
-     PREPARE_STATEMENT(LOGIN_GET_SESSIONKEY, "SELECT a.sessionkey, a.id, aa.gmlevel  FROM account a LEFT JOIN account_access aa ON (a.id = aa.id) WHERE username = ?", CONNECTION_SYNCH);
-     PREPARE_STATEMENT(LOGIN_SET_VS, "UPDATE account SET v = ?, s = ? WHERE username = ?", CONNECTION_ASYNC);
-     PREPARE_STATEMENT(LOGIN_SET_LOGONPROOF, "UPDATE account SET sessionkey = ?, last_ip = ?, last_login = NOW(), locale = ?, failed_logins = 0 WHERE username = ?", CONNECTION_ASYNC);
-@@ -45,6 +45,7 @@ void LoginDatabaseConnection::DoPrepareStatements()
-     PREPARE_STATEMENT(LOGIN_GET_ACCOUNT_BY_IP, "SELECT id FROM account WHERE last_ip = ?", CONNECTION_SYNCH);
-     PREPARE_STATEMENT(LOGIN_SET_IP_BANNED, "INSERT INTO ip_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, ?, ?)", CONNECTION_ASYNC);
+@@ -47,4 +47,5 @@ void LoginDatabaseConnection::DoPrepareStatements()
      PREPARE_STATEMENT(LOGIN_SET_IP_NOT_BANNED, "DELETE FROM ip_banned WHERE ip = ?", CONNECTION_ASYNC);
--    PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_BANNED, "INSERT INTO account_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, ?, ?, 1)", CONNECTION_ASYNC);
-+    PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_BANNED, "INSERT INTO account_banned VALUES (?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, ?, ?, 1)", CONNECTION_ASYNC);
+     PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_BANNED, "INSERT INTO account_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, ?, ?, 1)", CONNECTION_ASYNC);
      PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_NOT_BANNED, "UPDATE account_banned SET active = 0 WHERE id = ? AND active != 0", CONNECTION_ASYNC);
 +	PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC);
  }
