@@ -1,7 +1,7 @@
-From 0a8d750e98b101c189072ebd22d979a026d4acdf Mon Sep 17 00:00:00 2001
-From: Stuart Sherman <samccstudios@gmail.com>
-Date: Tue, 16 Aug 2011 00:09:13 -0500
-Subject: [PATCH] 2011_08_15_PVPRanks
+From 3d78218c0b63ea0ed5916f4bf333bccf58807d65 Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Wed, 9 Nov 2011 08:54:23 -0600
+Subject: [PATCH] 2011-11-09_PVPRanks
 
 ---
  src/server/game/Entities/Player/Player.cpp |   81 ++++++++++++++++++++++++---
@@ -11,10 +11,10 @@ Subject: [PATCH] 2011_08_15_PVPRanks
  4 files changed, 129 insertions(+), 9 deletions(-)
 
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index cff7693..2cd7e1d 100755
+index adcefdd..2ef010b 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -7110,6 +7110,7 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -7107,6 +7107,7 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool pvpt
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -22,7 +22,7 @@ index cff7693..2cd7e1d 100755
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7154,17 +7155,54 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -7151,17 +7152,54 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool pvpt
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -86,7 +86,7 @@ index cff7693..2cd7e1d 100755
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
              // and those in a lifetime
-@@ -7172,6 +7210,7 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, int32 honor, bool pvpt
+@@ -7169,6 +7207,7 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool pvpt
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, pVictim->getClass());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, pVictim->getRace());
@@ -94,7 +94,7 @@ index cff7693..2cd7e1d 100755
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, pVictim);
          }
-@@ -7265,6 +7304,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7262,6 +7301,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -126,11 +126,11 @@ index cff7693..2cd7e1d 100755
  {
      int32 newValue = int32(GetHonorPoints()) + value;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index ead732d..6874d32 100755
+index 0b2ddb6..a58c79b 100755
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -396,6 +396,27 @@ enum PlayerFlags
-     PLAYER_FLAGS_NO_XP_GAIN        = 0x02000000
+@@ -401,6 +401,27 @@ enum PlayerFlags
+     PLAYER_FLAGS_UNK31             = 0x08000000,
  };
  
 +#define PLAYER_TITLE_MASK_ALLIANCE_PVP             \
@@ -157,7 +157,7 @@ index ead732d..6874d32 100755
  // used for PLAYER__FIELD_KNOWN_TITLES field (uint64), (1<<bit_index) without (-1)
  // can't use enum for uint64 values
  #define PLAYER_TITLE_DISABLED              UI64LIT(0x0000000000000000)
-@@ -2039,6 +2060,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -2058,6 +2079,7 @@ class Player : public Unit, public GridObject<Player>
          void ModifyHonorPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, honor save query will be added to trans
          void ModifyArenaPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, arena point save query will be added to trans
          uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
@@ -166,15 +166,15 @@ index ead732d..6874d32 100755
          void SetArenaPoints(uint32 value);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 639af40..04f17cc 100755
+index 408db18..6a2d03d 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -846,6 +846,18 @@ void World::LoadConfigSettings(bool reload)
+@@ -848,6 +848,18 @@ void World::LoadConfigSettings(bool reload)
          sLog->outError("MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
          m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
      }
-+    rate_values[RATE_PVP_RANK_EXTRA_HONOR] = sConfig->GetFloatDefault("PvPRank.Rate.ExtraHonor", 1);
-+    std::string s_pvp_ranks = sConfig->GetStringDefault("PvPRank.HKPerRank", "10,50,100,200,450,750,1300,2000,3500,6000,9500,15000,21000,30000");
++    rate_values[RATE_PVP_RANK_EXTRA_HONOR] = ConfigMgr::GetFloatDefault("PvPRank.Rate.ExtraHonor", 1);
++    std::string s_pvp_ranks = ConfigMgr::GetStringDefault("PvPRank.HKPerRank", "10,50,100,200,450,750,1300,2000,3500,6000,9500,15000,21000,30000");
 +    char *c_pvp_ranks = const_cast<char*>(s_pvp_ranks.c_str());
 +    for (int i = 0; i !=HKRANKMAX; i++)
 +    {
@@ -186,13 +186,13 @@ index 639af40..04f17cc 100755
 +            pvp_ranks[i] = atoi(strtok (NULL, ","));
 +    }
  
-     m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfig->GetIntDefault("GM.LoginState", 2);
-     m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfig->GetIntDefault("GM.Visible", 2);
+     m_int_configs[CONFIG_GM_LOGIN_STATE]        = ConfigMgr::GetIntDefault("GM.LoginState", 2);
+     m_int_configs[CONFIG_GM_VISIBLE_STATE]      = ConfigMgr::GetIntDefault("GM.Visible", 2);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index b045ce6..4b6113e 100755
+index b493b8b..952ccab 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -373,10 +373,31 @@ enum Rates
+@@ -375,10 +375,31 @@ enum Rates
      RATE_DURABILITY_LOSS_PARRY,
      RATE_DURABILITY_LOSS_ABSORB,
      RATE_DURABILITY_LOSS_BLOCK,
@@ -224,7 +224,7 @@ index b045ce6..4b6113e 100755
  /// Can be used in SMSG_AUTH_RESPONSE packet
  enum BillingPlanFlags
  {
-@@ -623,6 +644,8 @@ class World
+@@ -633,6 +654,8 @@ class World
          void SendZoneText(uint32 zone, const char *text, WorldSession* self = 0, uint32 team = 0);
          void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
  
