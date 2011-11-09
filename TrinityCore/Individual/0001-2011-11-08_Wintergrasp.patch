@@ -1,7 +1,7 @@
-From 6ad5d75e8005d584aacaf862f02046fd091e1ade Mon Sep 17 00:00:00 2001
+From ba4ed62dfe1ad93ef6e12f0040178691f2bd3f87 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Sat, 18 Jun 2011 18:46:50 -0400
-Subject: [PATCH] 12436-Wintergrasp
+Date: Tue, 8 Nov 2011 19:45:21 -0600
+Subject: [PATCH] 2011-11-08_Wintergrasp
 
 ---
  sql/Wintergrasp_world.sql                          |  134 ++
@@ -28,12 +28,12 @@ Subject: [PATCH] 12436-Wintergrasp
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Northrend/CMakeLists.txt        |    1 +
  .../VaultOfArchavon/instance_vault_of_archavon.cpp |   17 +
- src/server/scripts/Northrend/wintergrasp.cpp       |  437 ++++
+ src/server/scripts/Northrend/wintergrasp.cpp       |  438 ++++
  src/server/scripts/OutdoorPvP/CMakeLists.txt       |    2 +
- src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2141 ++++++++++++++++++++
+ src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2142 ++++++++++++++++++++
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  342 ++++
  src/server/worldserver/worldserver.conf.dist       |   96 +
- 29 files changed, 3603 insertions(+), 1 deletions(-)
+ 29 files changed, 3605 insertions(+), 1 deletions(-)
  create mode 100644 sql/Wintergrasp_world.sql
  create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
@@ -193,10 +193,10 @@ index 65ba160..b3f99f0 100644
    ${MYSQL_INCLUDE_DIR}
    ${OPENSSL_INCLUDE_DIR}
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index 6142f52..4d31058 100755
+index ddc7ce5..b74adb8 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -328,6 +328,17 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -329,6 +329,17 @@ ChatCommand* ChatHandler::getCommandTable()
          { NULL,             0,                  false, NULL,                                                "", NULL }
      };
  
@@ -214,7 +214,7 @@ index 6142f52..4d31058 100755
      static ChatCommand commandTable[] =
      {
          { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
-@@ -414,6 +425,7 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -414,6 +425,7 @@ ChatCommand* ChatHandler::getCommandTable()
          { "bindsight",      SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleBindSightCommand>,           "", NULL },
          { "unbindsight",    SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnbindSightCommand>,         "", NULL },
          { "playall",        SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandlePlayAllCommand>,             "", NULL },
@@ -262,7 +262,7 @@ index 6142f52..4d31058 100755
  {
      // skip empty
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index dd845c1..7f4d27a 100755
+index 6e34e39..6e6d139 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -358,6 +358,14 @@ class ChatHandler
@@ -288,7 +288,7 @@ index dd845c1..7f4d27a 100755
 +
  #endif
 diff --git a/src/server/game/Chat/Commands/Level2.cpp b/src/server/game/Chat/Commands/Level2.cpp
-index 9334716..46c331b 100755
+index b4b0cff..50c9427 100755
 --- a/src/server/game/Chat/Commands/Level2.cpp
 +++ b/src/server/game/Chat/Commands/Level2.cpp
 @@ -42,6 +42,7 @@
@@ -299,7 +299,7 @@ index 9334716..46c331b 100755
  
  //mute player for some times
  bool ChatHandler::HandleMuteCommand(const char* args)
-@@ -936,6 +937,151 @@ bool ChatHandler::HandlePetTpCommand(const char *args)
+@@ -975,6 +976,151 @@ bool ChatHandler::HandlePetUnlearnCommand(const char *args)
      return true;
  }
  
@@ -452,10 +452,10 @@ index 9334716..46c331b 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/GameObject/GameObject.cpp b/src/server/game/Entities/GameObject/GameObject.cpp
-index 61b910f..43d3012 100755
+index 9e514ad..45c7ac0 100755
 --- a/src/server/game/Entities/GameObject/GameObject.cpp
 +++ b/src/server/game/Entities/GameObject/GameObject.cpp
-@@ -452,6 +452,11 @@ void GameObject::Update(uint32 diff)
+@@ -447,6 +447,11 @@ void GameObject::Update(uint32 diff)
                          if (goInfo->trap.spellId)
                              CastSpell(ok, goInfo->trap.spellId);
  
@@ -468,18 +468,18 @@ index 61b910f..43d3012 100755
  
                          if (goInfo->trap.type == 1)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8ae8d65..2801406 100755
+index adcefdd..1057f95 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -73,6 +73,7 @@
- #include "CharacterDatabaseCleaner.h"
+@@ -74,6 +74,7 @@
  #include "InstanceScript.h"
  #include <cmath>
+ #include "AccountMgr.h"
 +#include "OutdoorPvPWG.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -9074,6 +9075,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
+@@ -9069,6 +9070,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                                                              // 8 Arena season id
      data << uint32(0xF3D) << uint32(sWorld->getIntConfig(CONFIG_ARENA_SEASON_ID));
  
@@ -494,17 +494,17 @@ index 8ae8d65..2801406 100755
      {
          data << uint32(0x9bf) << uint32(0x0);               // 7
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Entities/Vehicle/Vehicle.cpp
-index a1a4035..0a0ba21 100755
+index 107e275..31c9ecf 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.cpp
 +++ b/src/server/game/Entities/Vehicle/Vehicle.cpp
-@@ -535,3 +535,29 @@ uint8 Vehicle::GetAvailableSeatCount() const
+@@ -504,3 +504,29 @@ uint8 Vehicle::GetAvailableSeatCount() const
  
      return ret;
  }
 +
 +void Vehicle::Relocate(Position pos)
 +{
-+    sLog->outDebug(LOG_FILTER_VEHICLES, "Vehicle::Relocate %u", me->GetEntry());
++    sLog->outDebug(LOG_FILTER_VEHICLES, "Vehicle::Relocate %u", _me->GetEntry());
 +
 +    std::set<Unit*> vehiclePlayers;
 +    for (int8 i = 0; i < 8; i++)
@@ -523,35 +523,35 @@ index a1a4035..0a0ba21 100755
 +        }
 +    }
 +
-+    me->SetPosition(pos, true);
++    _me->UpdatePosition(pos, true);
 +    // problems, and impossible to do delayed enter
 +    //pPlayer->EnterVehicle(veh);
 +}
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.h b/src/server/game/Entities/Vehicle/Vehicle.h
-index 06b009d..e2c981a 100755
+index 51ad500..139c833 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.h
 +++ b/src/server/game/Entities/Vehicle/Vehicle.h
 @@ -23,6 +23,7 @@
+ #include "VehicleDefines.h"
  
  struct VehicleEntry;
- struct VehicleSeatEntry;
 +struct Position;
  class Unit;
  
- enum PowerType
-@@ -137,6 +138,7 @@ class Vehicle
+ class Vehicle
+@@ -53,6 +54,7 @@ class Vehicle
          void RelocatePassengers(float x, float y, float z, float ang);
          void RemoveAllPassengers();
          void Dismiss();
 +        void Relocate(Position pos);
-         bool IsVehicleInUse() { return m_Seats.begin() != m_Seats.end(); }
+         bool IsVehicleInUse() { return Seats.begin() != Seats.end(); }
  
-         SeatMap m_Seats;
+         SeatMap Seats;
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 41458ec..106d8e6 100755
+index ffdf013..26b8f4f 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -701,6 +701,29 @@ enum TrinityStrings
+@@ -705,6 +705,29 @@ enum TrinityStrings
  //  LANG_BG_AB_START_TWO_MINUTES        = 754, - defined above
  //  LANG_BG_EY_START_TWO_MINUTES        = 755, - defined above
  
@@ -582,10 +582,10 @@ index 41458ec..106d8e6 100755
      LANG_ARENA_TESTING                  = 785,
      LANG_AUTO_ANN                       = 786,
 diff --git a/src/server/game/Miscellaneous/SharedDefines.h b/src/server/game/Miscellaneous/SharedDefines.h
-index e84eb56..4419005 100755
+index 1eba2fe..7ef4c0f 100755
 --- a/src/server/game/Miscellaneous/SharedDefines.h
 +++ b/src/server/game/Miscellaneous/SharedDefines.h
-@@ -654,6 +654,8 @@ enum Team
+@@ -655,6 +655,8 @@ enum Team
      TEAM_OTHER               = 0,                         // if ReputationListId > 0 && Flags != FACTION_FLAG_TEAM_HEADER
  };
  
@@ -593,9 +593,9 @@ index e84eb56..4419005 100755
 +
  enum SpellEffects
  {
-     SPELL_EFFECT_INSTAKILL                 = 1,
+     SPELL_EFFECT_INSTAKILL                          = 1,
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
-index e3cb9ee..d45994b 100755
+index 1969d1f..baeb718 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvP.h
 +++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
 @@ -32,9 +32,12 @@ enum OutdoorPvPTypes
@@ -613,7 +613,7 @@ index e3cb9ee..d45994b 100755
  enum ObjectiveStates
  {
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
-index 11675ed..7e95940 100755
+index dda0e7b..8f2cf9b 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 +++ b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 @@ -20,6 +20,7 @@
@@ -625,10 +625,10 @@ index 11675ed..7e95940 100755
  OutdoorPvPMgr::OutdoorPvPMgr()
  {
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 0293c35..e584a24 100755
+index 26d7034..7b1d8d4 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -589,6 +589,8 @@ void AddSC_outdoorpvp_na();
+@@ -592,6 +592,8 @@ void AddSC_outdoorpvp_na();
  void AddSC_outdoorpvp_si();
  void AddSC_outdoorpvp_tf();
  void AddSC_outdoorpvp_zm();
@@ -637,7 +637,7 @@ index 0293c35..e584a24 100755
  
  // player
  void AddSC_chat_log();
-@@ -1197,6 +1199,8 @@ void AddNorthrendScripts()
+@@ -1203,6 +1205,8 @@ void AddNorthrendScripts()
      AddSC_zuldrak();
      AddSC_crystalsong_forest();
      AddSC_isle_of_conquest();
@@ -646,7 +646,7 @@ index 0293c35..e584a24 100755
  #endif
  }
  
-@@ -1209,6 +1213,7 @@ void AddOutdoorPvPScripts()
+@@ -1215,6 +1219,7 @@ void AddOutdoorPvPScripts()
      AddSC_outdoorpvp_si();
      AddSC_outdoorpvp_tf();
      AddSC_outdoorpvp_zm();
@@ -655,10 +655,10 @@ index 0293c35..e584a24 100755
  }
  
 diff --git a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-index 3f6b743..fbc8b01 100755
+index 95327a7..acf4707 100755
 --- a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-@@ -36,6 +36,9 @@
+@@ -35,6 +35,9 @@
  #include "DisableMgr.h"
  #include "Group.h"
  
@@ -668,7 +668,7 @@ index 3f6b743..fbc8b01 100755
  void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket & recv_data)
  {
      uint64 guid;
-@@ -599,7 +602,18 @@ void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket & recv_data)
+@@ -581,7 +584,18 @@ void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket & recv_data)
          return;
  
      if (bg)
@@ -688,18 +688,18 @@ index 3f6b743..fbc8b01 100755
  
  void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket & recv_data)
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 8a6e8f5..cb8e9cc 100755
+index 9b955be..52ae637 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-@@ -35,6 +35,7 @@
- #include "GridNotifiersImpl.h"
+@@ -36,6 +36,7 @@
  #include "CellImpl.h"
  #include "ScriptMgr.h"
+ #include "Vehicle.h"
 +#include "OutdoorPvPWG.h"
  
  class Aura;
  //
-@@ -6041,6 +6042,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
+@@ -4886,6 +4887,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                              if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
                                  target->CastSpell(target, 58601, true);
                              break;
@@ -713,59 +713,59 @@ index 8a6e8f5..cb8e9cc 100755
                      break;
                  case SPELLFAMILY_MAGE:
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 4748c3e..48c052a 100755
+index a62a379..68f3f98 100755
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
-@@ -52,6 +52,8 @@
- #include "DisableMgr.h"
+@@ -53,6 +53,8 @@
  #include "SpellScript.h"
  #include "InstanceScript.h"
+ #include "SpellInfo.h"
 +#include "OutdoorPvPWG.h"
 +#include "OutdoorPvPMgr.h"
  
- #define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
+ extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
  
-@@ -4585,6 +4587,8 @@ void Spell::HandleEffects(Unit *pUnitTarget, Item *pItemTarget, GameObject *pGOT
+@@ -4559,6 +4561,8 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
  
  SpellCastResult Spell::CheckCast(bool strict)
  {
 +	OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
 +
      // check death state
-     if (!m_IsTriggeredSpell && !m_caster->isAlive() && !(m_spellInfo->Attributes & SPELL_ATTR0_PASSIVE) && !(m_spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD))
+     if (!m_caster->isAlive() && !(m_spellInfo->Attributes & SPELL_ATTR0_PASSIVE) && !((m_spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD) || (IsTriggered() && !m_triggeredByAuraSpell)))
          return SPELL_FAILED_CASTER_DEAD;
-@@ -5463,8 +5467,16 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -5378,8 +5382,16 @@ SpellCastResult Spell::CheckCast(bool strict)
                  if (m_originalCaster && m_originalCaster->GetTypeId() == TYPEID_PLAYER && m_originalCaster->isAlive())
                  {
                      if (AreaTableEntry const* pArea = GetAreaEntryByAreaID(m_originalCaster->GetAreaId()))
-+                    {
++                        {
                          if (pArea->flags & AREA_FLAG_NO_FLY_ZONE)
-                             return m_IsTriggeredSpell ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_NOT_HERE;
+                             return (_triggeredCastFlags & TRIGGERED_DONT_REPORT_CAST_ERROR) ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_NOT_HERE;
 +                        // Wintergrasp Antifly check
 +                        if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
 +                        {
 +                          if (m_originalCaster->GetZoneId() == 4197 && pvpWG && pvpWG != 0  && pvpWG->isWarTime()==true)
-+                          return m_IsTriggeredSpell ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_NOT_HERE;
++                          return (_triggeredCastFlags & TRIGGERED_DONT_REPORT_CAST_ERROR) ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_NOT_HERE;
 +                        }
 +                    }
                  }
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 0fa3048..1e02de7 100755
+index 8a89952..177c7f4 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -61,6 +61,7 @@
- #include "Vehicle.h"
- #include "ScriptMgr.h"
+@@ -63,6 +63,7 @@
  #include "GameObjectAI.h"
+ #include "AccountMgr.h"
+ #include "InstanceScript.h"
 +#include "OutdoorPvPWG.h"
  
  pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
  {
-@@ -4335,6 +4336,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4463,6 +4464,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
-             switch(m_spellInfo->Id)
+             switch (m_spellInfo->Id)
              {
 +                //Teleport to Lake Wintergrasp
 +                case 58622:
@@ -788,13 +788,13 @@ index 0fa3048..1e02de7 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -6971,9 +6990,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
+@@ -7244,9 +7263,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
 +    OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
 +
-     switch(m_spellInfo->Id)
+     switch (m_spellInfo->Id)
      {
          case 58730: // Restricted Flight Area
 +           {
@@ -814,19 +814,19 @@ index 0fa3048..1e02de7 100755
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index 7f0b50f..ecf9cbb 100755
+index 1778027..869dffc 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
-@@ -28,6 +28,8 @@
+@@ -30,6 +30,8 @@
  #include "CreatureAI.h"
  #include "MapManager.h"
  #include "BattlegroundIC.h"
 +#include "OutdoorPvPMgr.h"
 +#include "OutdoorPvPWG.h"
  
- bool IsAreaEffectTarget[TOTAL_SPELL_TARGETS];
- SpellEffectTargetTypes EffectTargetType[TOTAL_SPELL_EFFECTS];
-@@ -3103,6 +3105,8 @@ bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
+ bool IsPrimaryProfessionSkill(uint32 skill)
+ {
+@@ -1092,6 +1094,8 @@ SpellAreaForAreaMapBounds SpellMgr::GetSpellAreaForAreaMapBounds(uint32 area_id)
  
  bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32 newArea) const
  {
@@ -835,28 +835,28 @@ index 7f0b50f..ecf9cbb 100755
      if (gender != GENDER_NONE)                   // not in expected gender
          if (!player || gender != player->getGender())
              return false;
-@@ -3142,6 +3146,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
-                     return false;
-                 break;
-             }
+@@ -1131,6 +1135,19 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
+                 return false;
+             break;
+         }
 +        case 58730: // No fly Zone - Wintergrasp
-+			{
-+				if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-+				{
-+				  if ((pvpWG->isWarTime()==false) || !player || (!player->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED) && !player->HasAuraType(SPELL_AURA_FLY)) || player->HasAura(45472) || player->HasAura(44795) || player->GetPositionZ() > 619.2f || player->isInFlight())
-+				    return false;
-+				}
-+			}
++            {
++                if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
++                {
++                  if ((pvpWG->isWarTime()==false) || !player || (!player->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED) && !player->HasAuraType(SPELL_AURA_FLY)) || player->HasAura(45472) || player->HasAura(44795) || player->GetPositionZ() > 619.2f || player->isInFlight())
++                    return false;
++                }
++            }
 +            break;
 +        case 58045: // Essence of Wintergrasp - Wintergrasp
 +        case 57940: // Essence of Wintergrasp - Northrend
 +             if (!player || player->GetTeamId() != sWorld->getWorldState(WORLDSTATE_WINTERGRASP_CONTROLING_FACTION))
 +             return false;
-         case SPELL_OIL_REFINERY: // Oil Refinery - Isle of Conquest.
-         case SPELL_QUARRY: // Quarry - Isle of Conquest.
-             {
+         case 68719: // Oil Refinery - Isle of Conquest.
+         case 68720: // Quarry - Isle of Conquest.
+         {
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 97dda09..944f677 100755
+index 408db18..39509bd 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -74,6 +74,7 @@
@@ -867,33 +867,33 @@ index 97dda09..944f677 100755
  
  volatile bool World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1183,6 +1184,23 @@ void World::LoadConfigSettings(bool reload)
+@@ -1184,6 +1185,23 @@ void World::LoadConfigSettings(bool reload)
  
      // MySQL ping time interval
-     m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfig->GetIntDefault("MaxPingTime", 30);
+     m_int_configs[CONFIG_DB_PING_INTERVAL] = ConfigMgr::GetIntDefault("MaxPingTime", 30);
 +	
 +    //Wintergrasp
-+    m_bool_configs[CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED]         = sConfig->GetBoolDefault("OutdoorPvP.Wintergrasp.Enabled", true);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_SAVESTATE_PERIOD] = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.SaveState.Period", 10000);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_START_TIME]       = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.StartTime", 30);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_BATTLE_TIME]      = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.BattleTime", 30);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_INTERVAL]         = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.Interval", 150);
-+    m_bool_configs[CONFIG_OUTDOORPVP_WINTERGRASP_CUSTOM_HONOR]    = sConfig->GetBoolDefault("OutdoorPvP.Wintergrasp.CustomHonorRewards", false);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_WIN_BATTLE]       = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorBattleWin", 3000);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_LOSE_BATTLE]      = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorBattleLose", 1250);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DAMAGED_TOWER]    = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDamageTower", 750);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DESTROYED_TOWER]  = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDestroyedTower", 750);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DAMAGED_BUILDING] = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDamagedBuilding", 750);
-+    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_INTACT_BUILDING]  = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorIntactBuilding", 1500);
-+    m_bool_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ENABLE]  = sConfig->GetBoolDefault("OutdoorPvP.Wintergrasp.Antifarm.Enable", false);
-+    m_int_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ATK]  = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.Antifarm.Atk", 5);
-+    m_int_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_DEF]  = sConfig->GetIntDefault("OutdoorPvP.Wintergrasp.Antifarm.Def", 5);
++    m_bool_configs[CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED]         = ConfigMgr::GetBoolDefault("OutdoorPvP.Wintergrasp.Enabled", true);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_SAVESTATE_PERIOD] = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.SaveState.Period", 10000);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_START_TIME]       = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.StartTime", 30);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_BATTLE_TIME]      = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.BattleTime", 30);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_INTERVAL]         = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.Interval", 150);
++    m_bool_configs[CONFIG_OUTDOORPVP_WINTERGRASP_CUSTOM_HONOR]    = ConfigMgr::GetBoolDefault("OutdoorPvP.Wintergrasp.CustomHonorRewards", false);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_WIN_BATTLE]       = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorBattleWin", 3000);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_LOSE_BATTLE]      = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorBattleLose", 1250);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DAMAGED_TOWER]    = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDamageTower", 750);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DESTROYED_TOWER]  = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDestroyedTower", 750);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_DAMAGED_BUILDING] = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorDamagedBuilding", 750);
++    m_int_configs[CONFIG_OUTDOORPVP_WINTERGRASP_INTACT_BUILDING]  = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.CustomHonorIntactBuilding", 1500);
++    m_bool_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ENABLE]  = ConfigMgr::GetBoolDefault("OutdoorPvP.Wintergrasp.Antifarm.Enable", false);
++    m_int_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ATK]  = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.Antifarm.Atk", 5);
++    m_int_configs[CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_DEF]  = ConfigMgr::GetIntDefault("OutdoorPvP.Wintergrasp.Antifarm.Def", 5);
  
-     sScriptMgr->OnConfigLoad(reload);
- }
-@@ -2840,3 +2858,29 @@ void World::ProcessQueryCallbacks()
-         }
-     }
+     // misc
+     m_bool_configs[CONFIG_PDUMP_NO_PATHS] = ConfigMgr::GetBoolDefault("PlayerDump.DisallowPaths", true);
+@@ -2897,3 +2915,29 @@ const CharacterNameData* World::GetCharacterNameData(uint32 guid) const
+     else
+         return NULL;
  }
 +
 +void World::SendWintergraspState()
@@ -923,7 +923,7 @@ index 97dda09..944f677 100755
 +}
 \ No newline at end of file
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 1f3cd3c..d905dad 100755
+index b493b8b..f95ea7b 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -158,6 +158,9 @@ enum WorldBoolConfigs
@@ -933,10 +933,10 @@ index 1f3cd3c..d905dad 100755
 +    CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED,
 +    CONFIG_OUTDOORPVP_WINTERGRASP_CUSTOM_HONOR,
 +    CONFIG_CONFIG_OUTDOORPVP_WINTERGRASP_ANTIFARM_ENABLE,
+     CONFIG_PDUMP_NO_PATHS,
+     CONFIG_PDUMP_NO_OVERWRITE,
      BOOL_CONFIG_VALUE_COUNT
- };
- 
-@@ -305,6 +308,18 @@ enum WorldIntConfigs
+@@ -306,6 +309,18 @@ enum WorldIntConfigs
      CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
      CONFIG_PERSISTENT_CHARACTER_CLEAN_FLAGS,
@@ -955,7 +955,7 @@ index 1f3cd3c..d905dad 100755
      CONFIG_MAX_INSTANCES_PER_HOUR,
      INT_CONFIG_VALUE_COUNT
  };
-@@ -732,6 +747,18 @@ class World
+@@ -745,6 +760,18 @@ class World
  
          uint32 GetCleaningFlags() const { return m_CleaningFlags; }
          void   SetCleaningFlags(uint32 flags) { m_CleaningFlags = flags; }
@@ -987,7 +987,7 @@ index de660b8..8feb416 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/PrecompiledHeaders
    ${CMAKE_SOURCE_DIR}/src/server/game/Quests
 diff --git a/src/server/scripts/Northrend/CMakeLists.txt b/src/server/scripts/Northrend/CMakeLists.txt
-index 3e1f500..6394401 100644
+index 53b4788..7ed64cd 100644
 --- a/src/server/scripts/Northrend/CMakeLists.txt
 +++ b/src/server/scripts/Northrend/CMakeLists.txt
 @@ -12,6 +12,7 @@ set(scripts_STAT_SRCS
@@ -999,7 +999,7 @@ index 3e1f500..6394401 100644
    Northrend/Ulduar/HallsOfLightning/boss_bjarngrim.cpp
    Northrend/Ulduar/HallsOfLightning/halls_of_lightning.h
 diff --git a/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp b/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
-index 904566e..09b6bf6 100644
+index 8d66801..2335f3b 100644
 --- a/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
 +++ b/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
 @@ -17,6 +17,8 @@
@@ -1011,8 +1011,8 @@ index 904566e..09b6bf6 100644
  
  /* Vault of Archavon encounters:
  1 - Archavon the Stone Watcher event
-@@ -43,6 +45,21 @@ class instance_archavon : public InstanceMapScript
-                 ToravonGUID = 0;
+@@ -46,6 +48,21 @@ class instance_archavon : public InstanceMapScript
+                 KoralonDeath = 0;
              }
  
 +            void OnPlayerEnter(Player *m_player)
@@ -1035,10 +1035,10 @@ index 904566e..09b6bf6 100644
                  switch (creature->GetEntry())
 diff --git a/src/server/scripts/Northrend/wintergrasp.cpp b/src/server/scripts/Northrend/wintergrasp.cpp
 new file mode 100644
-index 0000000..05453e1
+index 0000000..e04b54e
 --- /dev/null
 +++ b/src/server/scripts/Northrend/wintergrasp.cpp
-@@ -0,0 +1,437 @@
+@@ -0,0 +1,438 @@
 +/* Copyright (C) 2008 - 2009 Trinity <http://www.trinitycore.org/>
 +*
 + * Patch supported by ChaosUA & TCRU community http://trinity-core.ru/
@@ -1061,6 +1061,7 @@ index 0000000..05453e1
 +#include "ScriptPCH.h"
 +#include "OutdoorPvPWG.h"
 +#include "OutdoorPvPMgr.h"
++#include "Vehicle.h"
 +
 +#define GOSSIP_HELLO_DEMO1  "Build catapult."
 +#define GOSSIP_HELLO_DEMO2  "Build demolisher."
@@ -1492,10 +1493,10 @@ index 450f0f6..39be275 100644
  message("  -> Prepared: Outdoor PVP Zones")
 diff --git a/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
 new file mode 100644
-index 0000000..df958e9
+index 0000000..5b3803f
 --- /dev/null
 +++ b/src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
-@@ -0,0 +1,2141 @@
+@@ -0,0 +1,2142 @@
 +/*
 + * Copyright (C) 2008 - 2010 Trinity <http://www.trinitycore.org/>
 + *
@@ -1526,6 +1527,7 @@ index 0000000..df958e9
 +#include "MapManager.h"
 +#include "ScriptedCreature.h"
 +#include "ScriptPCH.h"
++#include "GameObject.h"
 +
 +Creature* FortressSpirit;
 +uint32 entry;
@@ -2368,10 +2370,10 @@ index 0000000..df958e9
 +                itr->second->type = BUILDING_TOWER;
 +            if (itr->second->damageState == DAMAGE_INTACT && !itr->second->health)
 +            {
-+                itr->second->health = go->GetGOValue()->building.health;
++                itr->second->health = go->GetGOValue()->Building.Health;
 +                go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_DESTROYED);
 +            } else {
-+                go->GetGOValue()->building.health = itr->second->health;
++                go->GetGOValue()->Building.Health = itr->second->health;
 +                if (itr->second->damageState == DAMAGE_DAMAGED)
 +                    go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
 +                else if (itr->second->damageState == DAMAGE_DESTROYED)
@@ -2422,8 +2424,8 @@ index 0000000..df958e9
 +        if (itr->second->building && itr->second->building->GetGoType() == GAMEOBJECT_TYPE_DESTRUCTIBLE_BUILDING)
 +        {
 +            UpdateGameObjectInfo(itr->second->building);
-+            itr->second->building->Rebuild();
-+            itr->second->health = itr->second->building->GetGOValue()->building.health;
++            itr->second->building->SetDestructibleState(GO_DESTRUCTIBLE_REBUILDING);
++            itr->second->health = itr->second->building->GetGOValue()->Building.Health;
 +            itr->second->damageState = DAMAGE_INTACT;
 +        }
 +        else
@@ -2605,7 +2607,7 @@ index 0000000..df958e9
 +       if (creature->GetEntry() != 30400 || creature->GetEntry() != 30499)
 +           creature->SetReactState(REACT_AGGRESSIVE);
 +        creature->DestroyForNearbyPlayers();
-+        if (!creature->GetMap()->IsLoaded(pos.GetPositionX(), pos.GetPositionY()))
++        if (!creature->GetMap()->IsGridLoaded(pos.GetPositionX(), pos.GetPositionY()))
 +            creature->GetMap()->LoadGrid(pos.GetPositionX(), pos.GetPositionY());
 +        creature->GetMap()->CreatureRelocation(creature, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
 +        if (!creature->isAlive())
@@ -2970,7 +2972,7 @@ index 0000000..df958e9
 +                        Creature* sh = NULL;
 +                        for (std::vector<uint64>::const_iterator itr2 = (itr->second).begin(); itr2 != (itr->second).end(); ++itr2)
 +                        {
-+                            Player *plr = sObjectMgr->GetPlayer(*itr2);
++                            Player *plr = ObjectAccessor::FindPlayer(*itr2);
 +                            if (!plr)
 +                                continue;
 +                            if (!sh && plr->IsInWorld())
@@ -3000,7 +3002,7 @@ index 0000000..df958e9
 +            {
 +                for (std::vector<uint64>::const_iterator itr = m_ResurrectQueue.begin(); itr != m_ResurrectQueue.end(); ++itr)
 +                {
-+                    Player *plr = sObjectMgr->GetPlayer(*itr);
++                    Player *plr = ObjectAccessor::FindPlayer(*itr);
 +                    if (!plr)
 +                        continue;
 +                    plr->ResurrectPlayer(1.0f);
@@ -3455,7 +3457,7 @@ index 0000000..df958e9
 +{
 +    m_ReviveQueue[npc_guid].push_back(player_guid);
 +
-+    Player *plr = sObjectMgr->GetPlayer(player_guid);
++    Player *plr = ObjectAccessor::FindPlayer(player_guid);
 +    if (!plr)
 +        return;
 +
@@ -3472,7 +3474,7 @@ index 0000000..df958e9
 +            {
 +                (itr->second).erase(itr2);
 +
-+                Player *plr = sObjectMgr->GetPlayer(player_guid);
++                Player *plr = ObjectAccessor::FindPlayer(player_guid);
 +                if (!plr)
 +                    return;
 +
@@ -3496,7 +3498,7 @@ index 0000000..df958e9
 +        WorldSafeLocsEntry const *ClosestGrave = NULL;
 +        for (std::vector<uint64>::const_iterator itr = ghost_list.begin(); itr != ghost_list.end(); ++itr)
 +        {
-+            Player* plr = sObjectMgr->GetPlayer(*itr);
++            Player* plr = ObjectAccessor::FindPlayer(*itr);
 +            if (!plr)
 +                continue;
 +
@@ -3523,7 +3525,7 @@ index 0000000..df958e9
 +        WorldSafeLocsEntry const *ClosestGrave = NULL;
 +        for (std::vector<uint64>::const_iterator itr = ghost_list.begin(); itr != ghost_list.end(); ++itr)
 +        {
-+            Player* plr = sObjectMgr->GetPlayer(*itr);
++            Player* plr = ObjectAccessor::FindPlayer(*itr);
 +            if (!plr)
 +                continue;
 +            if (plr->getFaction() == HORDE)
@@ -3988,10 +3990,10 @@ index 0000000..ec078d5
 +#endif
 \ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 66ca764..3c855fd 100644
+index a8c0d91..2e7f65b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2771,3 +2771,99 @@ LevelReq.Mail = 1
+@@ -2785,3 +2785,99 @@ PlayerDump.DisallowOverwrite = 1
  
  #
  ###################################################################################################
