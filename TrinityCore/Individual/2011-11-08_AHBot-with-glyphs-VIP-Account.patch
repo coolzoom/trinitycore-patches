@@ -1,7 +1,7 @@
-From 9326a1d7806aaf6d40174abc625b4e515ec00e76 Mon Sep 17 00:00:00 2001
+From d34f22065aa63e0a2633b73e81f864586ccde794 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Fri, 17 Jun 2011 12:13:48 -0400
-Subject: [PATCH] 12934-AHBOT-with-glyphs-and-VIP-Accounts
+Date: Tue, 8 Nov 2011 22:33:27 -0600
+Subject: [PATCH] 2011-11-08_AHBot-with-glyphs-VIP-Account
 
 ---
  doc/AuctionHouseBot.txt                            |  236 +++
@@ -25,10 +25,10 @@ Subject: [PATCH] 12934-AHBOT-with-glyphs-and-VIP-Accounts
  src/server/game/Server/WorldSocket.cpp             |   13 +-
  src/server/game/World/World.cpp                    |   15 +-
  src/server/game/World/World.h                      |    3 +
- .../Database/Implementation/LoginDatabase.cpp      |    1 +
+ .../Database/Implementation/LoginDatabase.cpp      |    3 +-
  .../shared/Database/Implementation/LoginDatabase.h |    1 +
  src/server/worldserver/worldserver.conf.dist       |  291 +++
- 24 files changed, 4402 insertions(+), 12 deletions(-)
+ 24 files changed, 4403 insertions(+), 13 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/extras/character_VIPAccount.sql
  create mode 100644 sql/extras/setup_ahbot.sql
@@ -371,10 +371,10 @@ index 0000000..63b9a6d
 +(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 \ No newline at end of file
 diff --git a/src/server/authserver/Server/AuthSocket.cpp b/src/server/authserver/Server/AuthSocket.cpp
-index 8ec1fcd..16cd6b1 100755
+index 7b2ad04..a7ee408 100755
 --- a/src/server/authserver/Server/AuthSocket.cpp
 +++ b/src/server/authserver/Server/AuthSocket.cpp
-@@ -349,6 +349,9 @@ bool AuthSocket::_HandleLogonChallenge()
+@@ -350,6 +350,9 @@ bool AuthSocket::_HandleLogonChallenge()
      // Verify that this IP is not in the ip_banned table
      LoginDatabase.Execute(LoginDatabase.GetPreparedStatement(LOGIN_SET_EXPIREDIPBANS));
  
@@ -386,7 +386,7 @@ index 8ec1fcd..16cd6b1 100755
      stmt->setString(0, ip_address);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
 new file mode 100644
-index 0000000..d7b37c4
+index 0000000..e4dafa9
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
 @@ -0,0 +1,1980 @@
@@ -1159,7 +1159,7 @@ index 0000000..d7b37c4
 +    if ((!AHBSeller) && (!AHBBuyer))
 +        return;
 +
-+	WorldSession _session(AHBplayerAccount, NULL, SEC_PLAYER, false, true, 0, LOCALE_enUS, 0);
++	WorldSession _session(AHBplayerAccount, NULL, SEC_PLAYER, false, true, 0, LOCALE_enUS, 0, 0);
 +    Player _AHBplayer(&_session);
 +    _AHBplayer.Initialize(AHBplayerGUID);
 +    sObjectAccessor->AddObject(&_AHBplayer);
@@ -1199,80 +1199,80 @@ index 0000000..d7b37c4
 +
 +void AuctionHouseBot::Initialize()
 +{
-+    debug_Out = sConfig->GetBoolDefault("AuctionHouseBot.DEBUG", false);
-+    debug_Out_Filters = sConfig->GetBoolDefault("AuctionHouseBot.DEBUG_FILTERS", false);
++    debug_Out = ConfigMgr::GetBoolDefault("AuctionHouseBot.DEBUG", false);
++    debug_Out_Filters = ConfigMgr::GetBoolDefault("AuctionHouseBot.DEBUG_FILTERS", false);
 +
-+    AHBSeller = sConfig->GetBoolDefault("AuctionHouseBot.EnableSeller", false);
-+    AHBBuyer = sConfig->GetBoolDefault("AuctionHouseBot.EnableBuyer", false);
-+    SellMethod = sConfig->GetBoolDefault("AuctionHouseBot.UseBuyPriceForSeller", false);
-+    BuyMethod = sConfig->GetBoolDefault("AuctionHouseBot.UseBuyPriceForBuyer", false);
++    AHBSeller = ConfigMgr::GetBoolDefault("AuctionHouseBot.EnableSeller", false);
++    AHBBuyer = ConfigMgr::GetBoolDefault("AuctionHouseBot.EnableBuyer", false);
++    SellMethod = ConfigMgr::GetBoolDefault("AuctionHouseBot.UseBuyPriceForSeller", false);
++    BuyMethod = ConfigMgr::GetBoolDefault("AuctionHouseBot.UseBuyPriceForBuyer", false);
 +
-+    AHBplayerAccount = sConfig->GetIntDefault("AuctionHouseBot.Account", 0);
-+    AHBplayerGUID = sConfig->GetIntDefault("AuctionHouseBot.GUID", 0);
-+    ItemsPerCycle = sConfig->GetIntDefault("AuctionHouseBot.ItemsPerCycle", 200);
++    AHBplayerAccount = ConfigMgr::GetIntDefault("AuctionHouseBot.Account", 0);
++    AHBplayerGUID = ConfigMgr::GetIntDefault("AuctionHouseBot.GUID", 0);
++    ItemsPerCycle = ConfigMgr::GetIntDefault("AuctionHouseBot.ItemsPerCycle", 200);
 +
 +    //Begin Filters
 +
-+    Vendor_Items = sConfig->GetBoolDefault("AuctionHouseBot.VendorItems", false);
-+    Loot_Items = sConfig->GetBoolDefault("AuctionHouseBot.LootItems", true);
-+    Other_Items = sConfig->GetBoolDefault("AuctionHouseBot.OtherItems", false);
-+    Vendor_TGs = sConfig->GetBoolDefault("AuctionHouseBot.VendorTradeGoods", false);
-+    Loot_TGs = sConfig->GetBoolDefault("AuctionHouseBot.LootTradeGoods", true);
-+    Other_TGs = sConfig->GetBoolDefault("AuctionHouseBot.OtherTradeGoods", false);
++    Vendor_Items = ConfigMgr::GetBoolDefault("AuctionHouseBot.VendorItems", false);
++    Loot_Items = ConfigMgr::GetBoolDefault("AuctionHouseBot.LootItems", true);
++    Other_Items = ConfigMgr::GetBoolDefault("AuctionHouseBot.OtherItems", false);
++    Vendor_TGs = ConfigMgr::GetBoolDefault("AuctionHouseBot.VendorTradeGoods", false);
++    Loot_TGs = ConfigMgr::GetBoolDefault("AuctionHouseBot.LootTradeGoods", true);
++    Other_TGs = ConfigMgr::GetBoolDefault("AuctionHouseBot.OtherTradeGoods", false);
 +
-+    No_Bind = sConfig->GetBoolDefault("AuctionHouseBot.No_Bind", true);
-+    Bind_When_Picked_Up = sConfig->GetBoolDefault("AuctionHouseBot.Bind_When_Picked_Up", false);
-+    Bind_When_Equipped = sConfig->GetBoolDefault("AuctionHouseBot.Bind_When_Equipped", true);
-+    Bind_When_Use = sConfig->GetBoolDefault("AuctionHouseBot.Bind_When_Use", true);
-+    Bind_Quest_Item = sConfig->GetBoolDefault("AuctionHouseBot.Bind_Quest_Item", false);
++    No_Bind = ConfigMgr::GetBoolDefault("AuctionHouseBot.No_Bind", true);
++    Bind_When_Picked_Up = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_When_Picked_Up", false);
++    Bind_When_Equipped = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_When_Equipped", true);
++    Bind_When_Use = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_When_Use", true);
++    Bind_Quest_Item = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_Quest_Item", false);
 +
-+    DisableBeta_PTR_Unused = sConfig->GetBoolDefault("AuctionHouseBot.DisableBeta_PTR_Unused", false);
-+    DisablePermEnchant = sConfig->GetBoolDefault("AuctionHouseBot.DisablePermEnchant", false);
-+    DisableConjured = sConfig->GetBoolDefault("AuctionHouseBot.DisableConjured", false);
-+    DisableGems = sConfig->GetBoolDefault("AuctionHouseBot.DisableGems", false);
-+    DisableMoney = sConfig->GetBoolDefault("AuctionHouseBot.DisableMoney", false);
-+    DisableMoneyLoot = sConfig->GetBoolDefault("AuctionHouseBot.DisableMoneyLoot", false);
-+    DisableLootable = sConfig->GetBoolDefault("AuctionHouseBot.DisableLootable", false);
-+    DisableKeys = sConfig->GetBoolDefault("AuctionHouseBot.DisableKeys", false);
-+    DisableDuration = sConfig->GetBoolDefault("AuctionHouseBot.DisableDuration", false);
-+    DisableBOP_Or_Quest_NoReqLevel = sConfig->GetBoolDefault("AuctionHouseBot.DisableBOP_Or_Quest_NoReqLevel", false);
++    DisableBeta_PTR_Unused = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableBeta_PTR_Unused", false);
++    DisablePermEnchant = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisablePermEnchant", false);
++    DisableConjured = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableConjured", false);
++    DisableGems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableGems", false);
++    DisableMoney = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableMoney", false);
++    DisableMoneyLoot = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableMoneyLoot", false);
++    DisableLootable = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableLootable", false);
++    DisableKeys = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableKeys", false);
++    DisableDuration = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableDuration", false);
++    DisableBOP_Or_Quest_NoReqLevel = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableBOP_Or_Quest_NoReqLevel", false);
 +
-+    DisableWarriorItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableWarriorItems", false);
-+    DisablePaladinItems = sConfig->GetBoolDefault("AuctionHouseBot.DisablePaladinItems", false);
-+    DisableHunterItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableHunterItems", false);
-+    DisableRogueItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableRogueItems", false);
-+    DisablePriestItems = sConfig->GetBoolDefault("AuctionHouseBot.DisablePriestItems", false);
-+    DisableDKItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableDKItems", false);
-+    DisableShamanItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableShamanItems", false);
-+    DisableMageItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableMageItems", false);
-+    DisableWarlockItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableWarlockItems", false);
-+    DisableUnusedClassItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableUnusedClassItems", false);
-+    DisableDruidItems = sConfig->GetBoolDefault("AuctionHouseBot.DisableDruidItems", false);
++    DisableWarriorItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableWarriorItems", false);
++    DisablePaladinItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisablePaladinItems", false);
++    DisableHunterItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableHunterItems", false);
++    DisableRogueItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableRogueItems", false);
++    DisablePriestItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisablePriestItems", false);
++    DisableDKItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableDKItems", false);
++    DisableShamanItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableShamanItems", false);
++    DisableMageItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableMageItems", false);
++    DisableWarlockItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableWarlockItems", false);
++    DisableUnusedClassItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableUnusedClassItems", false);
++    DisableDruidItems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableDruidItems", false);
 +
-+    DisableItemsBelowLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsBelowLevel", 0);
-+    DisableItemsAboveLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsAboveLevel", 0);
-+    DisableTGsBelowLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsBelowLevel", 0);
-+    DisableTGsAboveLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsAboveLevel", 0);
-+    DisableItemsBelowGUID = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsBelowGUID", 0);
-+    DisableItemsAboveGUID = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsAboveGUID", 0);
-+    DisableTGsBelowGUID = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsBelowGUID", 0);
-+    DisableTGsAboveGUID = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsAboveGUID", 0);
-+    DisableItemsBelowReqLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsBelowReqLevel", 0);
-+    DisableItemsAboveReqLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsAboveReqLevel", 0);
-+    DisableTGsBelowReqLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsBelowReqLevel", 0);
-+    DisableTGsAboveReqLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsAboveReqLevel", 0);
-+    DisableItemsBelowReqSkillRank = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsBelowReqSkillRank", 0);
-+    DisableItemsAboveReqSkillRank = sConfig->GetIntDefault("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
-+    DisableTGsBelowReqSkillRank = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
-+    DisableTGsAboveReqSkillRank = sConfig->GetIntDefault("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
-+	SellGlyphs = sConfig->GetBoolDefault("AuctionHouseBot.SellGlyphs", false);
-+	GlyphsCount = sConfig->GetIntDefault("AuctionHouseBot.GlyphsCount", 0);
-+	DisableGlyphBelowLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableGlyphBelowLevel", 0);
-+	DisableGlyphAboveLevel = sConfig->GetIntDefault("AuctionHouseBot.DisableGlyphAboveLevel", 0);
-+	GlyphBuyOutPriceMin = sConfig->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMin", 0);
-+	GlyphBuyOutPriceMax = sConfig->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
-+	GlyphBidPriceMin = sConfig->GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
-+	GlyphBidPriceMax = sConfig->GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
++    DisableItemsBelowLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsBelowLevel", 0);
++    DisableItemsAboveLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsAboveLevel", 0);
++    DisableTGsBelowLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsBelowLevel", 0);
++    DisableTGsAboveLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsAboveLevel", 0);
++    DisableItemsBelowGUID = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsBelowGUID", 0);
++    DisableItemsAboveGUID = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsAboveGUID", 0);
++    DisableTGsBelowGUID = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsBelowGUID", 0);
++    DisableTGsAboveGUID = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsAboveGUID", 0);
++    DisableItemsBelowReqLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsBelowReqLevel", 0);
++    DisableItemsAboveReqLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsAboveReqLevel", 0);
++    DisableTGsBelowReqLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsBelowReqLevel", 0);
++    DisableTGsAboveReqLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsAboveReqLevel", 0);
++    DisableItemsBelowReqSkillRank = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsBelowReqSkillRank", 0);
++    DisableItemsAboveReqSkillRank = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
++    DisableTGsBelowReqSkillRank = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
++    DisableTGsAboveReqSkillRank = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
++	SellGlyphs = ConfigMgr::GetBoolDefault("AuctionHouseBot.SellGlyphs", false);
++	GlyphsCount = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphsCount", 0);
++	DisableGlyphBelowLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableGlyphBelowLevel", 0);
++	DisableGlyphAboveLevel = ConfigMgr::GetIntDefault("AuctionHouseBot.DisableGlyphAboveLevel", 0);
++	GlyphBuyOutPriceMin = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMin", 0);
++	GlyphBuyOutPriceMax = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
++	GlyphBidPriceMin = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
++	GlyphBidPriceMax = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
 +
 +    //End Filters
 +    if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
@@ -3634,10 +3634,10 @@ index 0000000..a7da388
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index f104440..f9caad5 100644
+index 0a2ff75..4f7687f 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-@@ -217,7 +217,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry * auction, SQLTrans
+@@ -217,7 +217,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
          uint32 profit = auction->bid + auction->deposit - auctionCut;
  
          //FIXME: what do if owner offline
@@ -3646,7 +3646,7 @@ index f104440..f9caad5 100644
          {
              owner->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GOLD_EARNED_BY_AUCTIONS, profit);
              owner->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_SOLD, auction->bid);
-@@ -247,7 +247,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry * auction, SQLTransact
+@@ -247,7 +247,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction, SQLTransacti
          std::ostringstream subject;
          subject << auction->item_template << ":0:" << AUCTION_EXPIRED << ":0:0";
  
@@ -3655,7 +3655,7 @@ index f104440..f9caad5 100644
              owner->GetSession()->SendAuctionOwnerNotification(auction);
  
          MailDraft(subject.str(), "")                        // TODO: fix body
-@@ -272,6 +272,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry *auction, uint32 new
+@@ -272,6 +272,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
          std::ostringstream msgAuctionOutbiddedSubject;
          msgAuctionOutbiddedSubject << auction->item_template << ":0:" << AUCTION_OUTBIDDED << ":0:0";
  
@@ -3665,20 +3665,20 @@ index f104440..f9caad5 100644
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->item_template);
  
-@@ -462,8 +465,10 @@ void AuctionHouseObject::AddAuction(AuctionEntry *auction)
+@@ -462,8 +465,10 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
      sScriptMgr->OnAuctionAdd(this, auction);
  }
  
--bool AuctionHouseObject::RemoveAuction(AuctionEntry *auction, uint32 /*item_template*/)
-+bool AuctionHouseObject::RemoveAuction(AuctionEntry *auction, uint32 item_template)
+-bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 /*item_template*/)
++bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 item_template)
  {
-+	auctionbot.DecrementItemCounts(auction, item_template);
++    auctionbot.DecrementItemCounts(auction, item_template);
 +
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
  
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-index 6cfc6d0..ebae834 100644
+index d1fb26c..6387544 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.h
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.h
 @@ -25,6 +25,8 @@
@@ -3719,10 +3719,10 @@ index 65ba160..8a156d1 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds/Zones
    ${CMAKE_CURRENT_SOURCE_DIR}/Calendar
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index 6142f52..37932b9 100755
+index ddc7ce5..16a7765 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
-@@ -344,6 +344,7 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -345,6 +345,7 @@ ChatCommand* ChatHandler::getCommandTable()
  
          { "pet",            SEC_GAMEMASTER,     false, NULL,                                           "", petCommandTable },
          { "ticket",         SEC_MODERATOR,      false,  NULL,                                          "", ticketCommandTable },
@@ -3731,19 +3731,19 @@ index 6142f52..37932b9 100755
          { "aura",           SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleAuraCommand>,                "", NULL },
          { "unaura",         SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnAuraCommand>,              "", NULL },
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index dd845c1..f6352b1 100755
+index 6e34e39..7edbbbf 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -131,6 +131,7 @@ class ChatHandler
-         bool ShowHelpForCommand(ChatCommand *table, const char* cmd);
-         bool ShowHelpForSubCommands(ChatCommand *table, char const* cmd, char const* subcmd);
+         bool ShowHelpForCommand(ChatCommand* table, const char* cmd);
+         bool ShowHelpForSubCommands(ChatCommand* table, char const* cmd, char const* subcmd);
  
 +        bool HandleAHBotOptionsCommand(const char * args);
          bool HandleNameAnnounceCommand(const char* args);
          bool HandleGMNameAnnounceCommand(const char* args);
          bool HandleGMAnnounceCommand(const char* args);
 diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 94a9c59..0d54842 100755
+index 35f288c..a0c5fb0 100755
 --- a/src/server/game/Chat/Commands/Level3.cpp
 +++ b/src/server/game/Chat/Commands/Level3.cpp
 @@ -64,6 +64,496 @@
@@ -4244,10 +4244,10 @@ index 94a9c59..0d54842 100755
  {
      Player* SelectedPlayer = getSelectedPlayer();
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a51a8c9..97eebab 100755
+index adcefdd..08d34cc 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -6852,7 +6852,8 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6860,7 +6860,8 @@ void Player::CheckAreaExploreAndOutdoor()
                  {
                      XP = uint32(sObjectMgr->GetBaseXP(p->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
@@ -4257,7 +4257,7 @@ index a51a8c9..97eebab 100755
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -14907,6 +14908,9 @@ void Player::RewardQuest(Quest const *pQuest, uint32 reward, Object* questGiver,
+@@ -14909,6 +14910,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPctN(XP, (*i)->GetAmount());
  
@@ -4268,7 +4268,7 @@ index a51a8c9..97eebab 100755
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 573d475..1f44c24 100755
+index 6d54aac..8d61c2a 100755
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -26,6 +26,7 @@
@@ -4294,7 +4294,7 @@ index 573d475..1f44c24 100755
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index cf59106..4835c8d 100755
+index f562010..b11b08b 100755
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -178,7 +178,9 @@ namespace Trinity
@@ -4309,7 +4309,7 @@ index cf59106..4835c8d 100755
  
              sScriptMgr->OnGainCalculation(gain, pl, u);
 diff --git a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
-index e995e96..83a807a 100755
+index a670063..2c4b0d7 100755
 --- a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
 @@ -22,6 +22,7 @@
@@ -4321,15 +4321,15 @@ index e995e96..83a807a 100755
  #include "Log.h"
  #include "Opcodes.h"
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 9883699..2b740f5 100755
+index 32e65ca..2abefaa 100755
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -86,9 +86,9 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
  }
  
  /// WorldSession constructor
--WorldSession::WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter):
-+WorldSession::WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter):
+-WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
++WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
  m_muteTime(mute_time), m_timeOutTime(0), _player(NULL), m_Socket(sock),
 -_security(sec), _accountId(id), m_expansion(expansion), _logoutTime(0),
 +_security(sec), _ispremium(ispremium), _accountId(id), m_expansion(expansion), _logoutTime(0),
@@ -4337,19 +4337,19 @@ index 9883699..2b740f5 100755
  m_playerRecentlyLogout(false), m_playerSave(false),
  m_sessionDbcLocale(sWorld->GetAvailableDbcLocale(locale)),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 9721778..9b855cb 100755
+index a28e3fc..4fcacb4 100755
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -179,7 +179,7 @@ class WorldSession
+@@ -214,7 +214,7 @@ class CharacterCreateInfo
+ class WorldSession
  {
-     friend class CharacterHandler;
      public:
--        WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter);
-+        WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter);
+-        WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
++        WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -207,6 +207,7 @@ class WorldSession
+@@ -242,6 +242,7 @@ class WorldSession
          void SendClientCacheVersion(uint32 version);
  
          AccountTypes GetSecurity() const { return _security; }
@@ -4357,19 +4357,19 @@ index 9721778..9b855cb 100755
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          char const* GetPlayerName() const;
-@@ -896,6 +897,7 @@ class WorldSession
+@@ -934,6 +935,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
 +        bool _ispremium;
  
-         time_t _logoutTime;
-         bool m_inQueue;                                     // session wait in auth.queue
+         typedef std::list<AddonInfo> AddonsList;
+ 
 diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
-index b2c8164..c01d5e4 100755
+index 0ddc03e..cac0329 100755
 --- a/src/server/game/Server/WorldSocket.cpp
 +++ b/src/server/game/Server/WorldSocket.cpp
-@@ -777,6 +777,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
+@@ -778,6 +778,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
      //uint8 expansion = 0;
      LocaleConstant locale;
      std::string account;
@@ -4377,7 +4377,7 @@ index b2c8164..c01d5e4 100755
      SHA1Hash sha1;
      BigNumber v, s, g, N;
      WorldPacket packet, SendAddonPacked;
-@@ -932,6 +933,16 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
+@@ -933,6 +934,16 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
          return -1;
      }
  
@@ -4394,17 +4394,17 @@ index b2c8164..c01d5e4 100755
      // Check locked state for server
      AccountTypes allowedAccountType = sWorld->GetPlayerSecurityLimit();
      sLog->outDebug(LOG_FILTER_NETWORKIO, "Allowed Level: %u Player Level %u", allowedAccountType, AccountTypes(security));
-@@ -987,7 +998,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
+@@ -995,7 +1006,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
                              safe_account.c_str());
  
      // NOTE ATM the socket is single-threaded, have this in mind ...
--    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), expansion, mutetime, locale, recruiter), -1);
-+    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), isPremium, expansion, mutetime, locale, recruiter), -1);
+-    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter), -1);
++    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), isPremium, expansion, mutetime, locale, recruiter, isRecruiter), -1);
  
      m_Crypt.Init(&K);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 97dda09..37fc93b 100755
+index 408db18..40d5a16 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -74,6 +74,7 @@
@@ -4415,26 +4415,26 @@ index 97dda09..37fc93b 100755
  
  volatile bool World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -455,9 +456,13 @@ void World::LoadConfigSettings(bool reload)
-     rate_values[RATE_DROP_ITEM_REFERENCED] = sConfig->GetFloatDefault("Rate.Drop.Item.Referenced", 1.0f);
-     rate_values[RATE_DROP_ITEM_REFERENCED_AMOUNT] = sConfig->GetFloatDefault("Rate.Drop.Item.ReferencedAmount", 1.0f);
-     rate_values[RATE_DROP_MONEY]  = sConfig->GetFloatDefault("Rate.Drop.Money", 1.0f);
--    rate_values[RATE_XP_KILL]     = sConfig->GetFloatDefault("Rate.XP.Kill", 1.0f);
--    rate_values[RATE_XP_QUEST]    = sConfig->GetFloatDefault("Rate.XP.Quest", 1.0f);
--    rate_values[RATE_XP_EXPLORE]  = sConfig->GetFloatDefault("Rate.XP.Explore", 1.0f);
-+    rate_values[RATE_XP_KILL]            = sConfig->GetFloatDefault("Rate.XP.Kill", 1.0f);
-+    rate_values[RATE_XP_KILL_PREMIUM]    = sConfig->GetFloatDefault("Rate.XP.Kill.Premium", 1.0f);
-+    rate_values[RATE_XP_QUEST]           = sConfig->GetFloatDefault("Rate.XP.Quest", 1.0f);
-+    rate_values[RATE_XP_QUEST_PREMIUM]   = sConfig->GetFloatDefault("Rate.XP.Quest.Premium", 1.0f);
-+    rate_values[RATE_XP_EXPLORE]         = sConfig->GetFloatDefault("Rate.XP.Explore", 1.0f);
-+    rate_values[RATE_XP_EXPLORE_PREMIUM] = sConfig->GetFloatDefault("Rate.XP.Explore.Premium", 1.0f);
+@@ -457,9 +458,13 @@ void World::LoadConfigSettings(bool reload)
+     rate_values[RATE_DROP_ITEM_REFERENCED] = ConfigMgr::GetFloatDefault("Rate.Drop.Item.Referenced", 1.0f);
+     rate_values[RATE_DROP_ITEM_REFERENCED_AMOUNT] = ConfigMgr::GetFloatDefault("Rate.Drop.Item.ReferencedAmount", 1.0f);
+     rate_values[RATE_DROP_MONEY]  = ConfigMgr::GetFloatDefault("Rate.Drop.Money", 1.0f);
+-    rate_values[RATE_XP_KILL]     = ConfigMgr::GetFloatDefault("Rate.XP.Kill", 1.0f);
+-    rate_values[RATE_XP_QUEST]    = ConfigMgr::GetFloatDefault("Rate.XP.Quest", 1.0f);
+-    rate_values[RATE_XP_EXPLORE]  = ConfigMgr::GetFloatDefault("Rate.XP.Explore", 1.0f);
++    rate_values[RATE_XP_KILL]            = ConfigMgr::GetFloatDefault("Rate.XP.Kill", 1.0f);
++    rate_values[RATE_XP_KILL_PREMIUM]    = ConfigMgr::GetFloatDefault("Rate.XP.Kill.Premium", 1.0f);
++    rate_values[RATE_XP_QUEST]           = ConfigMgr::GetFloatDefault("Rate.XP.Quest", 1.0f);
++    rate_values[RATE_XP_QUEST_PREMIUM]   = ConfigMgr::GetFloatDefault("Rate.XP.Quest.Premium", 1.0f);
++    rate_values[RATE_XP_EXPLORE]         = ConfigMgr::GetFloatDefault("Rate.XP.Explore", 1.0f);
++    rate_values[RATE_XP_EXPLORE_PREMIUM] = ConfigMgr::GetFloatDefault("Rate.XP.Explore.Premium", 1.0f);
 +
-     rate_values[RATE_REPAIRCOST]  = sConfig->GetFloatDefault("Rate.RepairCost", 1.0f);
+     rate_values[RATE_REPAIRCOST]  = ConfigMgr::GetFloatDefault("Rate.RepairCost", 1.0f);
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
-@@ -1718,6 +1723,9 @@ void World::SetInitialWorldSettings()
-     sLog->outString("Calculate random battleground reset time..." );
-     InitRandomBGResetTime();
+@@ -1729,6 +1734,9 @@ void World::SetInitialWorldSettings()
+ 
+     LoadCharacterNameData();
  
 +    sLog->outString("Initialize AuctionHouseBot...");
 +    auctionbot.Initialize();
@@ -4442,7 +4442,7 @@ index 97dda09..37fc93b 100755
      // possibly enable db logging; avoid massive startup spam by doing it here.
      if (sLog->GetLogDBLater())
      {
-@@ -1884,6 +1892,7 @@ void World::Update(uint32 diff)
+@@ -1895,6 +1903,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -4451,10 +4451,10 @@ index 97dda09..37fc93b 100755
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 1f3cd3c..f1cd15f 100755
+index b493b8b..f62ddca 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -332,8 +332,11 @@ enum Rates
+@@ -333,8 +333,11 @@ enum Rates
      RATE_DROP_ITEM_REFERENCED_AMOUNT,
      RATE_DROP_MONEY,
      RATE_XP_KILL,
@@ -4467,35 +4467,37 @@ index 1f3cd3c..f1cd15f 100755
      RATE_REPUTATION_GAIN,
      RATE_REPUTATION_LOWLEVEL_KILL,
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-index 5014535..fc386f5 100755
+index 13cfe09..2250b44 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-@@ -44,4 +44,5 @@ void LoginDatabaseConnection::DoPrepareStatements()
+@@ -44,5 +44,6 @@ void LoginDatabaseConnection::DoPrepareStatements()
      PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_NOT_BANNED, "UPDATE account_banned SET active = 0 WHERE id = ? AND active != 0", CONNECTION_ASYNC)
      PREPARE_STATEMENT(LOGIN_DEL_REALMCHARACTERS, "DELETE FROM realmcharacters WHERE acctid = ? AND realmid = ?", CONNECTION_ASYNC)
      PREPARE_STATEMENT(LOGIN_ADD_REALMCHARACTERS, "INSERT INTO realmcharacters (numchars, acctid, realmid) VALUES (?, ?, ?)", CONNECTION_ASYNC)
-+	PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC)
+-    PREPARE_STATEMENT(LOGIN_GET_SUM_REALMCHARS, "SELECT SUM(numchars) FROM realmcharacters WHERE acctid = ?", CONNECTION_ASYNC);
++    PREPARE_STATEMENT(LOGIN_GET_SUM_REALMCHARS, "SELECT SUM(numchars) FROM realmcharacters WHERE acctid = ?", CONNECTION_ASYNC)
++	PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC);
  }
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.h b/src/server/shared/Database/Implementation/LoginDatabase.h
-index cb7cb2b..b23358c 100755
+index b5f927f..932cc48 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.h
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.h
-@@ -64,6 +64,7 @@ enum LoginDatabaseStatements
-     LOGIN_SET_ACCOUNT_NOT_BANNED,
+@@ -65,6 +65,7 @@ enum LoginDatabaseStatements
      LOGIN_DEL_REALMCHARACTERS,
      LOGIN_ADD_REALMCHARACTERS,
+     LOGIN_GET_SUM_REALMCHARS,
 +	LOGIN_SET_ACCOUNT_PREMIUM,
  
      MAX_LOGINDATABASE_STATEMENTS,
  };
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 66ca764..76063f3 100644
+index a8c0d91..34ecb91 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2047,10 +2047,18 @@ Rate.Drop.Item.ReferencedAmount = 1
+@@ -2045,10 +2045,18 @@ Rate.Drop.Item.ReferencedAmount = 1
  #        Default:     1 - (Rate.XP.Kill)
  #                     1 - (Rate.XP.Quest)
- #                     1 - ( Rate.XP.Explore)
+ #                     1 - (Rate.XP.Explore)
 +#    Rate.XP.Kill.Premium
 +#    Rate.XP.Quest.Premium
 +#    Rate.XP.Explore.Premium
