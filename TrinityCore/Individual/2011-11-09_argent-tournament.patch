@@ -1,7 +1,7 @@
-From 78de345ff626ba929f31459baa7f2a15b46ee683 Mon Sep 17 00:00:00 2001
+From 15296d8e5ed64c432025187bcd022e1b97158238 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Fri, 17 Jun 2011 06:01:59 -0400
-Subject: [PATCH] 12394-Argent-Tournament
+Date: Wed, 9 Nov 2011 07:23:00 -0600
+Subject: [PATCH] Updated argent tournament script. Needs testing in game. SQL file not tested.
 
 ---
  sql/world_argenttournamentgrounds.sql              |  425 ++++++++
@@ -445,10 +445,10 @@ index 0000000..28a3712
 +UPDATE `creature_template` SET `name` = 'summon halion', `ScriptName` = 'npc_summon_halion', `flags_extra` = 128 WHERE `entry` = '40044';
 +UPDATE `creature_template` SET `ScriptName` = 'npc_onyx_flamecaller' WHERE `entry` = '39814'
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index ab1c7f1..25c1305 100755
+index 191b4eb..7dbd01b 100755
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
-@@ -847,6 +847,11 @@ class ObjectMgr
+@@ -826,6 +826,11 @@ class ObjectMgr
              return &mCreatureQuestRelations;
          }
  
@@ -461,10 +461,10 @@ index ab1c7f1..25c1305 100755
          {
              return mCreatureQuestRelations.equal_range(creature_entry);
 diff --git a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-index 0c969c4..13ae339 100755
+index 5a8781d..9e48599 100755
 --- a/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/PetHandler.cpp
-@@ -756,6 +756,14 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
+@@ -760,6 +760,14 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
          sLog->outError("WORLD: unknown PET spell id %i", spellId);
          return;
      }
@@ -480,10 +480,10 @@ index 0c969c4..13ae339 100755
      if (spellInfo->StartRecoveryCategory > 0) // Check if spell is affected by GCD
          if (caster->GetTypeId() == TYPEID_UNIT && caster->GetCharmInfo() && caster->GetCharmInfo()->GetGlobalCooldownMgr().HasGlobalCooldown(spellInfo))
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 9627b5c..488f50a 100755
+index 8a89952..5316ad3 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
-@@ -4405,8 +4405,34 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4561,8 +4561,34 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                  case 26465:
                      unitTarget->RemoveAuraFromStack(26464);
                      return;
@@ -520,7 +520,7 @@ index 9627b5c..488f50a 100755
                  case 22972:
                  case 22975:
                  case 22976:
-@@ -4857,9 +4883,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5011,9 +5037,15 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                          return;
  
                      if (m_caster->ToPlayer()->GetTeam() == ALLIANCE)
@@ -537,15 +537,15 @@ index 9627b5c..488f50a 100755
                      return;
                  }
                  case 71342:                                     // Big Love Rocket
-@@ -5195,6 +5227,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -5342,6 +5374,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                      break;
                  }
                  case 64142:                                 // Upper Deck - Create Foam Sword
 +				{
                      if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                          return;
-                     Player *plr = unitTarget->ToPlayer();
-@@ -5205,6 +5238,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+                     Player* plr = unitTarget->ToPlayer();
+@@ -5352,6 +5385,7 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                              return;
                      DoCreateItem(effIndex, itemId[urand(0, 4)]);
                      return;
@@ -554,7 +554,7 @@ index 9627b5c..488f50a 100755
              break;
          }
 diff --git a/src/server/scripts/Northrend/grizzly_hills.cpp b/src/server/scripts/Northrend/grizzly_hills.cpp
-index 1678e36..bd6b7d4 100644
+index 6ed4528..392801c 100644
 --- a/src/server/scripts/Northrend/grizzly_hills.cpp
 +++ b/src/server/scripts/Northrend/grizzly_hills.cpp
 @@ -29,6 +29,7 @@ EndContentData */
@@ -565,7 +565,7 @@ index 1678e36..bd6b7d4 100644
  
  #define GOSSIP_ITEM1 "You're free to go Orsonn, but first tell me what's wrong with the furbolg."
  #define GOSSIP_ITEM2 "What happened then?"
-@@ -798,6 +799,217 @@ public:
+@@ -799,6 +800,217 @@ public:
      };
  };
  
@@ -783,7 +783,7 @@ index 1678e36..bd6b7d4 100644
  void AddSC_grizzly_hills()
  {
      new npc_orsonn_and_kodian;
-@@ -809,4 +1021,7 @@ void AddSC_grizzly_hills()
+@@ -810,4 +1022,7 @@ void AddSC_grizzly_hills()
      new npc_wounded_skirmisher;
      new npc_lightning_sentry();
      new npc_venture_co_straggler();
@@ -792,7 +792,7 @@ index 1678e36..bd6b7d4 100644
 +    new npc_maiden_of_drak_mar;
  }
 diff --git a/src/server/scripts/Northrend/icecrown.cpp b/src/server/scripts/Northrend/icecrown.cpp
-index 6d6cf89..50bdfc6 100644
+index 27054b5..c693461 100644
 --- a/src/server/scripts/Northrend/icecrown.cpp
 +++ b/src/server/scripts/Northrend/icecrown.cpp
 @@ -157,7 +157,7 @@ enum eSquireDavid
@@ -805,30 +805,30 @@ index 6d6cf89..50bdfc6 100644
  
  #define GOSSIP_SQUIRE_ITEM_1 "I am ready to fight!"
 @@ -177,19 +177,20 @@ public:
-             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+             player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
          }
  
--        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE, pCreature->GetGUID());
-+        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE_DAVID, pCreature->GetGUID());
+-        player->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE, creature->GetGUID());
++        player->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE_DAVID, creature->GetGUID());
          return true;
      }
  
-     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
+     bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
      {
--        pPlayer->PlayerTalkClass->ClearMenus();
+-        player->PlayerTalkClass->ClearMenus();
 -        if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
 -        {
--            pPlayer->CLOSE_GOSSIP_MENU();
--            pCreature->SummonCreature(NPC_ARGENT_VALIANT, 8575.451f, 952.472f, 547.554f, 0.38f);
+-            player->CLOSE_GOSSIP_MENU();
+-            creature->SummonCreature(NPC_ARGENT_VALIANT, 8575.451f, 952.472f, 547.554f, 0.38f);
 -        }
 -        return true;
 +	    if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
 +	    {
-+		pPlayer->CLOSE_GOSSIP_MENU();
-+		pCreature->SummonCreature(NPC_ARGENT_VALIANT,8575.451,952.472,547.554,0.38);
++		player->CLOSE_GOSSIP_MENU();
++		creature->SummonCreature(NPC_ARGENT_VALIANT,8575.451,952.472,547.554,0.38);
 +	    }
 +	    //else
-+		//pPlayer->SEND_GOSSIP_MENU(???, pCreature->GetGUID()); Missing text
++		//player->SEND_GOSSIP_MENU(???, creature->GetGUID()); Missing text
 +	    return true;
      }
  };
@@ -861,23 +861,23 @@ index 6d6cf89..50bdfc6 100644
  public:
 @@ -214,17 +230,21 @@ public:
      {
-         npc_argent_valiantAI(Creature* pCreature) : ScriptedAI(pCreature)
+         npc_argent_valiantAI(Creature* creature) : ScriptedAI(creature)
          {
-+	    me->CastSpell(me, SPELL_DEFEND, true);
-+	    me->CastSpell(me, SPELL_DEFEND, true);
-             pCreature->GetMotionMaster()->MovePoint(0, 8599.258f, 963.951f, 547.553f);
-             pCreature->setFaction(35); //wrong faction in db?
++        me->CastSpell(me, SPELL_DEFEND, true);
++        me->CastSpell(me, SPELL_DEFEND, true);
+             creature->GetMotionMaster()->MovePoint(0, 8599.258f, 963.951f, 547.553f);
+             creature->setFaction(35); //wrong faction in db?
          }
  
          uint32 uiChargeTimer;
          uint32 uiShieldBreakerTimer;
-+		uint32 uiDefendTimer;
++        uint32 uiDefendTimer;
  
          void Reset()
          {
              uiChargeTimer = 7000;
              uiShieldBreakerTimer = 10000;
-+			uiDefendTimer = 10000;
++            uiDefendTimer = 10000;
          }
  
          void MovementInform(uint32 uiType, uint32 /*uiId*/)
@@ -957,7 +957,7 @@ index 6d6cf89..50bdfc6 100644
  
              DoMeleeAttackIfReady();
          }
-@@ -381,6 +445,943 @@ public:
+@@ -426,6 +490,943 @@ public:
      }
  };
  
@@ -983,7 +983,7 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_vendor_argent_tournament(): CreatureScript("npc_vendor_argent_tournament"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
 +		bool npcCheck = false;
 +		bool questCheck = false;
@@ -992,19 +992,19 @@ index 6d6cf89..50bdfc6 100644
 +
 +		for(int i = 0; (i < 10) && !npcCheck; i++)
 +		{
-+			if(pCreature->GetEntry() == ArgentTournamentVendor[i][0])
++			if(creature->GetEntry() == ArgentTournamentVendor[i][0])
 +			{
 +				npcCheck = true;
-+				questCheck = pPlayer->GetQuestStatus(ArgentTournamentVendor[i][1]) == QUEST_STATUS_COMPLETE;
-+				raceCheck = pPlayer->getRace() == ArgentTournamentVendor[i][2];
++				questCheck = player->GetQuestStatus(ArgentTournamentVendor[i][1]) == QUEST_STATUS_COMPLETE;
++				raceCheck = player->getRace() == ArgentTournamentVendor[i][2];
 +				textId = ArgentTournamentVendor[i][3];
 +			}
 +		}
 +
 +		if(questCheck || raceCheck)
-+			pPlayer->GetSession()->SendListInventory(pCreature->GetGUID());
++			player->GetSession()->SendListInventory(creature->GetGUID());
 +		else
-+		    pPlayer->SEND_GOSSIP_MENU(textId, pCreature->GetGUID());
++		    player->SEND_GOSSIP_MENU(textId, creature->GetGUID());
 +		return true;
 +	}
 +
@@ -1019,24 +1019,24 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	quest_givers_argent_tournament(): CreatureScript("quest_givers_argent_tournament"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		//uint64 const guid = pCreature->GetGUID();
++		//uint64 const guid = creature->GetGUID();
 +
-+	        if (pCreature->isQuestGiver())
++	        if (creature->isQuestGiver())
 +		{
-+			Object *pObject = (Object*)pCreature;
++			Object *pObject = (Object*)creature;
 +			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
 +			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
-+			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
++			QuestMenu &qm = player->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
 +
 +			for (QuestRelations::const_iterator i = pObjectQIR->lower_bound(pObject->GetEntry()); i != pObjectQIR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-+				if (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id))
++				QuestStatus status = player->GetQuestStatus(quest_id);
++				if (status == QUEST_STATUS_COMPLETE && !player->GetQuestRewardStatus(quest_id))
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
@@ -1044,8 +1044,8 @@ index 6d6cf89..50bdfc6 100644
 +				//    qm.AddMenuItem(quest_id, 2);
 +			}
 +
-+			bool EligibilityAlliance = pPlayer->GetQuestStatus(13686) == QUEST_STATUS_COMPLETE;
-+			bool EligibilityHorde = pPlayer->GetQuestStatus(13687) == QUEST_STATUS_COMPLETE;
++			bool EligibilityAlliance = player->GetQuestStatus(13686) == QUEST_STATUS_COMPLETE;
++			bool EligibilityHorde = player->GetQuestStatus(13687) == QUEST_STATUS_COMPLETE;
 +
 +			for (QuestRelations::const_iterator i = pObjectQR->lower_bound(pObject->GetEntry()); i != pObjectQR->upper_bound(pObject->GetEntry()); ++i)
 +			{
@@ -1062,11 +1062,11 @@ index 6d6cf89..50bdfc6 100644
 +					case 13711: // Valiant Of Silvermoon
 +						if(!EligibilityHorde)
 +						{
-+							QuestStatus status = pPlayer->GetQuestStatus(quest_id);
++							QuestStatus status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
@@ -1077,26 +1077,26 @@ index 6d6cf89..50bdfc6 100644
 +					case 13705: // Valiant Of The Exodar
 +						if(!EligibilityAlliance)
 +						{
-+							QuestStatus status = pPlayer->GetQuestStatus(quest_id);
++							QuestStatus status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
 +					default:
-+						QuestStatus status = pPlayer->GetQuestStatus(quest_id);
++						QuestStatus status = player->GetQuestStatus(quest_id);
 +
-+						if (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++						if (pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 4);
-+						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++						else if (status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
 +						break;
 +				}
 +			}
 +		}
-+	    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +	    return true;
 +	}
 +
@@ -1224,9 +1224,9 @@ index 6d6cf89..50bdfc6 100644
 +	    void MoveInLineOfSight(Unit * /*who*/){return;}
 +	};
 +
-+	CreatureAI* GetAI(Creature* pCreature) const
++	CreatureAI* GetAI(Creature* creature) const
 +	{
-+    return new npc_training_dummy_argentAI(pCreature);
++    return new npc_training_dummy_argentAI(creature);
 +	}
 +
 +};
@@ -1240,13 +1240,13 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +       npc_quest_givers_for_crusaders(): CreatureScript("npc_quest_givers_for_crusaders"){}
 +
-+       bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++       bool OnGossipHello(Player* player, Creature* creature)
 +       {
-+               if (pPlayer->HasTitle(TITLE_CRUSADER))
-+                       if (pCreature->isQuestGiver())
-+                               pPlayer->PrepareQuestMenu(pCreature->GetGUID());
++               if (player->HasTitle(TITLE_CRUSADER))
++                       if (creature->isQuestGiver())
++                               player->PrepareQuestMenu(creature->GetGUID());
 +
-+               pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++               player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +               return true;
 +       }
 +
@@ -1261,24 +1261,24 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_crusader_rhydalla(): CreatureScript("npc_crusader_rhydalla"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		// uint64 const guid = pCreature->GetGUID();
++		// uint64 const guid = creature->GetGUID();
 +
-+		if (pCreature->isQuestGiver())
++		if (creature->isQuestGiver())
 +		{
-+			Object *pObject = (Object*)pCreature;
++			Object *pObject = (Object*)creature;
 +			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
 +			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
-+			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
++			QuestMenu &qm = player->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
 +
 +			for (QuestRelations::const_iterator i = pObjectQIR->lower_bound(pObject->GetEntry()); i != pObjectQIR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-+				if (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id))
++				QuestStatus status = player->GetQuestStatus(quest_id);
++				if (status == QUEST_STATUS_COMPLETE && !player->GetQuestRewardStatus(quest_id))
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
@@ -1296,29 +1296,29 @@ index 6d6cf89..50bdfc6 100644
 +				switch(quest_id)
 +				{
 +					case 13664: // The Black Knigh's Fall
-+						allowed = (pPlayer->GetQuestStatus(13700) == QUEST_STATUS_COMPLETE) || (pPlayer->GetQuestStatus(13701) == QUEST_STATUS_COMPLETE);
++						allowed = (player->GetQuestStatus(13700) == QUEST_STATUS_COMPLETE) || (player->GetQuestStatus(13701) == QUEST_STATUS_COMPLETE);
 +						if(allowed)
 +						{
-+							status = pPlayer->GetQuestStatus(quest_id);
++							status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
 +					default:
-+						status = pPlayer->GetQuestStatus(quest_id);
++						status = player->GetQuestStatus(quest_id);
 +
-+						if (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++						if (pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 4);
-+						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++						else if (status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
 +						break;
 +				}
 +			}
 +		}
-+	    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +	    return true;
 +	}
 +
@@ -1333,24 +1333,24 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_eadric_the_pure(): CreatureScript("npc_eadric_the_pure"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		// uint64 const guid = pCreature->GetGUID();
++		// uint64 const guid = creature->GetGUID();
 +
-+		if (pCreature->isQuestGiver())
++		if (creature->isQuestGiver())
 +		{
-+			Object *pObject = (Object*)pCreature;
++			Object *pObject = (Object*)creature;
 +			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
 +			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
-+			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
++			QuestMenu &qm = player->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
 +
 +			for (QuestRelations::const_iterator i = pObjectQIR->lower_bound(pObject->GetEntry()); i != pObjectQIR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-+				if (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id))
++				QuestStatus status = player->GetQuestStatus(quest_id);
++				if (status == QUEST_STATUS_COMPLETE && !player->GetQuestRewardStatus(quest_id))
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
@@ -1369,29 +1369,29 @@ index 6d6cf89..50bdfc6 100644
 +				{
 +					case 13682: // Alliance Threat From Above
 +					case 13809: // Horde Threat From Above
-+						allowed = (pPlayer->GetQuestStatus(13664) == QUEST_STATUS_COMPLETE) && pPlayer->GetQuestRewardStatus(13664);
++						allowed = (player->GetQuestStatus(13664) == QUEST_STATUS_COMPLETE) && player->GetQuestRewardStatus(13664);
 +						if(allowed)
 +						{
-+							status = pPlayer->GetQuestStatus(quest_id);
++							status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
 +					default:
-+						status = pPlayer->GetQuestStatus(quest_id);
++						status = player->GetQuestStatus(quest_id);
 +
-+						if (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++						if (pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 4);
-+						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++						else if (status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
 +					break;
 +				}
 +			}
 +		}
-+	    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +	    return true;
 +	}
 +
@@ -1406,24 +1406,24 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_justicar_mariel_trueheart(): CreatureScript("npc_justicar_mariel_trueheart"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		// uint64 const guid = pCreature->GetGUID();
++		// uint64 const guid = creature->GetGUID();
 +
-+		if (pCreature->isQuestGiver())
++		if (creature->isQuestGiver())
 +		{
-+			Object *pObject = (Object*)pCreature;
++			Object *pObject = (Object*)creature;
 +			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
 +			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
-+			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
++			QuestMenu &qm = player->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
 +
 +			for (QuestRelations::const_iterator i = pObjectQIR->lower_bound(pObject->GetEntry()); i != pObjectQIR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-+				if (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id))
++				QuestStatus status = player->GetQuestStatus(quest_id);
++				if (status == QUEST_STATUS_COMPLETE && !player->GetQuestRewardStatus(quest_id))
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
@@ -1441,29 +1441,29 @@ index 6d6cf89..50bdfc6 100644
 +				switch(quest_id)
 +				{
 +					case 13795: // The Scourgebane
-+						allowed = (pPlayer->GetQuestStatus(13702) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13702)) || (pPlayer->GetQuestStatus(13732) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13732)) || (pPlayer->GetQuestStatus(13735) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13735)) || (pPlayer->GetQuestStatus(13733) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13733)) || (pPlayer->GetQuestStatus(13734) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13734)) || (pPlayer->GetQuestStatus(13736) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13736)) || (pPlayer->GetQuestStatus(13737) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13737)) || (pPlayer->GetQuestStatus(13738) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13738)) || (pPlayer->GetQuestStatus(13739) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13739)) || (pPlayer->GetQuestStatus(13740) == QUEST_STATUS_COMPLETE && pPlayer->GetQuestRewardStatus(13740)); // If the player has finished any of the "A Champion Rises" quests
++						allowed = (player->GetQuestStatus(13702) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13702)) || (player->GetQuestStatus(13732) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13732)) || (player->GetQuestStatus(13735) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13735)) || (player->GetQuestStatus(13733) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13733)) || (player->GetQuestStatus(13734) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13734)) || (player->GetQuestStatus(13736) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13736)) || (player->GetQuestStatus(13737) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13737)) || (player->GetQuestStatus(13738) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13738)) || (player->GetQuestStatus(13739) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13739)) || (player->GetQuestStatus(13740) == QUEST_STATUS_COMPLETE && player->GetQuestRewardStatus(13740)); // If the player has finished any of the "A Champion Rises" quests
 +						if(allowed)
 +						{
-+							status = pPlayer->GetQuestStatus(quest_id);
++							status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
 +					default:
-+						status = pPlayer->GetQuestStatus(quest_id);
++						status = player->GetQuestStatus(quest_id);
 +
-+						if (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++						if (pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 4);
-+						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++						else if (status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
 +						break;
 +				}
 +			}
 +		}
-+	    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +	    return true;
 +	}
 +
@@ -1478,24 +1478,24 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_crok_scourgebane(): CreatureScript("npc_crok_scourgebane"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		// uint64 const guid = pCreature->GetGUID();
++		// uint64 const guid = creature->GetGUID();
 +
-+		if (pCreature->isQuestGiver())
++		if (creature->isQuestGiver())
 +		{
-+			Object *pObject = (Object*)pCreature;
++			Object *pObject = (Object*)creature;
 +			QuestRelations* pObjectQR = sObjectMgr->GetCreatureQuestRelationMap();
 +			QuestRelations* pObjectQIR = sObjectMgr->GetCreatureQuestInvolvedRelation();
 +
-+			QuestMenu &qm = pPlayer->PlayerTalkClass->GetQuestMenu();
++			QuestMenu &qm = player->PlayerTalkClass->GetQuestMenu();
 +			qm.ClearMenu();
 +
 +			for (QuestRelations::const_iterator i = pObjectQIR->lower_bound(pObject->GetEntry()); i != pObjectQIR->upper_bound(pObject->GetEntry()); ++i)
 +			{
 +				uint32 quest_id = i->second;
-+				QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-+				if (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id))
++				QuestStatus status = player->GetQuestStatus(quest_id);
++				if (status == QUEST_STATUS_COMPLETE && !player->GetQuestRewardStatus(quest_id))
 +					qm.AddMenuItem(quest_id, 4);
 +				else if (status == QUEST_STATUS_INCOMPLETE)
 +					qm.AddMenuItem(quest_id, 4);
@@ -1514,29 +1514,29 @@ index 6d6cf89..50bdfc6 100644
 +				{
 +					case 13788: // DK Threat From Above (Alliance)
 +					case 13812: // DK Threat From Above (Horde)
-+						allowed = (pPlayer->GetQuestStatus(13664) == QUEST_STATUS_COMPLETE) && pPlayer->GetQuestRewardStatus(13664);
++						allowed = (player->GetQuestStatus(13664) == QUEST_STATUS_COMPLETE) && player->GetQuestRewardStatus(13664);
 +						if(allowed)
 +						{
-+							status = pPlayer->GetQuestStatus(quest_id);
++							status = player->GetQuestStatus(quest_id);
 +
-+							if(pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++							if(pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 4);
-+							else if(status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++							else if(status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +								qm.AddMenuItem(quest_id, 2);
 +						}
 +						break;
 +					default:
-+						status = pPlayer->GetQuestStatus(quest_id);
++						status = player->GetQuestStatus(quest_id);
 +
-+						if (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false))
++						if (pQuest->IsAutoComplete() && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 4);
-+						else if (status == QUEST_STATUS_NONE && pPlayer->CanTakeQuest(pQuest, false))
++						else if (status == QUEST_STATUS_NONE && player->CanTakeQuest(pQuest, false))
 +							qm.AddMenuItem(quest_id, 2);
 +						break;
 +				}
 +			}
 +		}
-+	    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
 +	    return true;
 +	}
 +
@@ -1557,32 +1557,32 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_jeran_lockwood(): CreatureScript("npc_jeran_lockwood"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		if((pPlayer->GetQuestStatus(13828) == QUEST_STATUS_INCOMPLETE) || (pPlayer->GetQuestStatus(13829) == QUEST_STATUS_INCOMPLETE))
++		if((player->GetQuestStatus(13828) == QUEST_STATUS_INCOMPLETE) || (player->GetQuestStatus(13829) == QUEST_STATUS_INCOMPLETE))
 +		{
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-+		pPlayer->SEND_GOSSIP_MENU(JERAN_QUEST_TEXTID, pCreature->GetGUID());
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
++		player->SEND_GOSSIP_MENU(JERAN_QUEST_TEXTID, creature->GetGUID());
 +		}
 +		else
 +		{
-+			pPlayer->SEND_GOSSIP_MENU(JERAN_DEFAULT_TEXTID, pCreature->GetGUID());
++			player->SEND_GOSSIP_MENU(JERAN_DEFAULT_TEXTID, creature->GetGUID());
 +		}
 +		return true;
 +	}
 +
-+	bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
++	bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
 +	{
 +		switch(uiAction)
 +		{
 +			case GOSSIP_ACTION_INFO_DEF+1:
-+				pPlayer->CastSpell(pPlayer,SPELL_CREDIT_JERAN,true);
-+				pPlayer->CLOSE_GOSSIP_MENU();
++				player->CastSpell(player,SPELL_CREDIT_JERAN,true);
++				player->CLOSE_GOSSIP_MENU();
 +				break;
 +			case GOSSIP_ACTION_INFO_DEF+2:
-+				pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+				pPlayer->SEND_GOSSIP_MENU(JERAN_RP_TEXTID, pCreature->GetGUID());
++				player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_JERAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++				player->SEND_GOSSIP_MENU(JERAN_RP_TEXTID, creature->GetGUID());
 +				break;
 +		}
 +		return true;
@@ -1605,32 +1605,32 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_rugan_steelbelly(): CreatureScript("npc_rugan_steelbelly"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+		if((pPlayer->GetQuestStatus(13837) == QUEST_STATUS_INCOMPLETE) || (pPlayer->GetQuestStatus(13839) == QUEST_STATUS_INCOMPLETE))
++		if((player->GetQuestStatus(13837) == QUEST_STATUS_INCOMPLETE) || (player->GetQuestStatus(13839) == QUEST_STATUS_INCOMPLETE))
 +		{
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-+		pPlayer->SEND_GOSSIP_MENU(RUGAN_QUEST_TEXTID, pCreature->GetGUID());
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
++		player->SEND_GOSSIP_MENU(RUGAN_QUEST_TEXTID, creature->GetGUID());
 +		}
 +		else
 +		{
-+			pPlayer->SEND_GOSSIP_MENU(RUGAN_DEFAULT_TEXTID, pCreature->GetGUID());
++			player->SEND_GOSSIP_MENU(RUGAN_DEFAULT_TEXTID, creature->GetGUID());
 +		}
 +		return true;
 +	}
 +
-+	bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
++	bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
 +	{
 +		switch(uiAction)
 +		{
 +			case GOSSIP_ACTION_INFO_DEF+1:
-+				pPlayer->CastSpell(pPlayer,SPELL_CREDIT_RUGAN,true);
-+				pPlayer->CLOSE_GOSSIP_MENU();
++				player->CastSpell(player,SPELL_CREDIT_RUGAN,true);
++				player->CLOSE_GOSSIP_MENU();
 +				break;
 +			case GOSSIP_ACTION_INFO_DEF+2:
-+				pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+				pPlayer->SEND_GOSSIP_MENU(RUGAN_RP_TEXTID, pCreature->GetGUID());
++				player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_RUGAN_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++				player->SEND_GOSSIP_MENU(RUGAN_RP_TEXTID, creature->GetGUID());
 +				break;
 +		}
 +		return true;
@@ -1652,34 +1652,34 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_valis_windchaser(): CreatureScript("npc_valis_windchaser"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
 +		//Si il a la quete
-+		if((pPlayer->GetQuestStatus(13835) == QUEST_STATUS_INCOMPLETE) ||
-+			(pPlayer->GetQuestStatus(13838) == QUEST_STATUS_INCOMPLETE))
++		if((player->GetQuestStatus(13835) == QUEST_STATUS_INCOMPLETE) ||
++			(player->GetQuestStatus(13838) == QUEST_STATUS_INCOMPLETE))
 +		{
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-+		pPlayer->SEND_GOSSIP_MENU(VALIS_QUEST_TEXTID, pCreature->GetGUID());
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++			player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
++		player->SEND_GOSSIP_MENU(VALIS_QUEST_TEXTID, creature->GetGUID());
 +		}
 +		//Sinon Texte par défaut
 +		else
-+			pPlayer->SEND_GOSSIP_MENU(VALIS_DEFAULT_TEXTID, pCreature->GetGUID());
++			player->SEND_GOSSIP_MENU(VALIS_DEFAULT_TEXTID, creature->GetGUID());
 +		return true;
 +	}
 +
-+	bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
++	bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
 +	{
 +		switch (uiAction)
 +		{
 +			case GOSSIP_ACTION_INFO_DEF+1:
-+				pPlayer->CastSpell(pPlayer,SPELL_CREDIT_VALIS,true);//Cast du sort de credit quest (valide l'objectif)
-+				pPlayer->CLOSE_GOSSIP_MENU();//Ferme la fenetre du gossip coté client
++				player->CastSpell(player,SPELL_CREDIT_VALIS,true);//Cast du sort de credit quest (valide l'objectif)
++				player->CLOSE_GOSSIP_MENU();//Ferme la fenetre du gossip coté client
 +			break;
 +			case GOSSIP_ACTION_INFO_DEF+2:
 +				//Raconte un blabla
-+				pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+			pPlayer->SEND_GOSSIP_MENU(VALIS_RP_TEXTID, pCreature->GetGUID());
++				player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_HELLO_VALIS_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++			player->SEND_GOSSIP_MENU(VALIS_RP_TEXTID, creature->GetGUID());
 +			break;
 +		}
 +		return true;
@@ -1717,36 +1717,36 @@ index 6d6cf89..50bdfc6 100644
 +public:
 +	npc_squire_danny(): CreatureScript("npc_squire_danny"){}
 +
-+	bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++	bool OnGossipHello(Player* player, Creature* creature)
 +	{
-+	    if (pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_0) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_1) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_2) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_3) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_4) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_5) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_6) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_7) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_8) == QUEST_STATUS_INCOMPLETE ||
-+		pPlayer->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_9) == QUEST_STATUS_INCOMPLETE)
++	    if (player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_0) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_1) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_2) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_3) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_4) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_5) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_6) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_7) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_8) == QUEST_STATUS_INCOMPLETE ||
++		player->GetQuestStatus(QUEST_THE_VALIANT_S_CHALLENGE_9) == QUEST_STATUS_INCOMPLETE)
 +	    {
-+		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
++		player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++		player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_SQUIRE_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
 +	    }
 +
-+	    pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE_DANNY, pCreature->GetGUID());
++	    player->SEND_GOSSIP_MENU(GOSSIP_TEXTID_SQUIRE_DANNY, creature->GetGUID());
 +	    return true;
 +	}
 +
-+	bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
++	bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
 +	{
 +	    if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
 +	    {
-+		pPlayer->CLOSE_GOSSIP_MENU();
-+		pCreature->SummonCreature(NPC_ARGENT_CHAMPION,8562.836914,1099.153931,556.787598,5.026550); // TODO (Récupérer les coordonnées réelles)
++		player->CLOSE_GOSSIP_MENU();
++		creature->SummonCreature(NPC_ARGENT_CHAMPION,8562.836914,1099.153931,556.787598,5.026550); // TODO (Récupérer les coordonnées réelles)
 +	    }
 +	    //else
-+		//pPlayer->SEND_GOSSIP_MENU(???, pCreature->GetGUID()); Missing text
++		//player->SEND_GOSSIP_MENU(???, creature->GetGUID()); Missing text
 +	    return true;
 +	}
 +
@@ -1786,12 +1786,12 @@ index 6d6cf89..50bdfc6 100644
 +
 +	struct npc_argent_championAI : public ScriptedAI
 +	{
-+	    npc_argent_championAI(Creature* pCreature) : ScriptedAI(pCreature)
++	    npc_argent_championAI(Creature* creature) : ScriptedAI(creature)
 +	    {
 +		me->CastSpell(me, SPELL_DEFEND_CHAMPION, true);
 +		me->CastSpell(me, SPELL_DEFEND_CHAMPION, true);
-+		pCreature->GetMotionMaster()->MovePoint(0,8552.469727,1124.128784,556.787598); // TODO (Trouver les coordonnées exactes)
-+		pCreature->setFaction(35); //wrong faction in db?
++		creature->GetMotionMaster()->MovePoint(0,8552.469727,1124.128784,556.787598); // TODO (Trouver les coordonnées exactes)
++		creature->setFaction(35); //wrong faction in db?
 +	    }
 +
 +	    uint32 uiChargeTimer;
@@ -1891,9 +1891,9 @@ index 6d6cf89..50bdfc6 100644
 +	    }
 +};
 +
-+	CreatureAI* GetAI(Creature* pCreature) const
++	CreatureAI* GetAI(Creature* creature) const
 +{
-+	    return new npc_argent_championAI (pCreature);
++	    return new npc_argent_championAI (creature);
 +	}
 +
 +};
@@ -1901,10 +1901,10 @@ index 6d6cf89..50bdfc6 100644
  void AddSC_icecrown()
  {
      new npc_arete;
-@@ -389,4 +1390,17 @@ void AddSC_icecrown()
-     new npc_argent_valiant;
+@@ -435,4 +1436,17 @@ void AddSC_icecrown()
      new npc_alorah_and_grimmin;
      new npc_guardian_pavilion;
+     new npc_vereth_the_cunning;
 +    new npc_vendor_argent_tournament;
 +    new quest_givers_argent_tournament;
 +    new npc_training_dummy_argent;
@@ -1917,7 +1917,7 @@ index 6d6cf89..50bdfc6 100644
 +    new npc_rugan_steelbelly;
 +    new npc_jeran_lockwood;
 +    new npc_squire_danny;
-+    new npc_argent_champion;	
++    new npc_argent_champion;
  }
 -- 
 1.7.2.3
