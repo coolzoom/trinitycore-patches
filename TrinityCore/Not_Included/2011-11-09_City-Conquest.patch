@@ -1,11 +1,10 @@
-From e978b5d6640655055b31f24e1bd48fd2e50a9f8e Mon Sep 17 00:00:00 2001
+From 55d474e078d08ade4db9cae15d06a973f81a3763 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Wed, 9 Feb 2011 14:11:08 -0500
-Subject: [PATCH] 11189-City-Conquest
+Date: Wed, 9 Nov 2011 10:50:44 -0600
+Subject: [PATCH] 2011-11-09_City-Conquest
 
 ---
  sql/All/world-example_gmisland.sql                 |  117 +++++++
- sql/CMakeLists.txt                                 |    1 +
  src/server/game/CMakeLists.txt                     |    3 +
  src/server/game/CityConquest/CityConquestMgr.cpp   |  321 ++++++++++++++++++++
  src/server/game/CityConquest/CityConquestMgr.h     |   84 +++++
@@ -16,7 +15,7 @@ Subject: [PATCH] 11189-City-Conquest
  .../scripts/Custom/city_conquest_generic.cpp       |   51 +++
  src/server/scripts/Custom/city_conquest_portal.cpp |  199 ++++++++++++
  .../scripts/Custom/city_conquest_spawner.cpp       |   67 ++++
- 12 files changed, 936 insertions(+), 1 deletions(-)
+ 11 files changed, 935 insertions(+), 1 deletions(-)
  create mode 100644 sql/All/world-example_gmisland.sql
  create mode 100644 src/server/game/CityConquest/CityConquestMgr.cpp
  create mode 100644 src/server/game/CityConquest/CityConquestMgr.h
@@ -148,20 +147,8 @@ index 0000000..022a9c2
 +INSERT INTO `creature` (`id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES (150005, 1, 1, 1, 0, 0, 16228.4, 16244.6, 12.2895, 2.02771, 300, 0, 0, 41, 60, 0, 0);
 +INSERT INTO `creature` (`id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES (150005, 530, 1, 1, 0, 0, -2047.61, 6658.8, 13.0538, 0.698243, 300, 0, 0, 41, 60, 0, 0);
 +
-diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
-index e1b0921..4562748 100644
---- a/sql/CMakeLists.txt
-+++ b/sql/CMakeLists.txt
-@@ -15,6 +15,7 @@ if( WITH_SQL )
-       scripts
-       base
-       create
-+	  All
-     DESTINATION
-       shared/trinity/sql
-   )
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 323a3ac..b3c73d3 100644
+index 65ba160..5156655 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -20,6 +20,7 @@ file(GLOB_RECURSE sources_AuctionHouse AuctionHouse/*.cpp AuctionHouse/*.h)
@@ -190,7 +177,7 @@ index 323a3ac..b3c73d3 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Combat
 diff --git a/src/server/game/CityConquest/CityConquestMgr.cpp b/src/server/game/CityConquest/CityConquestMgr.cpp
 new file mode 100644
-index 0000000..2c19c99
+index 0000000..fbc936d
 --- /dev/null
 +++ b/src/server/game/CityConquest/CityConquestMgr.cpp
 @@ -0,0 +1,321 @@
@@ -291,10 +278,10 @@ index 0000000..2c19c99
 +			{
 +				spawn->creature->setFaction(spawn->faction_A);
 +
-+				if(CreatureInfo const *cinfo = spawn->creature->GetCreatureInfo())
++				if(CreatureTemplate const *cinfo = spawn->creature->GetCreatureInfo())
 +				{
-+					const_cast<CreatureInfo*>(cinfo)->faction_A = spawn->faction_A;
-+					const_cast<CreatureInfo*>(cinfo)->faction_H = spawn->faction_A;
++					const_cast<CreatureTemplate*>(cinfo)->faction_A = spawn->faction_A;
++					const_cast<CreatureTemplate*>(cinfo)->faction_H = spawn->faction_A;
 +				}
 +				WorldDatabase.PExecute("UPDATE creature_template SET faction_A = '%u', faction_H = '%u' WHERE entry = '%u'", spawn->faction_A, spawn->faction_A, spawn->creature->GetEntry());
 +			}
@@ -302,10 +289,10 @@ index 0000000..2c19c99
 +			{
 +				spawn->creature->setFaction(spawn->faction_H);
 +
-+				if(CreatureInfo const *cinfo = spawn->creature->GetCreatureInfo())
++				if(CreatureTemplate const *cinfo = spawn->creature->GetCreatureInfo())
 +				{
-+					const_cast<CreatureInfo*>(cinfo)->faction_A = spawn->faction_H;
-+					const_cast<CreatureInfo*>(cinfo)->faction_H = spawn->faction_H;
++					const_cast<CreatureTemplate*>(cinfo)->faction_A = spawn->faction_H;
++					const_cast<CreatureTemplate*>(cinfo)->faction_H = spawn->faction_H;
 +				}
 +				WorldDatabase.PExecute("UPDATE creature_template SET faction_A = '%u', faction_H = '%u' WHERE entry = '%u'", spawn->faction_H, spawn->faction_H, spawn->creature->GetEntry());
 +			}
@@ -423,10 +410,10 @@ index 0000000..2c19c99
 +					{
 +						spawn->creature->setFaction(spawn->faction_H);
 +
-+						if(CreatureInfo const *cinfo = spawn->creature->GetCreatureInfo())
++						if(CreatureTemplate const *cinfo = spawn->creature->GetCreatureInfo())
 +						{
-+							const_cast<CreatureInfo*>(cinfo)->faction_A = spawn->faction_H;
-+							const_cast<CreatureInfo*>(cinfo)->faction_H = spawn->faction_H;
++							const_cast<CreatureTemplate*>(cinfo)->faction_A = spawn->faction_H;
++							const_cast<CreatureTemplate*>(cinfo)->faction_H = spawn->faction_H;
 +						}
 +						WorldDatabase.PExecute("UPDATE creature_template SET faction_A = '%u', faction_H = '%u' WHERE entry = '%u'", spawn->faction_H, spawn->faction_H, spawn->creature->GetEntry());
 +					}
@@ -434,10 +421,10 @@ index 0000000..2c19c99
 +					{
 +						spawn->creature->setFaction(spawn->faction_A);
 +
-+						if(CreatureInfo const *cinfo = spawn->creature->GetCreatureInfo())
++						if(CreatureTemplate const *cinfo = spawn->creature->GetCreatureInfo())
 +						{
-+							const_cast<CreatureInfo*>(cinfo)->faction_A = spawn->faction_A;
-+							const_cast<CreatureInfo*>(cinfo)->faction_H = spawn->faction_A;
++							const_cast<CreatureTemplate*>(cinfo)->faction_A = spawn->faction_A;
++							const_cast<CreatureTemplate*>(cinfo)->faction_H = spawn->faction_A;
 +						}
 +						WorldDatabase.PExecute("UPDATE creature_template SET faction_A = '%u', faction_H = '%u' WHERE entry = '%u'", spawn->faction_A, spawn->faction_A, spawn->creature->GetEntry());
 +					}
@@ -606,12 +593,12 @@ index 0000000..cc4735e
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index cb1b2c8..491afd3 100755
+index 26d7034..f6f5167 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -61,6 +61,12 @@ void AddSC_tele_commandscript();
- void AddSC_titles_commandscript();
+@@ -62,6 +62,12 @@ void AddSC_titles_commandscript();
  void AddSC_wp_commandscript();
+ void AddSC_gps_commandscript();
  
 +// Custom
 +void AddSC_city_conquest_boss();
@@ -622,7 +609,7 @@ index cb1b2c8..491afd3 100755
  #ifdef SCRIPTS
  //world
  void AddSC_areatrigger_scripts();
-@@ -1210,6 +1216,9 @@ void AddCustomScripts()
+@@ -1233,6 +1239,9 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -634,18 +621,18 @@ index cb1b2c8..491afd3 100755
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 8b97aa2..0025b98 100755
+index 925b352..9adf5bc 100755
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
-@@ -25,6 +25,7 @@
- #include "ScriptLoader.h"
+@@ -27,6 +27,7 @@
  #include "ScriptSystem.h"
  #include "Transport.h"
+ #include "Vehicle.h"
 +#include "CityConquestMgr.h"
  
- // Utility macros to refer to the script registry.
- #define SCR_REG_MAP(T) ScriptRegistry<T>::ScriptMap
-@@ -180,6 +181,8 @@ void ScriptMgr::Initialize()
+ // This is the global static registry of scripts.
+ template<class TScript>
+@@ -247,6 +248,8 @@ void ScriptMgr::Initialize()
      uint32 oldMSTime = getMSTime();
  
      LoadDatabase();
@@ -655,10 +642,11 @@ index 8b97aa2..0025b98 100755
      sLog->outString("Loading C++ scripts");
  
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 0dec843..741bc52 100644
+index 1570ca1..192376b 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -1,5 +1,9 @@
+@@ -10,6 +10,10 @@
+ 
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 +  Custom/city_conquest_boss.cpp
@@ -809,7 +797,7 @@ index 0000000..a8c82ac
 +}
 diff --git a/src/server/scripts/Custom/city_conquest_portal.cpp b/src/server/scripts/Custom/city_conquest_portal.cpp
 new file mode 100644
-index 0000000..dc509de
+index 0000000..a44233c
 --- /dev/null
 +++ b/src/server/scripts/Custom/city_conquest_portal.cpp
 @@ -0,0 +1,199 @@
@@ -972,7 +960,7 @@ index 0000000..dc509de
 +					pPlayer->TeleportTo(ct->port_defense->map, ct->port_defense->x, ct->port_defense->y, ct->port_defense->z, ct->port_defense->o, 0);
 +				else
 +					pPlayer->TeleportTo(ct->port_attack->map, ct->port_attack->x, ct->port_attack->y, ct->port_attack->z, ct->port_attack->o, 0);
-+				pPlayer->PlayerTalkClass->CloseGossip();
++				pPlayer->PlayerTalkClass->SendCloseGossip();
 +			}
 +		}
 +	}
@@ -992,7 +980,7 @@ index 0000000..dc509de
 +	}
 +	else if (action == GOSSIP_ACTION_CLOSE)
 +	{
-+		pPlayer->PlayerTalkClass->CloseGossip();
++		pPlayer->PlayerTalkClass->SendCloseGossip();
 +	}
 +	else if (action == GOSSIP_ACTION_PORTLIST)
 +	{
