@@ -1,21 +1,21 @@
-From 4d8af224da85a510d5a52a8c09e692dae64c398c Mon Sep 17 00:00:00 2001
+From a0ff69a72d4874791999eb2775b7d24c8472649e Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Wed, 16 Feb 2011 09:50:20 -0500
-Subject: [PATCH] 11228-Profession_Npc
+Date: Sat, 12 Nov 2011 13:36:33 -0600
+Subject: [PATCH] 2011-11-12_ProfessionsNPC
 
 ---
  src/server/game/Scripting/ScriptLoader.cpp   |    5 +
  src/server/scripts/Custom/CMakeLists.txt     |    1 +
- src/server/scripts/Custom/professionnpc.cpp  |  367 ++++++++++++++++++++++++++
- src/server/worldserver/worldserver.conf.dist |   33 +++-
- 4 files changed, 405 insertions(+), 1 deletions(-)
+ src/server/scripts/Custom/professionnpc.cpp  |  395 ++++++++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist |   43 +++
+ 4 files changed, 444 insertions(+), 0 deletions(-)
  create mode 100644 src/server/scripts/Custom/professionnpc.cpp
 
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 49544ca..831cd97 100755
+index 26d7034..e0d7505 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -43,6 +43,9 @@ void AddSC_example_spell_scripts();
+@@ -42,6 +42,9 @@ void AddSC_example_spell_scripts();
  
  void AddSC_SmartSCripts();
  
@@ -25,7 +25,7 @@ index 49544ca..831cd97 100755
  //Commands
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
-@@ -1216,5 +1219,7 @@ void AddCustomScripts()
+@@ -1234,5 +1237,7 @@ void AddCustomScripts()
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
  
@@ -34,10 +34,11 @@ index 49544ca..831cd97 100755
  #endif
  }
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 0dec843..84d19ca 100644
+index 1570ca1..d0e05b8 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -1,5 +1,6 @@
+@@ -10,6 +10,7 @@
+ 
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 +  Custom/professionnpc.cpp
@@ -46,12 +47,11 @@ index 0dec843..84d19ca 100644
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/professionnpc.cpp b/src/server/scripts/Custom/professionnpc.cpp
 new file mode 100644
-index 0000000..c5c9d07
+index 0000000..833b54a
 --- /dev/null
 +++ b/src/server/scripts/Custom/professionnpc.cpp
-@@ -0,0 +1,367 @@
+@@ -0,0 +1,395 @@
 +/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
-+ * Rewritten by LordPsyan <http://www.l33t-net.org/>
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
 + * the Free Software Foundation; either version 2 of the License, or
@@ -67,13 +67,6 @@ index 0000000..c5c9d07
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+/* ScriptData
-+SDName: professionnpc
-+SD%Complete: 100
-+SDComment: Profession Master
-+SDCategory: NPC
-+EndScriptData */
-+
 +#include "ScriptPCH.h"
 +#include "Config.h"
 +
@@ -85,16 +78,16 @@ index 0000000..c5c9d07
 +
 +bool OnGossipHello(Player* pPlayer, Creature* pCreature)
 +{
-+	if(sConfig->GetBoolDefault("ProfessionNPC.OnlyGMs", false)) // If ProfessionNPC.OnlyGMs is enabled in trinitycore.conf
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.OnlyGMs", false)) // If ProfessionNPC.OnlyGMs is enabled in trinitycore.conf
 +		if (pPlayer->GetSession()->GetSecurity() == SEC_PLAYER)
 +		{
 +			pCreature->MonsterWhisper("Sorry, I can only trade to game masters.", pPlayer->GetGUID());
 +			return true;
 +		}
 +
-+	bool EnableProfessions = sConfig->GetBoolDefault("ProfessionNPC.EnableProfessions", true);
-+	bool EnableSecondarySkills = sConfig->GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
-+
++	bool EnableProfessions = ConfigMgr::GetBoolDefault("ProfessionNPC.EnableProfessions", true);
++	bool EnableSecondarySkills = ConfigMgr::GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
++	
 +	// Main Menu for Alliance
 +    if (pPlayer->GetTeam() == ALLIANCE)
 +	{
@@ -131,17 +124,25 @@ index 0000000..c5c9d07
 +	return;
 +}
 +
-+	bool EnableProfessions = sConfig->GetBoolDefault("ProfessionNPC.EnableProfessions", true);
-+	bool EnableSecondarySkills = sConfig->GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
-+
++	bool EnableProfessions = ConfigMgr::GetBoolDefault("ProfessionNPC.EnableProfessions", true);
++	bool EnableSecondarySkills = ConfigMgr::GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
++	
 +//Mony Check
-+if (pPlayer->GetMoney() < (sConfig->GetFloatDefault("SkillGoldCost",0)))
++if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++{
++if (!pPlayer->HasItemCount((ConfigMgr::GetIntDefault("ProfessionNPC.ItemEntryNum",0)), 1))
++{
++    pPlayer->CLOSE_GOSSIP_MENU();
++    pCreature->MonsterWhisper("You ain't gots no darn chips.", pPlayer->GetGUID());
++	return;
++}
++else if(pPlayer->GetMoney() < (ConfigMgr::GetIntDefault("SkillGoldCost",0)))
 +{
 +    pPlayer->CLOSE_GOSSIP_MENU();
 +    pCreature->MonsterWhisper("You don't have enough money.", pPlayer->GetGUID());
 +	return;
 +}
-+
++}
 +switch(uiAction)
 +{
 +
@@ -166,7 +167,6 @@ index 0000000..c5c9d07
 +            pPlayer->ADD_GOSSIP_ITEM( 5, "Cooking."              , GOSSIP_SENDER_MAIN, 2001);
 +            pPlayer->ADD_GOSSIP_ITEM( 5, "First Aid."            , GOSSIP_SENDER_MAIN, 2002);
 +            pPlayer->ADD_GOSSIP_ITEM( 5, "Fishing."              , GOSSIP_SENDER_MAIN, 2003);
-+          //pPlayer->ADD_GOSSIP_ITEM( 5, "Riding."               , GOSSIP_SENDER_MAIN, 2004);
 +            pPlayer->ADD_GOSSIP_ITEM( 7, "<- Main Menu"          , GOSSIP_SENDER_MAIN, 3000);
 +
 +	pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,pCreature->GetGUID());
@@ -206,8 +206,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(171,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(171,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -219,8 +222,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(164,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(164,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -232,8 +238,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(333,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(333,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -245,8 +254,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(202,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(202,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -258,8 +270,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(182,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(182,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -271,8 +286,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(773,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(773,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -284,8 +302,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(755,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(755,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -297,8 +318,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(165,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(165,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -310,8 +334,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(186,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(186,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -323,8 +350,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(393,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(393,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -336,8 +366,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(197,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(197,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -351,8 +384,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(185,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(185,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -364,8 +400,11 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(129,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(129,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
 +
@@ -377,23 +416,13 @@ index 0000000..c5c9d07
 +		return;
 +	}
 +
-+	pPlayer->UpdateSkill(356,(sConfig->GetFloatDefault("SkillPoints",0)));
-+	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
++	pPlayer->UpdateSkill(356,(ConfigMgr::GetIntDefault("SkillPoints",0)));
++	if(ConfigMgr::GetBoolDefault("ProfessionNPC.UseTokens", true))
++	pPlayer->DestroyItemCount(99999, 1, true);
++	else
++	pPlayer->ModifyMoney(-(ConfigMgr::GetIntDefault("SkillGoldCost",0)));
 +	pPlayer->CLOSE_GOSSIP_MENU();
 +break;
-+
-+//case 2004: // Riding
-+//	if(!pPlayer->UpdateSkill(,0))
-+//    {
-+//		pCreature->MonsterWhisper("You don't have this skill or you allready have the maximum skill value $C.", pPlayer->GetGUID());
-+//		OnGossipHello(pPlayer, pCreature);
-+//		return;
-+//	}
-+//
-+//	pPlayer->UpdateSkill(,(sConfig->GetFloatDefault("SkillPoints",0)));
-+//	pPlayer->ModifyMoney(-(sConfig->GetFloatDefault("SkillGoldCost",0)));
-+//	pPlayer->CLOSE_GOSSIP_MENU();
-+//break;
 +
 + pPlayer->CLOSE_GOSSIP_MENU();
 +
@@ -417,20 +446,18 @@ index 0000000..c5c9d07
 +new professionnpc();
 +
 +}
-\ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index a8af7bc..3ec15f6 100644
+index a8c0d91..dc133ae 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3106,4 +3106,35 @@ OutdoorPvP.Wintergrasp.CustomHonorDamagedBuilding = 750
- OutdoorPvP.Wintergrasp.CustomHonorIntactBuilding = 1500
- OutdoorPvP.Wintergrasp.Antifarm.Enable = 1
- OutdoorPvP.Wintergrasp.Antifarm.Atk = 1
--OutdoorPvP.Wintergrasp.Antifarm.Def = 1
-\ No newline at end of file
-+OutdoorPvP.Wintergrasp.Antifarm.Def = 1
-+
+@@ -2785,3 +2785,46 @@ PlayerDump.DisallowOverwrite = 1
+ 
+ #
+ ###################################################################################################
 +##########################################################
++#
++#       Profession NPC
++#
 +# Enable or Disable Primary Professions
 +#         default = 1 (Enabled)
 +#                   = 0 (Disabled)
@@ -459,7 +486,18 @@ index a8af7bc..3ec15f6 100644
 +
 +SkillGoldCost = 10000
 +
-+##########################################################
++# Use Tokens instead of gold
++#         default = 0 (Use Gold)
++#                 = 1 (Use Tokens)
++
++ProfessionNPC.UseTokens = 1
++
++# Entry number of "token" Item
++#         default = 0 (No item. ProfessionNPC.UseTokens must = 0)
++#                 = n (n = entry number of item)
++
++ProfessionNPC.ItemEntryNum = 99999
+\ No newline at end of file
 -- 
 1.7.2.3
 
