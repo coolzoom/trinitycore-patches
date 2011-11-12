@@ -1,7 +1,7 @@
-From 7580f37aaa8c6006156431be4b4889574a862adc Mon Sep 17 00:00:00 2001
+From 1090bdb760b91a868af17c850ff2adb54e116771 Mon Sep 17 00:00:00 2001
 From: LordPsyan <uppp@juno.com>
-Date: Mon, 7 Nov 2011 09:58:26 -0600
-Subject: [PATCH] 2011-11-07_Leaks_Warden
+Date: Sat, 12 Nov 2011 14:13:54 -0600
+Subject: [PATCH] 2011-11-12_Leaks-Warden
 
 ---
  sql/warden/auth_warden.sql                         |    2 +
@@ -12,7 +12,7 @@ Subject: [PATCH] 2011-11-07_Leaks_Warden
  .../game/Server/Protocol/Handlers/MiscHandler.cpp  |   10 -
  src/server/game/Server/Protocol/Opcodes.cpp        |    2 +-
  src/server/game/Server/WorldSession.cpp            |   34 +-
- src/server/game/Server/WorldSession.h              |    9 +
+ src/server/game/Server/WorldSession.h              |    8 +
  src/server/game/Server/WorldSocket.cpp             |   40 +-
  src/server/game/Warden/Modules/WardenModuleMac.h   |  614 ++++++++++
  src/server/game/Warden/Modules/WardenModuleWin.h   | 1204 ++++++++++++++++++++
@@ -36,7 +36,7 @@ Subject: [PATCH] 2011-11-07_Leaks_Warden
  src/server/shared/Utilities/Util.h                 |    1 +
  src/server/worldserver/CMakeLists.txt              |    2 +
  src/server/worldserver/worldserver.conf.dist       |   58 +
- 32 files changed, 4493 insertions(+), 37 deletions(-)
+ 32 files changed, 4492 insertions(+), 37 deletions(-)
  create mode 100644 sql/warden/auth_warden.sql
  create mode 100644 sql/warden/world_warden.sql
  create mode 100644 src/server/game/Warden/Modules/WardenModuleMac.h
@@ -960,7 +960,7 @@ index 65ba160..0fc8012 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/World
    ${CMAKE_SOURCE_DIR}/src/server/scripts/PrecompiledHeaders
 diff --git a/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp b/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
-index 728e748..1664d7d 100755
+index 7327cdb..a440abe 100755
 --- a/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
 @@ -1160,16 +1160,6 @@ void WorldSession::HandleSetActionBarToggles(WorldPacket& recv_data)
@@ -994,7 +994,7 @@ index df7816f..9c81cf1 100755
      /*0x2E9*/ { "MSG_BATTLEGROUND_PLAYER_POSITIONS",            STATUS_LOGGEDIN, PROCESS_THREADUNSAFE, &WorldSession::HandleBattlegroundPlayerPositionsOpcode},
      /*0x2EA*/ { "CMSG_PET_STOP_ATTACK",                         STATUS_LOGGEDIN, PROCESS_THREADUNSAFE, &WorldSession::HandlePetStopAttack             },
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 32e65ca..65db557 100755
+index 14c8628..8eeb435 100755
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -42,6 +42,8 @@
@@ -1078,7 +1078,7 @@ index 32e65ca..65db557 100755
 +    }
 +}
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index a28e3fc..bdba1cf 100755
+index 4a83c2d..3c11882 100755
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -29,6 +29,7 @@
@@ -1097,22 +1097,20 @@ index a28e3fc..bdba1cf 100755
  struct AreaTableEntry;
  struct LfgJoinResultData;
  struct LfgLockStatus;
-@@ -245,11 +247,14 @@ class WorldSession
+@@ -245,10 +247,12 @@ class WorldSession
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          char const* GetPlayerName() const;
 +        uint32 GetGuidLow() const;
          void SetSecurity(AccountTypes security) { _security = security; }
          std::string const& GetRemoteAddress() { return m_Address; }
-         void SetPlayer(Player* plr);
+         void SetPlayer(Player* player);
          uint8 Expansion() const { return m_expansion; }
- 
 +        void InitWarden(BigNumber* k, std::string os);
-+
+ 
          /// Session in auth.queue currently
          void SetInQueue(bool state) { m_inQueue = state; }
- 
-@@ -491,6 +496,7 @@ class WorldSession
+@@ -491,6 +495,7 @@ class WorldSession
          void HandleSetActionButtonOpcode(WorldPacket& recvPacket);
  
          void HandleGameObjectUseOpcode(WorldPacket& recPacket);
@@ -1120,7 +1118,7 @@ index a28e3fc..bdba1cf 100755
          void HandleGameobjectReportUse(WorldPacket& recvPacket);
  
          void HandleNameQueryOpcode(WorldPacket& recvPacket);
-@@ -937,6 +943,9 @@ class WorldSession
+@@ -937,6 +942,9 @@ class WorldSession
  
          typedef std::list<AddonInfo> AddonsList;
  
