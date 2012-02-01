@@ -1,7 +1,7 @@
-From ba4ed62dfe1ad93ef6e12f0040178691f2bd3f87 Mon Sep 17 00:00:00 2001
-From: LordPsyan <uppp@juno.com>
-Date: Tue, 8 Nov 2011 19:45:21 -0600
-Subject: [PATCH] 2011-11-08_Wintergrasp
+From e15e28c0242df04735f9693fb8564e026823bb77 Mon Sep 17 00:00:00 2001
+From: LordPsyan <samccstudios@gmail.com>
+Date: Wed, 1 Feb 2012 09:16:46 -0600
+Subject: [PATCH] 2012-02-01_Wintergrasp
 
 ---
  sql/Wintergrasp_world.sql                          |  134 ++
@@ -13,18 +13,18 @@ Subject: [PATCH] 2011-11-08_Wintergrasp
  src/server/game/Entities/Player/Player.cpp         |    8 +
  src/server/game/Entities/Vehicle/Vehicle.cpp       |   26 +
  src/server/game/Entities/Vehicle/Vehicle.h         |    2 +
+ src/server/game/Handlers/BattleGroundHandler.cpp   |   15 +-
  src/server/game/Miscellaneous/Language.h           |   23 +
  src/server/game/Miscellaneous/SharedDefines.h      |    2 +
  src/server/game/OutdoorPvP/OutdoorPvP.h            |    5 +-
  src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    1 +
  src/server/game/Scripting/ScriptLoader.cpp         |    5 +
- .../Protocol/Handlers/BattleGroundHandler.cpp      |   14 +
  src/server/game/Spells/Auras/SpellAuraEffects.cpp  |    7 +
  src/server/game/Spells/Spell.cpp                   |   12 +
  src/server/game/Spells/SpellEffects.cpp            |   34 +
  src/server/game/Spells/SpellMgr.cpp                |   17 +
  src/server/game/World/World.cpp                    |   44 +
- src/server/game/World/World.h                      |   27 +
+ src/server/game/World/World.h                      |   26 +
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Northrend/CMakeLists.txt        |    1 +
  .../VaultOfArchavon/instance_vault_of_archavon.cpp |   17 +
@@ -33,7 +33,7 @@ Subject: [PATCH] 2011-11-08_Wintergrasp
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp     | 2142 ++++++++++++++++++++
  src/server/scripts/OutdoorPvP/OutdoorPvPWG.h       |  342 ++++
  src/server/worldserver/worldserver.conf.dist       |   96 +
- 29 files changed, 3605 insertions(+), 1 deletions(-)
+ 29 files changed, 3604 insertions(+), 2 deletions(-)
  create mode 100644 sql/Wintergrasp_world.sql
  create mode 100644 src/server/scripts/Northrend/wintergrasp.cpp
  create mode 100644 src/server/scripts/OutdoorPvP/OutdoorPvPWG.cpp
@@ -181,10 +181,10 @@ index 0000000..b3b3129
 +(58045, 4197, 0, 0, 0, 0, 0, 2, 1);
 \ No newline at end of file
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 65ba160..b3f99f0 100644
+index 745e596..f594a51 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
-@@ -190,6 +190,7 @@ include_directories(
+@@ -192,6 +192,7 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/Weather
    ${CMAKE_CURRENT_SOURCE_DIR}/World
    ${CMAKE_SOURCE_DIR}/src/server/scripts/PrecompiledHeaders
@@ -193,7 +193,7 @@ index 65ba160..b3f99f0 100644
    ${MYSQL_INCLUDE_DIR}
    ${OPENSSL_INCLUDE_DIR}
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index ddc7ce5..b74adb8 100755
+index 035fbaf..1cea92c 100755
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
 @@ -329,6 +329,17 @@ ChatCommand* ChatHandler::getCommandTable()
@@ -262,11 +262,11 @@ index ddc7ce5..b74adb8 100755
  {
      // skip empty
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index 6e34e39..6e6d139 100755
+index 2311f4b..468bda6 100755
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -358,6 +358,14 @@ class ChatHandler
-         void HandleCharacterLevel(Player* player, uint64 player_guid, uint32 oldlevel, uint32 newlevel);
+         void HandleCharacterLevel(Player* player, uint64 playerGuid, uint32 oldLevel, uint32 newLevel);
          void HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id);
  
 +        //Wintergrasp
@@ -288,7 +288,7 @@ index 6e34e39..6e6d139 100755
 +
  #endif
 diff --git a/src/server/game/Chat/Commands/Level2.cpp b/src/server/game/Chat/Commands/Level2.cpp
-index b4b0cff..50c9427 100755
+index 68961b9..5fe9869 100755
 --- a/src/server/game/Chat/Commands/Level2.cpp
 +++ b/src/server/game/Chat/Commands/Level2.cpp
 @@ -42,6 +42,7 @@
@@ -299,7 +299,7 @@ index b4b0cff..50c9427 100755
  
  //mute player for some times
  bool ChatHandler::HandleMuteCommand(const char* args)
-@@ -975,6 +976,151 @@ bool ChatHandler::HandlePetUnlearnCommand(const char *args)
+@@ -1026,6 +1027,151 @@ bool ChatHandler::HandlePetUnlearnCommand(const char *args)
      return true;
  }
  
@@ -452,7 +452,7 @@ index b4b0cff..50c9427 100755
  {
      if (!*args)
 diff --git a/src/server/game/Entities/GameObject/GameObject.cpp b/src/server/game/Entities/GameObject/GameObject.cpp
-index 9e514ad..45c7ac0 100755
+index 3548ef3..7e77866 100755
 --- a/src/server/game/Entities/GameObject/GameObject.cpp
 +++ b/src/server/game/Entities/GameObject/GameObject.cpp
 @@ -447,6 +447,11 @@ void GameObject::Update(uint32 diff)
@@ -468,7 +468,7 @@ index 9e514ad..45c7ac0 100755
  
                          if (goInfo->trap.type == 1)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index adcefdd..1057f95 100755
+index 9eece30..d0a14be 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -74,6 +74,7 @@
@@ -479,7 +479,7 @@ index adcefdd..1057f95 100755
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -9069,6 +9070,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
+@@ -9070,6 +9071,13 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                                                              // 8 Arena season id
      data << uint32(0xF3D) << uint32(sWorld->getIntConfig(CONFIG_ARENA_SEASON_ID));
  
@@ -494,10 +494,10 @@ index adcefdd..1057f95 100755
      {
          data << uint32(0x9bf) << uint32(0x0);               // 7
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Entities/Vehicle/Vehicle.cpp
-index 107e275..31c9ecf 100755
+index 7e4beba..6225d98 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.cpp
 +++ b/src/server/game/Entities/Vehicle/Vehicle.cpp
-@@ -504,3 +504,29 @@ uint8 Vehicle::GetAvailableSeatCount() const
+@@ -508,3 +508,29 @@ uint8 Vehicle::GetAvailableSeatCount() const
  
      return ret;
  }
@@ -528,7 +528,7 @@ index 107e275..31c9ecf 100755
 +    //pPlayer->EnterVehicle(veh);
 +}
 diff --git a/src/server/game/Entities/Vehicle/Vehicle.h b/src/server/game/Entities/Vehicle/Vehicle.h
-index 51ad500..139c833 100755
+index 213be5a..796506f 100755
 --- a/src/server/game/Entities/Vehicle/Vehicle.h
 +++ b/src/server/game/Entities/Vehicle/Vehicle.h
 @@ -23,6 +23,7 @@
@@ -547,8 +547,41 @@ index 51ad500..139c833 100755
          bool IsVehicleInUse() { return Seats.begin() != Seats.end(); }
  
          SeatMap Seats;
+diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
+index d1aa002..5db364d 100755
+--- a/src/server/game/Handlers/BattleGroundHandler.cpp
++++ b/src/server/game/Handlers/BattleGroundHandler.cpp
+@@ -34,6 +34,8 @@
+ #include "Opcodes.h"
+ #include "DisableMgr.h"
+ #include "Group.h"
++#include "OutdoorPvPWG.h"
++#include "OutdoorPvPMgr.h"
+ 
+ void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket & recv_data)
+ {
+@@ -581,7 +583,18 @@ void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket & recv_data)
+         return;
+ 
+     if (bg)
+-        sBattlegroundMgr->SendAreaSpiritHealerQueryOpcode(_player, bg, guid);
++    {
++       sBattlegroundMgr->SendAreaSpiritHealerQueryOpcode(_player, bg, guid);
++    }
++	else
++    {  // Wintergrasp Hack till 3.2 and it's implemented as BG
++        if (GetPlayer()->GetZoneId() == 4197)
++        {
++            OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
++            if (pvpWG && pvpWG->isWarTime())
++                pvpWG->SendAreaSpiritHealerQueryOpcode(_player, guid);
++        }
++    }
+ }
+ 
+ void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket & recv_data)
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index ffdf013..26b8f4f 100755
+index e751dbf..c2d76ed 100755
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -705,6 +705,29 @@ enum TrinityStrings
@@ -582,7 +615,7 @@ index ffdf013..26b8f4f 100755
      LANG_ARENA_TESTING                  = 785,
      LANG_AUTO_ANN                       = 786,
 diff --git a/src/server/game/Miscellaneous/SharedDefines.h b/src/server/game/Miscellaneous/SharedDefines.h
-index 1eba2fe..7ef4c0f 100755
+index 81b1b14..de86c74 100755
 --- a/src/server/game/Miscellaneous/SharedDefines.h
 +++ b/src/server/game/Miscellaneous/SharedDefines.h
 @@ -655,6 +655,8 @@ enum Team
@@ -595,7 +628,7 @@ index 1eba2fe..7ef4c0f 100755
  {
      SPELL_EFFECT_INSTAKILL                          = 1,
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
-index 1969d1f..baeb718 100755
+index 6ea13d3..cb33b23 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvP.h
 +++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
 @@ -32,9 +32,12 @@ enum OutdoorPvPTypes
@@ -613,7 +646,7 @@ index 1969d1f..baeb718 100755
  enum ObjectiveStates
  {
 diff --git a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
-index dda0e7b..8f2cf9b 100755
+index 88e6db9..9f957b4 100755
 --- a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 +++ b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
 @@ -20,6 +20,7 @@
@@ -625,10 +658,10 @@ index dda0e7b..8f2cf9b 100755
  OutdoorPvPMgr::OutdoorPvPMgr()
  {
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 26d7034..7b1d8d4 100755
+index c46721d..9f46ef1 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -592,6 +592,8 @@ void AddSC_outdoorpvp_na();
+@@ -593,6 +593,8 @@ void AddSC_outdoorpvp_na();
  void AddSC_outdoorpvp_si();
  void AddSC_outdoorpvp_tf();
  void AddSC_outdoorpvp_zm();
@@ -637,7 +670,7 @@ index 26d7034..7b1d8d4 100755
  
  // player
  void AddSC_chat_log();
-@@ -1203,6 +1205,8 @@ void AddNorthrendScripts()
+@@ -1205,6 +1207,8 @@ void AddNorthrendScripts()
      AddSC_zuldrak();
      AddSC_crystalsong_forest();
      AddSC_isle_of_conquest();
@@ -646,7 +679,7 @@ index 26d7034..7b1d8d4 100755
  #endif
  }
  
-@@ -1215,6 +1219,7 @@ void AddOutdoorPvPScripts()
+@@ -1217,6 +1221,7 @@ void AddOutdoorPvPScripts()
      AddSC_outdoorpvp_si();
      AddSC_outdoorpvp_tf();
      AddSC_outdoorpvp_zm();
@@ -654,41 +687,8 @@ index 26d7034..7b1d8d4 100755
  #endif
  }
  
-diff --git a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-index 95327a7..acf4707 100755
---- a/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-+++ b/src/server/game/Server/Protocol/Handlers/BattleGroundHandler.cpp
-@@ -35,6 +35,9 @@
- #include "DisableMgr.h"
- #include "Group.h"
- 
-+#include "OutdoorPvPWG.h"
-+#include "OutdoorPvPMgr.h"
-+
- void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket & recv_data)
- {
-     uint64 guid;
-@@ -581,7 +584,18 @@ void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket & recv_data)
-         return;
- 
-     if (bg)
-+    {
-         sBattlegroundMgr->SendAreaSpiritHealerQueryOpcode(_player, bg, guid);
-+    }
-+	else
-+    {  // Wintergrasp Hack till 3.2 and it's implemented as BG
-+        if (GetPlayer()->GetZoneId() == 4197)
-+        {
-+            OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
-+            if (pvpWG && pvpWG->isWarTime())
-+                pvpWG->SendAreaSpiritHealerQueryOpcode(_player, guid);
-+        }
-+    }
- }
- 
- void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket & recv_data)
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
-index 9b955be..52ae637 100755
+index 7c09a2f..b458a67 100755
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 +++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 @@ -36,6 +36,7 @@
@@ -699,7 +699,7 @@ index 9b955be..52ae637 100755
  
  class Aura;
  //
-@@ -4886,6 +4887,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
+@@ -4890,6 +4891,12 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                              if (aurApp->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
                                  target->CastSpell(target, 58601, true);
                              break;
@@ -713,7 +713,7 @@ index 9b955be..52ae637 100755
                      break;
                  case SPELLFAMILY_MAGE:
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index a62a379..68f3f98 100755
+index 3c73edb..82fa640 100755
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -53,6 +53,8 @@
@@ -725,7 +725,7 @@ index a62a379..68f3f98 100755
  
  extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
  
-@@ -4559,6 +4561,8 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
+@@ -4575,6 +4577,8 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
  
  SpellCastResult Spell::CheckCast(bool strict)
  {
@@ -734,7 +734,7 @@ index a62a379..68f3f98 100755
      // check death state
      if (!m_caster->isAlive() && !(m_spellInfo->Attributes & SPELL_ATTR0_PASSIVE) && !((m_spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD) || (IsTriggered() && !m_triggeredByAuraSpell)))
          return SPELL_FAILED_CASTER_DEAD;
-@@ -5378,8 +5382,16 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -5394,8 +5398,16 @@ SpellCastResult Spell::CheckCast(bool strict)
                  if (m_originalCaster && m_originalCaster->GetTypeId() == TYPEID_PLAYER && m_originalCaster->isAlive())
                  {
                      if (AreaTableEntry const* pArea = GetAreaEntryByAreaID(m_originalCaster->GetAreaId()))
@@ -752,7 +752,7 @@ index a62a379..68f3f98 100755
                  break;
              }
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 8a89952..177c7f4 100755
+index d5a9bf9..c934cbf 100755
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -63,6 +63,7 @@
@@ -763,7 +763,7 @@ index 8a89952..177c7f4 100755
  
  pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
  {
-@@ -4463,6 +4464,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
+@@ -4436,6 +4437,24 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
          {
              switch (m_spellInfo->Id)
              {
@@ -788,7 +788,7 @@ index 8a89952..177c7f4 100755
                  // Glyph of Backstab
                  case 63975:
                  {
-@@ -7244,9 +7263,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
+@@ -7273,9 +7292,24 @@ void Spell::EffectPlayerNotification(SpellEffIndex effIndex)
      if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
          return;
  
@@ -814,7 +814,7 @@ index 8a89952..177c7f4 100755
              unitTarget->ToPlayer()->GetSession()->SendNotification(LANG_ZONE_NOFLYZONE);
              break;
 diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
-index 1778027..869dffc 100755
+index 171382b..ae45b13 100755
 --- a/src/server/game/Spells/SpellMgr.cpp
 +++ b/src/server/game/Spells/SpellMgr.cpp
 @@ -30,6 +30,8 @@
@@ -856,7 +856,7 @@ index 1778027..869dffc 100755
          case 68720: // Quarry - Isle of Conquest.
          {
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 408db18..39509bd 100755
+index 426a93f..957613d 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -74,6 +74,7 @@
@@ -891,7 +891,7 @@ index 408db18..39509bd 100755
  
      // misc
      m_bool_configs[CONFIG_PDUMP_NO_PATHS] = ConfigMgr::GetBoolDefault("PlayerDump.DisallowPaths", true);
-@@ -2897,3 +2915,29 @@ const CharacterNameData* World::GetCharacterNameData(uint32 guid) const
+@@ -2951,3 +2969,29 @@ CharacterNameData const* World::GetCharacterNameData(uint32 guid) const
      else
          return NULL;
  }
@@ -923,7 +923,7 @@ index 408db18..39509bd 100755
 +}
 \ No newline at end of file
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index b493b8b..f95ea7b 100755
+index bedd8a8..c3e4b42 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -158,6 +158,9 @@ enum WorldBoolConfigs
@@ -955,11 +955,11 @@ index b493b8b..f95ea7b 100755
      CONFIG_MAX_INSTANCES_PER_HOUR,
      INT_CONFIG_VALUE_COUNT
  };
-@@ -745,6 +760,18 @@ class World
- 
+@@ -747,6 +762,17 @@ class World
          uint32 GetCleaningFlags() const { return m_CleaningFlags; }
          void   SetCleaningFlags(uint32 flags) { m_CleaningFlags = flags; }
-+		
+         void   ResetEventSeasonalQuests(uint16 event_id);
++	
 +        uint32 GetWintergrapsTimer() { return m_WintergrapsTimer; }
 +        uint32 GetWintergrapsState() { return m_WintergrapsState; }
 +        uint32 m_WintergrapsTimer;
@@ -970,15 +970,14 @@ index b493b8b..f95ea7b 100755
 +            m_WintergrapsTimer = timer;
 +            m_WintergrapsState = state;
 +        }
-+
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index de660b8..8feb416 100644
+index 56e63af..35fb76e 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
-@@ -123,6 +123,7 @@ include_directories(
+@@ -122,6 +122,7 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/game/Movement/Waypoints
    ${CMAKE_SOURCE_DIR}/src/server/game/Opcodes
    ${CMAKE_SOURCE_DIR}/src/server/game/OutdoorPvP
@@ -999,7 +998,7 @@ index 53b4788..7ed64cd 100644
    Northrend/Ulduar/HallsOfLightning/boss_bjarngrim.cpp
    Northrend/Ulduar/HallsOfLightning/halls_of_lightning.h
 diff --git a/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp b/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
-index 8d66801..2335f3b 100644
+index ec0de41..007740c 100644
 --- a/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
 +++ b/src/server/scripts/Northrend/VaultOfArchavon/instance_vault_of_archavon.cpp
 @@ -17,6 +17,8 @@
@@ -3990,10 +3989,10 @@ index 0000000..ec078d5
 +#endif
 \ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index a8c0d91..2e7f65b 100644
+index 1e37f50..544a95b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2785,3 +2785,99 @@ PlayerDump.DisallowOverwrite = 1
+@@ -2786,3 +2786,99 @@ PlayerDump.DisallowOverwrite = 1
  
  #
  ###################################################################################################
@@ -4095,5 +4094,5 @@ index a8c0d91..2e7f65b 100644
 +OutdoorPvP.Wintergrasp.Antifarm.Def = 1
 \ No newline at end of file
 -- 
-1.7.2.3
+1.7.2.5
 
