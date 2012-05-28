@@ -1,7 +1,7 @@
-From aa4608e5a8107372a4b434eedea75877b400435a Mon Sep 17 00:00:00 2001
-From: LordPsyan <samccstudios@gmail.com>
-Date: Thu, 2 Feb 2012 15:33:18 -0600
-Subject: [PATCH] 2012-02-02_All_Core
+From 8956831f38c20e3a4f3c41b2df7bcfe46ccde4bf Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Sun, 27 May 2012 10:48:34 -0500
+Subject: [PATCH] 2012_05_27-All-core
 
 ---
  README.MANGCHAT                          |   31 +
@@ -9,7 +9,6 @@ Subject: [PATCH] 2012-02-02_All_Core
  sql/All-In-One/realmd-All-In-One.sql     |   14 +
  sql/All-In-One/world-All-In-One.sql      |   29 +
  sql/custom/mangos_irc.sql                |   55 +
- src/bindings/CMakeLists.txt              |    2 +-
  src/game/AuctionHouseHandler.cpp         |    4 +
  src/game/CMakeLists.txt                  |    7 +
  src/game/Channel.cpp                     |    5 +
@@ -20,7 +19,7 @@ Subject: [PATCH] 2012-02-02_All_Core
  src/game/DBCEnums.h                      |    4 +-
  src/game/GMTicketHandler.cpp             |   13 +
  src/game/GameEventMgr.cpp                |    9 +-
- src/game/Language.h                      |   16 +-
+ src/game/Language.h                      |   14 +-
  src/game/Level1.cpp                      |   37 +
  src/game/MiscHandler.cpp                 |   33 +
  src/game/ObjectMgr.cpp                   |    6 +-
@@ -47,7 +46,8 @@ Subject: [PATCH] 2012-02-02_All_Core
  src/mangosd/Main.cpp                     |   12 +-
  src/mangosd/Master.cpp                   |    8 +
  src/mangosd/mangosd.conf.dist.in         |   10 +-
- 43 files changed, 5844 insertions(+), 21 deletions(-)
+ win/VC90/game.vcproj                     |   60 +
+ 43 files changed, 5901 insertions(+), 20 deletions(-)
  create mode 100644 README.MANGCHAT
  create mode 100644 sql/All-In-One/characters-All-In-One.sql
  create mode 100644 sql/All-In-One/realmd-All-In-One.sql
@@ -236,21 +236,11 @@ index 0000000..398d8fe
 +
 +DELETE FROM `command` WHERE `name` = 'ircpm';
 +INSERT INTO `command` VALUES ('ircpm', '1', 'Syntax:.ircpm #nick #Message\r\n\r\nSend a message to a person in irc');
-diff --git a/src/bindings/CMakeLists.txt b/src/bindings/CMakeLists.txt
-index 63d7da5..931dcba 100644
---- a/src/bindings/CMakeLists.txt
-+++ b/src/bindings/CMakeLists.txt
-@@ -16,4 +16,4 @@
- # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- #
- 
--# add_subdirectory(universal)
-+add_subdirectory(ScriptDev2)
 diff --git a/src/game/AuctionHouseHandler.cpp b/src/game/AuctionHouseHandler.cpp
-index 13154bf..8740820 100644
+index 871474e..9dcf1ca 100644
 --- a/src/game/AuctionHouseHandler.cpp
 +++ b/src/game/AuctionHouseHandler.cpp
-@@ -29,6 +29,7 @@
+@@ -30,6 +30,7 @@
  #include "Mail.h"
  #include "Util.h"
  #include "Chat.h"
@@ -258,7 +248,7 @@ index 13154bf..8740820 100644
  
  // please DO NOT use iterator++, because it is slower than ++iterator!!!
  // post-incrementation is always slower than pre-incrementation !
-@@ -364,6 +365,9 @@ void WorldSession::HandleAuctionSellItem(WorldPacket & recv_data)
+@@ -365,6 +366,9 @@ void WorldSession::HandleAuctionSellItem(WorldPacket & recv_data)
          DETAIL_LOG("selling %s to auctioneer %s with initial bid %u with buyout %u and with time %u (in sec) in auctionhouse %u",
              itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->houseId);
  
@@ -269,10 +259,10 @@ index 13154bf..8740820 100644
  
          GetPlayer()->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CREATE_AUCTION, 1);
 diff --git a/src/game/CMakeLists.txt b/src/game/CMakeLists.txt
-index cafe20f..79c2c23 100644
+index ddb5a51..74cf0c7 100644
 --- a/src/game/CMakeLists.txt
 +++ b/src/game/CMakeLists.txt
-@@ -75,6 +75,10 @@ source_group("Movement"
+@@ -77,6 +77,10 @@ source_group("Movement"
      movement/util.cpp
  )
  
@@ -283,7 +273,7 @@ index cafe20f..79c2c23 100644
  if(PCH)
    include_directories(${CMAKE_CURRENT_BINARY_DIR})
  endif()
-@@ -102,6 +106,9 @@ if(NOT ACE_USE_EXTERNAL)
+@@ -105,6 +109,9 @@ if(NOT ACE_USE_EXTERNAL)
  # add_dependencies(game ace)
  endif()
  
@@ -294,10 +284,10 @@ index cafe20f..79c2c23 100644
  if(PCH)
    if(MSVC OR XCODE)
 diff --git a/src/game/Channel.cpp b/src/game/Channel.cpp
-index c5b9412..e1a62ff 100644
+index 1886a27..29e114c 100644
 --- a/src/game/Channel.cpp
 +++ b/src/game/Channel.cpp
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "ObjectMgr.h"
  #include "World.h"
  #include "SocialMgr.h"
@@ -305,7 +295,7 @@ index c5b9412..e1a62ff 100644
  
  Channel::Channel(const std::string& name, uint32 channel_id)
  : m_announce(true), m_moderate(false), m_name(name), m_flags(0), m_channelId(channel_id)
-@@ -109,6 +110,8 @@ void Channel::Join(ObjectGuid p, const char *pass)
+@@ -110,6 +111,8 @@ void Channel::Join(ObjectGuid p, const char *pass)
      MakeYouJoined(&data);
      SendToOne(&data, p);
  
@@ -314,7 +304,7 @@ index c5b9412..e1a62ff 100644
      JoinNotify(p);
  
      // if no owner first logged will become
-@@ -156,6 +159,8 @@ void Channel::Leave(ObjectGuid p, bool send)
+@@ -157,6 +160,8 @@ void Channel::Leave(ObjectGuid p, bool send)
  
          LeaveNotify(p);
  
@@ -324,10 +314,10 @@ index c5b9412..e1a62ff 100644
          {
              ObjectGuid newowner = !m_players.empty() ? m_players.begin()->second.player : ObjectGuid();
 diff --git a/src/game/CharacterHandler.cpp b/src/game/CharacterHandler.cpp
-index adfdbcf..e00353e 100644
+index fb6c621..dd7496e 100644
 --- a/src/game/CharacterHandler.cpp
 +++ b/src/game/CharacterHandler.cpp
-@@ -38,6 +38,7 @@
+@@ -39,6 +39,7 @@
  #include "Util.h"
  #include "ArenaTeam.h"
  #include "Language.h"
@@ -335,8 +325,8 @@ index adfdbcf..e00353e 100644
  
  // Playerbot mod:
  #include "playerbot/PlayerbotMgr.h"
-@@ -872,6 +873,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
-     pCurrChar->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
+@@ -884,6 +885,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
+     }
  
      delete holder;
 +
@@ -346,31 +336,31 @@ index adfdbcf..e00353e 100644
  
  void WorldSession::HandleSetFactionAtWarOpcode( WorldPacket & recv_data )
 diff --git a/src/game/Chat.cpp b/src/game/Chat.cpp
-index 0c1e3a8..8037a52 100644
+index 1489fd5..c84f56c 100644
 --- a/src/game/Chat.cpp
 +++ b/src/game/Chat.cpp
-@@ -833,6 +833,7 @@ ChatCommand * ChatHandler::getCommandTable()
+@@ -843,6 +843,7 @@ ChatCommand * ChatHandler::getCommandTable()
          { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
          { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
          { "gearscore",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleShowGearScoreCommand,       "", NULL },
 +        { "ircpm",          SEC_PLAYER,         false, &ChatHandler::HandleIRCpmCommand,               "", NULL },
+         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
  
          { NULL,             0,                  false, NULL,                                           "", NULL }
-     };
 diff --git a/src/game/Chat.h b/src/game/Chat.h
-index 222b25d..8f194e6 100644
+index 037f8a1..ab6ed41 100644
 --- a/src/game/Chat.h
 +++ b/src/game/Chat.h
-@@ -616,6 +616,7 @@ class MANGOS_DLL_SPEC ChatHandler
+@@ -615,6 +615,7 @@ class MANGOS_DLL_SPEC ChatHandler
          bool HandlePlayerbotCommand(char* args);
          bool HandleQuitCommand(char* args);
          bool HandleShowGearScoreCommand(char* args);
 +        bool HandleIRCpmCommand(char* args);
  
-         //! Development Commands
-         bool HandleSaveAllCommand(char* args);
+         bool HandleMmapPathCommand(char* args);
+         bool HandleMmapLocCommand(char* args);
 diff --git a/src/game/ChatHandler.cpp b/src/game/ChatHandler.cpp
-index a57fd2b..69b72fc 100644
+index 4db4666..a8bb29f 100644
 --- a/src/game/ChatHandler.cpp
 +++ b/src/game/ChatHandler.cpp
 @@ -36,6 +36,7 @@
@@ -399,7 +389,7 @@ index a57fd2b..69b72fc 100644
              }
  
              if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && tSecurity == SEC_PLAYER && pSecurity == SEC_PLAYER )
-@@ -505,6 +515,8 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
+@@ -508,6 +518,8 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
  
              sChatLog.ChannelMsg(GetPlayer(), channel, msg);
  
@@ -409,7 +399,7 @@ index a57fd2b..69b72fc 100644
                  if(Channel *chn = cMgr->GetChannel(channel, _player))
                      chn->Say(_player->GetObjectGuid(), msg.c_str(), lang);
 diff --git a/src/game/DBCEnums.h b/src/game/DBCEnums.h
-index ebecad7..7f3099e 100644
+index 13dac3e..d9db5e6 100644
 --- a/src/game/DBCEnums.h
 +++ b/src/game/DBCEnums.h
 @@ -22,11 +22,11 @@
@@ -465,7 +455,7 @@ index d71b297..194d924 100644
  
  void WorldSession::HandleGMTicketSystemStatusOpcode( WorldPacket & /*recv_data*/ )
 diff --git a/src/game/GameEventMgr.cpp b/src/game/GameEventMgr.cpp
-index 2e96b9f..a65f143 100644
+index 53bb395..950bdb3 100644
 --- a/src/game/GameEventMgr.cpp
 +++ b/src/game/GameEventMgr.cpp
 @@ -29,6 +29,7 @@
@@ -476,7 +466,7 @@ index 2e96b9f..a65f143 100644
  
  INSTANTIATE_SINGLETON_1(GameEventMgr);
  
-@@ -670,8 +671,14 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
+@@ -675,8 +676,14 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
      CharacterDatabase.PExecute("REPLACE INTO game_event_status (event) VALUES (%u)", event_id);
  
      if (sWorld.getConfig(CONFIG_BOOL_EVENT_ANNOUNCE))
@@ -493,13 +483,13 @@ index 2e96b9f..a65f143 100644
      // spawn positive event tagget objects
      GameEventSpawn(event_id);
 diff --git a/src/game/Language.h b/src/game/Language.h
-index 2c96794..fc74c80 100644
+index 1f23fe0..8d5006e 100644
 --- a/src/game/Language.h
 +++ b/src/game/Language.h
-@@ -811,7 +811,18 @@ enum MangosStrings
-     LANG_GUILD_INITIATE                 = 815,
+@@ -810,7 +810,18 @@ enum MangosStrings
      LANG_FAIL_ENTER_SPECTRAL_REALM      = 816,
-     // Room for in-game strings           817-999 not used
+     LANG_NO_FLY_ZONE                    = 817,
+     // Room for in-game strings           818-999 not used
 -
 +    // All-In-One Mod.
 +    LANG_SOTA                           = 990,
@@ -516,18 +506,16 @@ index 2c96794..fc74c80 100644
      // Level 4 (CLI only commands)
      LANG_COMMAND_EXIT                   = 1000,
      LANG_ACCOUNT_DELETED                = 1001,
-@@ -1038,6 +1049,9 @@ enum MangosStrings
+@@ -1037,6 +1048,7 @@ enum MangosStrings
      LANG_SYSTEMMESSAGE_MODERATOR        = 12000,
      LANG_SYSTEMMESSAGE_GAMEMASTER       = 12001,
-     LANG_SYSTEMMESSAGE_ADMINISTRATOR    = 12000,
-+    // Fake Players
-+    LANG_NOT_WHISPER                    = 12005,
-+
+     LANG_SYSTEMMESSAGE_ADMINISTRATOR    = 12002,
++	LANG_NOT_WHISPER                    = 12100,
      LANG_BAN_ACCOUNT_ANNOUNCE           = 17890,
      LANG_PERMBAN_ACCOUNT_ANNOUNCE       = 17891,
      LANG_BAN_CHARACTER_ANNOUNCE         = 17892,
 diff --git a/src/game/Level1.cpp b/src/game/Level1.cpp
-index bc34ad3..b7a4342 100644
+index 6128f58..2a50e2f 100644
 --- a/src/game/Level1.cpp
 +++ b/src/game/Level1.cpp
 @@ -33,6 +33,7 @@
@@ -563,7 +551,7 @@ index bc34ad3..b7a4342 100644
      return true;
  }
  
-@@ -2316,3 +2328,28 @@ bool ChatHandler::HandleSetViewCommand(char* /*args*/)
+@@ -2279,3 +2291,28 @@ bool ChatHandler::HandleSetViewCommand(char* /*args*/)
  
      return true;
  }
@@ -637,10 +625,10 @@ index 19015f5..0c7959d 100644
      data.put( 0, clientcount );                             // insert right count, listed count
      data.put( 4, count > 50 ? count : clientcount );        // insert right count, online count
 diff --git a/src/game/ObjectMgr.cpp b/src/game/ObjectMgr.cpp
-index 49bbdd4..72bd31b 100644
+index 098235d..55e002c 100644
 --- a/src/game/ObjectMgr.cpp
 +++ b/src/game/ObjectMgr.cpp
-@@ -2087,10 +2087,10 @@ void ObjectMgr::LoadItemPrototypes()
+@@ -1990,10 +1990,10 @@ void ObjectMgr::LoadItemPrototypes()
              sLog.outErrorDb("Item (Entry: %u) has too large negative in stackable (%i), replace by value (-1) no stacking limits.",i,proto->Stackable);
              const_cast<ItemPrototype*>(proto)->Stackable = -1;
          }
@@ -655,18 +643,18 @@ index 49bbdd4..72bd31b 100644
  
          if (proto->ContainerSlots)
 diff --git a/src/game/Player.cpp b/src/game/Player.cpp
-index cf386d6..33face5 100644
+index f6e019b..ce23393 100644
 --- a/src/game/Player.cpp
 +++ b/src/game/Player.cpp
-@@ -63,6 +63,7 @@
+@@ -62,6 +62,7 @@
+ #include "AchievementMgr.h"
  #include "Mail.h"
- #include "AccountMgr.h"
  #include "SpellAuras.h"
 +#include "mangchat/IRCClient.h"
  
  #include <cmath>
  
-@@ -1374,6 +1375,10 @@ void Player::Update( uint32 update_diff, uint32 p_time )
+@@ -1388,6 +1389,10 @@ void Player::Update( uint32 update_diff, uint32 p_time )
              // m_nextSave reseted in SaveToDB call
              SaveToDB();
              DETAIL_LOG("Player '%s' (GUID: %u) saved", GetName(), GetGUIDLow());
@@ -677,7 +665,7 @@ index cf386d6..33face5 100644
          }
          else
              m_nextSave -= update_diff;
-@@ -1713,21 +1718,24 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1733,21 +1738,24 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
  
      if (GetMapId() != mapid)
      {
@@ -711,7 +699,7 @@ index cf386d6..33face5 100644
      }
      else
      {
-@@ -2702,6 +2710,16 @@ void Player::GiveLevel(uint32 level)
+@@ -2726,6 +2734,16 @@ void Player::GiveLevel(uint32 level)
  
      UpdateAllStats();
  
@@ -730,7 +718,7 @@ index cf386d6..33face5 100644
          SetHealth(GetMaxHealth());
 diff --git a/src/game/Teleport/sc_npc_teleport.cpp b/src/game/Teleport/sc_npc_teleport.cpp
 new file mode 100644
-index 0000000..0733344
+index 0000000..68a99e0
 --- /dev/null
 +++ b/src/game/Teleport/sc_npc_teleport.cpp
 @@ -0,0 +1,377 @@
@@ -1269,10 +1257,10 @@ index 0000000..be4aa2d
 +
 +#endif
 diff --git a/src/game/World.cpp b/src/game/World.cpp
-index 83c3199..01cb144 100644
+index 2f1bf1f..993eb71 100644
 --- a/src/game/World.cpp
 +++ b/src/game/World.cpp
-@@ -67,6 +67,7 @@
+@@ -68,6 +68,7 @@
  #include "CreatureLinkingMgr.h"
  #include "LFGMgr.h"
  #include "warden/WardenDataStorage.h"
@@ -1280,7 +1268,7 @@ index 83c3199..01cb144 100644
  
  INSTANTIATE_SINGLETON_1( World );
  
-@@ -581,6 +582,7 @@ void World::LoadConfigSettings(bool reload)
+@@ -583,6 +584,7 @@ void World::LoadConfigSettings(bool reload)
      setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_MAIL,    "AllowTwoSide.Interaction.Mail", false);
      setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST,            "AllowTwoSide.WhoList", false);
      setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,          "AllowTwoSide.AddFriend", false);
@@ -1288,7 +1276,7 @@ index 83c3199..01cb144 100644
  
      setConfig(CONFIG_UINT32_STRICT_PLAYER_NAMES,  "StrictPlayerNames",  0);
      setConfig(CONFIG_UINT32_STRICT_CHARTER_NAMES, "StrictCharterNames", 0);
-@@ -1452,7 +1454,7 @@ void World::SetInitialWorldSettings()
+@@ -1471,7 +1473,7 @@ void World::SetInitialWorldSettings()
  
      sLog.outString( "Loading CreatureEventAI Scripts...");
      sEventAIMgr.LoadCreatureEventAI_Scripts();
@@ -1297,7 +1285,7 @@ index 83c3199..01cb144 100644
      sLog.outString("Initializing Scripts...");
      switch(sScriptMgr.LoadScriptLibrary(MANGOS_SCRIPT_NAME))
      {
-@@ -1550,6 +1552,8 @@ void World::SetInitialWorldSettings()
+@@ -1569,6 +1571,8 @@ void World::SetInitialWorldSettings()
      sLog.outString("Loading Warden Data..." );
      WardenDataStorage.Init();
  
@@ -1307,10 +1295,10 @@ index 83c3199..01cb144 100644
      Player::DeleteOldCharacters();
  
 diff --git a/src/game/World.h b/src/game/World.h
-index ffcee53..0853231 100644
+index 9bd8659..4c641ad 100644
 --- a/src/game/World.h
 +++ b/src/game/World.h
-@@ -322,6 +322,7 @@ enum eConfigBoolValues
+@@ -323,6 +323,7 @@ enum eConfigBoolValues
      CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_MAIL,
      CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST,
      CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,
@@ -2359,10 +2347,10 @@ index 0000000..45cf074
 +
 +int IRCCmd::AcctLevel(std::string plnme)
 +{
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(plnme);
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(plnme);
 +    uint32 account_id = 0;
 +    uint32 security = 0;
-+    account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
++    account_id = sAccountMgr.GetPlayerAccountIdByGUID(guid);
 +    security = sAccountMgr.GetSecurity(account_id);
 +
 +    return security;
@@ -2868,9 +2856,9 @@ index 0000000..8e0567d
 +        return;
 +    }
 +    normalizePlayerName(_PARAMS[0]);
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[0]);
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[0]);
 +    uint32 account_id = 0;
-+    account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
++    account_id = sAccountMgr.GetPlayerAccountIdByGUID(guid);
 +    if (account_id)
 +    {
 +        if (account_id == GetAcctIDFromName(CD->USER) || GetLevel(CD->USER) >= sIRC._op_gm_lev)
@@ -2943,8 +2931,8 @@ index 0000000..8e0567d
 +    }
 +    if (_PARAMS[1] == "acct")
 +    {
-+        ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[0].c_str());
-+        uint32 acctid = sObjectMgr.GetPlayerAccountIdByGUID(guid);
++        ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[0].c_str());
++        uint32 acctid = sAccountMgr.GetPlayerAccountIdByGUID(guid);
 +        if (_PARAMS[2] == "")
 +            _PARAMS[2] = "No Reason";
 +        if (acctid)
@@ -3031,7 +3019,7 @@ index 0000000..8e0567d
 +        return;
 +    }
 +    normalizePlayerName(_PARAMS[0]);
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[0]);
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[0]);
 +    Player* plr = sObjectMgr.GetPlayer(guid);
 +    if (plr)
 +    {
@@ -3604,8 +3592,8 @@ index 0000000..8e0567d
 +    if (_PARAMS[0] == "char")
 +    {
 +        ObjectGuid plguid = ObjectGuid(uint64(_PARAMS[1].c_str()));
-+        if (!sObjectMgr.GetPlayerGuidByName(_PARAMS[1].c_str()).IsEmpty())
-+            plguid = sObjectMgr.GetPlayerGuidByName(_PARAMS[1].c_str());
++        if (!sAccountMgr.GetPlayerGuidByName(_PARAMS[1].c_str()).IsEmpty())
++            plguid = sAccountMgr.GetPlayerGuidByName(_PARAMS[1].c_str());
 +        if (!plguid.IsEmpty())
 +        {
 +            QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name, race, class, online, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 35), ' ' , -1) AS level, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 238), ' ' , -1) AS guildid, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 239), ' ' , -1) AS guildrank, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 927), ' ' , -1) AS xp, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 928), ' ' , -1) AS maxxp, SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS gold, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 1454), ' ' , -1) AS hk, totaltime FROM characters WHERE guid =%i", plguid.GetCounter());
@@ -4138,7 +4126,7 @@ index 0000000..8e0567d
 +    }
 +    std::string player  = _PARAMS[0];
 +    normalizePlayerName(player);
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(player.c_str());
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(player.c_str());
 +    std::string s_newlevel  = _PARAMS[1];
 +    uint8 i_newlvl = atoi(s_newlevel.c_str());
 +    if (guid.IsEmpty())
@@ -4199,7 +4187,7 @@ index 0000000..8e0567d
 +    }
 +    std::string player  = _PARAMS[0];
 +    normalizePlayerName(player);
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(player.c_str());
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(player.c_str());
 +    Player *chr = sObjectMgr.GetPlayer(guid);
 +
 +    std::string s_money  = _PARAMS[1];
@@ -4281,14 +4269,14 @@ index 0000000..8e0567d
 +        return;
 +    }
 +    normalizePlayerName(_PARAMS[0]);
-+    ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[0]);
++    ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[0]);
 +    if (!guid.IsEmpty())
 +    {
 +        if (_PARAMS[1] == "release")
 +        {
 +            Player* plr = sObjectMgr.GetPlayer(guid);
 +            uint32 account_id = 0;
-+            account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
++            account_id = sAccountMgr.GetPlayerAccountIdByGUID(guid);
 +            LoginDatabase.PExecute("UPDATE `account` SET `mutetime` = '0' WHERE `id` = '%u'", account_id );
 +            Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been UnMuted By: "+CD->USER+"." , true, CD->TYPE);
 +            if (plr)
@@ -4304,7 +4292,7 @@ index 0000000..8e0567d
 +            Player* plr = sObjectMgr.GetPlayer(guid);
 +            time_t mutetime = time(NULL) + atoi(_PARAMS[1].c_str())*60;
 +            uint32 account_id = 0;
-+            account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
++            account_id = sAccountMgr.GetPlayerAccountIdByGUID(guid);
 +            if (plr) plr->GetSession()->m_muteTime = mutetime;
 +            LoginDatabase.PExecute("UPDATE `account` SET `mutetime` = " UI64FMTD " WHERE `id` = '%u'",uint64(mutetime), account_id );
 +            Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been Muted By: "+CD->USER+". For: "+_PARAMS[1]+" Minutes. Reason: "+_PARAMS[2] , true, CD->TYPE);
@@ -4556,9 +4544,9 @@ index 0000000..8e0567d
 +        }
 +        else
 +        {
-+            if (!sObjectMgr.GetPlayerGuidByName(_PARAMS[2].c_str()).IsEmpty())
++            if (!sAccountMgr.GetPlayerGuidByName(_PARAMS[2].c_str()).IsEmpty())
 +            {
-+                ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[2].c_str());
++                ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[2].c_str());
 +                bool in_flight;
 +                Player::LoadPositionFromDB(guid,mapid, pX, pY, pZ, pO, in_flight);
 +            }
@@ -4596,7 +4584,7 @@ index 0000000..8e0567d
 +            }
 +            else
 +            {
-+                ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(_PARAMS[0]);
++                ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(_PARAMS[0]);
 +                Player::SavePositionInDB(guid,mapid,pX,pY,pZ,pO,TerrainManager::Instance().GetZoneId(mapid,pX,pY,pZ));
 +                sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg + " \0034*Offline Tele.* ", true, CD->TYPE);
 +            }
@@ -4734,7 +4722,7 @@ index 0000000..8e0567d
 +    if (_PARAMS[0] == "read")
 +    {
 +        std::string CharName = _PARAMS[1].c_str();
-+        ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(CharName);
++        ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(CharName);
 +        QueryResult *result = CharacterDatabase.PQuery("SELECT guid, ticket_text, DATE_FORMAT(ticket_lastchange, '%s'), response_text FROM character_ticket WHERE guid=%u",DateTime.c_str(), guid.GetCounter());
 +        if (result)
 +        {
@@ -4767,7 +4755,7 @@ index 0000000..8e0567d
 +            return;
 +        }
 +        std::string CharName = _PARAMS[1].c_str();
-+        ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(CharName);
++        ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(CharName);
 +
 +        if (guid.IsEmpty())
 +        {
@@ -4807,7 +4795,7 @@ index 0000000..8e0567d
 +            return;
 +        }
 +        std::string CharName = _PARAMS[1].c_str();
-+        ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(CharName);
++        ObjectGuid guid = sAccountMgr.GetPlayerGuidByName(CharName);
 +        GMTicket* ticket = sTicketMgr.GetGMTicket(guid);
 +        if (!ticket)
 +        {
@@ -6471,10 +6459,10 @@ index a8e13f0..c402e53 100644
      ACE_Based::Thread* freeze_thread = NULL;
      if(uint32 freeze_delay = sConfig.GetIntDefault("MaxCoreStuckTime", 0))
 diff --git a/src/mangosd/mangosd.conf.dist.in b/src/mangosd/mangosd.conf.dist.in
-index 137be59..2082c4e 100644
+index 78967bd..cee3c0c 100644
 --- a/src/mangosd/mangosd.conf.dist.in
 +++ b/src/mangosd/mangosd.conf.dist.in
-@@ -217,7 +217,7 @@ MaxOverspeedPings = 2
+@@ -223,7 +223,7 @@ MaxOverspeedPings = 2
  GridUnload = 1
  GridCleanUpDelay = 300000
  MapUpdateInterval = 100
@@ -6483,7 +6471,7 @@ index 137be59..2082c4e 100644
  PlayerSave.Interval = 900000
  PlayerSave.Stats.MinLevel = 0
  PlayerSave.Stats.SaveOnlyOnLogout = 1
-@@ -1025,6 +1025,13 @@ CrowdControlHPBase = 0.1
+@@ -1046,6 +1046,13 @@ AllowTransferToCustomMap = 0
  #        Default: 1 (allow)
  #                 0 (not allow)
  #
@@ -6497,7 +6485,7 @@ index 137be59..2082c4e 100644
  ###################################################################################################################
  
  AllowTwoSide.Accounts = 1
-@@ -1037,6 +1044,7 @@ AllowTwoSide.Interaction.Mail = 0
+@@ -1058,6 +1065,7 @@ AllowTwoSide.Interaction.Mail = 0
  AllowTwoSide.WhoList = 0
  AllowTwoSide.AddFriend = 0
  TalentsInspecting = 1
@@ -6505,6 +6493,77 @@ index 137be59..2082c4e 100644
  
  ###################################################################################################################
  # AUTO BROADCAST
+diff --git a/win/VC90/game.vcproj b/win/VC90/game.vcproj
+index 957376b..be044e4 100644
+--- a/win/VC90/game.vcproj
++++ b/win/VC90/game.vcproj
+@@ -2075,6 +2075,66 @@
+ 				>
+ 			</File>
+ 		</Filter>
++	<Filter
++		Name="IRC"
++		>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCClient.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCClient.h"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCCmd.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCCmd.h"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCCmde.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCConf.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCConf.h"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCFunc.h"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCIO.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCLog.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCLog.h"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\IRCSock.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\MCS_OnlinePlayers.cpp"
++			>
++		</File>
++		<File
++			RelativePath="..\..\src\game\mangchat\MCS_OnlinePlayers.h"
++			>
++		</File>
++       </Filter>
+ 		<File
+ 			RelativePath="..\..\src\game\pchdef.cpp"
+ 			>
 -- 
 1.7.2.5
 
