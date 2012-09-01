@@ -1,20 +1,20 @@
-From 8dc170c82be249dd2dde555dd73a8dc945c78ec9 Mon Sep 17 00:00:00 2001
-From: LordPsyan <uppp@juno.com>
-Date: Sat, 5 Nov 2011 16:08:01 -0500
-Subject: [PATCH] 2011-11-05_TeleNPC2
+From e509662854334734793d967e6af06400f9d2a19e Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sat, 1 Sep 2012 10:29:00 -0500
+Subject: [PATCH] 2012_09_01-TeleNPC2
 
 ---
  README.NPCTELEPORT                                |   14 +
- sql/extras/setup_npc_teleport.sql                 |  119 +++++++
- src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp |  373 +++++++++++++++++++++
+ sql/tools/setup_npc_teleport.sql                  |  119 +++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp |  376 +++++++++++++++++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h   |  151 +++++++++
  src/server/game/Scripting/ScriptLoader.cpp        |    6 +-
  src/server/game/Scripting/ScriptMgr.cpp           |    3 +
  src/server/scripts/CMakeLists.txt                 |    3 +
- src/server/scripts/Custom/npc_teleport.cpp        |  221 ++++++++++++
- 8 files changed, 889 insertions(+), 1 deletions(-)
+ src/server/scripts/Custom/npc_teleport.cpp        |  222 ++++++++++++
+ 8 files changed, 893 insertions(+), 1 deletions(-)
  create mode 100644 README.NPCTELEPORT
- create mode 100644 sql/extras/setup_npc_teleport.sql
+ create mode 100644 sql/tools/setup_npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/scripts/Custom/npc_teleport.cpp
@@ -39,11 +39,11 @@ index 0000000..015c9c2
 +
 +Run the query setup_npc_teleport.sql located in the trinity sql directory on
 +your world DB. This will setup the DB and you can customize from there.
-diff --git a/sql/extras/setup_npc_teleport.sql b/sql/extras/setup_npc_teleport.sql
+diff --git a/sql/tools/setup_npc_teleport.sql b/sql/tools/setup_npc_teleport.sql
 new file mode 100644
 index 0000000..03b9e93
 --- /dev/null
-+++ b/sql/extras/setup_npc_teleport.sql
++++ b/sql/tools/setup_npc_teleport.sql
 @@ -0,0 +1,119 @@
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
@@ -166,10 +166,10 @@ index 0000000..03b9e93
 +INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 'npc_teleport', 1);
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
-index 0000000..68565db
+index 0000000..fd51a6c
 --- /dev/null
 +++ b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
-@@ -0,0 +1,373 @@
+@@ -0,0 +1,376 @@
 +/**
 + *
 + * @File : sc_npc_teleport.cpp
@@ -185,6 +185,7 @@ index 0000000..68565db
 +
 +#include "ScriptPCH.h"
 +#include "sc_npc_teleport.h"
++//#include "ProgressBar.h"
 +
 +#define TELE    nsNpcTel::CatDest
 +#define PAGE    nsNpcTel::Page
@@ -325,7 +326,7 @@ index 0000000..68565db
 +        return player->GetGUID() == m_data0;
 +    }
 +
-+    sLog->outError("Invalid flag (category: %u). Important problem...", GetCatID());
++    sLog->outError(LOG_FILTER_GENERAL, "Invalid flag (category: %u). Important problem...", GetCatID());
 +    return false;
 +}
 +
@@ -347,118 +348,118 @@ index 0000000..68565db
 +    {
 +      case FLAG_TEAM:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (data0 < MAX_FLAG_TEAM)
 +            return true;
-+        sLog->outError("Invalid data0 (Team) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Team) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_GUILD:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (data0)
 +            return true;
-+        sLog->outError("Invalid data0 (GuildID) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (GuildID) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_GMLEVEL:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (0 < data0 && data0 < 256)
 +            return true;
-+        sLog->outError("Invalid data0 (GmLevel) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (GmLevel) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_ISGM:
 +        if (data0)
-+            sLog->outError("Invalid data0 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (category: %u).", cat);
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        return true;
 +
 +      case FLAG_ACCOUNT:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (data0)
 +            return true;
-+        sLog->outError("Invalid data0 (AccountID) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (AccountID) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_LEVEL:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (0 < data0 && data0 < 256)
 +            return true;
-+        sLog->outError("Invalid data0 (Level) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Level) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_ITEM:
 +        if (!data0)
 +        {
-+            sLog->outError("Invalid data0 (ItemID) (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (ItemID) (category: %u).", cat);
 +            return false;
 +        }
 +        if (data1)
 +            return true;
-+        sLog->outError("Invalid data1 (Item Count) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Item Count) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_QUEST:
 +        if (!data0)
 +        {
-+            sLog->outError("Invalid data0 (QuestID) (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (QuestID) (category: %u).", cat);
 +            return false;
 +        }
 +        if (data1 < MAX_QUEST_STATUS + 1)
 +            return true;
-+        sLog->outError("Invalid data1 (Quest Status) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Quest Status) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_GENDER:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (data0 < GENDER_NONE)
 +            return true;
-+        sLog->outError("Invalid data0 (Gender) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Gender) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_RACE:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (0 < data0 && data0 < MAX_RACES)
 +            return true;
-+        sLog->outError("Invalid data0 (Race) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Race) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_CLASS:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (0 < data0 && data0 < MAX_CLASSES)
 +            return true;
-+        sLog->outError("Invalid data0 (Class) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Class) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_REPUTATION:
 +        if (!data0)
 +        {
-+            sLog->outError("Invalid data0 (Faction/Reputation) (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Faction/Reputation) (category: %u).", cat);
 +            return false;
 +        }
 +        if (data1 <= REP_EXALTED)
 +            return true;
-+        sLog->outError("Invalid data1 (Faction/Reputation) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Faction/Reputation) (category: %u).", cat);
 +        return false;
 +
 +      case FLAG_PLAYER:
 +        if (data1)
-+            sLog->outError("Invalid data1 (category: %u).", cat);
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
 +        if (data0)
 +            return true;
-+        sLog->outError("Invalid data0 (PlayerGuid) (category: %u).", cat);
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (PlayerGuid) (category: %u).", cat);
 +        return false;
 +    }
 +
-+    sLog->outError("Invalid flag (category: %u).", cat);
++    sLog->outError(LOG_FILTER_GENERAL, "Invalid flag (category: %u).", cat);
 +    return false;
 +}
 +
@@ -485,7 +486,8 @@ index 0000000..68565db
 +
 +    if (result)
 +    {
-+	    sLog->outString( "TSCR: Loading %s, %s and %s...", Table[0], Table[1], Table[2]);
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading %s, %s and %s...", Table[0], Table[1], Table[2]);
++        // barGoLink bar(result->GetRowCount());
 +
 +        uint32 catid = 0;
 +        uint32 nbDest = 0;
@@ -494,6 +496,7 @@ index 0000000..68565db
 +
 +        do
 +        {
++            // bar.step();
 +            Field *fields = result->Fetch();
 +
 +            if (!IsValidCat && catid == fields[3].GetUInt32() && !FirstTime)
@@ -534,9 +537,9 @@ index 0000000..68565db
 +            ++nbDest;
 +        } while (result->NextRow());
 +
-+        sLog->outString("");
-+        sLog->outString("TSCR: >> Loaded %u npc_teleport.", nbDest);
-+    } else sLog->outString("TSCR: WARNING >> Loaded 0 npc_teleport.");
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "");
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loaded %u npc_teleport.", nbDest);
++    } else sLog->outError(LOG_FILTER_GENERAL, "WARNING >> Loaded 0 npc_teleport.");
 +}
 +
 +
@@ -701,7 +704,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 26d7034..2990063 100755
+index 1848250..6b94470 100755
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -24,6 +24,9 @@ void AddSC_example_gossip_codebox();
@@ -714,7 +717,7 @@ index 26d7034..2990063 100755
  // spells
  void AddSC_deathknight_spell_scripts();
  void AddSC_druid_spell_scripts();
-@@ -1233,6 +1236,7 @@ void AddCustomScripts()
+@@ -1263,6 +1266,7 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -724,28 +727,28 @@ index 26d7034..2990063 100755
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 925b352..c3af1de 100755
+index 47ce6c1..8623a84 100755
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
-@@ -27,6 +27,7 @@
+@@ -23,6 +23,7 @@
+ #include "ObjectMgr.h"
+ #include "OutdoorPvPMgr.h"
+ #include "ScriptLoader.h"
++#include "sc_npc_teleport.h"
  #include "ScriptSystem.h"
  #include "Transport.h"
  #include "Vehicle.h"
-+#include "sc_npc_teleport.h"
- 
- // This is the global static registry of scripts.
- template<class TScript>
-@@ -247,6 +248,8 @@ void ScriptMgr::Initialize()
+@@ -250,6 +251,8 @@ void ScriptMgr::Initialize()
      uint32 oldMSTime = getMSTime();
  
      LoadDatabase();
-+	// Load TeleNPC2 - maybe not the best place to load it ...
-+	LoadNpcTele();
++       // Load TeleNPC2 - maybe not the best place to load it ...
++       LoadNpcTele();
  
-     sLog->outString("Loading C++ scripts");
+     sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading C++ scripts");
  
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index de660b8..cb37ed0 100644
+index f148ae2..1b9a30a 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
 @@ -31,6 +31,9 @@ include(Examples/CMakeLists.txt)
@@ -760,10 +763,10 @@ index de660b8..cb37ed0 100644
    ../game/AI/ScriptedAI/ScriptedFollowerAI.cpp
 diff --git a/src/server/scripts/Custom/npc_teleport.cpp b/src/server/scripts/Custom/npc_teleport.cpp
 new file mode 100644
-index 0000000..1e51336
+index 0000000..fddd18d
 --- /dev/null
 +++ b/src/server/scripts/Custom/npc_teleport.cpp
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,222 @@
 +/**
 + *
 + * @File : npc_teleport.cpp
@@ -985,6 +988,7 @@ index 0000000..1e51336
 +{
 +    new npc_teleport;
 +}
++// End of TeleNPC2
 -- 
-1.7.2.3
+1.7.2.5
 
