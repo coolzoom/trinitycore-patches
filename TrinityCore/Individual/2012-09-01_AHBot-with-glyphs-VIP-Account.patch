@@ -1,46 +1,48 @@
-From d34f22065aa63e0a2633b73e81f864586ccde794 Mon Sep 17 00:00:00 2001
-From: LordPsyan <uppp@juno.com>
-Date: Tue, 8 Nov 2011 22:33:27 -0600
-Subject: [PATCH] 2011-11-08_AHBot-with-glyphs-VIP-Account
+From 5ecfc7691301259abdee948aff712acc6693d450 Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sat, 1 Sep 2012 09:40:56 -0500
+Subject: [PATCH] 2012-09-01_AHBot-with-glyphs-VIP-Account
 
 ---
- doc/AuctionHouseBot.txt                            |  236 +++
- sql/extras/character_VIPAccount.sql                |    8 +
- sql/extras/setup_ahbot.sql                         |   71 +
- src/server/authserver/Server/AuthSocket.cpp        |    3 +
- .../AuctionHouseBot/AuctionHouseBot.cpp            | 1980 ++++++++++++++++++++
- .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1257 +++++++++++++
+ doc/AuctionHouseBot.txt                            |  235 +++
+ sql/VIPAccounts/auth_VIPAccount.sql                |    8 +
+ sql/tools/setup_ahbot.sql                          |   72 +
+ src/server/authserver/Server/AuthSocket.cpp        |    1 +
+ .../AuctionHouseBot/AuctionHouseBot.cpp            | 2002 ++++++++++++++++++++
+ .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1257 ++++++++++++
  src/server/game/AuctionHouse/AuctionHouseMgr.cpp   |   11 +-
  src/server/game/AuctionHouse/AuctionHouseMgr.h     |    2 +
  src/server/game/CMakeLists.txt                     |    3 +
- src/server/game/Chat/Chat.cpp                      |    1 +
- src/server/game/Chat/Chat.h                        |    1 +
- src/server/game/Chat/Commands/Level3.cpp           |  490 +++++
  src/server/game/Entities/Player/Player.cpp         |    6 +-
+ src/server/game/Handlers/AuctionHouseHandler.cpp   |    1 +
  src/server/game/Mails/Mail.cpp                     |    8 +
  src/server/game/Miscellaneous/Formulas.h           |    4 +-
- .../Protocol/Handlers/AuctionHouseHandler.cpp      |    1 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    2 +
  src/server/game/Server/WorldSession.cpp            |    4 +-
  src/server/game/Server/WorldSession.h              |    4 +-
  src/server/game/Server/WorldSocket.cpp             |   13 +-
- src/server/game/World/World.cpp                    |   15 +-
+ src/server/game/World/World.cpp                    |    8 +
  src/server/game/World/World.h                      |    3 +
- .../Database/Implementation/LoginDatabase.cpp      |    3 +-
+ src/server/scripts/CMakeLists.txt                  |    1 +
+ src/server/scripts/Commands/CMakeLists.txt         |    1 +
+ src/server/scripts/Commands/cs_ah_bot.cpp          |  482 +++++
+ .../Database/Implementation/LoginDatabase.cpp      |    1 +
  .../shared/Database/Implementation/LoginDatabase.h |    1 +
- src/server/worldserver/worldserver.conf.dist       |  291 +++
- 24 files changed, 4403 insertions(+), 13 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  294 +++-
+ 25 files changed, 4411 insertions(+), 13 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
- create mode 100644 sql/extras/character_VIPAccount.sql
- create mode 100644 sql/extras/setup_ahbot.sql
+ create mode 100644 sql/VIPAccounts/auth_VIPAccount.sql
+ create mode 100644 sql/tools/setup_ahbot.sql
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
+ create mode 100644 src/server/scripts/Commands/cs_ah_bot.cpp
 
 diff --git a/doc/AuctionHouseBot.txt b/doc/AuctionHouseBot.txt
 new file mode 100644
-index 0000000..cc15a08
+index 0000000..8170bd2
 --- /dev/null
 +++ b/doc/AuctionHouseBot.txt
-@@ -0,0 +1,236 @@
+@@ -0,0 +1,235 @@
 +Populates the auction houses with items. It can make the game feel a bit more
 +like official on small servers. Items and prices are chosen randomly based on
 +the parameters you define. If an auction expires, auctions are deleted quietly.
@@ -92,7 +94,6 @@ index 0000000..cc15a08
 +AuctionHouseBot.Bind_When_Equipped = 1
 +AuctionHouseBot.Bind_When_Use = 1
 +AuctionHouseBot.Bind_Quest_Item = 0
-+AuctionHouseBot.DisableBeta_PTR_Unused = 0
 +AuctionHouseBot.DisablePermEnchant = 0
 +AuctionHouseBot.DisableConjured = 0
 +AuctionHouseBot.DisableGems = 0
@@ -114,7 +115,7 @@ index 0000000..cc15a08
 +AuctionHouseBot.Bind_When_Equipped = is a boolean value (0 or 1) that indicates whether to include items with a bonding of 2
 +AuctionHouseBot.Bind_When_Use = is a boolean value (0 or 1) that indicates whether to include items with a bonding of 3
 +AuctionHouseBot.Bind_Quest_Item = is a boolean value (0 or 1) that indicates whether to include items with a bonding of 4
-+AuctionHouseBot.DisableBeta_PTR_Unused is a boolean value (0 or 1) that will Disable certain items that are usually unavailable to Players
++AuctionHouseBot.DisabledItems is a list of item ids separated by space that will Disable certain items that are usually unavailable to Players
 +AuctionHouseBot.DisablePermEnchant is a boolean value (0 or 1) that will Disable Items with a Permanent Enchantment
 +AuctionHouseBot.DisableConjured is a boolean value (0 or 1) that will Disable Conjured Items
 +AuctionHouseBot.DisableGems is a boolean value (0 or 1) that will Disable Gems
@@ -277,11 +278,11 @@ index 0000000..cc15a08
 +AHBot Originally made by Chris K. Currently maintained by Paradox
 +Much thanks to Chris K, grether and Dolomit6!
 +AHBot Now includes AHBuyer created by Kerbe as a derivative of AHBot, and later modified by Paradox
-diff --git a/sql/extras/character_VIPAccount.sql b/sql/extras/character_VIPAccount.sql
+diff --git a/sql/VIPAccounts/auth_VIPAccount.sql b/sql/VIPAccounts/auth_VIPAccount.sql
 new file mode 100644
 index 0000000..df317ed
 --- /dev/null
-+++ b/sql/extras/character_VIPAccount.sql
++++ b/sql/VIPAccounts/auth_VIPAccount.sql
 @@ -0,0 +1,8 @@
 +CREATE TABLE IF NOT EXISTS `account_premium` (
 +  `id` int(11) NOT NULL default '0' COMMENT 'Account id',
@@ -292,12 +293,12 @@ index 0000000..df317ed
 +  PRIMARY KEY  (`id`,`setdate`)
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Premium Accounts';
 \ No newline at end of file
-diff --git a/sql/extras/setup_ahbot.sql b/sql/extras/setup_ahbot.sql
+diff --git a/sql/tools/setup_ahbot.sql b/sql/tools/setup_ahbot.sql
 new file mode 100644
-index 0000000..63b9a6d
+index 0000000..767a01e
 --- /dev/null
-+++ b/sql/extras/setup_ahbot.sql
-@@ -0,0 +1,71 @@
++++ b/sql/tools/setup_ahbot.sql
+@@ -0,0 +1,72 @@
 +CREATE TABLE `auctionhousebot` (
 +    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
 +    `name` CHAR(25) NULL DEFAULT NULL COMMENT 'Text name of the auctionhouse.',
@@ -363,33 +364,31 @@ index 0000000..63b9a6d
 +    `buyerbidsperinterval` INT(11) NULL DEFAULT '1' COMMENT 'number of bids to put in per bidding interval',
 +    PRIMARY KEY (`auctionhouse`)
 +)
-+ENGINE=InnoDB ROW_FORMAT=DEFAULT;
++ENGINE=InnoDB
++ROW_FORMAT=DEFAULT;
 +
 +insert  into `auctionhousebot`(`auctionhouse`,`name`,`minitems`,`maxitems`,`percentgreytradegoods`,`percentwhitetradegoods`,`percentgreentradegoods`,`percentbluetradegoods`,`percentpurpletradegoods`,`percentorangetradegoods`,`percentyellowtradegoods`,`percentgreyitems`,`percentwhiteitems`,`percentgreenitems`,`percentblueitems`,`percentpurpleitems`,`percentorangeitems`,`percentyellowitems`,`minpricegrey`,`maxpricegrey`,`minpricewhite`,`maxpricewhite`,`minpricegreen`,`maxpricegreen`,`minpriceblue`,`maxpriceblue`,`minpricepurple`,`maxpricepurple`,`minpriceorange`,`maxpriceorange`,`minpriceyellow`,`maxpriceyellow`,`minbidpricegrey`,`maxbidpricegrey`,`minbidpricewhite`,`maxbidpricewhite`,`minbidpricegreen`,`maxbidpricegreen`,`minbidpriceblue`,`maxbidpriceblue`,`minbidpricepurple`,`maxbidpricepurple`,`minbidpriceorange`,`maxbidpriceorange`,`minbidpriceyellow`,`maxbidpriceyellow`,`maxstackgrey`,`maxstackwhite`,`maxstackgreen`,`maxstackblue`,`maxstackpurple`,`maxstackorange`,`maxstackyellow`,`buyerpricegrey`,`buyerpricewhite`,`buyerpricegreen`,`buyerpriceblue`,`buyerpricepurple`,`buyerpriceorange`,`buyerpriceyellow`,`buyerbiddinginterval`,`buyerbidsperinterval`) values
 +(2,'Alliance',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
 +(6,'Horde',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
 +(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
-\ No newline at end of file
 diff --git a/src/server/authserver/Server/AuthSocket.cpp b/src/server/authserver/Server/AuthSocket.cpp
-index 7b2ad04..a7ee408 100755
+index d55d2cf..1fe2b19 100755
 --- a/src/server/authserver/Server/AuthSocket.cpp
 +++ b/src/server/authserver/Server/AuthSocket.cpp
-@@ -350,6 +350,9 @@ bool AuthSocket::_HandleLogonChallenge()
-     // Verify that this IP is not in the ip_banned table
-     LoginDatabase.Execute(LoginDatabase.GetPreparedStatement(LOGIN_SET_EXPIREDIPBANS));
+@@ -401,6 +401,7 @@ bool AuthSocket::_HandleLogonChallenge()
+             if (!locked)
+             {
+                 //set expired bans to inactive
++                LoginDatabase.Execute(LoginDatabase.GetPreparedStatement(LOGIN_UPD_ACCOUNT_PREMIUM));
+                 LoginDatabase.Execute(LoginDatabase.GetPreparedStatement(LOGIN_UPD_EXPIRED_ACCOUNT_BANS));
  
-+    LoginDatabase.Execute(
-+        LoginDatabase.GetPreparedStatement(LOGIN_SET_ACCOUNT_PREMIUM)
-+            );
-     const std::string& ip_address = socket().get_remote_address();
-     PreparedStatement *stmt = LoginDatabase.GetPreparedStatement(LOGIN_GET_IPBANNED);
-     stmt->setString(0, ip_address);
+                 // If the account is banned, reject the logon attempt
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
 new file mode 100644
-index 0000000..e4dafa9
+index 0000000..01a49a4
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
-@@ -0,0 +1,1980 @@
+@@ -0,0 +1,2002 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -455,7 +454,6 @@ index 0000000..e4dafa9
 +    Bind_When_Use = false;
 +    Bind_Quest_Item = false;
 +
-+    DisableBeta_PTR_Unused = false;
 +    DisablePermEnchant = false;
 +    DisableConjured = false;
 +    DisableGems = false;
@@ -526,7 +524,7 @@ index 0000000..e4dafa9
 +
 +    if (!AHBSeller)
 +    {
-+        if (debug_Out) sLog->outError("AHSeller: Disabled");
++        if (debug_Out) sLog->outInfo(LOG_FILTER_GENERAL, "AHSeller: Disabled");
 +        return;
 +    }
 +
@@ -535,7 +533,7 @@ index 0000000..e4dafa9
 +
 +    if (maxItems == 0)
 +    {
-+        //if (debug_Out) sLog->outString("AHSeller: Auctions disabled");
++        //if (debug_Out) sLog->outInfo(LOG_FILTER_GENERAL, "AHSeller: Auctions disabled");
 +        return;
 +    }
 +
@@ -554,14 +552,30 @@ index 0000000..e4dafa9
 +
 +    uint32 items = 0;
 +
++    if (auctions >= minItems)
++    {
++        glyphMode = true;
++        //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Auctions above minimum");
++        return;
++    }
++
 +	if(SellGlyphs)
 +	{
 +		if(GlyphsCount <= 0)
 +			GlyphsCount = 400;
++    if (auctions >= minItems)
++        glyphMode = true;
 +
-+		if(auctions >= minItems)
-+			glyphMode = true;
++    if (auctions >= maxItems)
++    {
++        //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Auctions at or above maximum");
++        return;
++    }
 +
++    if ((maxItems - auctions) >= ItemsPerCycle)
++        items = ItemsPerCycle;
++    else
++        items = (maxItems - auctions);
 +		if(auctions >= (maxItems + GlyphsCount))
 +			return;
 +
@@ -572,11 +586,12 @@ index 0000000..e4dafa9
 +	}
 +	else
 +	{
-+		if (auctions >= minItems)
-+		{
-+			//if (debug_Out) sLog.outString("AHSeller: Auctions above minimum");
-+			return;
-+		}
++
++    if (auctions >= minItems)
++        {
++        //if (debug_Out) sLog.outString("AHSeller: Auctions above minimum");
++            return;
++        }
 +
 +		if (auctions >= maxItems)
 +		{
@@ -590,7 +605,7 @@ index 0000000..e4dafa9
 +			items = (maxItems - auctions);
 +	}
 +
-+    if (debug_Out) sLog->outString("AHSeller: Adding %u Auctions", items);
++    if (debug_Out) sLog->outInfo(LOG_FILTER_GENERAL, "AHSeller: Adding %u Auctions", items);
 +
 +    uint32 AuctioneerGUID = 0;
 +
@@ -606,12 +621,12 @@ index 0000000..e4dafa9
 +        AuctioneerGUID = 23442; //goblin in GZ
 +        break;
 +    default:
-+        if (debug_Out) sLog->outError("AHSeller: GetAHID() - Default switch reached");
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: GetAHID() - Default switch reached");
 +        AuctioneerGUID = 23442; //default to neutral 7
 +        break;
 +    }
 +
-+    if (debug_Out) sLog->outString("AHSeller: Current Auctineer GUID is %u", AuctioneerGUID);
++    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Current Auctineer GUID is %u", AuctioneerGUID);
 +
 +    uint32 greyTGcount = config->GetPercents(AHB_GREY_TG);
 +    uint32 whiteTGcount = config->GetPercents(AHB_WHITE_TG);
@@ -647,13 +662,12 @@ index 0000000..e4dafa9
 +    uint32 purpleItems = config->GetItemCounts(AHB_PURPLE_I);
 +    uint32 orangeItems = config->GetItemCounts(AHB_ORANGE_I);
 +    uint32 yellowItems = config->GetItemCounts(AHB_YELLOW_I);
-+
-+    if (debug_Out) sLog->outString("AHSeller: %u items", items);
++    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: %u items", items);
 +
 +    // only insert a few at a time, so as not to peg the processor
 +    for (uint32 cnt = 1; cnt <= items; cnt++)
 +    {
-+    if (debug_Out) sLog->outString("AHSeller: %u count", cnt);
++    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: %u count", cnt);
 +        uint32 itemID = 0;
 +        uint32 itemColor = 99;
 +        uint32 loopbreaker = 0;
@@ -773,28 +787,28 @@ index 0000000..e4dafa9
 +                }
 +            default:
 +                {
-+                    if (debug_Out) sLog->outError("AHSeller: itemID Switch - Default Reached");
++                    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: itemID Switch - Default Reached");
 +                    break;
 +                }
 +            }
 +
 +            if (itemID == 0)
 +            {
-+                if (debug_Out) sLog->outError("AHSeller: Item::CreateItem() - ItemID is 0");
++                if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Item::CreateItem() - ItemID is 0");
 +                continue;
 +            }
 +
 +            ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemID);
 +            if (prototype == NULL)
 +            {
-+                if (debug_Out) sLog->outError("AHSeller: Huh?!?! prototype == NULL");
++                if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Huh?!?! prototype == NULL");
 +                continue;
 +            }
 +
 +            Item* item = Item::CreateItem(itemID, 1, AHBplayer);
 +            if (item == NULL)
 +            {
-+                if (debug_Out) sLog->outError("AHSeller: Item::CreateItem() returned NULL");
++                if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHSeller: Item::CreateItem() returned NULL");
 +                break;
 +            }
 +            item->AddToUpdateQueueOf(AHBplayer);
@@ -817,20 +831,20 @@ index 0000000..e4dafa9
 +                break;
 +            }
 +
-+            if ((prototype->Quality >= 0) && (prototype->Quality <= AHB_MAX_QUALITY))
++            if (prototype->Quality <= AHB_MAX_QUALITY)
 +            {
 +				if(!glyphMode)
 +				{
-+					if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
-+						stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
-+					else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
-+						stackCount = urand(1, item->GetMaxStackCount());
-+					else
-+						stackCount = 1;
-+					buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-+					buyoutPrice /= 100;
-+					bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-+					bidPrice /= 100;
++                if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
++                    stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
++                else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
++                    stackCount = urand(1, item->GetMaxStackCount());
++                else
++                    stackCount = 1;
++                buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
++                buyoutPrice /= 100;
++                bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
++                bidPrice /= 100;
 +				}
 +				else
 +				{
@@ -844,7 +858,7 @@ index 0000000..e4dafa9
 +            else
 +            {
 +                // quality is something it shouldn't be, let's get out of here
-+                if (debug_Out) sLog->outError("AHBuyer: Quality %u not Supported", prototype->Quality);
++                if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Quality %u not Supported", prototype->Quality);
 +                item->RemoveFromUpdateQueueOf(AHBplayer);
 +                continue;
 +            }
@@ -944,7 +958,7 @@ index 0000000..e4dafa9
 +{
 +    if (!AHBBuyer)
 +    {
-+        if (debug_Out) sLog->outError("AHBuyer: Disabled");
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Disabled");
 +        return;
 +    }
 +
@@ -971,7 +985,7 @@ index 0000000..e4dafa9
 +        // Do we have anything to bid? If not, stop here.
 +        if (possibleBids.empty())
 +        {
-+            //if (debug_Out) sLog->outString("AHBuyer: I have no items to bid on.");
++            //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: I have no items to bid on.");
 +            count = config->GetBidsPerInterval();
 +            continue;
 +        }
@@ -994,7 +1008,7 @@ index 0000000..e4dafa9
 +        Item *pItem =  sAuctionMgr->GetAItem(auction->item_guidlow);
 +        if (!pItem)
 +        {
-+            if (debug_Out) sLog->outError("AHBuyer: Item %u doesn't exist, perhaps bought already?", auction->item_guidlow);
++            if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Item %u doesn't exist, perhaps bought already?", auction->item_guidlow);
 +            continue;
 +        }
 +
@@ -1017,7 +1031,7 @@ index 0000000..e4dafa9
 +        {
 +        case 0:
 +            {
-+                if ((prototype->Quality >= 0) && (prototype->Quality <= AHB_MAX_QUALITY))
++                if (prototype->Quality <= AHB_MAX_QUALITY)
 +                {
 +                    if (currentprice < prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
 +                        bidMax = prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
@@ -1025,14 +1039,14 @@ index 0000000..e4dafa9
 +                else
 +                {
 +                    // quality is something it shouldn't be, let's get out of here
-+                    if (debug_Out) sLog->outError("AHBuyer: Quality %u not Supported", prototype->Quality);
++                    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Quality %u not Supported", prototype->Quality);
 +                    continue;
 +                }
 +                break;
 +            }
 +        case 1:
 +            {
-+                if ((prototype->Quality >= 0) && (prototype->Quality <= AHB_MAX_QUALITY))
++                if (prototype->Quality <= AHB_MAX_QUALITY)
 +                {
 +                    if (currentprice < prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
 +                        bidMax = prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
@@ -1040,7 +1054,7 @@ index 0000000..e4dafa9
 +                else
 +                {
 +                    // quality is something it shouldn't be, let's get out of here
-+                    if (debug_Out) sLog->outError("AHBuyer: Quality %u not Supported", prototype->Quality);
++                    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Quality %u not Supported", prototype->Quality);
 +                    continue;
 +                }
 +                break;
@@ -1075,32 +1089,32 @@ index 0000000..e4dafa9
 +
 +        if (debug_Out)
 +        {
-+            sLog->outString("-------------------------------------------------");
-+            sLog->outString("AHBuyer: Info for Auction #%u:", auction->Id);
-+            sLog->outString("AHBuyer: AuctionHouse: %u", auction->GetHouseId());
-+            sLog->outString("AHBuyer: Auctioneer: %u", auction->auctioneer);
-+            sLog->outString("AHBuyer: Owner: %u", auction->owner);
-+            sLog->outString("AHBuyer: Bidder: %u", auction->bidder);
-+            sLog->outString("AHBuyer: Starting Bid: %u", auction->startbid);
-+            sLog->outString("AHBuyer: Current Bid: %u", currentprice);
-+            sLog->outString("AHBuyer: Buyout: %u", auction->buyout);
-+            sLog->outString("AHBuyer: Deposit: %u", auction->deposit);
-+            sLog->outString("AHBuyer: Expire Time: %u", auction->expire_time);
-+            sLog->outString("AHBuyer: Bid Rate: %f", bidrate);
-+            sLog->outString("AHBuyer: Bid Max: %f", bidMax);
-+            sLog->outString("AHBuyer: Bid Value: %f", bidvalue);
-+            sLog->outString("AHBuyer: Bid Price: %u", bidprice);
-+            sLog->outString("AHBuyer: Item GUID: %u", auction->item_guidlow);
-+            sLog->outString("AHBuyer: Item Template: %u", auction->item_template);
-+            sLog->outString("AHBuyer: Item Info:");
-+            sLog->outString("AHBuyer: Item ID: %u", prototype->ItemId);
-+            sLog->outString("AHBuyer: Buy Price: %u", prototype->BuyPrice);
-+            sLog->outString("AHBuyer: Sell Price: %u", prototype->SellPrice);
-+            sLog->outString("AHBuyer: Bonding: %u", prototype->Bonding);
-+            sLog->outString("AHBuyer: Quality: %u", prototype->Quality);
-+            sLog->outString("AHBuyer: Item Level: %u", prototype->ItemLevel);
-+            sLog->outString("AHBuyer: Ammo Type: %u", prototype->AmmoType);
-+            sLog->outString("-------------------------------------------------");
++            sLog->outInfo(LOG_FILTER_GENERAL, "-------------------------------------------------");
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Info for Auction #%u:", auction->Id);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: AuctionHouse: %u", auction->GetHouseId());
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Auctioneer: %u", auction->auctioneer);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Owner: %u", auction->owner);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bidder: %u", auction->bidder);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Starting Bid: %u", auction->startbid);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Current Bid: %u", currentprice);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Buyout: %u", auction->buyout);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Deposit: %u", auction->deposit);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Expire Time: %u", uint32(auction->expire_time));
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bid Rate: %f", bidrate);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bid Max: %Lf", bidMax);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bid Value: %Lf", bidvalue);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bid Price: %u", bidprice);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Item GUID: %u", auction->item_guidlow);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Item Template: %u", auction->item_template);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Item Info:");
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Item ID: %u", prototype->ItemId);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Buy Price: %u", prototype->BuyPrice);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Sell Price: %u", prototype->SellPrice);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Bonding: %u", prototype->Bonding);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Quality: %u", prototype->Quality);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Item Level: %u", prototype->ItemLevel);
++            sLog->outInfo(LOG_FILTER_GENERAL, "AHBuyer: Ammo Type: %u", prototype->AmmoType);
++            sLog->outInfo(LOG_FILTER_GENERAL, "-------------------------------------------------");
 +        }
 +
 +        // Check whether we do normal bid, or buyout
@@ -1159,7 +1173,7 @@ index 0000000..e4dafa9
 +    if ((!AHBSeller) && (!AHBBuyer))
 +        return;
 +
-+	WorldSession _session(AHBplayerAccount, NULL, SEC_PLAYER, false, true, 0, LOCALE_enUS, 0, 0);
++    WorldSession _session(AHBplayerAccount, NULL, SEC_PLAYER, false, true, 0, LOCALE_enUS, 0, 0);
 +    Player _AHBplayer(&_session);
 +    _AHBplayer.Initialize(AHBplayerGUID);
 +    sObjectAccessor->AddObject(&_AHBplayer);
@@ -1170,8 +1184,8 @@ index 0000000..e4dafa9
 +        addNewAuctions(&_AHBplayer, &AllianceConfig);
 +        if (((_newrun - _lastrun_a) >= (AllianceConfig.GetBiddingInterval() * MINUTE)) && (AllianceConfig.GetBidsPerInterval() > 0))
 +        {
-+            //if (debug_Out) sLog->outString("AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_a));
-+            //if (debug_Out) sLog->outString("AHBuyer: Bidding on Alliance Auctions");
++            //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_a));
++            //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Bidding on Alliance Auctions");
 +            addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig, &_session);
 +            _lastrun_a = _newrun;
 +        }
@@ -1179,8 +1193,8 @@ index 0000000..e4dafa9
 +        addNewAuctions(&_AHBplayer, &HordeConfig);
 +        if (((_newrun - _lastrun_h) >= (HordeConfig.GetBiddingInterval() * MINUTE)) && (HordeConfig.GetBidsPerInterval() > 0))
 +        {
-+            //if (debug_Out) sLog->outString("AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_h));
-+            //if (debug_Out) sLog->outString("AHBuyer: Bidding on Horde Auctions");
++            //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_h));
++            //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Bidding on Horde Auctions");
 +            addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig, &_session);
 +            _lastrun_h = _newrun;
 +        }
@@ -1189,8 +1203,8 @@ index 0000000..e4dafa9
 +    addNewAuctions(&_AHBplayer, &NeutralConfig);
 +    if (((_newrun - _lastrun_n) >= (NeutralConfig.GetBiddingInterval() * MINUTE)) && (NeutralConfig.GetBidsPerInterval() > 0))
 +    {
-+        //if (debug_Out) sLog->outString("AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_n));
-+        //if (debug_Out) sLog->outString("AHBuyer: Bidding on Neutral Auctions");
++        //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_n));
++        //if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBuyer: Bidding on Neutral Auctions");
 +        addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig, &_session);
 +        _lastrun_n = _newrun;
 +    }
@@ -1226,7 +1240,15 @@ index 0000000..e4dafa9
 +    Bind_When_Use = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_When_Use", true);
 +    Bind_Quest_Item = ConfigMgr::GetBoolDefault("AuctionHouseBot.Bind_Quest_Item", false);
 +
-+    DisableBeta_PTR_Unused = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableBeta_PTR_Unused", false);
++    std::string disabledItems = ConfigMgr::GetStringDefault("AuctionHouseBot.DisabledItems", "");
++    DisableItemStore.clear();
++    Tokens tokens(disabledItems, ' ');
++    for (Tokens::iterator iter = tokens.begin(); iter != tokens.end(); ++iter)
++    {
++        uint32 id = uint32(atol(*iter));
++        DisableItemStore.insert(id);
++    }
++
 +    DisablePermEnchant = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisablePermEnchant", false);
 +    DisableConjured = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableConjured", false);
 +    DisableGems = ConfigMgr::GetBoolDefault("AuctionHouseBot.DisableGems", false);
@@ -1273,7 +1295,6 @@ index 0000000..e4dafa9
 +	GlyphBuyOutPriceMax = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
 +	GlyphBidPriceMin = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
 +	GlyphBidPriceMax = ConfigMgr::GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
-+
 +    //End Filters
 +    if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
 +    {
@@ -1291,7 +1312,7 @@ index 0000000..e4dafa9
 +        QueryResult result = CharacterDatabase.PQuery("SELECT 1 FROM characters WHERE account = %u AND guid = %u", AHBplayerAccount, AHBplayerGUID);
 +        if (!result)
 +       {
-+           sLog->outError("AuctionHouseBot: The account/GUID-information set for your AHBot is incorrect (account: %u guid: %u)", AHBplayerAccount, AHBplayerGUID);
++           sLog->outError(LOG_FILTER_SERVER_LOADING, "AuctionHouseBot: The account/GUID-information set for your AHBot is incorrect (account: %u guid: %u)", AHBplayerAccount, AHBplayerGUID);
 +           return;
 +        }
 +    }
@@ -1301,7 +1322,7 @@ index 0000000..e4dafa9
 +        QueryResult results = QueryResult(NULL);
 +        char npcQuery[] = "SELECT distinct item FROM npc_vendor";
 +        results = WorldDatabase.Query(npcQuery);
-+        if (results != NULL)
++        if (results)
 +        {
 +            do
 +            {
@@ -1312,7 +1333,7 @@ index 0000000..e4dafa9
 +        }
 +        else
 +        {
-+            if (debug_Out) sLog->outString("AuctionHouseBot: \"%s\" failed", npcQuery);
++            if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: \"%s\" failed", npcQuery);
 +        }
 +
 +		if(SellGlyphs)
@@ -1346,10 +1367,9 @@ index 0000000..e4dafa9
 +			}
 +			else
 +			{
-+				if (debug_Out) sLog->outString("AuctionHouseBot: query glyphs failed");
++				//if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: query glyphs failed");
 +			}
 +		}
-+
 +        char lootQuery[] = "SELECT item FROM creature_loot_template UNION "
 +            "SELECT item FROM reference_loot_template UNION "
 +            "SELECT item FROM disenchant_loot_template UNION "
@@ -1362,7 +1382,7 @@ index 0000000..e4dafa9
 +            "SELECT item FROM skinning_loot_template";
 +
 +        results = WorldDatabase.Query(lootQuery);
-+        if (results != NULL)
++        if (results)
 +        {
 +            do
 +            {
@@ -1373,12 +1393,14 @@ index 0000000..e4dafa9
 +        }
 +        else
 +        {
-+            if (debug_Out) sLog->outString("AuctionHouseBot: \"%s\" failed", lootQuery);
++            if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: \"%s\" failed", lootQuery);
 +        }
 +
 +        ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
 +        for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
 +        {
++
++
 +
 +            switch (itr->second.Bonding)
 +            {
@@ -1419,7 +1441,7 @@ index 0000000..e4dafa9
 +                break;
 +            }
 +
-+            if ((itr->second.Quality < 0) || (itr->second.Quality > 6))
++            if (itr->second.Quality > 6)
 +                continue;
 +
 +            if ((Vendor_Items == 0) && !(itr->second.Class == ITEM_CLASS_TRADE_GOODS))
@@ -1516,265 +1538,264 @@ index 0000000..e4dafa9
 +                    continue;
 +            }
 +
-+             //TODO:Make list of items and create a vector
-+            // Disable PTR/Beta/Unused items
-+            if ((DisableBeta_PTR_Unused) && ((itr->second.ItemId == 21878) || (itr->second.ItemId == 27774) || (itr->second.ItemId == 27811) || (itr->second.ItemId == 28117) || (itr->second.ItemId == 28112)))
++            // Disable items by Id
++            if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable permanent enchants items
 +            if ((DisablePermEnchant) && (itr->second.Class == ITEM_CLASS_PERMANENT))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Permanent Enchant Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Permanent Enchant Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable conjured items
 +            if ((DisableConjured) && (itr->second.IsConjuredConsumable()))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Conjured Consumable)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Conjured Consumable)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable gems
 +            if ((DisableGems) && (itr->second.Class == ITEM_CLASS_GEM))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Gem)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Gem)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable money
 +            if ((DisableMoney) && (itr->second.Class == ITEM_CLASS_MONEY))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Money)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Money)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable moneyloot
 +            if ((DisableMoneyLoot) && (itr->second.MinMoneyLoot > 0))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (MoneyLoot)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (MoneyLoot)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable lootable items
 +            if ((DisableLootable) && (itr->second.Flags & 4))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Lootable Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Lootable Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable Keys
 +            if ((DisableKeys) && (itr->second.Class == ITEM_CLASS_KEY))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Quest Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Quest Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items with duration
 +            if ((DisableDuration) && (itr->second.Duration > 0))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Has a Duration)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Has a Duration)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items which are BOP or Quest Items and have a required level lower than the item level
 +            if ((DisableBOP_Or_Quest_NoReqLevel) && ((itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM) && (itr->second.RequiredLevel < itr->second.ItemLevel)))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Warrior
 +            if ((DisableWarriorItems) && (itr->second.AllowableClass == 1))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Warrior Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Warrior Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Paladin
 +            if ((DisablePaladinItems) && (itr->second.AllowableClass == 2))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Paladin Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Paladin Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Hunter
 +            if ((DisableHunterItems) && (itr->second.AllowableClass == 4))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Hunter Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Hunter Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Rogue
 +            if ((DisableRogueItems) && (itr->second.AllowableClass == 8))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Rogue Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Rogue Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Priest
 +            if ((DisablePriestItems) && (itr->second.AllowableClass == 16))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Priest Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Priest Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for DK
 +            if ((DisableDKItems) && (itr->second.AllowableClass == 32))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (DK Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (DK Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Shaman
 +            if ((DisableShamanItems) && (itr->second.AllowableClass == 64))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Shaman Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Shaman Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Mage
 +            if ((DisableMageItems) && (itr->second.AllowableClass == 128))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Mage Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Mage Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Warlock
 +            if ((DisableWarlockItems) && (itr->second.AllowableClass == 256))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Warlock Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Warlock Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Unused Class
 +            if ((DisableUnusedClassItems) && (itr->second.AllowableClass == 512))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Unused Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Unused Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +            // Disable items specifically for Druid
 +            if ((DisableDruidItems) && (itr->second.AllowableClass == 1024))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Druid Item)", itr->second.ItemId);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Druid Item)", itr->second.ItemId);
 +                continue;
 +            }
 +
 +             // Disable Items below level X
 +            if ((DisableItemsBelowLevel) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel < DisableItemsBelowLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Items above level X
 +            if ((DisableItemsAboveLevel) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel > DisableItemsAboveLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +           // Disable Trade Goods below level X
 +            if ((DisableTGsBelowLevel) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel < DisableTGsBelowLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Trade Good %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Trade Good %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +           // Disable Trade Goods above level X
 +            if ((DisableTGsAboveLevel) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel > DisableTGsAboveLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Trade Good %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Trade Good %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Items below GUID X
 +            if ((DisableItemsBelowGUID) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId < DisableItemsBelowGUID))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Items above GUID X
 +            if ((DisableItemsAboveGUID) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId > DisableItemsAboveGUID))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Item Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Trade Goods below GUID X
 +            if ((DisableTGsBelowGUID) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId < DisableTGsBelowGUID))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Trade Goods above GUID X
 +            if ((DisableTGsAboveGUID) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId > DisableTGsAboveGUID))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (Trade Good Level = %u)", itr->second.ItemId, itr->second.ItemLevel);
 +                continue;
 +            }
 +
 +            // Disable Items for level lower than X
 +            if ((DisableItemsBelowReqLevel) && (itr->second.RequiredLevel < DisableItemsBelowReqLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
 +                continue;
 +            }
 +
 +            // Disable Items for level higher than X
 +            if ((DisableItemsAboveReqLevel) && (itr->second.RequiredLevel > DisableItemsAboveReqLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
 +                continue;
 +            }
 +
 +            // Disable Trade Goods for level lower than X
 +            if ((DisableTGsBelowReqLevel) && (itr->second.RequiredLevel < DisableTGsBelowReqLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Trade Good %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Trade Good %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
 +                continue;
 +            }
 +
 +            // Disable Trade Goods for level higher than X
 +            if ((DisableTGsAboveReqLevel) && (itr->second.RequiredLevel > DisableTGsAboveReqLevel))
 +            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Trade Good %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
++                if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Trade Good %u disabled (RequiredLevel = %u)", itr->second.ItemId, itr->second.RequiredLevel);
 +                continue;
 +            }
 +
 +            // Disable Items that require skill lower than X
-+            if ((DisableItemsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableItemsBelowReqSkillRank))
-+            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
-+                continue;
-+            }
++            // if ((DisableItemsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableItemsBelowReqSkillRank))
++            // {
++            //    if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
++            //    continue;
++            // }
 +
 +            // Disable Items that require skill higher than X
-+            if ((DisableItemsAboveReqSkillRank) && (itr->second.RequiredSkillRank > DisableItemsAboveReqSkillRank))
-+            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
-+                continue;
-+            }
++            // if ((DisableItemsAboveReqSkillRank) && (itr->second.RequiredSkillRank > DisableItemsAboveReqSkillRank))
++            // {
++            //    if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
++            //    continue;
++            // }
 +
 +            // Disable Trade Goods that require skill lower than X
-+            if ((DisableTGsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableTGsBelowReqSkillRank))
-+            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
-+                continue;
-+            }
++            // if ((DisableTGsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableTGsBelowReqSkillRank))
++            // {
++            //    if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
++            //    continue;
++            // }
 +
 +            // Disable Trade Goods that require skill higher than X
-+            if ((DisableTGsAboveReqSkillRank) && (itr->second.RequiredSkillRank > DisableTGsAboveReqSkillRank))
-+            {
-+                if (debug_Out_Filters) sLog->outString("AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
-+                continue;
-+            }
++            // if ((DisableTGsAboveReqSkillRank) && (itr->second.?RequiredSkillRank > DisableTGsAboveReqSkillRank))
++            // {
++            //    if (debug_Out_Filters) sLog->outError(LOG_FILTER_GENERAL, "AuctionHouseBot: Item %u disabled (RequiredSkillRank = %u)", itr->second.ItemId, itr->second.RequiredSkillRank);
++            //    continue;
++            // }
 +
 +            switch (itr->second.Quality)
 +            {
@@ -1844,29 +1865,28 @@ index 0000000..e4dafa9
 +            (orangeItemsBin.size() == 0) &&
 +            (yellowItemsBin.size() == 0))
 +        {
-+            sLog->outError("AuctionHouseBot: No items");
++            sLog->outError(LOG_FILTER_SERVER_LOADING, "AuctionHouseBot: No items");
 +            AHBSeller = 0;
 +        }
 +
-+        sLog->outString("AuctionHouseBot:");
-+        sLog->outString("loaded %u grey trade goods", greyTradeGoodsBin.size());
-+        sLog->outString("loaded %u white trade goods", whiteTradeGoodsBin.size());
-+        sLog->outString("loaded %u green trade goods", greenTradeGoodsBin.size());
-+        sLog->outString("loaded %u blue trade goods", blueTradeGoodsBin.size());
-+        sLog->outString("loaded %u purple trade goods", purpleTradeGoodsBin.size());
-+        sLog->outString("loaded %u orange trade goods", orangeTradeGoodsBin.size());
-+        sLog->outString("loaded %u yellow trade goods", yellowTradeGoodsBin.size());
-+        sLog->outString("loaded %u grey items", greyItemsBin.size());
-+        sLog->outString("loaded %u white items", whiteItemsBin.size());
-+        sLog->outString("loaded %u green items", greenItemsBin.size());
-+        sLog->outString("loaded %u blue items", blueItemsBin.size());
-+        sLog->outString("loaded %u purple items", purpleItemsBin.size());
-+        sLog->outString("loaded %u orange items", orangeItemsBin.size());
-+        sLog->outString("loaded %u yellow items", yellowItemsBin.size());
-+		sLog->outString("loaded %u glyph items", glyphItemsBin.size());
-+
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "AuctionHouseBot:");
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u grey trade goods", uint32(greyTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u white trade goods", uint32(whiteTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u green trade goods", uint32(greenTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u blue trade goods", uint32(blueTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u purple trade goods", uint32(purpleTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u orange trade goods", uint32(orangeTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u yellow trade goods", uint32(yellowTradeGoodsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u grey items", uint32(greyItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u white items", uint32(whiteItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u green items", uint32(greenItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u blue items", uint32(blueItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u purple items", uint32(purpleItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u orange items", uint32(orangeItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u yellow items", uint32(yellowItemsBin.size()));
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "loaded %u glyph items", uint32(glyphItemsBin.size()));
 +    }
-+    sLog->outString("AuctionHouseBot and AuctionHouseBuyer have been loaded.");
++    sLog->outInfo(LOG_FILTER_SERVER_LOADING, "AuctionHouseBot and AuctionHouseBuyer have been loaded.");
 +}
 +
 +void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
@@ -1877,7 +1897,7 @@ index 0000000..e4dafa9
 +    Item *pItem =  sAuctionMgr->GetAItem(ah->item_guidlow);
 +    if (!pItem)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: Item %u doesn't exist, perhaps bought already?", ah->item_guidlow);
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: Item %u doesn't exist, perhaps bought already?", ah->item_guidlow);
 +        return;
 +    }
 +
@@ -1889,22 +1909,22 @@ index 0000000..e4dafa9
 +    FactionTemplateEntry const* u_entry = sFactionTemplateStore.LookupEntry(ah->GetHouseFaction());
 +    if (!u_entry)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
 +        config = &NeutralConfig;
 +    }
 +    else if (u_entry->ourMask & FACTION_MASK_ALLIANCE)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Alliance", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Alliance", ah->GetHouseFaction());
 +        config = &AllianceConfig;
 +    }
 +    else if (u_entry->ourMask & FACTION_MASK_HORDE)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Horde", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Horde", ah->GetHouseFaction());
 +        config = &HordeConfig;
 +    }
 +    else
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
 +        config = &NeutralConfig;
 +    }
 +
@@ -1921,22 +1941,22 @@ index 0000000..e4dafa9
 +    FactionTemplateEntry const* u_entry = sFactionTemplateStore.LookupEntry(ah->GetHouseFaction());
 +    if (!u_entry)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
 +        config = &NeutralConfig;
 +    }
 +    else if (u_entry->ourMask & FACTION_MASK_ALLIANCE)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Alliance", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Alliance", ah->GetHouseFaction());
 +        config = &AllianceConfig;
 +    }
 +    else if (u_entry->ourMask & FACTION_MASK_HORDE)
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Horde", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Horde", ah->GetHouseFaction());
 +        config = &HordeConfig;
 +    }
 +    else
 +    {
-+        if (debug_Out) sLog->outError("AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
++        if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "AHBot: %u returned as House Faction. Neutral", ah->GetHouseFaction());
 +        config = &NeutralConfig;
 +    }
 +
@@ -2149,7 +2169,8 @@ index 0000000..e4dafa9
 +
 +void AuctionHouseBot::LoadValues(AHBConfig *config)
 +{
-+    if (debug_Out) sLog->outString(((std::string)("Start Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetString())).c_str());
++    if (debug_Out)
++        sLog->outError(LOG_FILTER_GENERAL, "Start Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u", config->GetAHID())->Fetch()->GetCString());
 +    if (AHBSeller)
 +    {
 +        //load min and max items
@@ -2211,57 +2232,57 @@ index 0000000..e4dafa9
 +        config->SetMaxStack(AHB_YELLOW, CharacterDatabase.PQuery("SELECT maxstackyellow FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetUInt32());
 +        if (debug_Out)
 +        {
-+            sLog->outString("minItems                = %u", config->GetMinItems());
-+            sLog->outString("maxItems                = %u", config->GetMaxItems());
-+            sLog->outString("percentGreyTradeGoods   = %u", config->GetPercentages(AHB_GREY_TG));
-+            sLog->outString("percentWhiteTradeGoods  = %u", config->GetPercentages(AHB_WHITE_TG));
-+            sLog->outString("percentGreenTradeGoods  = %u", config->GetPercentages(AHB_GREEN_TG));
-+            sLog->outString("percentBlueTradeGoods   = %u", config->GetPercentages(AHB_BLUE_TG));
-+            sLog->outString("percentPurpleTradeGoods = %u", config->GetPercentages(AHB_PURPLE_TG));
-+            sLog->outString("percentOrangeTradeGoods = %u", config->GetPercentages(AHB_ORANGE_TG));
-+            sLog->outString("percentYellowTradeGoods = %u", config->GetPercentages(AHB_YELLOW_TG));
-+            sLog->outString("percentGreyItems        = %u", config->GetPercentages(AHB_GREY_I));
-+            sLog->outString("percentWhiteItems       = %u", config->GetPercentages(AHB_WHITE_I));
-+            sLog->outString("percentGreenItems       = %u", config->GetPercentages(AHB_GREEN_I));
-+            sLog->outString("percentBlueItems        = %u", config->GetPercentages(AHB_BLUE_I));
-+            sLog->outString("percentPurpleItems      = %u", config->GetPercentages(AHB_PURPLE_I));
-+            sLog->outString("percentOrangeItems      = %u", config->GetPercentages(AHB_ORANGE_I));
-+            sLog->outString("percentYellowItems      = %u", config->GetPercentages(AHB_YELLOW_I));
-+            sLog->outString("minPriceGrey            = %u", config->GetMinPrice(AHB_GREY));
-+            sLog->outString("maxPriceGrey            = %u", config->GetMaxPrice(AHB_GREY));
-+            sLog->outString("minPriceWhite           = %u", config->GetMinPrice(AHB_WHITE));
-+            sLog->outString("maxPriceWhite           = %u", config->GetMaxPrice(AHB_WHITE));
-+            sLog->outString("minPriceGreen           = %u", config->GetMinPrice(AHB_GREEN));
-+            sLog->outString("maxPriceGreen           = %u", config->GetMaxPrice(AHB_GREEN));
-+            sLog->outString("minPriceBlue            = %u", config->GetMinPrice(AHB_BLUE));
-+            sLog->outString("maxPriceBlue            = %u", config->GetMaxPrice(AHB_BLUE));
-+            sLog->outString("minPricePurple          = %u", config->GetMinPrice(AHB_PURPLE));
-+            sLog->outString("maxPricePurple          = %u", config->GetMaxPrice(AHB_PURPLE));
-+            sLog->outString("minPriceOrange          = %u", config->GetMinPrice(AHB_ORANGE));
-+            sLog->outString("maxPriceOrange          = %u", config->GetMaxPrice(AHB_ORANGE));
-+            sLog->outString("minPriceYellow          = %u", config->GetMinPrice(AHB_YELLOW));
-+            sLog->outString("maxPriceYellow          = %u", config->GetMaxPrice(AHB_YELLOW));
-+            sLog->outString("minBidPriceGrey         = %u", config->GetMinBidPrice(AHB_GREY));
-+            sLog->outString("maxBidPriceGrey         = %u", config->GetMaxBidPrice(AHB_GREY));
-+            sLog->outString("minBidPriceWhite        = %u", config->GetMinBidPrice(AHB_WHITE));
-+            sLog->outString("maxBidPriceWhite        = %u", config->GetMaxBidPrice(AHB_WHITE));
-+            sLog->outString("minBidPriceGreen        = %u", config->GetMinBidPrice(AHB_GREEN));
-+            sLog->outString("maxBidPriceGreen        = %u", config->GetMaxBidPrice(AHB_GREEN));
-+            sLog->outString("minBidPriceBlue         = %u", config->GetMinBidPrice(AHB_BLUE));
-+            sLog->outString("maxBidPriceBlue         = %u", config->GetMinBidPrice(AHB_BLUE));
-+            sLog->outString("minBidPricePurple       = %u", config->GetMinBidPrice(AHB_PURPLE));
-+            sLog->outString("maxBidPricePurple       = %u", config->GetMaxBidPrice(AHB_PURPLE));
-+            sLog->outString("minBidPriceOrange       = %u", config->GetMinBidPrice(AHB_ORANGE));
-+            sLog->outString("maxBidPriceOrange       = %u", config->GetMaxBidPrice(AHB_ORANGE));
-+            sLog->outString("minBidPriceYellow       = %u", config->GetMinBidPrice(AHB_YELLOW));
-+            sLog->outString("maxBidPriceYellow       = %u", config->GetMaxBidPrice(AHB_YELLOW));
-+            sLog->outString("maxStackGrey            = %u", config->GetMaxStack(AHB_GREY));
-+            sLog->outString("maxStackWhite           = %u", config->GetMaxStack(AHB_WHITE));
-+            sLog->outString("maxStackGreen           = %u", config->GetMaxStack(AHB_GREEN));
-+            sLog->outString("maxStackBlue            = %u", config->GetMaxStack(AHB_BLUE));
-+            sLog->outString("maxStackPurple          = %u", config->GetMaxStack(AHB_PURPLE));
-+            sLog->outString("maxStackOrange          = %u", config->GetMaxStack(AHB_ORANGE));
-+            sLog->outString("maxStackYellow          = %u", config->GetMaxStack(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "minItems                = %u", config->GetMinItems());
++            sLog->outError(LOG_FILTER_GENERAL, "maxItems                = %u", config->GetMaxItems());
++            sLog->outError(LOG_FILTER_GENERAL, "percentGreyTradeGoods   = %u", config->GetPercentages(AHB_GREY_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentWhiteTradeGoods  = %u", config->GetPercentages(AHB_WHITE_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentGreenTradeGoods  = %u", config->GetPercentages(AHB_GREEN_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentBlueTradeGoods   = %u", config->GetPercentages(AHB_BLUE_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentPurpleTradeGoods = %u", config->GetPercentages(AHB_PURPLE_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentOrangeTradeGoods = %u", config->GetPercentages(AHB_ORANGE_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentYellowTradeGoods = %u", config->GetPercentages(AHB_YELLOW_TG));
++            sLog->outError(LOG_FILTER_GENERAL, "percentGreyItems        = %u", config->GetPercentages(AHB_GREY_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentWhiteItems       = %u", config->GetPercentages(AHB_WHITE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentGreenItems       = %u", config->GetPercentages(AHB_GREEN_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentBlueItems        = %u", config->GetPercentages(AHB_BLUE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentPurpleItems      = %u", config->GetPercentages(AHB_PURPLE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentOrangeItems      = %u", config->GetPercentages(AHB_ORANGE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "percentYellowItems      = %u", config->GetPercentages(AHB_YELLOW_I));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceGrey            = %u", config->GetMinPrice(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceGrey            = %u", config->GetMaxPrice(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceWhite           = %u", config->GetMinPrice(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceWhite           = %u", config->GetMaxPrice(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceGreen           = %u", config->GetMinPrice(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceGreen           = %u", config->GetMaxPrice(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceBlue            = %u", config->GetMinPrice(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceBlue            = %u", config->GetMaxPrice(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "minPricePurple          = %u", config->GetMinPrice(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPricePurple          = %u", config->GetMaxPrice(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceOrange          = %u", config->GetMinPrice(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceOrange          = %u", config->GetMaxPrice(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "minPriceYellow          = %u", config->GetMinPrice(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "maxPriceYellow          = %u", config->GetMaxPrice(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceGrey         = %u", config->GetMinBidPrice(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceGrey         = %u", config->GetMaxBidPrice(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceWhite        = %u", config->GetMinBidPrice(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceWhite        = %u", config->GetMaxBidPrice(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceGreen        = %u", config->GetMinBidPrice(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceGreen        = %u", config->GetMaxBidPrice(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceBlue         = %u", config->GetMinBidPrice(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceBlue         = %u", config->GetMinBidPrice(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPricePurple       = %u", config->GetMinBidPrice(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPricePurple       = %u", config->GetMaxBidPrice(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceOrange       = %u", config->GetMinBidPrice(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceOrange       = %u", config->GetMaxBidPrice(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "minBidPriceYellow       = %u", config->GetMinBidPrice(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "maxBidPriceYellow       = %u", config->GetMaxBidPrice(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackGrey            = %u", config->GetMaxStack(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackWhite           = %u", config->GetMaxStack(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackGreen           = %u", config->GetMaxStack(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackBlue            = %u", config->GetMaxStack(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackPurple          = %u", config->GetMaxStack(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackOrange          = %u", config->GetMaxStack(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "maxStackYellow          = %u", config->GetMaxStack(AHB_YELLOW));
 +        }
 +        //AuctionHouseEntry const* ahEntry =  sAuctionMgr->GetAuctionHouseEntry(config->GetAHFID());
 +        AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config->GetAHFID());
@@ -2331,14 +2352,14 @@ index 0000000..e4dafa9
 +        }
 +        if (debug_Out)
 +        {
-+            sLog->outString(((std::string)("Current Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetString())).c_str());
-+            sLog->outString("Grey Trade Goods\t%u\tGrey Items\t%u", config->GetItemCounts(AHB_GREY_TG), config->GetItemCounts(AHB_GREY_I));
-+            sLog->outString("White Trade Goods\t%u\tWhite Items\t%u", config->GetItemCounts(AHB_WHITE_TG), config->GetItemCounts(AHB_WHITE_I));
-+            sLog->outString("Green Trade Goods\t%u\tGreen Items\t%u", config->GetItemCounts(AHB_GREEN_TG), config->GetItemCounts(AHB_GREEN_I));
-+            sLog->outString("Blue Trade Goods\t%u\tBlue Items\t%u", config->GetItemCounts(AHB_BLUE_TG), config->GetItemCounts(AHB_BLUE_I));
-+            sLog->outString("Purple Trade Goods\t%u\tPurple Items\t%u", config->GetItemCounts(AHB_PURPLE_TG), config->GetItemCounts(AHB_PURPLE_I));
-+            sLog->outString("Orange Trade Goods\t%u\tOrange Items\t%u", config->GetItemCounts(AHB_ORANGE_TG), config->GetItemCounts(AHB_ORANGE_I));
-+            sLog->outString("Yellow Trade Goods\t%u\tYellow Items\t%u", config->GetItemCounts(AHB_YELLOW_TG), config->GetItemCounts(AHB_YELLOW_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Current Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetCString());
++            sLog->outError(LOG_FILTER_GENERAL, "Grey Trade Goods\t%u\tGrey Items\t%u", config->GetItemCounts(AHB_GREY_TG), config->GetItemCounts(AHB_GREY_I));
++            sLog->outError(LOG_FILTER_GENERAL, "White Trade Goods\t%u\tWhite Items\t%u", config->GetItemCounts(AHB_WHITE_TG), config->GetItemCounts(AHB_WHITE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Green Trade Goods\t%u\tGreen Items\t%u", config->GetItemCounts(AHB_GREEN_TG), config->GetItemCounts(AHB_GREEN_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Blue Trade Goods\t%u\tBlue Items\t%u", config->GetItemCounts(AHB_BLUE_TG), config->GetItemCounts(AHB_BLUE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Purple Trade Goods\t%u\tPurple Items\t%u", config->GetItemCounts(AHB_PURPLE_TG), config->GetItemCounts(AHB_PURPLE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Orange Trade Goods\t%u\tOrange Items\t%u", config->GetItemCounts(AHB_ORANGE_TG), config->GetItemCounts(AHB_ORANGE_I));
++            sLog->outError(LOG_FILTER_GENERAL, "Yellow Trade Goods\t%u\tYellow Items\t%u", config->GetItemCounts(AHB_YELLOW_TG), config->GetItemCounts(AHB_YELLOW_I));
 +        }
 +    }
 +    if (AHBBuyer)
@@ -2357,22 +2378,22 @@ index 0000000..e4dafa9
 +        config->SetBidsPerInterval(CharacterDatabase.PQuery("SELECT buyerbidsperinterval FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetUInt32());
 +        if (debug_Out)
 +        {
-+            sLog->outString("buyerPriceGrey          = %u", config->GetBuyerPrice(AHB_GREY));
-+            sLog->outString("buyerPriceWhite         = %u", config->GetBuyerPrice(AHB_WHITE));
-+            sLog->outString("buyerPriceGreen         = %u", config->GetBuyerPrice(AHB_GREEN));
-+            sLog->outString("buyerPriceBlue          = %u", config->GetBuyerPrice(AHB_BLUE));
-+            sLog->outString("buyerPricePurple        = %u", config->GetBuyerPrice(AHB_PURPLE));
-+            sLog->outString("buyerPriceOrange        = %u", config->GetBuyerPrice(AHB_ORANGE));
-+            sLog->outString("buyerPriceYellow        = %u", config->GetBuyerPrice(AHB_YELLOW));
-+            sLog->outString("buyerBiddingInterval    = %u", config->GetBiddingInterval());
-+            sLog->outString("buyerBidsPerInterval    = %u", config->GetBidsPerInterval());
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceGrey          = %u", config->GetBuyerPrice(AHB_GREY));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceWhite         = %u", config->GetBuyerPrice(AHB_WHITE));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceGreen         = %u", config->GetBuyerPrice(AHB_GREEN));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceBlue          = %u", config->GetBuyerPrice(AHB_BLUE));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPricePurple        = %u", config->GetBuyerPrice(AHB_PURPLE));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceOrange        = %u", config->GetBuyerPrice(AHB_ORANGE));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerPriceYellow        = %u", config->GetBuyerPrice(AHB_YELLOW));
++            sLog->outError(LOG_FILTER_GENERAL, "buyerBiddingInterval    = %u", config->GetBiddingInterval());
++            sLog->outError(LOG_FILTER_GENERAL, "buyerBidsPerInterval    = %u", config->GetBidsPerInterval());
 +        }
 +    }
-+    if (debug_Out) sLog->outString(((std::string)("End Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetString())).c_str());
++    if (debug_Out) sLog->outError(LOG_FILTER_GENERAL, "End Settings for %s Auctionhouses:", CharacterDatabase.PQuery("SELECT name FROM auctionhousebot WHERE auctionhouse = %u",config->GetAHID())->Fetch()->GetCString());
 +}
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
 new file mode 100644
-index 0000000..a7da388
+index 0000000..648a44d
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
 @@ -0,0 +1,1257 @@
@@ -3553,7 +3574,6 @@ index 0000000..a7da388
 +    bool Bind_When_Use;
 +    bool Bind_Quest_Item;
 +
-+    bool DisableBeta_PTR_Unused;
 +    bool DisablePermEnchant;
 +    bool DisableConjured;
 +    bool DisableGems;
@@ -3593,6 +3613,7 @@ index 0000000..a7da388
 +    uint32 DisableTGsBelowReqSkillRank;
 +    uint32 DisableTGsAboveReqSkillRank;
 +
++    std::set<uint32> DisableItemStore;
 +	bool SellGlyphs;
 +	uint32 GlyphsCount;
 +	uint32 DisableGlyphBelowLevel;
@@ -3634,11 +3655,11 @@ index 0000000..a7da388
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index 0a2ff75..4f7687f 100644
+index 84b5513..43cf984 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-@@ -217,7 +217,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
-         uint32 profit = auction->bid + auction->deposit - auctionCut;
+@@ -177,7 +177,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
+         uint32 profit = auction->bid + auction->deposit - auction->GetAuctionCut();
  
          //FIXME: what do if owner offline
 -        if (owner)
@@ -3646,39 +3667,41 @@ index 0a2ff75..4f7687f 100644
          {
              owner->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GOLD_EARNED_BY_AUCTIONS, profit);
              owner->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_SOLD, auction->bid);
-@@ -247,7 +247,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction, SQLTransacti
-         std::ostringstream subject;
-         subject << auction->item_template << ":0:" << AUCTION_EXPIRED << ":0:0";
- 
+@@ -205,7 +205,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction, SQLTransacti
+     // owner exist
+     if (owner || owner_accId)
+     {
 -        if (owner)
 +        if (owner && owner->GetGUIDLow() != auctionbot.GetAHBplayerGUID())
              owner->GetSession()->SendAuctionOwnerNotification(auction);
  
-         MailDraft(subject.str(), "")                        // TODO: fix body
-@@ -272,6 +272,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
-         std::ostringstream msgAuctionOutbiddedSubject;
-         msgAuctionOutbiddedSubject << auction->item_template << ":0:" << AUCTION_OUTBIDDED << ":0:0";
- 
+         MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(0, 0, auction->buyout, auction->deposit, 0))
+@@ -227,6 +227,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
+     // old bidder exist
+     if (oldBidder || oldBidder_accId)
+     {
 +        if (oldBidder && !newBidder)
 +            oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, auctionbot.GetAHBplayerGUID(), newPrice, auction->GetAuctionOutBid(), auction->item_template);
 +
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->item_template);
  
-@@ -462,8 +465,10 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
+@@ -409,10 +412,12 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
+ 
+     AuctionsMap[auction->Id] = auction;
      sScriptMgr->OnAuctionAdd(this, auction);
++    auctionbot.IncrementItemCounts(auction);
  }
  
 -bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 /*item_template*/)
 +bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 item_template)
  {
 +    auctionbot.DecrementItemCounts(auction, item_template);
-+
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
  
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-index d1fb26c..6387544 100644
+index 049440f..8cb7b60 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.h
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.h
 @@ -25,6 +25,8 @@
@@ -3691,7 +3714,7 @@ index d1fb26c..6387544 100644
  class Player;
  class WorldPacket;
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 65ba160..8a156d1 100644
+index 68ae2d8..7405e3e 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -17,6 +17,7 @@ file(GLOB_RECURSE sources_Achievements Achievements/*.cpp Achievements/*.h)
@@ -3699,557 +3722,32 @@ index 65ba160..8a156d1 100644
  file(GLOB_RECURSE sources_AI AI/*.cpp AI/*.h)
  file(GLOB_RECURSE sources_AuctionHouse AuctionHouse/*.cpp AuctionHouse/*.h)
 +file(GLOB_RECURSE sources_AuctionHouseBot AuctionHouse/AuctionHouseBot/*.cpp AuctionHouse/AuctionHouseBot/*.h)
+ file(GLOB_RECURSE sources_Battlefield Battlefield/*.cpp Battlefield/*.h)
  file(GLOB_RECURSE sources_Battlegrounds Battlegrounds/*.cpp Battlegrounds/*.h)
  file(GLOB_RECURSE sources_Calendar Calendar/*.cpp Calendar/*.h)
- file(GLOB_RECURSE sources_Chat Chat/*.cpp Chat/*.h)
-@@ -66,6 +67,7 @@ set(game_STAT_SRCS
+@@ -69,6 +70,7 @@ set(game_STAT_SRCS
    ${sources_Addons}
    ${sources_AI}
    ${sources_AuctionHouse}
 +  ${sources_AuctionHouseBot}
+   ${sources_Battlefield}
    ${sources_Battlegrounds}
    ${sources_Calendar}
-   ${sources_Chat}
-@@ -132,6 +134,7 @@ include_directories(
+@@ -138,6 +140,7 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/ScriptedAI
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 +  ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse/AuctionHouseBot
+   ${CMAKE_CURRENT_SOURCE_DIR}/Battlefield
+   ${CMAKE_CURRENT_SOURCE_DIR}/Battlefield/Zones
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds
-   ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds/Zones
-   ${CMAKE_CURRENT_SOURCE_DIR}/Calendar
-diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index ddc7ce5..16a7765 100755
---- a/src/server/game/Chat/Chat.cpp
-+++ b/src/server/game/Chat/Chat.cpp
-@@ -345,6 +345,7 @@ ChatCommand* ChatHandler::getCommandTable()
- 
-         { "pet",            SEC_GAMEMASTER,     false, NULL,                                           "", petCommandTable },
-         { "ticket",         SEC_MODERATOR,      false,  NULL,                                          "", ticketCommandTable },
-+        { "ahbotoptions",   SEC_GAMEMASTER,     true,  OldHandler<&ChatHandler::HandleAHBotOptionsCommand>,        "", NULL },
- 
-         { "aura",           SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleAuraCommand>,                "", NULL },
-         { "unaura",         SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnAuraCommand>,              "", NULL },
-diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index 6e34e39..7edbbbf 100755
---- a/src/server/game/Chat/Chat.h
-+++ b/src/server/game/Chat/Chat.h
-@@ -131,6 +131,7 @@ class ChatHandler
-         bool ShowHelpForCommand(ChatCommand* table, const char* cmd);
-         bool ShowHelpForSubCommands(ChatCommand* table, char const* cmd, char const* subcmd);
- 
-+        bool HandleAHBotOptionsCommand(const char * args);
-         bool HandleNameAnnounceCommand(const char* args);
-         bool HandleGMNameAnnounceCommand(const char* args);
-         bool HandleGMAnnounceCommand(const char* args);
-diff --git a/src/server/game/Chat/Commands/Level3.cpp b/src/server/game/Chat/Commands/Level3.cpp
-index 35f288c..a0c5fb0 100755
---- a/src/server/game/Chat/Commands/Level3.cpp
-+++ b/src/server/game/Chat/Commands/Level3.cpp
-@@ -64,6 +64,496 @@
- #include "Group.h"
- #include "ChannelMgr.h"
- 
-+#include "AuctionHouseBot.h"
-+
-+bool ChatHandler::HandleAHBotOptionsCommand(const char *args)
-+{
-+    uint32 ahMapID = 0;
-+    char * opt = strtok((char*)args, " ");
-+    char * ahMapIdStr = strtok(NULL, " ");
-+    if (ahMapIdStr)
-+    {
-+        ahMapID = (uint32) strtoul(ahMapIdStr, NULL, 0);
-+        switch (ahMapID)
-+        {
-+        case 2:
-+        case 6:
-+        case 7:
-+            break;
-+        default:
-+            opt = NULL;
-+            break;
-+        }
-+    }
-+    if (!opt)
-+    {
-+        PSendSysMessage("Syntax is: ahbotoptions $option $ahMapID (2, 6 or 7) $parameter");
-+        PSendSysMessage("Try ahbotoptions help to see a list of options.");
-+        return false;
-+    }
-+    int l = strlen(opt);
-+
-+    if (strncmp(opt,"help",l) == 0)
-+    {
-+        PSendSysMessage("AHBot commands:");
-+        PSendSysMessage("ahexpire");
-+        PSendSysMessage("minitems");
-+        PSendSysMessage("maxitems");
-+        //PSendSysMessage("");
-+        //PSendSysMessage("");
-+        PSendSysMessage("percentages");
-+        PSendSysMessage("minprice");
-+        PSendSysMessage("maxprice");
-+        PSendSysMessage("minbidprice");
-+        PSendSysMessage("maxbidprice");
-+        PSendSysMessage("maxstack");
-+        PSendSysMessage("buyerprice");
-+        PSendSysMessage("bidinterval");
-+        PSendSysMessage("bidsperinterval");
-+        return true;
-+    }
-+    else if (strncmp(opt,"ahexpire",l) == 0)
-+    {
-+        if (!ahMapIdStr)
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions ahexpire $ahMapID (2, 6 or 7)");
-+            return false;
-+        }
-+        auctionbot.Commands(0, ahMapID, NULL, NULL);
-+    }
-+    else if (strncmp(opt,"minitems",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions minitems $ahMapID (2, 6 or 7) $minItems");
-+            return false;
-+        }
-+        auctionbot.Commands(1, ahMapID, NULL, param1);
-+    }
-+    else if (strncmp(opt,"maxitems",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxitems $ahMapID (2, 6 or 7) $maxItems");
-+            return false;
-+        }
-+        auctionbot.Commands(2, ahMapID, NULL, param1);
-+    }
-+    else if (strncmp(opt,"mintime",l) == 0)
-+    {
-+        PSendSysMessage("ahbotoptions mintime has been deprecated");
-+        return false;
-+        /*
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions mintime $ahMapID (2, 6 or 7) $mintime");
-+            return false;
-+        }
-+        auctionbot.Commands(3, ahMapID, NULL, param1);
-+        */
-+    }
-+    else if (strncmp(opt,"maxtime",l) == 0)
-+    {
-+        PSendSysMessage("ahbotoptions maxtime has been deprecated");
-+        return false;
-+        /*
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxtime $ahMapID (2, 6 or 7) $maxtime");
-+            return false;
-+        }
-+        auctionbot.Commands(4, ahMapID, NULL, param1);
-+        */
-+    }
-+    else if (strncmp(opt,"percentages",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        char * param3 = strtok(NULL, " ");
-+        char * param4 = strtok(NULL, " ");
-+        char * param5 = strtok(NULL, " ");
-+        char * param6 = strtok(NULL, " ");
-+        char * param7 = strtok(NULL, " ");
-+        char * param8 = strtok(NULL, " ");
-+        char * param9 = strtok(NULL, " ");
-+        char * param10 = strtok(NULL, " ");
-+        char * param11 = strtok(NULL, " ");
-+        char * param12 = strtok(NULL, " ");
-+        char * param13 = strtok(NULL, " ");
-+        char * param14 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param14))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions percentages $ahMapID (2, 6 or 7) $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14");
-+            PSendSysMessage("1 GreyTradeGoods 2 WhiteTradeGoods 3 GreenTradeGoods 4 BlueTradeGoods 5 PurpleTradeGoods");
-+            PSendSysMessage("6 OrangeTradeGoods 7 YellowTradeGoods 8 GreyItems 9 WhiteItems 10 GreenItems 11 BlueItems");
-+            PSendSysMessage("12 PurpleItems 13 OrangeItems 14 YellowItems");
-+            PSendSysMessage("The total must add up to 100%");
-+            return false;
-+        }
-+        uint32 greytg = (uint32) strtoul(param1, NULL, 0);
-+        uint32 whitetg = (uint32) strtoul(param2, NULL, 0);
-+        uint32 greentg = (uint32) strtoul(param3, NULL, 0);
-+        uint32 bluetg = (uint32) strtoul(param3, NULL, 0);
-+        uint32 purpletg = (uint32) strtoul(param5, NULL, 0);
-+        uint32 orangetg = (uint32) strtoul(param6, NULL, 0);
-+        uint32 yellowtg = (uint32) strtoul(param7, NULL, 0);
-+        uint32 greyi = (uint32) strtoul(param8, NULL, 0);
-+        uint32 whitei = (uint32) strtoul(param9, NULL, 0);
-+        uint32 greeni = (uint32) strtoul(param10, NULL, 0);
-+        uint32 bluei = (uint32) strtoul(param11, NULL, 0);
-+        uint32 purplei = (uint32) strtoul(param12, NULL, 0);
-+        uint32 orangei = (uint32) strtoul(param13, NULL, 0);
-+        uint32 yellowi = (uint32) strtoul(param14, NULL, 0);
-+        uint32 totalPercent = greytg + whitetg + greentg + bluetg + purpletg + orangetg + yellowtg + greyi + whitei + greeni + bluei + purplei + orangei + yellowi;
-+        if ((totalPercent == 0) || (totalPercent != 100))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions percentages $ahMapID (2, 6 or 7) $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14");
-+            PSendSysMessage("1 GreyTradeGoods 2 WhiteTradeGoods 3 GreenTradeGoods 4 BlueTradeGoods 5 PurpleTradeGoods");
-+            PSendSysMessage("6 OrangeTradeGoods 7 YellowTradeGoods 8 GreyItems 9 WhiteItems 10 GreenItems 11 BlueItems");
-+            PSendSysMessage("12 PurpleItems 13 OrangeItems 14 YellowItems");
-+            PSendSysMessage("The total must add up to 100%");
-+            return false;
-+        }
-+        char param[100];
-+        param[0] = '\0';
-+        strcat(param, param1);
-+        strcat(param, " ");
-+        strcat(param, param2);
-+        strcat(param, " ");
-+        strcat(param, param3);
-+        strcat(param, " ");
-+        strcat(param, param4);
-+        strcat(param, " ");
-+        strcat(param, param5);
-+        strcat(param, " ");
-+        strcat(param, param6);
-+        strcat(param, " ");
-+        strcat(param, param7);
-+        strcat(param, " ");
-+        strcat(param, param8);
-+        strcat(param, " ");
-+        strcat(param, param9);
-+        strcat(param, " ");
-+        strcat(param, param10);
-+        strcat(param, " ");
-+        strcat(param, param11);
-+        strcat(param, " ");
-+        strcat(param, param12);
-+        strcat(param, " ");
-+        strcat(param, param13);
-+        strcat(param, " ");
-+        strcat(param, param14);
-+        auctionbot.Commands(5, ahMapID, NULL, param);
-+    }
-+    else if (strncmp(opt,"minprice",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions minprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(6, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions minprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"maxprice",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(7, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"minbidprice",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions minbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+        uint32 minBidPrice = (uint32) strtoul(param2, NULL, 0);
-+        if ((minBidPrice < 1) || (minBidPrice > 100))
-+        {
-+            PSendSysMessage("The min bid price multiplier must be between 1 and 100");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(8, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions minbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"maxbidprice",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+        uint32 maxBidPrice = (uint32) strtoul(param2, NULL, 0);
-+        if ((maxBidPrice < 1) || (maxBidPrice > 100))
-+        {
-+            PSendSysMessage("The max bid price multiplier must be between 1 and 100");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(9, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions max bidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"maxstack",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxstack $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $value");
-+            return false;
-+        }
-+        uint32 maxStack = (uint32) strtoul(param2, NULL, 0);
-+        if (maxStack < 0)
-+        {
-+            PSendSysMessage("maxstack can't be a negative number.");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(10, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions maxstack $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $value");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"buyerprice",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        char * param2 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1) || (!param2))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions buyerprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue or purple) $price");
-+            return false;
-+        }
-+        if (strncmp(param1,"grey",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_GREY, param2);
-+        }
-+        else if (strncmp(param1,"white",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_WHITE, param2);
-+        }
-+        else if (strncmp(param1,"green",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_GREEN, param2);
-+        }
-+        else if (strncmp(param1,"blue",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_BLUE, param2);
-+        }
-+        else if (strncmp(param1,"purple",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_PURPLE, param2);
-+        }
-+        else if (strncmp(param1,"orange",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_ORANGE, param2);
-+        }
-+        else if (strncmp(param1,"yellow",l) == 0)
-+        {
-+            auctionbot.Commands(11, ahMapID, AHB_YELLOW, param2);
-+        }
-+        else
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions buyerprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue or purple) $price");
-+            return false;
-+        }
-+    }
-+    else if (strncmp(opt,"bidinterval",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions bidinterval $ahMapID (2, 6 or 7) $interval(in minutes)");
-+            return false;
-+        }
-+        auctionbot.Commands(12, ahMapID, NULL, param1);
-+    }
-+    else if (strncmp(opt,"bidsperinterval",l) == 0)
-+    {
-+        char * param1 = strtok(NULL, " ");
-+        if ((!ahMapIdStr) || (!param1))
-+        {
-+            PSendSysMessage("Syntax is: ahbotoptions bidsperinterval $ahMapID (2, 6 or 7) $bids");
-+            return false;
-+        }
-+        auctionbot.Commands(13, ahMapID, NULL, param1);
-+    }
-+    else
-+    {
-+        PSendSysMessage("Syntax is: ahbotoptions $option $ahMapID (2, 6 or 7) $parameter");
-+        PSendSysMessage("Try ahbotoptions help to see a list of options.");
-+        return false;
-+    }
-+    return true;
-+}
-+
- bool ChatHandler::HandleMaxSkillCommand(const char* /*args*/)
- {
-     Player* SelectedPlayer = getSelectedPlayer();
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index adcefdd..08d34cc 100755
+index 65f6588..34f2275 100755
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -6860,7 +6860,8 @@ void Player::CheckAreaExploreAndOutdoor()
                  {
-                     XP = uint32(sObjectMgr->GetBaseXP(p->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
+                     XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
 -
 +                if(GetSession()->IsPremium())
@@ -4257,18 +3755,30 @@ index adcefdd..08d34cc 100755
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -14909,6 +14910,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
-     for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
+@@ -15107,6 +15108,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
          AddPctN(XP, (*i)->GetAmount());
  
+     int32 moneyRew = 0;
 +    if (GetSession()->IsPremium())
 +        XP *= sWorld->getRate(RATE_XP_QUEST_PREMIUM);
 +
-     int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
+     else
+diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
+index 2ebcbce..931c65d 100755
+--- a/src/server/game/Handlers/AuctionHouseHandler.cpp
++++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
+@@ -22,6 +22,7 @@
+ #include "WorldPacket.h"
+ #include "WorldSession.h"
+ 
++#include "AuctionHouseBot.h"
+ #include "AuctionHouseMgr.h"
+ #include "Log.h"
+ #include "Opcodes.h"
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 6d54aac..8d61c2a 100755
+index 929a1d8..99ef380 100755
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -26,6 +26,7 @@
@@ -4279,7 +3789,7 @@ index 6d54aac..8d61c2a 100755
  
  MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery(stationery)
  {
-@@ -177,6 +178,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+@@ -178,6 +179,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
  
      uint32 mailId = sObjectMgr->GenerateMailID();
  
@@ -4294,37 +3804,45 @@ index 6d54aac..8d61c2a 100755
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index f562010..b11b08b 100755
+index dac5b1e..dc95c30 100755
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
-@@ -178,7 +178,9 @@ namespace Trinity
+@@ -177,8 +177,8 @@ namespace Trinity
+                     else
                          gain *= 2;
                  }
- 
+-
 -                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL));
-+	    float premium_rate = pl->GetSession()->IsPremium() ? sWorld->getRate(RATE_XP_KILL_PREMIUM) : 1.0f;
-+
-+            return uint32(gain*sWorld->getRate(RATE_XP_KILL)*premium_rate);
++                float premium_rate = player->GetSession()->IsPremium() ? sWorld->getRate(RATE_XP_KILL_PREMIUM) : 1.0f;
++                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL)*premium_rate);
              }
  
-             sScriptMgr->OnGainCalculation(gain, pl, u);
-diff --git a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
-index a670063..2c4b0d7 100755
---- a/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
-+++ b/src/server/game/Server/Protocol/Handlers/AuctionHouseHandler.cpp
-@@ -22,6 +22,7 @@
- #include "WorldPacket.h"
- #include "WorldSession.h"
- 
-+#include "AuctionHouseBot.h"
- #include "AuctionHouseMgr.h"
- #include "Log.h"
- #include "Opcodes.h"
+             sScriptMgr->OnGainCalculation(gain, player, u);
+diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
+index 1848250..496ea56 100755
+--- a/src/server/game/Scripting/ScriptLoader.cpp
++++ b/src/server/game/Scripting/ScriptLoader.cpp
+@@ -46,6 +46,7 @@ void AddSC_SmartSCripts();
+ //Commands
+ void AddSC_account_commandscript();
+ void AddSC_achievement_commandscript();
++void AddSC_ah_bot_commandscript();
+ void AddSC_ban_commandscript();
+ void AddSC_bf_commandscript();
+ void AddSC_cast_commandscript();
+@@ -663,6 +664,7 @@ void AddCommandScripts()
+ {
+     AddSC_account_commandscript();
+     AddSC_achievement_commandscript();
++    AddSC_ah_bot_commandscript();
+     AddSC_ban_commandscript();
+     AddSC_bf_commandscript();
+     AddSC_cast_commandscript();
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 32e65ca..2abefaa 100755
+index 6a2c7e6..5b08127 100755
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
-@@ -86,9 +86,9 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
+@@ -88,9 +88,9 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
  }
  
  /// WorldSession constructor
@@ -4337,10 +3855,10 @@ index 32e65ca..2abefaa 100755
  m_playerRecentlyLogout(false), m_playerSave(false),
  m_sessionDbcLocale(sWorld->GetAvailableDbcLocale(locale)),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index a28e3fc..4fcacb4 100755
+index 0aa14eb..0035bcb 100755
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -214,7 +214,7 @@ class CharacterCreateInfo
+@@ -225,7 +225,7 @@ class CharacterCreateInfo
  class WorldSession
  {
      public:
@@ -4349,15 +3867,15 @@ index a28e3fc..4fcacb4 100755
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -242,6 +242,7 @@ class WorldSession
+@@ -252,6 +252,7 @@ class WorldSession
          void SendClientCacheVersion(uint32 version);
  
          AccountTypes GetSecurity() const { return _security; }
 +        bool IsPremium() const { return _ispremium; }
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
-         char const* GetPlayerName() const;
-@@ -934,6 +935,7 @@ class WorldSession
+         std::string GetPlayerName(bool simple = true) const;
+@@ -974,6 +975,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
@@ -4366,18 +3884,18 @@ index a28e3fc..4fcacb4 100755
          typedef std::list<AddonInfo> AddonsList;
  
 diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
-index 0ddc03e..cac0329 100755
+index 92455f8..47cd508 100755
 --- a/src/server/game/Server/WorldSocket.cpp
 +++ b/src/server/game/Server/WorldSocket.cpp
-@@ -778,6 +778,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
+@@ -739,6 +739,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
      //uint8 expansion = 0;
      LocaleConstant locale;
      std::string account;
-+	bool isPremium = false;
-     SHA1Hash sha1;
++    bool isPremium = false;
+     SHA1Hash sha;
      BigNumber v, s, g, N;
      WorldPacket packet, SendAddonPacked;
-@@ -933,6 +934,16 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
+@@ -891,6 +892,16 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
          return -1;
      }
  
@@ -4394,55 +3912,50 @@ index 0ddc03e..cac0329 100755
      // Check locked state for server
      AccountTypes allowedAccountType = sWorld->GetPlayerSecurityLimit();
      sLog->outDebug(LOG_FILTER_NETWORKIO, "Allowed Level: %u Player Level %u", allowedAccountType, AccountTypes(security));
-@@ -995,7 +1006,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
-                             safe_account.c_str());
+@@ -954,7 +965,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+     LoginDatabase.Execute(stmt);
  
      // NOTE ATM the socket is single-threaded, have this in mind ...
 -    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter), -1);
 +    ACE_NEW_RETURN (m_Session, WorldSession (id, this, AccountTypes(security), isPremium, expansion, mutetime, locale, recruiter, isRecruiter), -1);
  
-     m_Crypt.Init(&K);
+     m_Crypt.Init(&k);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 408db18..40d5a16 100755
+index ea74b6d..2e3747f 100755
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -74,6 +74,7 @@
+@@ -71,6 +71,7 @@
+ #include "CharacterDatabaseCleaner.h"
+ #include "ScriptMgr.h"
+ #include "WeatherMgr.h"
++#include "AuctionHouseBot.h"
  #include "CreatureTextMgr.h"
  #include "SmartAI.h"
  #include "Channel.h"
-+#include "AuctionHouseBot.h"
- 
- volatile bool World::m_stopEvent = false;
- uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -457,9 +458,13 @@ void World::LoadConfigSettings(bool reload)
-     rate_values[RATE_DROP_ITEM_REFERENCED] = ConfigMgr::GetFloatDefault("Rate.Drop.Item.Referenced", 1.0f);
+@@ -458,8 +459,11 @@ void World::LoadConfigSettings(bool reload)
      rate_values[RATE_DROP_ITEM_REFERENCED_AMOUNT] = ConfigMgr::GetFloatDefault("Rate.Drop.Item.ReferencedAmount", 1.0f);
      rate_values[RATE_DROP_MONEY]  = ConfigMgr::GetFloatDefault("Rate.Drop.Money", 1.0f);
--    rate_values[RATE_XP_KILL]     = ConfigMgr::GetFloatDefault("Rate.XP.Kill", 1.0f);
--    rate_values[RATE_XP_QUEST]    = ConfigMgr::GetFloatDefault("Rate.XP.Quest", 1.0f);
--    rate_values[RATE_XP_EXPLORE]  = ConfigMgr::GetFloatDefault("Rate.XP.Explore", 1.0f);
-+    rate_values[RATE_XP_KILL]            = ConfigMgr::GetFloatDefault("Rate.XP.Kill", 1.0f);
+     rate_values[RATE_XP_KILL]     = ConfigMgr::GetFloatDefault("Rate.XP.Kill", 1.0f);
 +    rate_values[RATE_XP_KILL_PREMIUM]    = ConfigMgr::GetFloatDefault("Rate.XP.Kill.Premium", 1.0f);
-+    rate_values[RATE_XP_QUEST]           = ConfigMgr::GetFloatDefault("Rate.XP.Quest", 1.0f);
+     rate_values[RATE_XP_QUEST]    = ConfigMgr::GetFloatDefault("Rate.XP.Quest", 1.0f);
 +    rate_values[RATE_XP_QUEST_PREMIUM]   = ConfigMgr::GetFloatDefault("Rate.XP.Quest.Premium", 1.0f);
-+    rate_values[RATE_XP_EXPLORE]         = ConfigMgr::GetFloatDefault("Rate.XP.Explore", 1.0f);
+     rate_values[RATE_XP_EXPLORE]  = ConfigMgr::GetFloatDefault("Rate.XP.Explore", 1.0f);
 +    rate_values[RATE_XP_EXPLORE_PREMIUM] = ConfigMgr::GetFloatDefault("Rate.XP.Explore.Premium", 1.0f);
-+
      rate_values[RATE_REPAIRCOST]  = ConfigMgr::GetFloatDefault("Rate.RepairCost", 1.0f);
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
-@@ -1729,6 +1734,9 @@ void World::SetInitialWorldSettings()
+@@ -1761,6 +1765,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
-+    sLog->outString("Initialize AuctionHouseBot...");
++    sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Initialize AuctionHouseBot...");
 +    auctionbot.Initialize();
 +
-     // possibly enable db logging; avoid massive startup spam by doing it here.
-     if (sLog->GetLogDBLater())
-     {
-@@ -1895,6 +1903,7 @@ void World::Update(uint32 diff)
+     uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
+ 
+     sLog->outInfo(LOG_FILTER_WORLDSERVER, "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
+@@ -1917,6 +1924,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -4451,10 +3964,10 @@ index 408db18..40d5a16 100755
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index b493b8b..f62ddca 100755
+index a6cdd47..a01254f 100755
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -333,8 +333,11 @@ enum Rates
+@@ -351,8 +351,11 @@ enum Rates
      RATE_DROP_ITEM_REFERENCED_AMOUNT,
      RATE_DROP_MONEY,
      RATE_XP_KILL,
@@ -4466,54 +3979,571 @@ index b493b8b..f62ddca 100755
      RATE_REPAIRCOST,
      RATE_REPUTATION_GAIN,
      RATE_REPUTATION_LOWLEVEL_KILL,
+diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
+index f148ae2..259dbee 100644
+--- a/src/server/scripts/CMakeLists.txt
++++ b/src/server/scripts/CMakeLists.txt
+@@ -80,6 +80,7 @@ include_directories(
+   ${CMAKE_SOURCE_DIR}/src/server/game/AI/ScriptedAI
+   ${CMAKE_SOURCE_DIR}/src/server/game/AI/SmartScripts
+   ${CMAKE_SOURCE_DIR}/src/server/game/AuctionHouse
++  ${CMAKE_SOURCE_DIR}/src/server/game/AuctionHouse/AuctionHouseBot
+   ${CMAKE_SOURCE_DIR}/src/server/game/Battlefield
+   ${CMAKE_SOURCE_DIR}/src/server/game/Battlefield/Zones
+   ${CMAKE_SOURCE_DIR}/src/server/game/Battlegrounds
+diff --git a/src/server/scripts/Commands/CMakeLists.txt b/src/server/scripts/Commands/CMakeLists.txt
+index 177b3a4..aebb1b8 100644
+--- a/src/server/scripts/Commands/CMakeLists.txt
++++ b/src/server/scripts/Commands/CMakeLists.txt
+@@ -12,6 +12,7 @@ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
+   Commands/cs_account.cpp
+   Commands/cs_achievement.cpp
++  Commands/cs_ah_bot.cpp
+   Commands/cs_ban.cpp
+   Commands/cs_bf.cpp
+   Commands/cs_cast.cpp
+diff --git a/src/server/scripts/Commands/cs_ah_bot.cpp b/src/server/scripts/Commands/cs_ah_bot.cpp
+new file mode 100644
+index 0000000..3092cd3
+--- /dev/null
++++ b/src/server/scripts/Commands/cs_ah_bot.cpp
+@@ -0,0 +1,482 @@
++/*
++ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++/* ScriptData
++Name: ah_bot_commandscript
++%Complete: 100
++Comment: All ah_bot related commands
++Category: commandscripts
++EndScriptData */
++
++#include "ScriptMgr.h"
++#include "Chat.h"
++#include "AuctionHouseBot.h"
++
++class ah_bot_commandscript : public CommandScript
++{
++public:
++    ah_bot_commandscript() : CommandScript("ah_bot_commandscript") { }
++
++    ChatCommand* GetCommands() const
++    {
++        static ChatCommand commandTable[] =
++        {
++            { "ahbotoptions",   SEC_GAMEMASTER,     true,   &HandleAHBotOptionsCommand,     "", NULL },
++            { NULL,             0,                  false,  NULL,                           "", NULL }
++        };
++        return commandTable;
++    }
++
++    static bool HandleAHBotOptionsCommand(ChatHandler* handler, const char*args)
++    {
++        uint32 ahMapID = 0;
++        char* opt = strtok((char*)args, " ");
++        char* ahMapIdStr = strtok(NULL, " ");
++
++        if (ahMapIdStr)
++        {
++            ahMapID = uint32(strtoul(ahMapIdStr, NULL, 0));
++            switch (ahMapID)
++            {
++                case 2:
++                case 6:
++                case 7:
++                    break;
++                default:
++                    opt = NULL;
++                    break;
++            }
++        }
++
++        if (!opt)
++        {
++            handler->PSendSysMessage("Syntax is: ahbotoptions $option $ahMapID (2, 6 or 7) $parameter");
++            handler->PSendSysMessage("Try ahbotoptions help to see a list of options.");
++            return false;
++        }
++
++        int l = strlen(opt);
++
++        if (strncmp(opt, "help", l) == 0)
++        {
++            handler->PSendSysMessage("AHBot commands:");
++            handler->PSendSysMessage("ahexpire");
++            handler->PSendSysMessage("minitems");
++            handler->PSendSysMessage("maxitems");
++            //handler->PSendSysMessage("");
++            //handler->PSendSysMessage("");
++            handler->PSendSysMessage("percentages");
++            handler->PSendSysMessage("minprice");
++            handler->PSendSysMessage("maxprice");
++            handler->PSendSysMessage("minbidprice");
++            handler->PSendSysMessage("maxbidprice");
++            handler->PSendSysMessage("maxstack");
++            handler->PSendSysMessage("buyerprice");
++            handler->PSendSysMessage("bidinterval");
++            handler->PSendSysMessage("bidsperinterval");
++            return true;
++        }
++        else if (strncmp(opt, "ahexpire", l) == 0)
++        {
++            if (!ahMapIdStr)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions ahexpire $ahMapID (2, 6 or 7)");
++                return false;
++            }
++
++            auctionbot.Commands(0, ahMapID, NULL, NULL);
++        }
++        else if (strncmp(opt, "minitems", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            if (!ahMapIdStr || !param1)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions minitems $ahMapID (2, 6 or 7) $minItems");
++                return false;
++            }
++
++            auctionbot.Commands(1, ahMapID, NULL, param1);
++        }
++        else if (strncmp(opt, "maxitems", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            if (!ahMapIdStr || !param1)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxitems $ahMapID (2, 6 or 7) $maxItems");
++                return false;
++            }
++
++            auctionbot.Commands(2, ahMapID, NULL, param1);
++        }
++        else if (strncmp(opt, "mintime", l) == 0)
++        {
++            handler->PSendSysMessage("ahbotoptions mintime has been deprecated");
++            return false;
++            /*
++            char* param1 = strtok(NULL, " ");
++            if (!ahMapIdStr || !param1)
++            {
++                PSendSysMessage("Syntax is: ahbotoptions mintime $ahMapID (2, 6 or 7) $mintime");
++                return false;
++            }
++
++            auctionbot.Commands(3, ahMapID, NULL, param1);
++            */
++        }
++        else if (strncmp(opt, "maxtime", l) == 0)
++        {
++            handler->PSendSysMessage("ahbotoptions maxtime has been deprecated");
++            return false;
++            /*
++            char* param1 = strtok(NULL, " ");
++            if (!ahMapIdStr || !param1)
++            {
++                PSendSysMessage("Syntax is: ahbotoptions maxtime $ahMapID (2, 6 or 7) $maxtime");
++                return false;
++            }
++
++            auctionbot.Commands(4, ahMapID, NULL, param1);
++            */
++        }
++        else if (strncmp(opt, "percentages", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++            char* param3 = strtok(NULL, " ");
++            char* param4 = strtok(NULL, " ");
++            char* param5 = strtok(NULL, " ");
++            char* param6 = strtok(NULL, " ");
++            char* param7 = strtok(NULL, " ");
++            char* param8 = strtok(NULL, " ");
++            char* param9 = strtok(NULL, " ");
++            char* param10 = strtok(NULL, " ");
++            char* param11 = strtok(NULL, " ");
++            char* param12 = strtok(NULL, " ");
++            char* param13 = strtok(NULL, " ");
++            char* param14 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param14)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions percentages $ahMapID (2, 6 or 7) $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14");
++                handler->PSendSysMessage("1 GreyTradeGoods 2 WhiteTradeGoods 3 GreenTradeGoods 4 BlueTradeGoods 5 PurpleTradeGoods");
++                handler->PSendSysMessage("6 OrangeTradeGoods 7 YellowTradeGoods 8 GreyItems 9 WhiteItems 10 GreenItems 11 BlueItems");
++                handler->PSendSysMessage("12 PurpleItems 13 OrangeItems 14 YellowItems");
++                handler->PSendSysMessage("The total must add up to 100%");
++                return false;
++            }
++
++            uint32 greytg = uint32(strtoul(param1, NULL, 0));
++            uint32 whitetg = uint32(strtoul(param2, NULL, 0));
++            uint32 greentg = uint32(strtoul(param3, NULL, 0));
++            uint32 bluetg = uint32(strtoul(param3, NULL, 0));
++            uint32 purpletg = uint32(strtoul(param5, NULL, 0));
++            uint32 orangetg = uint32(strtoul(param6, NULL, 0));
++            uint32 yellowtg = uint32(strtoul(param7, NULL, 0));
++            uint32 greyi = uint32(strtoul(param8, NULL, 0));
++            uint32 whitei = uint32(strtoul(param9, NULL, 0));
++            uint32 greeni = uint32(strtoul(param10, NULL, 0));
++            uint32 bluei = uint32(strtoul(param11, NULL, 0));
++            uint32 purplei = uint32(strtoul(param12, NULL, 0));
++            uint32 orangei = uint32(strtoul(param13, NULL, 0));
++            uint32 yellowi = uint32(strtoul(param14, NULL, 0));
++            uint32 totalPercent = greytg + whitetg + greentg + bluetg + purpletg + orangetg + yellowtg + greyi + whitei + greeni + bluei + purplei + orangei + yellowi;
++
++            if (totalPercent == 0 || totalPercent != 100)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions percentages $ahMapID (2, 6 or 7) $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14");
++                handler->PSendSysMessage("1 GreyTradeGoods 2 WhiteTradeGoods 3 GreenTradeGoods 4 BlueTradeGoods 5 PurpleTradeGoods");
++                handler->PSendSysMessage("6 OrangeTradeGoods 7 YellowTradeGoods 8 GreyItems 9 WhiteItems 10 GreenItems 11 BlueItems");
++                handler->PSendSysMessage("12 PurpleItems 13 OrangeItems 14 YellowItems");
++                handler->PSendSysMessage("The total must add up to 100%");
++                return false;
++            }
++
++            char param[100];
++            param[0] = '\0';
++            strcat(param, param1);
++            strcat(param, " ");
++            strcat(param, param2);
++            strcat(param, " ");
++            strcat(param, param3);
++            strcat(param, " ");
++            strcat(param, param4);
++            strcat(param, " ");
++            strcat(param, param5);
++            strcat(param, " ");
++            strcat(param, param6);
++            strcat(param, " ");
++            strcat(param, param7);
++            strcat(param, " ");
++            strcat(param, param8);
++            strcat(param, " ");
++            strcat(param, param9);
++            strcat(param, " ");
++            strcat(param, param10);
++            strcat(param, " ");
++            strcat(param, param11);
++            strcat(param, " ");
++            strcat(param, param12);
++            strcat(param, " ");
++            strcat(param, param13);
++            strcat(param, " ");
++            strcat(param, param14);
++            auctionbot.Commands(5, ahMapID, NULL, param);
++        }
++        else if (strncmp(opt, "minprice", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions minprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++
++            if (strncmp(param1, "grey", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, "orange", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(6, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions minprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "maxprice", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++            if (!ahMapIdStr || !param1 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++            if (strncmp(param1, "grey", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, "orange",l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(7, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "minbidprice", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param2 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions minbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++
++            uint32 minBidPrice = uint32(strtoul(param2, NULL, 0));
++            if (minBidPrice < 1 || minBidPrice > 100)
++            {
++                handler->PSendSysMessage("The min bid price multiplier must be between 1 and 100");
++                return false;
++            }
++
++            if (strncmp(param1, "grey", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, "orange", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(8, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions minbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "maxbidprice", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++
++            uint32 maxBidPrice = uint32(strtoul(param2, NULL, 0));
++            if (maxBidPrice < 1 || maxBidPrice > 100)
++            {
++                handler->PSendSysMessage("The max bid price multiplier must be between 1 and 100");
++                return false;
++            }
++
++            if (strncmp(param1, "grey", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, " orange", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(9, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions max bidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "maxstack",l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxstack $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $value");
++                return false;
++            }
++
++            uint32 maxStack = uint32(strtoul(param2, NULL, 0));
++            if (maxStack < 0)
++            {
++                 handler->PSendSysMessage("maxstack can't be a negative number.");
++                return false;
++            }
++
++            if (strncmp(param1, "grey",l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, "orange", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(10, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions maxstack $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $value");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "buyerprice", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++            char* param2 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1 || !param2)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions buyerprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue or purple) $price");
++                return false;
++            }
++
++            if (strncmp(param1, "grey", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_GREY, param2);
++            else if (strncmp(param1, "white", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_WHITE, param2);
++            else if (strncmp(param1, "green", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_GREEN, param2);
++            else if (strncmp(param1, "blue", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_BLUE, param2);
++            else if (strncmp(param1, "purple", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_PURPLE, param2);
++            else if (strncmp(param1, "orange", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_ORANGE, param2);
++            else if (strncmp(param1, "yellow", l) == 0)
++                auctionbot.Commands(11, ahMapID, AHB_YELLOW, param2);
++            else
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions buyerprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue or purple) $price");
++                return false;
++            }
++        }
++        else if (strncmp(opt, "bidinterval", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions bidinterval $ahMapID (2, 6 or 7) $interval(in minutes)");
++                return false;
++            }
++
++            auctionbot.Commands(12, ahMapID, NULL, param1);
++        }
++        else if (strncmp(opt, "bidsperinterval", l) == 0)
++        {
++            char* param1 = strtok(NULL, " ");
++
++            if (!ahMapIdStr || !param1)
++            {
++                handler->PSendSysMessage("Syntax is: ahbotoptions bidsperinterval $ahMapID (2, 6 or 7) $bids");
++                return false;
++            }
++
++            auctionbot.Commands(13, ahMapID, NULL, param1);
++        }
++        else
++        {
++            handler->PSendSysMessage("Syntax is: ahbotoptions $option $ahMapID (2, 6 or 7) $parameter");
++            handler->PSendSysMessage("Try ahbotoptions help to see a list of options.");
++            return false;
++        }
++
++        return true;
++    }
++};
++
++void AddSC_ah_bot_commandscript()
++{
++    new ah_bot_commandscript();
++}
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-index 13cfe09..2250b44 100755
+index 31d9f5e..a2586d8 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-@@ -44,5 +44,6 @@ void LoginDatabaseConnection::DoPrepareStatements()
-     PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_NOT_BANNED, "UPDATE account_banned SET active = 0 WHERE id = ? AND active != 0", CONNECTION_ASYNC)
-     PREPARE_STATEMENT(LOGIN_DEL_REALMCHARACTERS, "DELETE FROM realmcharacters WHERE acctid = ? AND realmid = ?", CONNECTION_ASYNC)
-     PREPARE_STATEMENT(LOGIN_ADD_REALMCHARACTERS, "INSERT INTO realmcharacters (numchars, acctid, realmid) VALUES (?, ?, ?)", CONNECTION_ASYNC)
--    PREPARE_STATEMENT(LOGIN_GET_SUM_REALMCHARS, "SELECT SUM(numchars) FROM realmcharacters WHERE acctid = ?", CONNECTION_ASYNC);
-+    PREPARE_STATEMENT(LOGIN_GET_SUM_REALMCHARS, "SELECT SUM(numchars) FROM realmcharacters WHERE acctid = ?", CONNECTION_ASYNC)
-+	PREPARE_STATEMENT(LOGIN_SET_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC);
- }
+@@ -25,6 +25,7 @@ void LoginDatabaseConnection::DoPrepareStatements()
+     PREPARE_STATEMENT(LOGIN_SEL_REALMLIST, "SELECT id, name, address, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE flag <> 3 ORDER BY name", CONNECTION_SYNCH)
+     PREPARE_STATEMENT(LOGIN_DEL_EXPIRED_IP_BANS, "DELETE FROM ip_banned WHERE unbandate<>bandate AND unbandate<=UNIX_TIMESTAMP()", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(LOGIN_UPD_EXPIRED_ACCOUNT_BANS, "UPDATE account_banned SET active = 0 WHERE active = 1 AND unbandate<>bandate AND unbandate<=UNIX_TIMESTAMP()", CONNECTION_ASYNC)
++	PREPARE_STATEMENT(LOGIN_UPD_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(LOGIN_SEL_IP_BANNED, "SELECT * FROM ip_banned WHERE ip = ?", CONNECTION_SYNCH)
+     PREPARE_STATEMENT(LOGIN_INS_IP_AUTO_BANNED, "INSERT INTO ip_banned VALUES (?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?, 'Trinity realmd', 'Failed login autoban')", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(LOGIN_SEL_IP_BANNED_ALL, "SELECT ip, bandate, unbandate, bannedby, banreason FROM ip_banned WHERE (bandate = unbandate OR unbandate > UNIX_TIMESTAMP()) ORDER BY unbandate", CONNECTION_SYNCH);
 diff --git a/src/server/shared/Database/Implementation/LoginDatabase.h b/src/server/shared/Database/Implementation/LoginDatabase.h
-index b5f927f..932cc48 100755
+index 7c2a94e..0bfb640 100755
 --- a/src/server/shared/Database/Implementation/LoginDatabase.h
 +++ b/src/server/shared/Database/Implementation/LoginDatabase.h
-@@ -65,6 +65,7 @@ enum LoginDatabaseStatements
-     LOGIN_DEL_REALMCHARACTERS,
-     LOGIN_ADD_REALMCHARACTERS,
-     LOGIN_GET_SUM_REALMCHARS,
-+	LOGIN_SET_ACCOUNT_PREMIUM,
- 
-     MAX_LOGINDATABASE_STATEMENTS,
- };
+@@ -102,6 +102,7 @@ enum LoginDatabaseStatements
+     LOGIN_SEL_ACCOUNT_INFO,
+     LOGIN_SEL_ACCOUNT_ACCESS_GMLEVEL_TEST,
+     LOGIN_SEL_ACCOUNT_ACCESS,
++    LOGIN_UPD_ACCOUNT_PREMIUM,
+     LOGIN_SEL_ACCOUNT_RECRUITER,
+     LOGIN_SEL_BANS,
+     LOGIN_SEL_ACCOUNT_WHOIS,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index a8c0d91..34ecb91 100644
+index 9eab3c4..f94df8c 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2045,10 +2045,18 @@ Rate.Drop.Item.ReferencedAmount = 1
- #        Default:     1 - (Rate.XP.Kill)
- #                     1 - (Rate.XP.Quest)
- #                     1 - (Rate.XP.Explore)
+@@ -1826,14 +1826,20 @@ Rate.Drop.Item.ReferencedAmount = 1
+ #    Rate.XP.Kill
+ #    Rate.XP.Quest
+ #    Rate.XP.Explore
 +#    Rate.XP.Kill.Premium
 +#    Rate.XP.Quest.Premium
 +#    Rate.XP.Explore.Premium
-+#        XP rates Premium modifier
-+#        Default: 1
+ #        Description: Experience rates.
+ #        Default:     1 - (Rate.XP.Kill)
+ #                     1 - (Rate.XP.Quest)
+ #                     1 - (Rate.XP.Explore)
  
- Rate.XP.Kill    = 1
- Rate.XP.Quest   = 1
- Rate.XP.Explore = 1
+-Rate.XP.Kill    = 1
+-Rate.XP.Quest   = 1
+-Rate.XP.Explore = 1
++Rate.XP.Kill            = 1
 +Rate.XP.Kill.Premium    = 1
++Rate.XP.Quest           = 1
 +Rate.XP.Quest.Premium   = 1
++Rate.XP.Explore         = 1
 +Rate.XP.Explore.Premium = 1
  
  #
  #    Rate.RepairCost
-@@ -2517,6 +2525,289 @@ Network.TcpNodelay = 1
+@@ -2374,6 +2380,288 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -4608,9 +4638,9 @@ index a8c0d91..34ecb91 100644
 +#            Bind_Quest_Item
 +#             Default 0 (False)
 +#
-+#    AuctionHouseBot.DisableBeta_PTR_Unused
-+#        Disable certain items that are usually unavailable to Players
-+#    Default 0 (False)
++#    AuctionHouseBot.DisabledItems
++#        Disable certain items that are usually unavailable to Players. List of ids separated by space
++#    Default "21878 27774 27811 28117 28112" (PTR items)
 +#
 +#    AuctionHouseBot.DisablePermEnchant
 +#        Disable Items with a Permanent Enchantment
@@ -4664,7 +4694,6 @@ index a8c0d91..34ecb91 100644
 +AuctionHouseBot.Bind_When_Equipped = 1
 +AuctionHouseBot.Bind_When_Use = 1
 +AuctionHouseBot.Bind_Quest_Item = 0
-+AuctionHouseBot.DisableBeta_PTR_Unused = 0
 +AuctionHouseBot.DisablePermEnchant = 0
 +AuctionHouseBot.DisableConjured = 0
 +AuctionHouseBot.DisableGems = 0
@@ -4674,7 +4703,7 @@ index a8c0d91..34ecb91 100644
 +AuctionHouseBot.DisableKeys = 0
 +AuctionHouseBot.DisableDuration = 0
 +AuctionHouseBot.DisableBOP_Or_Quest_NoReqLevel = 0
-+
++AuctionHouseBot.DisabledItems = "21878 27774 27811 28117 28112"
 +###############################################################################
 +# AUCTION HOUSE BOT FILTERS PART 2
 +#
@@ -4804,5 +4833,5 @@ index a8c0d91..34ecb91 100644
  # CONSOLE AND REMOTE ACCESS
  #
 -- 
-1.7.2.3
+1.7.2.5
 
