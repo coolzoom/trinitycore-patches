@@ -1,19 +1,19 @@
-From 0a349ac66ca9b884160a064bd2cedd9618391f49 Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 4 Sep 2012 19:49:40 -0500
-Subject: [PATCH] New patch to fix falling through the map from blink or fear. Should fix charge and other movement related spells as well
+From 2356325eaa2f485c92def9a053d187df347df89a Mon Sep 17 00:00:00 2001
+From: lordpsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 30 Dec 2012 18:58:22 -0600
+Subject: [PATCH] 2012_12_30-blink-fear-fallthrough-map
 
 ---
  src/game/ConfusedMovementGenerator.cpp |    5 ++-
  src/game/FleeingMovementGenerator.cpp  |   12 +++-----
  src/game/Object.cpp                    |   47 ++++++++++++++++++++++++++++++++
- src/game/Object.h                      |    7 ++++-
+ src/game/Object.h                      |    6 ++++
  src/game/Spell.cpp                     |   13 ---------
  src/game/SpellEffects.cpp              |   40 +++++++++++++-------------
- 6 files changed, 81 insertions(+), 43 deletions(-)
+ 6 files changed, 81 insertions(+), 42 deletions(-)
 
 diff --git a/src/game/ConfusedMovementGenerator.cpp b/src/game/ConfusedMovementGenerator.cpp
-index c268cf9..df8e56a 100644
+index 95cd258..979fb0d 100644
 --- a/src/game/ConfusedMovementGenerator.cpp
 +++ b/src/game/ConfusedMovementGenerator.cpp
 @@ -77,11 +77,12 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
@@ -32,7 +32,7 @@ index c268cf9..df8e56a 100644
              {
                  i_nextMoveTime.Reset(urand(800, 1000));
 diff --git a/src/game/FleeingMovementGenerator.cpp b/src/game/FleeingMovementGenerator.cpp
-index 23d08f2..fb2f1f0 100644
+index bf800ac..9aa9af5 100644
 --- a/src/game/FleeingMovementGenerator.cpp
 +++ b/src/game/FleeingMovementGenerator.cpp
 @@ -98,14 +98,12 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
@@ -56,10 +56,10 @@ index 23d08f2..fb2f1f0 100644
      return true;
  }
 diff --git a/src/game/Object.cpp b/src/game/Object.cpp
-index d2d8085..22fda67 100644
+index a77662d..4024c1a 100644
 --- a/src/game/Object.cpp
 +++ b/src/game/Object.cpp
-@@ -1286,6 +1286,53 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z) const
+@@ -1306,6 +1306,53 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z) const
      }
  }
  
@@ -114,28 +114,27 @@ index d2d8085..22fda67 100644
  {
      return MaNGOS::IsValidMapCoord(m_position.x, m_position.y, m_position.z, m_position.o);
 diff --git a/src/game/Object.h b/src/game/Object.h
-index ee3a194..d5fdcaa 100644
+index 6e12b0a..26b58b8 100644
 --- a/src/game/Object.h
 +++ b/src/game/Object.h
-@@ -464,7 +464,12 @@ class MANGOS_DLL_SPEC WorldObject : public Object
-         bool IsPositionValid() const;
-         void UpdateGroundPositionZ(float x, float y, float& z) const;
-         void UpdateAllowedPositionZ(float x, float y, float& z) const;
--
-+        void MovePositionToFirstCollision(WorldLocation &pos, float dist, float angle);
-+        void GetFirstCollisionPosition(WorldLocation &pos, float dist, float angle)
+@@ -463,6 +463,12 @@ public:
+     void UpdateGroundPositionZ(float x, float y, float& z) const;
+     void UpdateAllowedPositionZ(float x, float y, float& z) const;
+ 
++    void MovePositionToFirstCollision(WorldLocation &pos, float dist, float angle);
++    void GetFirstCollisionPosition(WorldLocation &pos, float dist, float angle)
 +        {
 +            GetPosition(pos);
 +            MovePositionToFirstCollision(pos, dist, angle);
 +        }
-         void GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z) const;
+     void GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z) const;
  
-         uint32 GetMapId() const { return m_mapId; }
+     uint32 GetMapId() const { return m_mapId; }
 diff --git a/src/game/Spell.cpp b/src/game/Spell.cpp
-index b61e6af..07ed91c 100644
+index 4b00f91..0561a3b 100644
 --- a/src/game/Spell.cpp
 +++ b/src/game/Spell.cpp
-@@ -4955,19 +4955,6 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -5005,19 +5005,6 @@ SpellCastResult Spell::CheckCast(bool strict)
              case SPELL_EFFECT_LEAP:
              case SPELL_EFFECT_TELEPORT_UNITS_FACE_CASTER:
              {
@@ -156,10 +155,10 @@ index b61e6af..07ed91c 100644
                  if (m_caster->GetTypeId() == TYPEID_PLAYER)
                      if (BattleGround const* bg = ((Player*)m_caster)->GetBattleGround())
 diff --git a/src/game/SpellEffects.cpp b/src/game/SpellEffects.cpp
-index 1b7c9db..8aec4ce 100644
+index 2a3c39d..fe50173 100644
 --- a/src/game/SpellEffects.cpp
 +++ b/src/game/SpellEffects.cpp
-@@ -2344,12 +2344,15 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)
+@@ -2409,12 +2409,15 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)
              else if (unitTarget->GetTypeId() == TYPEID_PLAYER)
                  pTarget = unitTarget->GetMap()->GetUnit(((Player*)unitTarget)->GetSelectionGuid());
  
@@ -180,7 +179,7 @@ index 1b7c9db..8aec4ce 100644
              return;
          }
          default:
-@@ -5905,18 +5908,12 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
+@@ -6003,18 +6006,12 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
  
      if (m_spellInfo->rangeIndex == 1)                       // self range
      {
@@ -205,7 +204,7 @@ index 1b7c9db..8aec4ce 100644
      }
  }
  
-@@ -6027,14 +6024,17 @@ void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
+@@ -6125,14 +6122,17 @@ void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
  
      // TODO: research more ContactPoint/attack distance.
      //3.666666 instead of ATTACK_DISTANCE(5.0f) in below seem to give more accurate result.
