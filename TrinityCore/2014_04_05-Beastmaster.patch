@@ -1,29 +1,74 @@
-From 3bff2d805cdf262fe22615cef287114e1b7adcfc Mon Sep 17 00:00:00 2001
+From f056257db211ece00c8f32e064ab898bc78a0d2b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 2 Apr 2014 23:03:26 -0700
-Subject: [PATCH] 2014_04_02-Beastmaster
+Date: Sat, 5 Apr 2014 12:09:44 -0700
+Subject: [PATCH] 2014_04_05-Beastmaster
 
 ---
- sql/beastmaster/world-beastmaster.sql      |   4 +
- src/server/game/Scripting/ScriptLoader.cpp |   6 +-
- src/server/scripts/Custom/CMakeLists.txt   |   1 +
- src/server/scripts/Custom/beastmaster.cpp  | 913 +++++++++++++++++++++++++++++
- 4 files changed, 923 insertions(+), 1 deletion(-)
+ sql/beastmaster/world-beastmaster.sql        |  48 ++
+ src/server/game/Scripting/ScriptLoader.cpp   |   6 +-
+ src/server/scripts/Custom/CMakeLists.txt     |   1 +
+ src/server/scripts/Custom/beastmaster.cpp    | 913 +++++++++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist |  94 +++
+ 5 files changed, 1061 insertions(+), 1 deletion(-)
  create mode 100644 sql/beastmaster/world-beastmaster.sql
  create mode 100644 src/server/scripts/Custom/beastmaster.cpp
 
 diff --git a/sql/beastmaster/world-beastmaster.sql b/sql/beastmaster/world-beastmaster.sql
 new file mode 100644
-index 0000000..f95aa83
+index 0000000..9736bd3
 --- /dev/null
 +++ b/sql/beastmaster/world-beastmaster.sql
-@@ -0,0 +1,4 @@
-+-- Beastmaster
+@@ -0,0 +1,48 @@
++/* Beastmaster SQL */
++
++DROP TABLE IF EXISTS `beastmaster`;
++
++CREATE TABLE `beastmaster` (
++  `entry` int(5) NOT NULL DEFAULT '0' COMMENT 'pet entry number',
++  `cat_number` int(5) NOT NULL DEFAULT '0' COMMENT '0-normal pet 1-exotic pet',
++  `tokenOrGold` tinyint(3) NOT NULL DEFAULT '0' COMMENT '0 = gold 1 = token',
++  `cost` int(10) NOT NULL DEFAULT '0' COMMENT 'amount in copper if tokenOrGold is 0 else amount of items',
++  `eToken` int(10) NOT NULL DEFAULT '0' COMMENT 'Exotic pet token entry number (item_template.entry)',
++  `nToken` int(10) NOT NULL DEFAULT '0' COMMENT 'Normal pet token entry (item_template.entry)',
++  `name` varchar(255) DEFAULT NULL COMMENT 'Name of pet',
++  PRIMARY KEY (`entry`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Beastmaster System';
++
++/*Data for the table `beastmaster` */
++
++TRUNCATE TABLE `beastmaster`;
++
++insert  into `beastmaster`(`entry`,`cat_number`,`tokenOrGold`,`cost`,`eToken`,`nToken`,`name`) values 
++(1,0,0,1000,0,0,'name'),
++(2,0,0,1000,0,0,'Bat'),
++(3,0,0,1000,0,0,'Bear'),
++(4,0,0,1000,0,0,'Boar'),
++(5,0,0,1000,0,0,'Cat'),
++(6,0,0,1000,0,0,'Carrion Bird'),
++(7,0,0,1000,0,0,'Crab'),
++(8,0,0,1000,0,0,'Crocolisk'),
++(9,0,0,1000,0,0,'Dragonhawk'),
++(10,0,0,1000,0,0,'Gorill'),
++(11,0,0,1000,0,0,'Hyena'),
++(12,0,0,1000,0,0,'Moth'),
++(13,0,0,1000,0,0,'Owl'),
++(14,1,0,1000,0,0,'Chimaera'),
++(15,1,0,1000,0,0,'Core Hound'),
++(16,1,0,1000,0,0,'Devilsaur'),
++(17,1,0,1000,0,0,'Rhino'),
++(18,1,0,1000,0,0,'Silithid'),
++(19,1,0,1000,0,0,'Worm'),
++(20,1,0,1000,0,0,'Loque\'nahak'),
++(21,1,0,1000,0,0,'Skoll'),
++(22,1,0,1000,0,0,'Gondria');
++
++/* BeastMaster NPC */
++
 +DELETE FROM `creature_template` WHERE `entry` = 99990;
-+insert into `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `equipment_id`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) values
-+('99990','0','0','0','0','0','26789','0','0','0','Psyanide','Beastmaster Service','','0','80','80','0','35','35','1','1','1.14286','0.75','1','1755','1755','0','1504','1','1500','0','1','0','0','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','0','0','0','0','0','0','0','0','1','0','0','0','Npc_Beastmaster','0');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
++('99990','0','0','0','0','0','26789','0','0','0','LordPsyan','Beastmaster Service','','0','80','80','0','35','35','1','1','1.14286','0.75','1','1755','1755','0','1504','1','1500','0','1','0','0','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Npc_Beastmaster','0');
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7365d59..2426053 100644
+index 7365d59..5e09af6 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -43,6 +43,10 @@ void AddSC_holiday_spell_scripts();
@@ -59,7 +104,7 @@ index 78db719..ded8e6b 100644
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/beastmaster.cpp b/src/server/scripts/Custom/beastmaster.cpp
 new file mode 100644
-index 0000000..18f59d8
+index 0000000..8bd00a0
 --- /dev/null
 +++ b/src/server/scripts/Custom/beastmaster.cpp
 @@ -0,0 +1,913 @@
@@ -976,6 +1021,109 @@ index 0000000..18f59d8
 +{
 +    new Npc_Beastmaster();
 +}
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 1762859..865f83f 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -2843,3 +2843,97 @@ PacketSpoof.BanDuration = 86400
+ 
+ #
+ ###################################################################################################
++
++###################################################################################################
++# Beastmaster
++#
++# These settings configure who can get Beastmaster access, and costs.
++#
++#    BeastMaster.OnlyHunter
++#        Description: Enable or disable Beastmaster for all classes
++#        Default:    0 (Only hunters can use Beastmaster)
++#                    1 (Any class can use beastmaster. Make sure to enable hunter spells)
++#
++
++BeastMaster.OnlyHunter = 0
++
++#
++#    BeastMaster.EnableHunterSpells
++#        Description: Turn on gossip option to allow for feed pet, dismiss pet, etc.
++#        Default:    0 (Disabled)
++#                    1 (All pet spells enabled for purchase)
++#
++
++BeastMaster.EnableHunterSpells = 0
++
++#
++#    BeastMaster.UseTokens
++#        Description: Use copper or tokens (item)
++#        Default:    0 (use copper)
++#                    1 (use token)
++#
++
++BeastMaster.UseTokens = 0
++
++
++#
++#    BeastMaster.EnableExotic
++#        Description: Turn on gossip option for exotic pets
++#        Default:    0 (Disabled)
++#                    1 (Exotic pets list enabled)
++#
++
++BeastMaster.EnableExotic = 0
++
++#
++#    BeastMaster.EnableExotic
++#        Description: Turn on gossip option for exotic pets
++#        Default:    0 (Disabled)
++#                    1 (Exotic pets list enabled)
++#
++
++BeastMaster.EnableExotic = 0
++
++#
++#    BeastMaster.ItemEntryNum
++#        Description: Entry number of the item used to purchase Normal pets if UseTokens is enabled.
++#        Default:    99999 (Item entry 99999)
++#
++
++BeastMaster.ItemEntryNum = 99999
++
++#
++#    BeastMaster.EnableCost
++#        Description: If UseTokens is enabled, this field is number of items required.
++#                     If not enabled, then cost in copper.
++#        Default:    1000 (1000 tokens OR 1 silver)
++#
++
++BeastMaster.ExoticCost = 1000
++
++#
++#    BeastMaster.ExoticTokens
++#        Description: Item entry number to use to purchase exotic pets.
++#        Default:    99999 (Item entry 99999)
++#
++
++BeastMaster.ExoticTokens = 99999
++
++#
++#    BeastMaster.Normal Cost
++#        Description: Cost in copper
++#        Default:    1000 (1000 copper OR 1 silver)
++#
++
++BeastMaster.NormalCost = 1000
++
++#
++#    BeastMaster.NormalTokens
++#        Description: Item entry number to use to purchase Normal pets.
++#        Default:    99999 (Item entry 99999)
++#
++
++BeastMaster.NormalTokens = 99999
++
++#
++###################################################################################################
+\ No newline at end of file
 -- 
 1.8.1.msysgit.1
 
