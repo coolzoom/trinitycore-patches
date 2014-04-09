@@ -1,15 +1,15 @@
-From f056257db211ece00c8f32e064ab898bc78a0d2b Mon Sep 17 00:00:00 2001
+From 4ea5ef243aec3617b508fbed453711642d21cb8e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 5 Apr 2014 12:09:44 -0700
-Subject: [PATCH] 2014_04_05-Beastmaster
+Date: Wed, 9 Apr 2014 06:58:48 -0700
+Subject: [PATCH] 2014_04_09-Beastmaster
 
 ---
  sql/beastmaster/world-beastmaster.sql        |  48 ++
  src/server/game/Scripting/ScriptLoader.cpp   |   6 +-
  src/server/scripts/Custom/CMakeLists.txt     |   1 +
- src/server/scripts/Custom/beastmaster.cpp    | 913 +++++++++++++++++++++++++++
- src/server/worldserver/worldserver.conf.dist |  94 +++
- 5 files changed, 1061 insertions(+), 1 deletion(-)
+ src/server/scripts/Custom/beastmaster.cpp    | 914 +++++++++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist |  85 +++
+ 5 files changed, 1053 insertions(+), 1 deletion(-)
  create mode 100644 sql/beastmaster/world-beastmaster.sql
  create mode 100644 src/server/scripts/Custom/beastmaster.cpp
 
@@ -104,14 +104,15 @@ index 78db719..ded8e6b 100644
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/beastmaster.cpp b/src/server/scripts/Custom/beastmaster.cpp
 new file mode 100644
-index 0000000..8bd00a0
+index 0000000..7612f36
 --- /dev/null
 +++ b/src/server/scripts/Custom/beastmaster.cpp
-@@ -0,0 +1,913 @@
+@@ -0,0 +1,914 @@
 +//Modified by Marcus patched by LordPsyan
 +//original script created by ??
 +#include "ScriptPCH.h"
 +#include "Config.h"
++#include "Pet.h"
 +
 +#define GOSSIP_ITEM_STABLE "Stable"
 +#define GOSSIP_ITEM_NEWPET "New Pet"
@@ -131,15 +132,15 @@ index 0000000..8bd00a0
 +
 +void CreatePet(Player *player, Creature * m_creature, uint32 entry) {
 +
-+    if(ConfigMgr::GetBoolDefault("BeastMaster.OnlyHunter", false)) // Checks to see if Only Hunters can have pets.
++    if(sConfigMgr->GetBoolDefault("BeastMaster.OnlyHunter", false)) // Checks to see if Only Hunters can have pets.
 +     {
 +        if(player->getClass() != CLASS_HUNTER) {
-+            m_creature->MonsterWhisper("You are not a Hunter!", player->GetGUID());
++            m_creature->MonsterWhisper("You are not a Hunter!", player);
 +            return;
 +        }
 +     }
 +        if(player->GetPet()) {
-+            m_creature->MonsterWhisper("First you must drop your Pet!", player->GetGUID());
++            m_creature->MonsterWhisper("First you must dismiss your Pet!", player);
 +            return;
 +        }
 + 
@@ -167,7 +168,7 @@ index 0000000..8bd00a0
 + 
 +        
 +        if(!pet->InitStatsForLevel(player->getLevel()))
-+            sLog->outError(LOG_FILTER_GENERAL, "Pet Create fail: no init stats for entry %u", entry);
++            TC_LOG_ERROR("scripts", "Pet Create fail: no init stats for entry %u", entry);
 + 
 +        pet->UpdateAllStats();
 +        
@@ -180,46 +181,46 @@ index 0000000..8bd00a0
 +        
 +        //end
 +        //player->PlayerTalkClass->CloseGossip();
-+        m_creature->MonsterWhisper("Pet added. You might want to feed it and name it somehow.", player->GetGUID());
++        m_creature->MonsterWhisper("Pet added. You might want to feed it and name it somehow.", player);
 +        return;
 +    }
 + 
 + 
 +bool OnGossipHello(Player *player, Creature * m_creature)
 +{
-+    bool EnableHunterSpells = ConfigMgr::GetBoolDefault("BeastMaster.EnableHunterSpells", true);
++    bool EnableHunterSpells = sConfigMgr->GetBoolDefault("BeastMaster.EnableHunterSpells", true);
 +    // Not allow in combat
-+if (player->isInCombat())
++if (player->IsInCombat())
 +{
 +    player->CLOSE_GOSSIP_MENU();
 +    m_creature->MonsterSay("You are in combat!", LANG_UNIVERSAL, NULL);
 +    return true;
 +}
-+     if(ConfigMgr::GetBoolDefault("BeastMaster.OnlyHunter", false)) // Checks to see if Only Hunters can have pets.
++     if(sConfigMgr->GetBoolDefault("BeastMaster.OnlyHunter", false)) // Checks to see if Only Hunters can have pets.
 +     {
 +        if(player->getClass() != CLASS_HUNTER)
 +        {
-+            m_creature->MonsterWhisper("You are not a Hunter!", player->GetGUID());
++            m_creature->MonsterWhisper("You are not a Hunter!", player);
 +            return true;
 +        }
 +        }
-+        if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++        if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +        {
 +        player->ADD_GOSSIP_ITEM(4, "(100 Chips) Get a New Pet.", GOSSIP_SENDER_MAIN, 30);
 +        } else {
 +        player->ADD_GOSSIP_ITEM(4, "(100 Gold) Get a New Pet.", GOSSIP_SENDER_MAIN, 30);
 +        }
-+        if(ConfigMgr::GetBoolDefault("BeastMaster.EnableExotic", false))
++        if(sConfigMgr->GetBoolDefault("BeastMaster.EnableExotic", false))
 +        {
 +        if (player->CanTameExoticPets())
 +        {
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +            player->ADD_GOSSIP_ITEM(4, "(200 Chips) Get a New Exotic Pet.", GOSSIP_SENDER_MAIN, 50);
 +            else
 +            player->ADD_GOSSIP_ITEM(4, "(200 Gold) Get a New Exotic Pet.", GOSSIP_SENDER_MAIN, 50);
 +        }
 +        } else {
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +            player->ADD_GOSSIP_ITEM(4, "(200 Chips) Get a New Exotic Pet.", GOSSIP_SENDER_MAIN, 50);
 +            else
 +            player->ADD_GOSSIP_ITEM(4, "(200 Gold) Get a New Exotic Pet.", GOSSIP_SENDER_MAIN, 50);
@@ -240,11 +241,11 @@ index 0000000..8bd00a0
 +        {
 +
 +        case 100:
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +            player->ADD_GOSSIP_ITEM(4, "(100 Tokens) Get a New Pet.", GOSSIP_SENDER_MAIN, 30);
 +            else
 +            player->ADD_GOSSIP_ITEM(4, "(100 Gold) Get a New Pet.", GOSSIP_SENDER_MAIN, 30);
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.EnableExotic", false))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.EnableExotic", false))
 +            {
 +            if (player->CanTameExoticPets())
 +            {
@@ -315,647 +316,647 @@ index 0000000..8bd00a0
 +                player->GetSession()->SendListInventory(m_creature->GetGUID());
 +            break;
 +            case 51: //chimera
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 21879);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 21879);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 52: //core hound
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 21108);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 21108);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 53: //Devilsaur
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 20931);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 20931);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 54: //rhino
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 30445);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 30445);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 55: //silithid
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 5460);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 5460);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 56: //Worm
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 30148);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 30148);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 57: //Loque'nahak
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 32517);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 32517);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 58: //Skoll
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 35189);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 35189);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 59: //Gondria
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.ExoticTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.ExoticTokens",0)), true);
 +                CreatePet(player, m_creature, 33776);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 33776);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.ExoticCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.ExoticCost",0)));
 +                    }
 +            break;
 +            case 16: //Spider
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 2349);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 2349);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 17: //Dragonhawk
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 27946);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 27946);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 18: //Bat
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 28233);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 28233);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 19: //Ravager
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 17199);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 17199);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 20: //Raptor
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 14821);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 14821);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 21: //Serpent
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 28358);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 28358);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 1: //bear
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 29319);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 29319);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 2: //Boar
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                               CreatePet(player, m_creature, 29996);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 29996);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +            break;
 +            case 93: //Bug
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 28085);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 28085);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 4: //cat
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 28097);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 28097);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 5: //carrion
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 26838);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 26838);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 6: //crab
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 24478);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 24478);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;   
 +            case 7: //crocolisk
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 1417);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 1417);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;  
 +            case 8: //gorilla
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 28213);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 28213);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 9: //hynea
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 13036);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 13036);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 10: //Moth
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 27421);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 27421);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 11: //owl
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 23136);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 23136);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 13: //strider
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 22807);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 22807);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +            case 414: //scorpid
-+                if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++                if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                    {
-+                    if (!player->HasItemCount((ConfigMgr::GetIntDefault("BeastMaster.ItemEntryNum",0)), (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0))))
++                    if (!player->HasItemCount((sConfigMgr->GetIntDefault("BeastMaster.ItemEntryNum",0)), (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0))))
 +                        {
 +                        player->CLOSE_GOSSIP_MENU();
-+                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player->GetGUID());
++                        m_creature->MonsterWhisper("You ain't gots no darn chips.", player);
 +                        return true;
 +                        } else {
-+                               player->DestroyItemCount(99999, (ConfigMgr::GetIntDefault("BeastMaster.NormalTokens",0)), true);
++                               player->DestroyItemCount(99999, (sConfigMgr->GetIntDefault("BeastMaster.NormalTokens",0)), true);
 +                CreatePet(player, m_creature, 9698);
 +                               }
 +                    }
-+                else if (player->GetMoney() < (ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)))
++                else if (player->GetMoney() < (sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)))
 +                    {
 +                    player->CLOSE_GOSSIP_MENU();
-+                    m_creature->MonsterWhisper("You don't have enough money.", player->GetGUID());
++                    m_creature->MonsterWhisper("You don't have enough money.", player);
 +                    return true;
 +                    } else {
 +                    CreatePet(player, m_creature, 9698);
-+                    player->ModifyMoney(-(ConfigMgr::GetIntDefault("BeastMaster.NormalCost",0)));
++                    player->ModifyMoney(-(sConfigMgr->GetIntDefault("BeastMaster.NormalCost",0)));
 +                    }
 +                        break;
 +        case 6000: // buy hunter spells
@@ -968,12 +969,12 @@ index 0000000..8bd00a0
 +        break;
 +
 +        case 6001: // Call Pet
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                {
 +                if (!player->HasItemCount(99999, 200))
 +                    {
 +                player->CLOSE_GOSSIP_MENU();
-+                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player->GetGUID());
++                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player);
 +                return true;
 +                } else
 +            player->learnSpell(883,false); // call pet
@@ -983,12 +984,12 @@ index 0000000..8bd00a0
 +        break;
 +
 +        case 6002: // Dismiss Pet
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                {
 +                if (!player->HasItemCount(99999, 200))
 +                    {
 +                player->CLOSE_GOSSIP_MENU();
-+                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player->GetGUID());
++                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player);
 +                return true;
 +                } else
 +            player->learnSpell(2641,false); // call pet
@@ -998,12 +999,12 @@ index 0000000..8bd00a0
 +        break;
 +
 +        case 6003: // Feed Pet
-+            if(ConfigMgr::GetBoolDefault("BeastMaster.UseTokens", true))
++            if(sConfigMgr->GetBoolDefault("BeastMaster.UseTokens", true))
 +                {
 +                if (!player->HasItemCount(99999, 200))
 +                    {
 +                player->CLOSE_GOSSIP_MENU();
-+                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player->GetGUID());
++                m_creature->MonsterWhisper("You need at least 200 credit Chips to learn this.", player);
 +                return true;
 +                } else
 +            player->learnSpell(6991,false); // call pet
@@ -1022,10 +1023,10 @@ index 0000000..8bd00a0
 +    new Npc_Beastmaster();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 1762859..865f83f 100644
+index 1762859..f33a91c 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2843,3 +2843,97 @@ PacketSpoof.BanDuration = 86400
+@@ -2843,3 +2843,88 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
@@ -1061,15 +1062,6 @@ index 1762859..865f83f 100644
 +
 +BeastMaster.UseTokens = 0
 +
-+
-+#
-+#    BeastMaster.EnableExotic
-+#        Description: Turn on gossip option for exotic pets
-+#        Default:    0 (Disabled)
-+#                    1 (Exotic pets list enabled)
-+#
-+
-+BeastMaster.EnableExotic = 0
 +
 +#
 +#    BeastMaster.EnableExotic
@@ -1125,5 +1117,5 @@ index 1762859..865f83f 100644
 +###################################################################################################
 \ No newline at end of file
 -- 
-1.8.1.msysgit.1
+1.8.3.msysgit.0
 
