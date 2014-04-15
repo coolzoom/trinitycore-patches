@@ -1,0 +1,432 @@
+From 34f67952b2ebd5408d01bce48b618dd49f418e10 Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Sun, 27 May 2012 10:16:17 -0500
+Subject: [PATCH] 2012_05_27-ProfessionNPC-ScriptDev2
+
+---
+ scripts/custom/professionNPC.cpp |  392 ++++++++++++++++++++++++++++++++++++++
+ system/ScriptLoader.cpp          |    2 +
+ 2 files changed, 394 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/custom/professionNPC.cpp
+
+diff --git a/scripts/custom/professionNPC.cpp b/scripts/custom/professionNPC.cpp
+new file mode 100644
+index 0000000..b9efd6f
+--- /dev/null
++++ b/scripts/custom/professionNPC.cpp
+@@ -0,0 +1,392 @@
++/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include "precompiled.h"
++#include "Config/Config.h"
++
++bool GossipHello_professionnpc(Player *player, Creature *_Creature)
++{
++	if(sConfig.GetBoolDefault("ProfessionNPC.OnlyGMs", false)) // If ProfessionNPC.OnlyGMs is enabled in trinitycore.conf
++		if (player->GetSession()->GetSecurity() == SEC_PLAYER)
++		{
++			_Creature->MonsterSay("Sorry, I can only trade to game masters.", LANG_UNIVERSAL, NULL);
++			return true;
++		}
++
++	bool EnableProfessions = sConfig.GetBoolDefault("ProfessionNPC.EnableProfessions", true);
++	bool EnableSecondarySkills = sConfig.GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
++	
++	// Main Menu for Alliance
++    if (player->GetTeam() == ALLIANCE)
++	{
++	// Check config if "Professions" is enabled or not
++	if(EnableProfessions)
++		player->ADD_GOSSIP_ITEM( 7, "Professions ->"        , GOSSIP_SENDER_MAIN, 1000);
++	// Check config if "Secondary Skills" is enabled or not
++	if(EnableSecondarySkills)
++		player->ADD_GOSSIP_ITEM( 7, "Secondary Skills ->"   , GOSSIP_SENDER_MAIN, 2000);
++	}
++	else // Main Menu for Horde
++	{
++	// Check config if "Professions" is enabled or not
++	if(EnableProfessions)
++		player->ADD_GOSSIP_ITEM( 7, "Professions ->"        , GOSSIP_SENDER_MAIN, 1000);
++	// Check config if "Secondary Skills" is enabled or not
++	if(EnableSecondarySkills)
++		player->ADD_GOSSIP_ITEM( 7, "Secondary Skills ->"   , GOSSIP_SENDER_MAIN, 2000);
++	}
++
++    player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,_Creature->GetObjectGuid());
++
++return true;
++}
++
++void SendDefaultMenu_professionnpc(Player* player, Creature* _Creature, uint32 uiAction)
++{
++
++// Not allow in combat
++if (player->isInCombat())
++{
++    player->CLOSE_GOSSIP_MENU();
++    _Creature->MonsterSay("You are in combat!", LANG_UNIVERSAL, NULL);
++	return;
++}
++
++	bool EnableProfessions = sConfig.GetBoolDefault("ProfessionNPC.EnableProfessions", true);
++	bool EnableSecondarySkills = sConfig.GetBoolDefault("ProfessionNPC.EnableSecondarySkills", true);
++	
++//Mony Check
++if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++{
++if (!player->HasItemCount((sConfig.GetIntDefault("ProfessionNPC.ItemEntryNum",0)), 1))
++{
++    player->CLOSE_GOSSIP_MENU();
++    _Creature->MonsterSay("You ain't gots no darn chips.", LANG_UNIVERSAL, NULL);
++	return;
++}
++else if(player->GetMoney() < (sConfig.GetIntDefault("SkillGoldCost",0)))
++{
++    player->CLOSE_GOSSIP_MENU();
++    _Creature->MonsterSay("You don't have enough money.", LANG_UNIVERSAL, NULL);
++	return;
++}
++}
++switch(uiAction)
++{
++
++case 1000: //Profession
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Alchemy."              , GOSSIP_SENDER_MAIN, 1001);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Blacksmithing."        , GOSSIP_SENDER_MAIN, 1002);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Enchanting."           , GOSSIP_SENDER_MAIN, 1003);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Engineering."          , GOSSIP_SENDER_MAIN, 1004);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Herbalism."            , GOSSIP_SENDER_MAIN, 1005);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Inscription."          , GOSSIP_SENDER_MAIN, 1006);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Jewelcrafting."        , GOSSIP_SENDER_MAIN, 1007);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Leatherworking."       , GOSSIP_SENDER_MAIN, 1008);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Mining."               , GOSSIP_SENDER_MAIN, 1009);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Skinning."             , GOSSIP_SENDER_MAIN, 1010);
++            player->ADD_GOSSIP_ITEM( 5, "10 points in Tailoring."            , GOSSIP_SENDER_MAIN, 1011);
++            player->ADD_GOSSIP_ITEM( 7, "<- Main Menu"          , GOSSIP_SENDER_MAIN, 3000);
++
++	player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,_Creature->GetObjectGuid());
++break;
++
++case 2000: //Secondary Skills
++            player->ADD_GOSSIP_ITEM( 5, "Cooking."              , GOSSIP_SENDER_MAIN, 2001);
++            player->ADD_GOSSIP_ITEM( 5, "First Aid."            , GOSSIP_SENDER_MAIN, 2002);
++            player->ADD_GOSSIP_ITEM( 5, "Fishing."              , GOSSIP_SENDER_MAIN, 2003);
++            player->ADD_GOSSIP_ITEM( 7, "<- Main Menu"          , GOSSIP_SENDER_MAIN, 3000);
++
++	player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,_Creature->GetObjectGuid());
++break;
++
++case 3000: //Back To Main Menu
++	// Main Menu for Alliance
++    if (player->GetTeam() == ALLIANCE)
++	{
++	// Check config if "Professions" is enabled or not
++	if(EnableProfessions)
++		player->ADD_GOSSIP_ITEM( 7, "Professions ->"        , GOSSIP_SENDER_MAIN, 1000);
++	// Check config if "Secondary Skills" is enabled or not
++	if(EnableSecondarySkills)
++		player->ADD_GOSSIP_ITEM( 7, "Secondary Skills ->"   , GOSSIP_SENDER_MAIN, 2000);
++	}
++	else // Main Menu for Horde
++	{
++	// Check config if "Professions" is enabled or not
++	if(EnableProfessions)
++		player->ADD_GOSSIP_ITEM( 7, "Professions ->"        , GOSSIP_SENDER_MAIN, 1000);
++	// Check config if "Secondary Skills" is enabled or not
++	if(EnableSecondarySkills)
++		player->ADD_GOSSIP_ITEM( 7, "Secondary Skills ->"   , GOSSIP_SENDER_MAIN, 2000);
++	}
++
++	player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,_Creature->GetObjectGuid());
++break;
++
++//////////////////////////////////////////////////Professions///////////////////////////////////////////////////////////////
++
++case 1001: // Alchemy
++	if(!player->UpdateSkill(171,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(171,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1002: // Blacksmithing
++	if(!player->UpdateSkill(164,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(164,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1003: // Enchanting
++	if(!player->UpdateSkill(333,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(333,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1004: // Engineering
++	if(!player->UpdateSkill(202,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(202,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1005: // Herbalism
++	if(!player->UpdateSkill(182,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(182,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1006: // Inscription
++	if(!player->UpdateSkill(773,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(773,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1007: // Jewelcrafting
++	if(!player->UpdateSkill(755,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(755,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1008: // Leatherworking
++	if(!player->UpdateSkill(165,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(165,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1009: // Mining
++	if(!player->UpdateSkill(186,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(186,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1010: // Skinning
++	if(!player->UpdateSkill(393,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(393,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 1011: // Tailoring
++	if(!player->UpdateSkill(197,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(197,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++//////////////////////////////////////////////////Secondary Skills///////////////////////////////////////////////////////////////
++
++case 2001: // Cooking
++	if(!player->UpdateSkill(185,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(185,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 2002: // First Aid
++	if(!player->UpdateSkill(129,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(129,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++case 2003: // Fishing
++	if(!player->UpdateSkill(356,0))
++      {
++		_Creature->MonsterSay("You don't have this skill or you allready have the maximum skill value $C.", LANG_UNIVERSAL, NULL);
++		GossipHello_professionnpc(player, _Creature);
++		return;
++	}
++
++	player->UpdateSkill(356,(sConfig.GetIntDefault("SkillPoints",0)));
++	if(sConfig.GetBoolDefault("ProfessionNPC.UseTokens", true))
++	player->DestroyItemCount(99999, 1, true);
++	else
++	player->ModifyMoney(-(sConfig.GetIntDefault("SkillGoldCost",0)));
++	player->CLOSE_GOSSIP_MENU();
++break;
++
++ player->CLOSE_GOSSIP_MENU();
++
++} // end of switch
++} //end of function
++
++bool GossipSelect_professionnpc(Player* player, Creature* _Creature, uint32 uiSender, uint32 uiAction)
++{
++	// Main menu
++	player->PlayerTalkClass->ClearMenus();
++	if (uiSender == GOSSIP_SENDER_MAIN)
++	SendDefaultMenu_professionnpc(player, _Creature, uiAction);
++
++return true;
++}
++
++void AddSC_professionnpc()
++{
++    Script* pNewScript;
++
++    pNewScript = new Script;
++    pNewScript->Name = "professionnpc";
++    pNewScript->pGossipHello = &GossipHello_professionnpc;
++    pNewScript->pGossipSelect = &GossipSelect_professionnpc;
++    pNewScript->RegisterSelf();
++}
+diff --git a/system/ScriptLoader.cpp b/system/ScriptLoader.cpp
+index 0087d8d..84478b5 100644
+--- a/system/ScriptLoader.cpp
++++ b/system/ScriptLoader.cpp
+@@ -12,6 +12,7 @@ extern void AddSC_battlegroundIC();
+ // custom
+ extern void AddSC_mob_teleguy();
+ extern void AddSC_npc_arena_honor();
++extern void AddSC_professionnpc();
+ 
+ // examples
+ extern void AddSC_example_creature();
+@@ -543,6 +544,7 @@ void AddScripts()
+     // custom
+     AddSC_mob_teleguy();
+     AddSC_npc_arena_honor();
++    AddSC_professionnpc();
+ 
+     // examples
+     AddSC_example_creature();
+-- 
+1.7.2.5
+

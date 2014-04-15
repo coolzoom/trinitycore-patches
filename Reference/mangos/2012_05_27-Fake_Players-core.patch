@@ -1,0 +1,170 @@
+From 9ad39f77fdc4e3ff0e88601a42b062366ab57f2b Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Sun, 27 May 2012 06:31:17 -0500
+Subject: [PATCH] 2012_05_27-Fake_Players-core
+
+---
+ src/game/ChatHandler.cpp         |    9 +++++++++
+ src/game/Language.h              |    1 +
+ src/game/MiscHandler.cpp         |   33 +++++++++++++++++++++++++++++++++
+ src/game/Player.cpp              |    4 ++++
+ src/game/World.cpp               |    1 +
+ src/game/World.h                 |    1 +
+ src/mangosd/mangosd.conf.dist.in |   10 +++++++++-
+ 8 files changed, 59 insertions(+), 2 deletions(-)
+
+diff --git a/src/game/ChatHandler.cpp b/src/game/ChatHandler.cpp
+index 4db4666..161c6f5 100644
+--- a/src/game/ChatHandler.cpp
++++ b/src/game/ChatHandler.cpp
+@@ -228,8 +228,17 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
+             uint32 pSecurity = player ? player->GetSession()->GetSecurity() : SEC_PLAYER;
+             if (!player || (tSecurity == SEC_PLAYER && pSecurity > SEC_PLAYER && !player->isAcceptWhispers()))
+             {
++                // If Fake WHO List system on then show player DND
++                if (sWorld.getConfig(CONFIG_BOOL_FAKE_WHO_LIST))
++                {
++                    SendNotification(LANG_NOT_WHISPER);
++                    return;
++                }
++                else
++                {
+                 SendPlayerNotFoundNotice(to);
+                 return;
++                }
+             }
+ 
+             if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && tSecurity == SEC_PLAYER && pSecurity == SEC_PLAYER )
+diff --git a/src/game/Language.h b/src/game/Language.h
+index 1f23fe0..118455b 100644
+--- a/src/game/Language.h
++++ b/src/game/Language.h
+@@ -1037,6 +1037,7 @@ enum MangosStrings
+     LANG_SYSTEMMESSAGE_MODERATOR        = 12000,
+     LANG_SYSTEMMESSAGE_GAMEMASTER       = 12001,
+     LANG_SYSTEMMESSAGE_ADMINISTRATOR    = 12002,
++	LANG_NOT_WHISPER                    = 12100,
+     LANG_BAN_ACCOUNT_ANNOUNCE           = 17890,
+     LANG_PERMBAN_ACCOUNT_ANNOUNCE       = 17891,
+     LANG_BAN_CHARACTER_ANNOUNCE         = 17892,
+diff --git a/src/game/MiscHandler.cpp b/src/game/MiscHandler.cpp
+index 19015f5..0c7959d 100644
+--- a/src/game/MiscHandler.cpp
++++ b/src/game/MiscHandler.cpp
+@@ -253,6 +253,39 @@ void WorldSession::HandleWhoOpcode( WorldPacket & recv_data )
+             break;
+     }
+ 
++    if (sWorld.getConfig(CONFIG_BOOL_FAKE_WHO_LIST) && clientcount < 49)
++    {
++        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5     6
++        QueryResult *result = CharacterDatabase.Query("SELECT guid,name,race,class,level,zone,gender FROM characters_fake WHERE online > 1");
++        if (result)
++        {
++            do
++            {
++                Field *fields = result->Fetch();
++
++                std::string pname = fields[1].GetCppString();    // player name
++                std::string gname;                                // guild name
++                uint32 lvl = fields[4].GetUInt32();                // player level
++                uint32 class_ = fields[3].GetUInt32();            // player class
++                uint32 race = fields[2].GetUInt32();            // player race
++                uint32 pzoneid = fields[5].GetUInt32();            // player zone id
++                uint8 gender = fields[6].GetUInt8();            // player gender
++
++                data << pname;                              // player name
++                data << gname;                              // guild name
++                data << uint32(lvl);                        // player level
++                data << uint32(class_);                     // player class
++                data << uint32(race);                       // player race
++                data << uint8(gender);                      // player gender
++                data << uint32(pzoneid);                    // player zone id
++
++                if ((++clientcount) == 49)
++                    break;
++            } while (result->NextRow());
++        }
++        delete result;
++    }
++
+     uint32 count = m.size();
+     data.put( 0, clientcount );                             // insert right count, listed count
+     data.put( 4, count > 50 ? count : clientcount );        // insert right count, online count
+diff --git a/src/game/Player.cpp b/src/game/Player.cpp
+index f6e019b..86c5964 100644
+--- a/src/game/Player.cpp
++++ b/src/game/Player.cpp
+@@ -1388,6 +1388,10 @@ void Player::Update( uint32 update_diff, uint32 p_time )
+             // m_nextSave reseted in SaveToDB call
+             SaveToDB();
+             DETAIL_LOG("Player '%s' (GUID: %u) saved", GetName(), GetGUIDLow());
++            // If Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min)
++            if (sWorld.getConfig(CONFIG_BOOL_FAKE_WHO_LIST))
++                CharacterDatabase.PExecute("UPDATE characters SET zone = (FLOOR(50 * RAND()) + 1) WHERE online>1");
++                CharacterDatabase.PExecute("UPDATE characters SET level=level+1 WHERE online>1 AND level<5");
+         }
+         else
+             m_nextSave -= update_diff;
+diff --git a/src/game/World.cpp b/src/game/World.cpp
+index 2f1bf1f..c845191 100644
+--- a/src/game/World.cpp
++++ b/src/game/World.cpp
+@@ -583,6 +583,7 @@ void World::LoadConfigSettings(bool reload)
+     setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_MAIL,    "AllowTwoSide.Interaction.Mail", false);
+     setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST,            "AllowTwoSide.WhoList", false);
+     setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,          "AllowTwoSide.AddFriend", false);
++    setConfig(CONFIG_BOOL_FAKE_WHO_LIST,                      "Fake.WHO.List", false);
+ 
+     setConfig(CONFIG_UINT32_STRICT_PLAYER_NAMES,  "StrictPlayerNames",  0);
+     setConfig(CONFIG_UINT32_STRICT_CHARTER_NAMES, "StrictCharterNames", 0);
+diff --git a/src/game/World.h b/src/game/World.h
+index 9bd8659..4c641ad 100644
+--- a/src/game/World.h
++++ b/src/game/World.h
+@@ -323,6 +323,7 @@ enum eConfigBoolValues
+     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_MAIL,
+     CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST,
+     CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,
++    CONFIG_BOOL_FAKE_WHO_LIST,
+     CONFIG_BOOL_INSTANCE_IGNORE_LEVEL,
+     CONFIG_BOOL_INSTANCE_IGNORE_RAID,
+     CONFIG_BOOL_CAST_UNSTUCK,
+diff --git a/src/mangosd/mangosd.conf.dist.in b/src/mangosd/mangosd.conf.dist.in
+index 78967bd..cee3c0c 100644
+--- a/src/mangosd/mangosd.conf.dist.in
++++ b/src/mangosd/mangosd.conf.dist.in
+@@ -223,7 +223,7 @@ MaxOverspeedPings = 2
+ GridUnload = 1
+ GridCleanUpDelay = 300000
+ MapUpdateInterval = 100
+-ChangeWeatherInterval = 600000
++ChangeWeatherInterval = 5400000# 90 minutes
+ PlayerSave.Interval = 900000
+ PlayerSave.Stats.MinLevel = 0
+ PlayerSave.Stats.SaveOnlyOnLogout = 1
+@@ -1046,6 +1046,13 @@ AllowTransferToCustomMap = 0
+ #        Default: 1 (allow)
+ #                 0 (not allow)
+ #
++#    Fake.WHO.List
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
++#        49 real players online (need to set online=2 in character database in order to work)
++#        Default: 0 (disabled)
++#                 1 (enabled)
++#
++#
+ ###################################################################################################################
+ 
+ AllowTwoSide.Accounts = 1
+@@ -1058,6 +1065,7 @@ AllowTwoSide.Interaction.Mail = 0
+ AllowTwoSide.WhoList = 0
+ AllowTwoSide.AddFriend = 0
+ TalentsInspecting = 1
++Fake.Who.List = 0
+ 
+ ###################################################################################################################
+ # AUTO BROADCAST
+-- 
+1.7.2.5
+
