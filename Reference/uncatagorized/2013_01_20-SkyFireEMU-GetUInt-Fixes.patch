@@ -1,0 +1,1284 @@
+From 3629af10f2a87c367727ac5d2bb460e53469ee62 Mon Sep 17 00:00:00 2001
+From: lordpsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 20 Jan 2013 18:53:59 -0600
+Subject: [PATCH] 2013_01_20-SkyFireEMU-GetUInt-Fixes
+
+---
+ src/server/game/Events/GameEventMgr.cpp            |  104 ++++++++--------
+ src/server/game/Events/GameEventMgr.h              |   56 ++++----
+ src/server/game/Globals/ObjectMgr.cpp              |  130 ++++++++++----------
+ src/server/game/Loot/LootMgr.cpp                   |    2 +-
+ .../game/Movement/Waypoints/WaypointManager.cpp    |    4 +-
+ src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp       |    2 +-
+ src/server/game/Quests/QuestDef.cpp                |   62 +++++-----
+ src/server/game/Scripting/ScriptSystem.cpp         |    6 +-
+ src/server/game/Skills/SkillDiscovery.cpp          |    2 +-
+ src/server/game/Spells/SpellMgr.cpp                |   20 ++--
+ src/server/game/Weather/WeatherMgr.cpp             |    6 +-
+ 11 files changed, 197 insertions(+), 197 deletions(-)
+
+diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
+index 2d4187e..3b40de0 100755
+--- a/src/server/game/Events/GameEventMgr.cpp
++++ b/src/server/game/Events/GameEventMgr.cpp
+@@ -31,7 +31,7 @@
+ #include "UnitAI.h"
+ #include "GameObjectAI.h"
+ 
+-bool GameEventMgr::CheckOneGameEvent(uint16 entry) const
++bool GameEventMgr::CheckOneGameEvent(uint32 entry) const
+ {
+     switch (mGameEvent[entry].state)
+     {
+@@ -69,7 +69,7 @@ bool GameEventMgr::CheckOneGameEvent(uint16 entry) const
+     }
+ }
+ 
+-uint32 GameEventMgr::NextCheck(uint16 entry) const
++uint32 GameEventMgr::NextCheck(uint32 entry) const
+ {
+     time_t currenttime = time(NULL);
+ 
+@@ -108,7 +108,7 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
+         return delay;
+ }
+ 
+-void GameEventMgr::StartInternalEvent(uint16 event_id)
++void GameEventMgr::StartInternalEvent(uint32 event_id)
+ {
+     if (event_id < 1 || event_id >= mGameEvent.size())
+         return;
+@@ -122,7 +122,7 @@ void GameEventMgr::StartInternalEvent(uint16 event_id)
+     StartEvent(event_id);
+ }
+ 
+-bool GameEventMgr::StartEvent(uint16 event_id, bool overwrite)
++bool GameEventMgr::StartEvent(uint32 event_id, bool overwrite)
+ {
+     GameEventData &data = mGameEvent[event_id];
+     if (data.state == GAMEEVENT_NORMAL || data.state == GAMEEVENT_INTERNAL)
+@@ -162,7 +162,7 @@ bool GameEventMgr::StartEvent(uint16 event_id, bool overwrite)
+     }
+ }
+ 
+-void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
++void GameEventMgr::StopEvent(uint32 event_id, bool overwrite)
+ {
+     GameEventData &data = mGameEvent[event_id];
+     bool serverwide_evt = data.state != GAMEEVENT_NORMAL && data.state != GAMEEVENT_INTERNAL;
+@@ -221,7 +221,7 @@ void GameEventMgr::LoadFromDB()
+         {
+             Field* fields = result->Fetch();
+ 
+-            uint16 event_id = fields[0].GetUInt16();
++            uint32 event_id = fields[0].GetUInt32();
+             if (event_id == 0)
+             {
+                 sLog->outErrorDb("`game_event` game event entry 0 is reserved and can't be used.");
+@@ -233,8 +233,8 @@ void GameEventMgr::LoadFromDB()
+             pGameEvent.start        = time_t(starttime);
+             uint64 endtime          = fields[2].GetUInt64();
+             pGameEvent.end          = time_t(endtime);
+-            pGameEvent.occurence    = fields[3].GetUInt32();
+-            pGameEvent.length       = fields[4].GetUInt32();
++            pGameEvent.occurence    = fields[3].GetUInt64();
++            pGameEvent.length       = fields[4].GetUInt64();
+             pGameEvent.holiday_id   = HolidayIds(fields[5].GetUInt32());
+ 
+             pGameEvent.state        = (GameEventState)(fields[7].GetUInt8());
+@@ -284,7 +284,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id = fields[0].GetUInt16();
++                uint32 event_id = fields[0].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+                 {
+@@ -329,7 +329,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id = fields[0].GetUInt16();
++                uint32 event_id = fields[0].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+                 {
+@@ -383,7 +383,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 guid    = fields[0].GetUInt32();
+-                int16 event_id = fields[1].GetInt16();
++                int32 event_id = fields[1].GetInt32();
+ 
+                 int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -426,7 +426,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 guid    = fields[0].GetUInt32();
+-                int16 event_id = fields[1].GetInt16();
++                int32 event_id = fields[1].GetInt32();
+ 
+                 int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -469,7 +469,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 guid     = fields[0].GetUInt32();
+-                uint16 event_id = fields[1].GetUInt16();
++                uint32 event_id = fields[1].GetUInt32();
+ 
+                 if (event_id >= mGameEventModelEquip.size())
+                 {
+@@ -526,7 +526,7 @@ void GameEventMgr::LoadFromDB()
+ 
+                 uint32 id       = fields[0].GetUInt32();
+                 uint32 quest    = fields[1].GetUInt32();
+-                uint16 event_id = fields[2].GetUInt16();
++                uint32 event_id = fields[2].GetUInt32();
+ 
+                 if (event_id >= mGameEventCreatureQuests.size())
+                 {
+@@ -567,7 +567,7 @@ void GameEventMgr::LoadFromDB()
+ 
+                 uint32 id       = fields[0].GetUInt32();
+                 uint32 quest    = fields[1].GetUInt32();
+-                uint16 event_id = fields[2].GetUInt16();
++                uint32 event_id = fields[2].GetUInt32();
+ 
+                 if (event_id >= mGameEventGameObjectQuests.size())
+                 {
+@@ -607,7 +607,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 quest     = fields[0].GetUInt32();
+-                uint16 event_id  = fields[1].GetUInt16();
++                uint32 event_id  = fields[1].GetUInt32();
+                 uint32 condition = fields[2].GetUInt32();
+                 float num       = fields[3].GetFloat();
+ 
+@@ -649,7 +649,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id  = fields[0].GetUInt16();
++                uint32 event_id  = fields[0].GetUInt32();
+                 uint32 condition = fields[1].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+@@ -691,7 +691,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id  = fields[0].GetUInt16();
++                uint32 event_id  = fields[0].GetUInt32();
+                 uint32 condition = fields[1].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+@@ -740,7 +740,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 guid     = fields[0].GetUInt32();
+-                uint16 event_id = fields[1].GetUInt16();
++                uint32 event_id = fields[1].GetUInt32();
+                 uint32 npcflag  = fields[2].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+@@ -780,7 +780,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 questId  = fields[0].GetUInt32();
+-                uint16 eventEntry = fields[1].GetUInt16();
++                uint32 eventEntry = fields[1].GetUInt32();
+ 
+                 if (!sObjectMgr->GetQuestTemplate(questId))
+                 {
+@@ -823,7 +823,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id  = fields[0].GetUInt16();
++                uint32 event_id  = fields[0].GetUInt32();
+ 
+                 if (event_id >= mGameEventVendors.size())
+                 {
+@@ -889,7 +889,7 @@ void GameEventMgr::LoadFromDB()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint16 event_id = fields[0].GetUInt16();
++                uint32 event_id = fields[0].GetUInt32();
+ 
+                 if (event_id >= mGameEvent.size())
+                 {
+@@ -929,7 +929,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 entry   = fields[0].GetUInt32();
+-                int16 event_id = fields[1].GetInt16();
++                int32 event_id = fields[1].GetInt32();
+ 
+                 int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -982,7 +982,7 @@ void GameEventMgr::Initialize()
+     {
+         Field* fields = result->Fetch();
+ 
+-        uint32 maxEventId = fields[0].GetUInt16();
++        uint32 maxEventId = fields[0].GetUInt32();
+ 
+         // Id starts with 1 and vector with 0, thus increment
+         maxEventId++;
+@@ -1020,7 +1020,7 @@ void GameEventMgr::StartArenaSeason()
+     }
+ 
+     Field* fields = result->Fetch();
+-    uint16 eventId = fields[0].GetUInt16();
++    uint32 eventId = fields[0].GetUInt32();
+ 
+     if (eventId >= mGameEvent.size())
+     {
+@@ -1038,8 +1038,8 @@ uint32 GameEventMgr::Update()                               // return the next e
+     time_t currenttime = time(NULL);
+     uint32 nextEventDelay = max_ge_check_delay;             // 1 day
+     uint32 calcDelay;
+-    std::set<uint16> activate, deactivate;
+-    for (uint16 itr = 1; itr < mGameEvent.size(); ++itr)
++    std::set<uint32> activate, deactivate;
++    for (uint32 itr = 1; itr < mGameEvent.size(); ++itr)
+     {
+         // must do the activating first, and after that the deactivating
+         // so first queue it
+@@ -1078,7 +1078,7 @@ uint32 GameEventMgr::Update()                               // return the next e
+             {
+                 if (!isSystemInit)
+                 {
+-                    int16 event_nid = (-1) * (itr);
++                    int32 event_nid = (-1) * (itr);
+                     // spawn all negative ones for this event
+                     GameEventSpawn(event_nid);
+                 }
+@@ -1091,19 +1091,19 @@ uint32 GameEventMgr::Update()                               // return the next e
+     // now activate the queue
+     // a now activated event can contain a spawn of a to-be-deactivated one
+     // following the activate - deactivate order, deactivating the first event later will leave the spawn in (wont disappear then reappear clientside)
+-    for (std::set<uint16>::iterator itr = activate.begin(); itr != activate.end(); ++itr)
++    for (std::set<uint32>::iterator itr = activate.begin(); itr != activate.end(); ++itr)
+         // start the event
+         // returns true the started event completed
+         // in that case, initiate next update in 1 second
+         if (StartEvent(*itr))
+             nextEventDelay = 0;
+-    for (std::set<uint16>::iterator itr = deactivate.begin(); itr != deactivate.end(); ++itr)
++    for (std::set<uint32>::iterator itr = deactivate.begin(); itr != deactivate.end(); ++itr)
+         StopEvent(*itr);
+     sLog->outDetail("Next game event check in %u seconds.", nextEventDelay + 1);
+     return (nextEventDelay + 1) * IN_MILLISECONDS;           // Add 1 second to be sure event has started/stopped at next call
+ }
+ 
+-void GameEventMgr::UnApplyEvent(uint16 event_id)
++void GameEventMgr::UnApplyEvent(uint32 event_id)
+ {
+     sLog->outDetail("GameEvent %u \"%s\" removed.", event_id, mGameEvent[event_id].description.c_str());
+     //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
+@@ -1111,7 +1111,7 @@ void GameEventMgr::UnApplyEvent(uint16 event_id)
+     // un-spawn positive event tagged objects
+     GameEventUnspawn(event_id);
+     // spawn negative event tagget objects
+-    int16 event_nid = (-1) * event_id;
++    int32 event_nid = (-1) * event_id;
+     GameEventSpawn(event_nid);
+     // restore equipment or model
+     ChangeEquipOrModel(event_id, false);
+@@ -1126,7 +1126,7 @@ void GameEventMgr::UnApplyEvent(uint16 event_id)
+     UpdateBattlegroundSettings();
+ }
+ 
+-void GameEventMgr::ApplyNewEvent(uint16 event_id)
++void GameEventMgr::ApplyNewEvent(uint32 event_id)
+ {
+     switch (sWorld->getIntConfig(CONFIG_EVENT_ANNOUNCE))
+     {
+@@ -1145,7 +1145,7 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id)
+     // spawn positive event tagget objects
+     GameEventSpawn(event_id);
+     // un-spawn negative event tagged objects
+-    int16 event_nid = (-1) * event_id;
++    int32 event_nid = (-1) * event_id;
+     GameEventUnspawn(event_nid);
+     // Change equipement or model
+     ChangeEquipOrModel(event_id, true);
+@@ -1162,7 +1162,7 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id)
+     sWorld->ResetEventSeasonalQuests(event_id);
+ }
+ 
+-void GameEventMgr::UpdateEventNPCFlags(uint16 event_id)
++void GameEventMgr::UpdateEventNPCFlags(uint32 event_id)
+ {
+     // go through the creatures whose npcflags are changed in the event
+     for (NPCFlagList::iterator itr = mGameEventNPCFlags[event_id].begin(); itr != mGameEventNPCFlags[event_id].end(); ++itr)
+@@ -1194,7 +1194,7 @@ void GameEventMgr::UpdateBattlegroundSettings()
+     sBattlegroundMgr->SetHolidayWeekends(mask);
+ }
+ 
+-void GameEventMgr::UpdateEventNPCVendor(uint16 event_id, bool activate)
++void GameEventMgr::UpdateEventNPCVendor(uint32 event_id, bool activate)
+ {
+     for (NPCVendorList::iterator itr = mGameEventVendors[event_id].begin(); itr != mGameEventVendors[event_id].end(); ++itr)
+     {
+@@ -1205,7 +1205,7 @@ void GameEventMgr::UpdateEventNPCVendor(uint16 event_id, bool activate)
+     }
+ }
+ 
+-void GameEventMgr::GameEventSpawn(int16 event_id)
++void GameEventMgr::GameEventSpawn(int32 event_id)
+ {
+     int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -1280,7 +1280,7 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
+         sPoolMgr->SpawnPool(*itr);
+ }
+ 
+-void GameEventMgr::GameEventUnspawn(int16 event_id)
++void GameEventMgr::GameEventUnspawn(int32 event_id)
+ {
+     int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -1339,7 +1339,7 @@ void GameEventMgr::GameEventUnspawn(int16 event_id)
+     }
+ }
+ 
+-void GameEventMgr::ChangeEquipOrModel(int16 event_id, bool activate)
++void GameEventMgr::ChangeEquipOrModel(int32 event_id, bool activate)
+ {
+     for (ModelEquipList::iterator itr = mGameEventModelEquip[event_id].begin(); itr != mGameEventModelEquip[event_id].end(); ++itr)
+     {
+@@ -1417,7 +1417,7 @@ void GameEventMgr::ChangeEquipOrModel(int16 event_id, bool activate)
+     }
+ }
+ 
+-bool GameEventMgr::hasCreatureQuestActiveEventExcept(uint32 quest_id, uint16 event_id)
++bool GameEventMgr::hasCreatureQuestActiveEventExcept(uint32 quest_id, uint32 event_id)
+ {
+     for (ActiveEvents::iterator e_itr = m_ActiveEvents.begin(); e_itr != m_ActiveEvents.end(); ++e_itr)
+     {
+@@ -1431,7 +1431,7 @@ bool GameEventMgr::hasCreatureQuestActiveEventExcept(uint32 quest_id, uint16 eve
+     return false;
+ }
+ 
+-bool GameEventMgr::hasGameObjectQuestActiveEventExcept(uint32 quest_id, uint16 event_id)
++bool GameEventMgr::hasGameObjectQuestActiveEventExcept(uint32 quest_id, uint32 event_id)
+ {
+     for (ActiveEvents::iterator e_itr = m_ActiveEvents.begin(); e_itr != m_ActiveEvents.end(); ++e_itr)
+     {
+@@ -1444,7 +1444,7 @@ bool GameEventMgr::hasGameObjectQuestActiveEventExcept(uint32 quest_id, uint16 e
+     }
+     return false;
+ }
+-bool GameEventMgr::hasCreatureActiveEventExcept(uint32 creature_id, uint16 event_id)
++bool GameEventMgr::hasCreatureActiveEventExcept(uint32 creature_id, uint32 event_id)
+ {
+     for (ActiveEvents::iterator e_itr = m_ActiveEvents.begin(); e_itr != m_ActiveEvents.end(); ++e_itr)
+     {
+@@ -1460,7 +1460,7 @@ bool GameEventMgr::hasCreatureActiveEventExcept(uint32 creature_id, uint16 event
+     }
+     return false;
+ }
+-bool GameEventMgr::hasGameObjectActiveEventExcept(uint32 go_id, uint16 event_id)
++bool GameEventMgr::hasGameObjectActiveEventExcept(uint32 go_id, uint32 event_id)
+ {
+     for (ActiveEvents::iterator e_itr = m_ActiveEvents.begin(); e_itr != m_ActiveEvents.end(); ++e_itr)
+     {
+@@ -1477,7 +1477,7 @@ bool GameEventMgr::hasGameObjectActiveEventExcept(uint32 go_id, uint16 event_id)
+     return false;
+ }
+ 
+-void GameEventMgr::UpdateEventQuests(uint16 event_id, bool activate)
++void GameEventMgr::UpdateEventQuests(uint32 event_id, bool activate)
+ {
+     QuestRelList::iterator itr;
+     for (itr = mGameEventCreatureQuests[event_id].begin(); itr != mGameEventCreatureQuests[event_id].end(); ++itr)
+@@ -1532,7 +1532,7 @@ void GameEventMgr::UpdateEventQuests(uint16 event_id, bool activate)
+     }
+ }
+ 
+-void GameEventMgr::UpdateWorldStates(uint16 event_id, bool Activate)
++void GameEventMgr::UpdateWorldStates(uint32 event_id, bool Activate)
+ {
+     GameEventData const& event = mGameEvent[event_id];
+     if (event.holiday_id != HOLIDAY_NONE)
+@@ -1562,7 +1562,7 @@ void GameEventMgr::HandleQuestComplete(uint32 quest_id)
+     // quest is registered
+     if (itr != mQuestToEventConditions.end())
+     {
+-        uint16 event_id = itr->second.event_id;
++        uint32 event_id = itr->second.event_id;
+         uint32 condition = itr->second.condition;
+         float num = itr->second.num;
+ 
+@@ -1610,7 +1610,7 @@ void GameEventMgr::HandleQuestComplete(uint32 quest_id)
+     }
+ }
+ 
+-bool GameEventMgr::CheckOneGameEventConditions(uint16 event_id)
++bool GameEventMgr::CheckOneGameEventConditions(uint32 event_id)
+ {
+     for (GameEventConditionMap::const_iterator itr = mGameEvent[event_id].conditions.begin(); itr != mGameEvent[event_id].conditions.end(); ++itr)
+         if (itr->second.done < itr->second.reqNum)
+@@ -1627,7 +1627,7 @@ bool GameEventMgr::CheckOneGameEventConditions(uint16 event_id)
+     return true;
+ }
+ 
+-void GameEventMgr::SaveWorldEventStateToDB(uint16 event_id)
++void GameEventMgr::SaveWorldEventStateToDB(uint32 event_id)
+ {
+     SQLTransaction trans = CharacterDatabase.BeginTransaction();
+ 
+@@ -1643,7 +1643,7 @@ void GameEventMgr::SaveWorldEventStateToDB(uint16 event_id)
+     CharacterDatabase.CommitTransaction(trans);
+ }
+ 
+-void GameEventMgr::SendWorldStateUpdate(Player* player, uint16 event_id)
++void GameEventMgr::SendWorldStateUpdate(Player* player, uint32 event_id)
+ {
+     GameEventConditionMap::const_iterator itr;
+     for (itr = mGameEvent[event_id].conditions.begin(); itr !=mGameEvent[event_id].conditions.end(); ++itr)
+@@ -1655,7 +1655,7 @@ void GameEventMgr::SendWorldStateUpdate(Player* player, uint16 event_id)
+     }
+ }
+ 
+-void GameEventMgr::RunSmartAIScripts(uint16 event_id, bool activate)
++void GameEventMgr::RunSmartAIScripts(uint32 event_id, bool activate)
+ {
+     //! Iterate over every supported source type (creature and gameobject)
+     //! Not entirely sure how this will affect units in non-loaded grids.
+@@ -1675,7 +1675,7 @@ void GameEventMgr::RunSmartAIScripts(uint16 event_id, bool activate)
+     }
+ }
+ 
+-uint16 GameEventMgr::GetEventIdForQuest(Quest const* quest) const
++uint32 GameEventMgr::GetEventIdForQuest(Quest const* quest) const
+ {
+     if (!quest)
+         return 0;
+@@ -1702,7 +1702,7 @@ bool IsHolidayActive(HolidayIds id)
+     return false;
+ }
+ 
+-bool IsEventActive(uint16 event_id)
++bool IsEventActive(uint32 event_id)
+ {
+     GameEventMgr::ActiveEvents const& ae = sGameEventMgr->GetActiveEventList();
+     return ae.find(event_id) != ae.end();
+diff --git a/src/server/game/Events/GameEventMgr.h b/src/server/game/Events/GameEventMgr.h
+index e0bd69f..4305f8e 100755
+--- a/src/server/game/Events/GameEventMgr.h
++++ b/src/server/game/Events/GameEventMgr.h
+@@ -47,7 +47,7 @@ struct GameEventFinishCondition
+ 
+ struct GameEventQuestToEventConditionNum
+ {
+-    uint16 event_id;
++    uint32 event_id;
+     uint32 condition;
+     float num;
+ };
+@@ -105,43 +105,43 @@ class GameEventMgr
+         typedef std::vector<GameEventData> GameEventDataMap;
+         ActiveEvents const& GetActiveEventList() const { return m_ActiveEvents; }
+         GameEventDataMap const& GetEventMap() const { return mGameEvent; }
+-        bool CheckOneGameEvent(uint16 entry) const;
+-        uint32 NextCheck(uint16 entry) const;
++        bool CheckOneGameEvent(uint32 entry) const;
++        uint32 NextCheck(uint32 entry) const;
+         void LoadFromDB();
+         uint32 Update();
+-        bool IsActiveEvent(uint16 event_id) { return (m_ActiveEvents.find(event_id) != m_ActiveEvents.end()); }
++        bool IsActiveEvent(uint32 event_id) { return (m_ActiveEvents.find(event_id) != m_ActiveEvents.end()); }
+         uint32 StartSystem();
+         void Initialize();
+         void StartArenaSeason();
+-        void StartInternalEvent(uint16 event_id);
+-        bool StartEvent(uint16 event_id, bool overwrite = false);
+-        void StopEvent(uint16 event_id, bool overwrite = false);
++        void StartInternalEvent(uint32 event_id);
++        bool StartEvent(uint32 event_id, bool overwrite = false);
++        void StopEvent(uint32 event_id, bool overwrite = false);
+         void HandleQuestComplete(uint32 quest_id);  // called on world event type quest completions
+         void HandleWorldEventGossip(Player* player, Creature* c);
+         uint32 GetNPCFlag(Creature* cr);
+         uint32 GetNpcTextId(uint32 guid);
+-        uint16 GetEventIdForQuest(Quest const* quest) const;
++        uint32 GetEventIdForQuest(Quest const* quest) const;
+     private:
+-        void SendWorldStateUpdate(Player* player, uint16 event_id);
+-        void AddActiveEvent(uint16 event_id) { m_ActiveEvents.insert(event_id); }
+-        void RemoveActiveEvent(uint16 event_id) { m_ActiveEvents.erase(event_id); }
+-        void ApplyNewEvent(uint16 event_id);
+-        void UnApplyEvent(uint16 event_id);
+-        void GameEventSpawn(int16 event_id);
+-        void GameEventUnspawn(int16 event_id);
+-        void ChangeEquipOrModel(int16 event_id, bool activate);
+-        void UpdateEventQuests(uint16 event_id, bool activate);
+-        void UpdateWorldStates(uint16 event_id, bool Activate);
+-        void UpdateEventNPCFlags(uint16 event_id);
+-        void UpdateEventNPCVendor(uint16 event_id, bool activate);
++        void SendWorldStateUpdate(Player* player, uint32 event_id);
++        void AddActiveEvent(uint32 event_id) { m_ActiveEvents.insert(event_id); }
++        void RemoveActiveEvent(uint32 event_id) { m_ActiveEvents.erase(event_id); }
++        void ApplyNewEvent(uint32 event_id);
++        void UnApplyEvent(uint32 event_id);
++        void GameEventSpawn(int32 event_id);
++        void GameEventUnspawn(int32 event_id);
++        void ChangeEquipOrModel(int32 event_id, bool activate);
++        void UpdateEventQuests(uint32 event_id, bool activate);
++        void UpdateWorldStates(uint32 event_id, bool Activate);
++        void UpdateEventNPCFlags(uint32 event_id);
++        void UpdateEventNPCVendor(uint32 event_id, bool activate);
+         void UpdateBattlegroundSettings();
+-        void RunSmartAIScripts(uint16 event_id, bool activate);    //! Runs SMART_EVENT_GAME_EVENT_START/_END SAI
+-        bool CheckOneGameEventConditions(uint16 event_id);
+-        void SaveWorldEventStateToDB(uint16 event_id);
+-        bool hasCreatureQuestActiveEventExcept(uint32 quest_id, uint16 event_id);
+-        bool hasGameObjectQuestActiveEventExcept(uint32 quest_id, uint16 event_id);
+-        bool hasCreatureActiveEventExcept(uint32 creature_guid, uint16 event_id);
+-        bool hasGameObjectActiveEventExcept(uint32 go_guid, uint16 event_id);
++        void RunSmartAIScripts(uint32 event_id, bool activate);    //! Runs SMART_EVENT_GAME_EVENT_START/_END SAI
++        bool CheckOneGameEventConditions(uint32 event_id);
++        void SaveWorldEventStateToDB(uint32 event_id);
++        bool hasCreatureQuestActiveEventExcept(uint32 quest_id, uint32 event_id);
++        bool hasGameObjectQuestActiveEventExcept(uint32 quest_id, uint32 event_id);
++        bool hasCreatureActiveEventExcept(uint32 creature_guid, uint32 event_id);
++        bool hasGameObjectActiveEventExcept(uint32 go_guid, uint32 event_id);
+ 
+         typedef std::list<uint32> GuidList;
+         typedef std::list<uint32> IdList;
+@@ -182,6 +182,6 @@ class GameEventMgr
+ #define sGameEventMgr ACE_Singleton<GameEventMgr, ACE_Null_Mutex>::instance()
+ 
+ bool IsHolidayActive(HolidayIds id);
+-bool IsEventActive(uint16 event_id);
++bool IsEventActive(uint32 event_id);
+ 
+ #endif
+diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
+index daa6205..c19b71d 100644
+--- a/src/server/game/Globals/ObjectMgr.cpp
++++ b/src/server/game/Globals/ObjectMgr.cpp
+@@ -1012,7 +1012,7 @@ void ObjectMgr::LoadEquipmentTemplates()
+     {
+         Field* fields = result->Fetch();
+ 
+-        uint16 entry = fields[0].GetUInt16();
++        uint16 entry = fields[0].GetUInt32();
+ 
+         EquipmentInfo& equipmentInfo = _equipmentInfoStore[entry];
+ 
+@@ -1452,7 +1452,7 @@ void ObjectMgr::LoadCreatures()
+ 
+         CreatureData& data = _creatureDataStore[guid];
+         data.id             = entry;
+-        data.mapid          = fields[ 2].GetUInt32();
++        data.mapid          = fields[ 2].GetUInt16();
+         data.displayid      = fields[ 3].GetUInt32();
+         data.equipmentId    = fields[ 4].GetUInt32();
+         data.posX           = fields[ 5].GetFloat();
+@@ -1467,7 +1467,7 @@ void ObjectMgr::LoadCreatures()
+         data.movementType   = fields[14].GetUInt8();
+         data.spawnMask      = fields[15].GetUInt8();
+         data.phaseMask      = fields[16].GetUInt16();
+-        int16 gameEvent     = fields[17].GetInt16();
++        int16 gameEvent     = fields[17].GetInt32();
+         uint32 PoolId       = fields[18].GetUInt32();
+         data.npcflag        = fields[19].GetUInt32();
+         data.unit_flags     = fields[20].GetUInt32();
+@@ -1782,7 +1782,7 @@ void ObjectMgr::LoadGameobjects()
+         GameObjectData& data = _gameObjectDataStore[guid];
+ 
+         data.id             = entry;
+-        data.mapid          = fields[ 2].GetUInt32();
++        data.mapid          = fields[ 2].GetUInt16();
+         data.posX           = fields[ 3].GetFloat();
+         data.posY           = fields[ 4].GetFloat();
+         data.posZ           = fields[ 5].GetFloat();
+@@ -1792,12 +1792,12 @@ void ObjectMgr::LoadGameobjects()
+         data.rotation2      = fields[ 9].GetFloat();
+         data.rotation3      = fields[10].GetFloat();
+         data.spawntimesecs  = fields[11].GetInt32();
+-        data.animprogress   = fields[12].GetUInt32();
++        data.animprogress   = fields[12].GetUInt8();
+         data.artKit         = 0;
+-        uint32 go_state     = fields[13].GetUInt32();
++        uint32 go_state     = fields[13].GetUInt8();
+         data.spawnMask      = fields[14].GetUInt8();
+         data.phaseMask      = fields[15].GetUInt16();
+-        int16 gameEvent     = fields[16].GetInt16();
++        int16 gameEvent     = fields[16].GetInt32();
+         uint32 PoolId       = fields[17].GetUInt32();
+ 
+         MapEntry const* mapEntry = sMapStore.LookupEntry(data.mapid);
+@@ -2317,11 +2317,11 @@ void ObjectMgr::LoadItemTemplates()
+         for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
+         {
+             itemTemplate.ItemStat[i].ItemStatType  = uint32(fields[27 + i*2].GetUInt8());
+-            itemTemplate.ItemStat[i].ItemStatValue = int32(fields[28 + i*2].GetInt32());
++            itemTemplate.ItemStat[i].ItemStatValue = int32(fields[28 + i*2].GetInt16());
+         }
+ 
+         itemTemplate.ScalingStatDistribution = uint32(fields[47].GetUInt16());
+-        itemTemplate.ScalingStatValue        = fields[48].GetInt32();
++        itemTemplate.ScalingStatValue        = fields[48].GetInt16();
+ 
+         const ItemSparseEntry* info = sItemSparseStore.LookupEntry(entry);
+         if (info)
+@@ -2922,7 +2922,7 @@ void ObjectMgr::LoadItemSetNames()
+         ItemSetNameEntry &data = _itemSetNameStore[entry];
+         data.name = fields[1].GetString();
+ 
+-        uint32 invType = fields[2].GetUInt32();
++        uint32 invType = fields[2].GetUInt8();
+         if (invType >= MAX_INVTYPE)
+         {
+             sLog->outErrorDb("Item set name (Entry: %u) has wrong InventoryType value (%u)", entry, invType);
+@@ -2982,7 +2982,7 @@ void ObjectMgr::LoadVehicleTemplateAccessories()
+ 
+         uint32 uiEntry      = fields[0].GetUInt32();
+         uint32 uiAccessory  = fields[1].GetUInt32();
+-        int8   uiSeat       = int8(fields[2].GetInt16());
++        int8   uiSeat       = int8(fields[2].GetInt8());
+         bool   bMinion      = fields[3].GetBool();
+         uint8  uiSummonType = fields[4].GetUInt8();
+         uint32 uiSummonTimer= fields[5].GetUInt32();
+@@ -3038,7 +3038,7 @@ void ObjectMgr::LoadVehicleAccessories()
+ 
+         uint32 uiGUID       = fields[0].GetUInt32();
+         uint32 uiAccessory  = fields[1].GetUInt32();
+-        int8   uiSeat       = int8(fields[2].GetInt16());
++        int8   uiSeat       = int8(fields[2].GetInt8());
+         bool   bMinion      = fields[3].GetBool();
+         uint8  uiSummonType = fields[4].GetUInt8();
+         uint32 uiSummonTimer= fields[5].GetUInt32();
+@@ -3086,7 +3086,7 @@ void ObjectMgr::LoadPetLevelInfo()
+             continue;
+         }
+ 
+-        uint32 current_level = fields[1].GetUInt32();
++        uint32 current_level = fields[1].GetUInt8();
+         if (current_level > sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
+         {
+             if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum
+@@ -3114,7 +3114,7 @@ void ObjectMgr::LoadPetLevelInfo()
+ 
+         pLevelInfo->health = fields[2].GetUInt16();
+         pLevelInfo->mana   = fields[3].GetUInt16();
+-        pLevelInfo->armor  = fields[9].GetUInt16();
++        pLevelInfo->armor  = fields[9].GetUInt32();
+ 
+         for (int i = 0; i < MAX_STATS; i++)
+         {
+@@ -3227,9 +3227,9 @@ void ObjectMgr::LoadPlayerInfo()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint32 current_race  = fields[0].GetUInt32();
+-                uint32 current_class = fields[1].GetUInt32();
+-                uint32 mapId         = fields[2].GetUInt32();
++                uint32 current_race  = fields[0].GetUInt8();
++                uint32 current_class = fields[1].GetUInt8();
++                uint32 mapId         = fields[2].GetUInt16();
+                 uint32 areaId        = fields[3].GetUInt32();
+                 float  positionX     = fields[4].GetFloat();
+                 float  positionY     = fields[5].GetFloat();
+@@ -3391,14 +3391,14 @@ void ObjectMgr::LoadPlayerInfo()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint32 current_race = fields[0].GetUInt32();
++                uint32 current_race = fields[0].GetUInt8();
+                 if (current_race >= MAX_RACES)
+                 {
+                     sLog->outErrorDb("Wrong race %u in `playercreateinfo_spell` table, ignoring.", current_race);
+                     continue;
+                 }
+ 
+-                uint32 current_class = fields[1].GetUInt32();
++                uint32 current_class = fields[1].GetUInt8();
+                 if (current_class >= MAX_CLASSES)
+                 {
+                     sLog->outErrorDb("Wrong class %u in `playercreateinfo_spell` table, ignoring.", current_class);
+@@ -3448,14 +3448,14 @@ void ObjectMgr::LoadPlayerInfo()
+             {
+                 Field* fields = result->Fetch();
+ 
+-                uint32 current_race = fields[0].GetUInt32();
++                uint32 current_race = fields[0].GetUInt8();
+                 if (current_race >= MAX_RACES)
+                 {
+                     sLog->outErrorDb("Wrong race %u in `playercreateinfo_action` table, ignoring.", current_race);
+                     continue;
+                 }
+ 
+-                uint32 current_class = fields[1].GetUInt32();
++                uint32 current_class = fields[1].GetUInt8();
+                 if (current_class >= MAX_CLASSES)
+                 {
+                     sLog->outErrorDb("Wrong class %u in `playercreateinfo_action` table, ignoring.", current_class);
+@@ -3495,7 +3495,7 @@ void ObjectMgr::LoadPlayerInfo()
+         {
+             Field* fields = result->Fetch();
+ 
+-            uint32 current_class = fields[0].GetUInt32();
++            uint32 current_class = fields[0].GetUInt8();
+             if (current_class >= MAX_CLASSES)
+             {
+                 sLog->outErrorDb("Wrong class %u in `player_classlevelstats` table, ignoring.", current_class);
+@@ -3581,7 +3581,7 @@ void ObjectMgr::LoadPlayerInfo()
+                 Field* fields = result->Fetch();
+ 
+                 uint32 level = fields[0].GetUInt32();
+-                uint32 xp    = fields[1].GetUInt32();
++                uint32 xp    = fields[1].GetUInt64();
+ 
+                 if (level >= sWorld->getIntConfig(CONFIG_GUILD_ADVANCEMENT_MAX_LEVEL))
+                 {
+@@ -3637,21 +3637,21 @@ void ObjectMgr::LoadPlayerInfo()
+         {
+             Field* fields = result->Fetch();
+ 
+-            uint32 current_race = fields[0].GetUInt32();
++            uint32 current_race = fields[0].GetUInt8();
+             if (current_race >= MAX_RACES)
+             {
+                 sLog->outErrorDb("Wrong race %u in `player_levelstats` table, ignoring.", current_race);
+                 continue;
+             }
+ 
+-            uint32 current_class = fields[1].GetUInt32();
++            uint32 current_class = fields[1].GetUInt8();
+             if (current_class >= MAX_CLASSES)
+             {
+                 sLog->outErrorDb("Wrong class %u in `player_levelstats` table, ignoring.", current_class);
+                 continue;
+             }
+ 
+-            uint32 current_level = fields[2].GetUInt32();
++            uint32 current_level = fields[2].GetUInt8();
+             if (current_level > sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
+             {
+                 if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum
+@@ -4027,7 +4027,7 @@ void ObjectMgr::LoadQuests()
+             // at auto-reward can be rewarded only RewChoiceItemId[0]
+             for (int j = 1; j < QUEST_REWARD_CHOICES_COUNT; ++j )
+             {
+-                if (uint32 id = qinfo->RewChoiceItemId[j])
++                if (uint16 id = qinfo->RewChoiceItemId[j])
+                 {
+                     sLog->outErrorDb("Quest %u has `RewChoiceItemId%d` = %u but item from `RewChoiceItemId%d` can't be rewarded with quest flag QUEST_FLAGS_AUTO_REWARDED.",
+                         qinfo->GetQuestId(), j+1, id, j+1);
+@@ -5255,7 +5255,7 @@ void ObjectMgr::LoadPageTexts()
+         PageText& pageText =  _pageTextStore[fields[0].GetUInt32()];
+ 
+         pageText.Text     = fields[1].GetString();
+-        pageText.NextPage = fields[2].GetInt16();
++        pageText.NextPage = fields[2].GetInt32();
+ 
+         ++count;
+     }
+@@ -5340,7 +5340,7 @@ void ObjectMgr::LoadInstanceTemplate()
+         InstanceTemplate instanceTemplate;
+ 
+         instanceTemplate.AllowMount = fields[3].GetBool();
+-        instanceTemplate.Parent     = uint32(fields[1].GetUInt16());
++        instanceTemplate.Parent     = uint32(fields[1].GetUInt32());
+         instanceTemplate.ScriptId   = sObjectMgr->GetScriptId(fields[2].GetCString());
+ 
+         _instanceTemplateStore[mapID] = instanceTemplate;
+@@ -5382,7 +5382,7 @@ void ObjectMgr::LoadInstanceEncounters()
+         uint32 entry = fields[0].GetUInt32();
+         uint8 creditType = fields[1].GetUInt8();
+         uint32 creditEntry = fields[2].GetUInt32();
+-        uint32 lastEncounterDungeon = fields[3].GetUInt32();
++        uint32 lastEncounterDungeon = fields[3].GetUInt16();
+         DungeonEncounterEntry const* dungeonEncounter = sDungeonEncounterStore.LookupEntry(entry);
+         if (!dungeonEncounter)
+         {
+@@ -5488,13 +5488,13 @@ void ObjectMgr::LoadGossipText()
+             gText.Options[i].Text_0           = fields[cic++].GetString();
+             gText.Options[i].Text_1           = fields[cic++].GetString();
+ 
+-            gText.Options[i].Language         = fields[cic++].GetUInt32();
++            gText.Options[i].Language         = fields[cic++].GetUInt8();
+             gText.Options[i].Probability      = fields[cic++].GetFloat();
+ 
+             for (uint8 j=0; j < MAX_GOSSIP_TEXT_EMOTES; ++j)
+             {
+-                gText.Options[i].Emotes[j]._Delay  = fields[cic++].GetUInt32();
+-                gText.Options[i].Emotes[j]._Emote  = fields[cic++].GetUInt32();
++                gText.Options[i].Emotes[j]._Delay  = fields[cic++].GetUInt16();
++                gText.Options[i].Emotes[j]._Emote  = fields[cic++].GetUInt16();
+             }
+         }
+     } while (result->NextRow());
+@@ -5940,7 +5940,7 @@ void ObjectMgr::LoadGraveyardZones()
+ 
+         uint32 safeLocId = fields[0].GetUInt32();
+         uint32 zoneId = fields[1].GetUInt32();
+-        uint32 team   = fields[2].GetUInt32();
++        uint32 team   = fields[2].GetUInt16();
+ 
+         WorldSafeLocsEntry const* entry = sWorldSafeLocsStore.LookupEntry(safeLocId);
+         if (!entry)
+@@ -7144,18 +7144,18 @@ void ObjectMgr::LoadRewardOnKill()
+         uint32 creature_id = fields[0].GetUInt32();
+ 
+         RewardOnKillEntry rewOnKill;
+-        rewOnKill.RepFaction1          = fields[1].GetUInt32();
+-        rewOnKill.RepFaction2          = fields[2].GetUInt32();
++        rewOnKill.RepFaction1          = fields[1].GetUInt16();
++        rewOnKill.RepFaction2          = fields[2].GetUInt16();
+         rewOnKill.IsTeamAward1         = fields[3].GetBool();
+-        rewOnKill.ReputationMaxCap1    = fields[4].GetUInt32();
++        rewOnKill.ReputationMaxCap1    = fields[4].GetUInt8();
+         rewOnKill.RepValue1            = fields[5].GetInt32();
+         rewOnKill.IsTeamAward2         = fields[6].GetBool();
+-        rewOnKill.ReputationMaxCap2    = fields[7].GetUInt32();
++        rewOnKill.ReputationMaxCap2    = fields[7].GetUInt8();
+         rewOnKill.RepValue2            = fields[8].GetInt32();
+         rewOnKill.TeamDependent        = fields[9].GetUInt8();
+-        rewOnKill.CurrencyId1          = fields[10].GetUInt32();
+-        rewOnKill.CurrencyId2          = fields[11].GetUInt32();
+-        rewOnKill.CurrencyId3          = fields[12].GetUInt32();
++        rewOnKill.CurrencyId1          = fields[10].GetUInt16();
++        rewOnKill.CurrencyId2          = fields[11].GetUInt16();
++        rewOnKill.CurrencyId3          = fields[12].GetUInt16();
+         rewOnKill.CurrencyCount1       = fields[13].GetInt32();
+         rewOnKill.CurrencyCount2       = fields[14].GetInt32();
+         rewOnKill.CurrencyCount3       = fields[15].GetInt32();
+@@ -7242,25 +7242,25 @@ void ObjectMgr::LoadReputationSpilloverTemplate()
+     {
+         Field *fields = result->Fetch();
+ 
+-        uint32 factionId                = fields[0].GetUInt32();
++        uint32 factionId                = fields[0].GetUInt16();
+ 
+         RepSpilloverTemplate repTemplate;
+ 
+-        repTemplate.faction[0]          = fields[1].GetUInt32();
++        repTemplate.faction[0]          = fields[1].GetUInt16();
+         repTemplate.faction_rate[0]     = fields[2].GetFloat();
+-        repTemplate.faction_rank[0]     = fields[3].GetUInt32();
+-        repTemplate.faction[1]          = fields[4].GetUInt32();
++        repTemplate.faction_rank[0]     = fields[3].GetUInt8();
++        repTemplate.faction[1]          = fields[4].GetUInt16();
+         repTemplate.faction_rate[1]     = fields[5].GetFloat();
+-        repTemplate.faction_rank[1]     = fields[6].GetUInt32();
+-        repTemplate.faction[2]          = fields[7].GetUInt32();
++        repTemplate.faction_rank[1]     = fields[6].GetUInt8();
++        repTemplate.faction[2]          = fields[7].GetUInt16();
+         repTemplate.faction_rate[2]     = fields[8].GetFloat();
+-        repTemplate.faction_rank[2]     = fields[9].GetUInt32();
+-        repTemplate.faction[3]          = fields[10].GetUInt32();
++        repTemplate.faction_rank[2]     = fields[9].GetUInt8();
++        repTemplate.faction[3]          = fields[10].GetUInt16();
+         repTemplate.faction_rate[3]     = fields[11].GetFloat();
+-        repTemplate.faction_rank[3]     = fields[12].GetUInt32();
+-        repTemplate.faction[4]          = fields[13].GetUInt32();
++        repTemplate.faction_rank[3]     = fields[12].GetUInt8();
++        repTemplate.faction[4]          = fields[13].GetUInt16();
+         repTemplate.faction_rate[4]     = fields[14].GetFloat();
+-        repTemplate.faction_rank[4]     = fields[15].GetUInt32();
++        repTemplate.faction_rank[4]     = fields[15].GetUInt8();
+ 
+         FactionEntry const *factionEntry = sFactionStore.LookupEntry(factionId);
+ 
+@@ -7499,7 +7499,7 @@ void ObjectMgr::LoadNPCSpellClickSpells()
+             continue;
+         }
+ 
+-        uint8 userType = fields[3].GetUInt8();
++        uint8 userType = fields[3].GetUInt16();
+         if (userType >= SPELL_CLICK_USER_MAX)
+             sLog->outErrorDb("Table npc_spellclick_spells references unknown user type %u. Skipping entry.", uint32(userType));
+ 
+@@ -8153,7 +8153,7 @@ void ObjectMgr::LoadFishingBaseSkillLevel()
+     {
+         Field *fields = result->Fetch();
+         uint32 entry  = fields[0].GetUInt32();
+-        int32 skill   = fields[1].GetInt32();
++        int32 skill   = fields[1].GetInt16();
+ 
+         AreaTableEntry const* fArea = GetAreaEntryByAreaID(entry);
+         if (!fArea)
+@@ -8269,7 +8269,7 @@ void ObjectMgr::LoadGameTele()
+         gt.position_y     = fields[2].GetFloat();
+         gt.position_z     = fields[3].GetFloat();
+         gt.orientation    = fields[4].GetFloat();
+-        gt.mapId          = fields[5].GetUInt32();
++        gt.mapId          = fields[5].GetUInt16();
+         gt.name           = fields[6].GetString();
+ 
+         if (!MapManager::IsValidMapCoord(gt.mapId, gt.position_x, gt.position_y, gt.position_z, gt.orientation))
+@@ -8547,9 +8547,9 @@ void ObjectMgr::LoadTrainerSpell()
+         uint32 entry         = fields[0].GetUInt32();
+         uint32 spell         = fields[1].GetUInt32();
+         uint32 spellCost     = fields[2].GetUInt32();
+-        uint32 reqSkill      = fields[3].GetUInt32();
+-        uint32 reqSkillValue = fields[4].GetUInt32();
+-        uint32 reqLevel      = fields[5].GetUInt32();
++        uint32 reqSkill      = fields[3].GetUInt16();
++        uint32 reqSkillValue = fields[4].GetUInt16();
++        uint32 reqLevel      = fields[5].GetUInt8();
+ 
+         AddSpellToTrainer(entry, spell, spellCost, reqSkill, reqSkillValue, reqLevel);
+ 
+@@ -8633,7 +8633,7 @@ void ObjectMgr::LoadVendors()
+             count += LoadReferenceVendor(entry, -item_id, &skip_vendors);
+         else
+         {
+-            int32  maxcount     = fields[2].GetInt32();
++            int32  maxcount     = fields[2].GetInt8();
+             uint32 incrtime     = fields[3].GetUInt32();
+             uint32 ExtendedCost = fields[4].GetUInt32();
+ 
+@@ -8675,7 +8675,7 @@ void ObjectMgr::LoadGossipMenu()
+ 
+         GossipMenus gMenu;
+ 
+-        gMenu.entry             = fields[0].GetUInt32();
++        gMenu.entry             = fields[0].GetUInt16();
+         gMenu.text_id           = fields[1].GetUInt32();
+ 
+         if (!GetGossipText(gMenu.text_id))
+@@ -8720,11 +8720,11 @@ void ObjectMgr::LoadGossipMenuItems()
+ 
+         GossipMenuItems gMenuItem;
+ 
+-        gMenuItem.MenuId                = fields[0].GetUInt32();
+-        gMenuItem.OptionIndex           = fields[1].GetUInt32();
++        gMenuItem.MenuId                = fields[0].GetUInt16();
++        gMenuItem.OptionIndex           = fields[1].GetUInt16();
+         gMenuItem.OptionIcon            = fields[2].GetUInt8();
+         gMenuItem.OptionText            = fields[3].GetString();
+-        gMenuItem.OptionType            = fields[4].GetUInt32();
++        gMenuItem.OptionType            = fields[4].GetUInt8();
+         gMenuItem.OptionNpcflag         = fields[5].GetUInt32();
+         gMenuItem.ActionMenuId          = fields[6].GetUInt32();
+         gMenuItem.ActionPoiId           = fields[7].GetUInt32();
+@@ -9049,8 +9049,8 @@ void ObjectMgr::LoadCreatureClassLevelStats()
+         for (uint8 i = 0; i < MAX_CREATURE_BASE_HP; ++i)
+             stats.BaseHealth[i] = fields[i + 2].GetInt32();
+ 
+-        stats.BaseMana  = fields[6].GetInt32();
+-        stats.BaseArmor = fields[7].GetInt32();
++        stats.BaseMana  = fields[6].GetInt16();
++        stats.BaseArmor = fields[7].GetInt16();
+ 
+         if (!Class || ((1 << (Class - 1)) & CLASSMASK_ALL_CREATURES) == 0)
+             sLog->outErrorDb("Creature base stats for level %u has invalid class %u", Level, Class);
+diff --git a/src/server/game/Loot/LootMgr.cpp b/src/server/game/Loot/LootMgr.cpp
+index d49c530..0f6964b 100755
+--- a/src/server/game/Loot/LootMgr.cpp
++++ b/src/server/game/Loot/LootMgr.cpp
+@@ -117,7 +117,7 @@ uint32 LootStore::LoadLootTable()
+         uint16 lootmode            = fields[3].GetUInt16();
+         uint8  group               = fields[4].GetUInt8();
+         int32  mincountOrRef       = fields[5].GetInt32();
+-        int32  maxcount            = fields[6].GetUInt8();
++        int32  maxcount            = fields[6].GetUInt16();
+ 
+         if (maxcount > std::numeric_limits<uint8>::max())
+         {
+diff --git a/src/server/game/Movement/Waypoints/WaypointManager.cpp b/src/server/game/Movement/Waypoints/WaypointManager.cpp
+index 5a0c142..c1689ab 100755
+--- a/src/server/game/Movement/Waypoints/WaypointManager.cpp
++++ b/src/server/game/Movement/Waypoints/WaypointManager.cpp
+@@ -77,7 +77,7 @@ void WaypointMgr::Load()
+         wp->run = fields[5].GetBool();
+         wp->delay = fields[6].GetUInt32();
+         wp->event_id = fields[7].GetUInt32();
+-        wp->event_chance = fields[8].GetUInt8();
++        wp->event_chance = fields[8].GetUInt16();
+ 
+         path.push_back(wp);
+         ++count;
+@@ -129,7 +129,7 @@ void WaypointMgr::ReloadPath(uint32 id)
+         wp->run = fields[4].GetBool();
+         wp->delay = fields[5].GetUInt32();
+         wp->event_id = fields[6].GetUInt32();
+-        wp->event_chance = fields[7].GetUInt8();
++        wp->event_chance = fields[7].GetUInt16();
+ 
+         path.push_back(wp);
+     }
+diff --git a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
+index ea7a0cf..04ae1f8 100755
+--- a/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
++++ b/src/server/game/OutdoorPvP/OutdoorPvPMgr.cpp
+@@ -60,7 +60,7 @@ void OutdoorPvPMgr::InitOutdoorPvP()
+     {
+         Field* fields = result->Fetch();
+ 
+-        typeId = fields[0].GetUInt32();
++        typeId = fields[0].GetUInt8();
+ 
+         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_OUTDOORPVP, typeId, NULL))
+             continue;
+diff --git a/src/server/game/Quests/QuestDef.cpp b/src/server/game/Quests/QuestDef.cpp
+index ed04075..b2ba528 100755
+--- a/src/server/game/Quests/QuestDef.cpp
++++ b/src/server/game/Quests/QuestDef.cpp
+@@ -24,38 +24,38 @@
+ Quest::Quest(Field* questRecord)
+ {
+     QuestId                     = questRecord[0].GetUInt32();
+-    QuestMethod                 = questRecord[1].GetUInt32();
+-    ZoneOrSort                  = questRecord[2].GetInt32();
++    QuestMethod                 = questRecord[1].GetUInt8();
++    ZoneOrSort                  = questRecord[2].GetInt16();
+     SkillOrClassMask            = questRecord[3].GetInt32();
+-    MinLevel                    = questRecord[4].GetUInt32();
+-    MaxLevel                    = questRecord[5].GetUInt32();
+-    QuestLevel                  = questRecord[6].GetInt32();
+-    Type                        = questRecord[7].GetUInt32();
++    MinLevel                    = questRecord[4].GetUInt8();
++    MaxLevel                    = questRecord[5].GetUInt8();
++    QuestLevel                  = questRecord[6].GetInt16();
++    Type                        = questRecord[7].GetUInt16();
+     RequiredRaces               = questRecord[8].GetUInt32();
+-    RequiredSkillValue          = questRecord[9].GetUInt32();
+-    RepObjectiveFaction         = questRecord[10].GetUInt32();
++    RequiredSkillValue          = questRecord[9].GetUInt16();
++    RepObjectiveFaction         = questRecord[10].GetUInt16();
+     RepObjectiveValue           = questRecord[11].GetInt32();
+-    RepObjectiveFaction2        = questRecord[12].GetUInt32();
++    RepObjectiveFaction2        = questRecord[12].GetUInt16();
+     RepObjectiveValue2          = questRecord[13].GetInt32();
+-    RequiredMinRepFaction       = questRecord[14].GetUInt32();
++    RequiredMinRepFaction       = questRecord[14].GetUInt16();
+     RequiredMinRepValue         = questRecord[15].GetInt32();
+-    RequiredMaxRepFaction       = questRecord[16].GetUInt32();
++    RequiredMaxRepFaction       = questRecord[16].GetUInt16();
+     RequiredMaxRepValue         = questRecord[17].GetInt32();
+-    SuggestedPlayers            = questRecord[18].GetUInt32();
++    SuggestedPlayers            = questRecord[18].GetUInt8();
+     LimitTime                   = questRecord[19].GetUInt32();
+     QuestFlags                  = questRecord[20].GetUInt32();
+-    uint32 SpecialFlags         = questRecord[21].GetUInt16();
+-    CharTitleId                 = questRecord[22].GetUInt32();
+-    PlayersSlain                = questRecord[23].GetUInt32();
+-    BonusTalents                = questRecord[24].GetUInt32();
+-    RewArenaPoints              = questRecord[25].GetInt32();
++    uint32 SpecialFlags         = questRecord[21].GetUInt8();
++    CharTitleId                 = questRecord[22].GetUInt8();
++    PlayersSlain                = questRecord[23].GetUInt8();
++    BonusTalents                = questRecord[24].GetUInt8();
++    RewArenaPoints              = questRecord[25].GetInt16();
+     PrevQuestId                 = questRecord[26].GetInt32();
+     NextQuestId                 = questRecord[27].GetInt32();
+     ExclusiveGroup              = questRecord[28].GetInt32();
+     NextQuestInChain            = questRecord[29].GetUInt32();
+-    XPId                        = questRecord[30].GetUInt32();
++    XPId                        = questRecord[30].GetUInt8();
+     SrcItemId                   = questRecord[31].GetUInt32();
+-    SrcItemCount                = questRecord[32].GetUInt32();
++    SrcItemCount                = questRecord[32].GetUInt8();
+     SrcSpell                    = questRecord[33].GetUInt32();
+     Title                       = questRecord[34].GetString();
+     Details                     = questRecord[35].GetString();
+@@ -72,19 +72,19 @@ Quest::Quest(Field* questRecord)
+         ReqItemId[i] = questRecord[45+i].GetUInt32();
+ 
+     for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+-        ReqItemCount[i] = questRecord[51+i].GetUInt32();
++        ReqItemCount[i] = questRecord[51+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_SOURCE_ITEM_IDS_COUNT; ++i)
+         ReqSourceId[i] = questRecord[57+i].GetUInt32();
+ 
+     for (int i = 0; i < QUEST_SOURCE_ITEM_IDS_COUNT; ++i)
+-        ReqSourceCount[i] = questRecord[61+i].GetUInt32();
++        ReqSourceCount[i] = questRecord[61+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+         ReqCreatureOrGOId[i] = questRecord[65+i].GetInt32();
+ 
+     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+-        ReqCreatureOrGOCount[i] = questRecord[69+i].GetUInt32();
++        ReqCreatureOrGOCount[i] = questRecord[69+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+         ReqSpell[i] = questRecord[73+i].GetUInt32();
+@@ -93,16 +93,16 @@ Quest::Quest(Field* questRecord)
+         RewChoiceItemId[i] = questRecord[77+i].GetUInt32();
+ 
+     for (int i = 0; i < QUEST_REWARD_CHOICES_COUNT; ++i)
+-        RewChoiceItemCount[i] = questRecord[83+i].GetUInt32();
++        RewChoiceItemCount[i] = questRecord[83+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_REWARDS_COUNT; ++i)
+         RewItemId[i] = questRecord[89+i].GetUInt32();
+ 
+     for (int i = 0; i < QUEST_REWARDS_COUNT; ++i)
+-        RewItemCount[i] = questRecord[93+i].GetUInt32();
++        RewItemCount[i] = questRecord[93+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_REPUTATIONS_COUNT; ++i)
+-        RewRepFaction[i] = questRecord[97+i].GetUInt32();
++        RewRepFaction[i] = questRecord[97+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_REPUTATIONS_COUNT; ++i)
+         RewRepValueId[i] = questRecord[102+i].GetInt32();
+@@ -118,22 +118,22 @@ Quest::Quest(Field* questRecord)
+     RewSpellCast              = questRecord[117].GetInt32();
+     RewMailTemplateId         = questRecord[118].GetUInt32();
+     RewMailDelaySecs          = questRecord[119].GetUInt32();
+-    PointMapId                = questRecord[120].GetUInt32();
++    PointMapId                = questRecord[120].GetUInt16();
+     PointX                    = questRecord[121].GetFloat();
+     PointY                    = questRecord[122].GetFloat();
+     PointOpt                  = questRecord[123].GetUInt32();
+ 
+     for (int i = 0; i < QUEST_EMOTE_COUNT; ++i)
+-        DetailsEmote[i] = questRecord[124+i].GetUInt32();
++        DetailsEmote[i] = questRecord[124+i].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_EMOTE_COUNT; ++i)
+         DetailsEmoteDelay[i] = questRecord[128+i].GetUInt32();
+ 
+-    IncompleteEmote = questRecord[132].GetUInt32();
+-    CompleteEmote = questRecord[133].GetUInt32();
++    IncompleteEmote = questRecord[132].GetUInt16();
++    CompleteEmote = questRecord[133].GetUInt16();
+ 
+     for (int i = 0; i < QUEST_EMOTE_COUNT; ++i)
+-        OfferRewardEmote[i] = questRecord[134+i].GetInt32();
++        OfferRewardEmote[i] = questRecord[134+i].GetInt16();
+ 
+     for (int i = 0; i < QUEST_EMOTE_COUNT; ++i)
+         OfferRewardEmoteDelay[i] = questRecord[138+i].GetInt32();
+@@ -161,7 +161,7 @@ Quest::Quest(Field* questRecord)
+     QuestTurnInPortraitText    = questRecord[165].GetString();
+     QuestTurnInPortraitUnk     = questRecord[166].GetString();
+     QuestTargetMark            = questRecord[167].GetUInt32();
+-    QuestStartType             = questRecord[168].GetUInt16();
++    QuestStartType             = questRecord[168].GetUInt32();
+     SoundAccept                = questRecord[169].GetUInt32();
+     SoundTurnIn                = questRecord[170].GetUInt32();
+     RequiredSpell              = questRecord[171].GetUInt32();
+diff --git a/src/server/game/Scripting/ScriptSystem.cpp b/src/server/game/Scripting/ScriptSystem.cpp
+index 2d0fc1c..1ad1c99 100755
+--- a/src/server/game/Scripting/ScriptSystem.cpp
++++ b/src/server/game/Scripting/ScriptSystem.cpp
+@@ -50,9 +50,9 @@ void SystemMgr::LoadScriptTexts()
+ 
+         int32 Id           = fields[0].GetInt32();
+         temp.SoundId     = fields[1].GetUInt32();
+-        temp.Type        = fields[2].GetUInt32();
+-        temp.Language    = fields[3].GetUInt32();
+-        temp.Emote       = fields[4].GetUInt32();
++        temp.Type        = fields[2].GetUInt8();
++        temp.Language    = fields[3].GetUInt8();
++        temp.Emote       = fields[4].GetUInt16();
+ 
+         if (Id >= 0)
+         {
+diff --git a/src/server/game/Skills/SkillDiscovery.cpp b/src/server/game/Skills/SkillDiscovery.cpp
+index 43996de..8376d60 100755
+--- a/src/server/game/Skills/SkillDiscovery.cpp
++++ b/src/server/game/Skills/SkillDiscovery.cpp
+@@ -72,7 +72,7 @@ void LoadSkillDiscoveryTable()
+ 
+         uint32 spellId         = fields[0].GetUInt32();
+         int32  reqSkillOrSpell = fields[1].GetInt32();
+-        uint32 reqSkillValue   = fields[2].GetUInt32();
++        uint32 reqSkillValue   = fields[2].GetUInt16();
+         float  chance          = fields[3].GetFloat();
+ 
+         if (chance <= 0)                                    // chance
+diff --git a/src/server/game/Spells/SpellMgr.cpp b/src/server/game/Spells/SpellMgr.cpp
+index 49f4289..31eb533 100644
+--- a/src/server/game/Spells/SpellMgr.cpp
++++ b/src/server/game/Spells/SpellMgr.cpp
+@@ -1270,7 +1270,7 @@ void SpellMgr::LoadSpellRanks()
+             if (lastSpell == -1)
+                 lastSpell = currentSpell;
+             uint32 spell_id = fields[1].GetUInt32();
+-            uint32 rank = fields[2].GetUInt32();
++            uint32 rank = fields[2].GetUInt8();
+ 
+             // don't drop the row if we're moving to the next rank
+             if (currentSpell == lastSpell)
+@@ -1571,7 +1571,7 @@ void SpellMgr::LoadSpellTargetPositions()
+ 
+         SpellTargetPosition st;
+ 
+-        st.target_mapId       = fields[1].GetUInt32();
++        st.target_mapId       = fields[1].GetUInt16();
+         st.target_X           = fields[2].GetFloat();
+         st.target_Y           = fields[3].GetFloat();
+         st.target_Z           = fields[4].GetFloat();
+@@ -1771,7 +1771,7 @@ void SpellMgr::LoadSpellGroupStackRules()
+         Field *fields = result->Fetch();
+ 
+         uint32 group_id = fields[0].GetUInt32();
+-        uint8 stack_rule = fields[1].GetUInt32();
++        uint8 stack_rule = fields[1].GetUInt8();
+         if (stack_rule >= SPELL_GROUP_STACK_RULE_MAX)
+         {
+             sLog->outErrorDb("SpellGroupStackRule %u listed in `spell_group_stack_rules` does not exist", stack_rule);
+@@ -1828,11 +1828,11 @@ void SpellMgr::LoadSpellProcEvents()
+ 
+         SpellProcEventEntry spe;
+ 
+-        spe.schoolMask      = fields[1].GetUInt32();
+-        spe.spellFamilyName = fields[2].GetUInt32();
+-        spe.spellFamilyMask[0] = fields[3].GetUInt32();
+-        spe.spellFamilyMask[1] = fields[4].GetUInt32();
+-        spe.spellFamilyMask[2] = fields[5].GetUInt32();
++        spe.schoolMask      = fields[1].GetUInt8();
++        spe.spellFamilyName = fields[2].GetUInt16();
++        spe.spellFamilyMask[0] = fields[3].GetUInt64();
++        spe.spellFamilyMask[1] = fields[4].GetUInt64();
++        spe.spellFamilyMask[2] = fields[5].GetUInt64();
+         spe.procFlags       = fields[6].GetUInt32();
+         spe.procEx          = fields[7].GetUInt32();
+         spe.ppmRate         = fields[8].GetFloat();
+@@ -2245,7 +2245,7 @@ void SpellMgr::LoadSpellEnchantProcData()
+ 
+         spe.customChance = fields[1].GetUInt32();
+         spe.PPMChance = fields[2].GetFloat();
+-        spe.procEx = fields[3].GetUInt32();
++        spe.procEx = fields[3].GetFloat();
+ 
+         mSpellEnchantProcEventMap[enchantId] = spe;
+ 
+@@ -2279,7 +2279,7 @@ void SpellMgr::LoadSpellLinked()
+ 
+         int32 trigger = fields[0].GetInt32();
+         int32 effect =  fields[1].GetInt32();
+-        int32 type =    fields[2].GetInt32();
++        int32 type =    fields[2].GetInt8();
+ 
+         SpellInfo const* spellInfo = GetSpellInfo(abs(trigger));
+         if (!spellInfo)
+diff --git a/src/server/game/Weather/WeatherMgr.cpp b/src/server/game/Weather/WeatherMgr.cpp
+index 3eacd5a..e612d8c 100755
+--- a/src/server/game/Weather/WeatherMgr.cpp
++++ b/src/server/game/Weather/WeatherMgr.cpp
+@@ -108,9 +108,9 @@ void LoadWeatherData()
+ 
+         for (uint8 season = 0; season < WEATHER_SEASONS; ++season)
+         {
+-            wzc.data[season].rainChance  = fields[season * (MAX_WEATHER_TYPE-1) + 1].GetUInt32();
+-            wzc.data[season].snowChance  = fields[season * (MAX_WEATHER_TYPE-1) + 2].GetUInt32();
+-            wzc.data[season].stormChance = fields[season * (MAX_WEATHER_TYPE-1) + 3].GetUInt32();
++            wzc.data[season].rainChance  = fields[season * (MAX_WEATHER_TYPE-1) + 1].GetUInt8();
++            wzc.data[season].snowChance  = fields[season * (MAX_WEATHER_TYPE-1) + 2].GetUInt8();
++            wzc.data[season].stormChance = fields[season * (MAX_WEATHER_TYPE-1) + 3].GetUInt8();
+ 
+             if (wzc.data[season].rainChance > 100)
+             {
+-- 
+1.7.2.5
+

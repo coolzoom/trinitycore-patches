@@ -1,0 +1,2390 @@
+From 50335de159c0864874e6889bd4e69616858f0525 Mon Sep 17 00:00:00 2001
+From: lordpsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 20 Jan 2013 11:09:47 -0600
+Subject: [PATCH] 2013_01_20-Transmogrification-TeleNPC2-Armory-FakePlayers
+
+---
+ README.NPCTELEPORT                                 |   14 +
+ WoWArmoryReadme                                    |   11 +
+ sql/Fake.Players/characters_fake.sql               |   36 ++
+ sql/Transmogrification/characters.sql              |    5 +
+ .../updates/characters_update_2_1_to_2_2.sql       |   12 +
+ .../updates/characters_update_2_2_to_3_0.sql       |    2 +
+ .../updates/world_update_3_5_to_3_6.sql            |    1 +
+ sql/Transmogrification/world_NPC.sql               |    6 +
+ sql/Transmogrification/world_texts.sql             |   30 ++
+ sql/tools/setup_npc_teleport.sql                   |  119 ++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  376 ++++++++++++++++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++++++++
+ src/server/game/Achievements/AchievementMgr.cpp    |    6 +
+ src/server/game/Battlegrounds/Battleground.cpp     |    8 +
+ src/server/game/Battlegrounds/Battleground.h       |   10 +-
+ src/server/game/Entities/Item/Item.cpp             |   38 ++
+ src/server/game/Entities/Item/Item.h               |    6 +
+ src/server/game/Entities/Item/ItemPrototype.h      |    2 +
+ src/server/game/Entities/Player/Player.cpp         |  133 +++++++-
+ src/server/game/Entities/Player/Player.h           |   37 ++
+ src/server/game/Entities/Unit/Unit.cpp             |   21 +-
+ src/server/game/Globals/ObjectMgr.cpp              |   26 ++
+ src/server/game/Globals/ObjectMgr.h                |    3 +
+ src/server/game/Handlers/ChatHandler.cpp           |    9 +
+ src/server/game/Handlers/MiscHandler.cpp           |   36 ++-
+ src/server/game/Miscellaneous/Language.h           |   34 ++
+ src/server/game/Scripting/ScriptLoader.cpp         |    9 +-
+ src/server/game/Scripting/ScriptMgr.cpp            |    3 +
+ src/server/game/World/World.cpp                    |    8 +
+ src/server/game/World/World.h                      |    2 +
+ src/server/scripts/CMakeLists.txt                  |    3 +
+ src/server/scripts/Custom/CMakeLists.txt           |    2 +
+ src/server/scripts/Custom/Transmogrification.cpp   |  275 ++++++++++++++
+ src/server/scripts/Custom/Transmogrification.h     |   83 +++++
+ src/server/scripts/Custom/npc_teleport.cpp         |  222 ++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   96 +++++
+ 36 files changed, 1829 insertions(+), 6 deletions(-)
+ create mode 100644 README.NPCTELEPORT
+ create mode 100644 WoWArmoryReadme
+ create mode 100644 sql/Fake.Players/characters_fake.sql
+ create mode 100644 sql/Transmogrification/characters.sql
+ create mode 100644 sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+ create mode 100644 sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+ create mode 100644 sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
+ create mode 100644 sql/Transmogrification/world_NPC.sql
+ create mode 100644 sql/Transmogrification/world_texts.sql
+ create mode 100644 sql/tools/setup_npc_teleport.sql
+ create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
+ create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
+ create mode 100644 src/server/scripts/Custom/Transmogrification.cpp
+ create mode 100644 src/server/scripts/Custom/Transmogrification.h
+ create mode 100644 src/server/scripts/Custom/npc_teleport.cpp
+
+diff --git a/README.NPCTELEPORT b/README.NPCTELEPORT
+new file mode 100644
+index 0000000..015c9c2
+--- /dev/null
++++ b/README.NPCTELEPORT
+@@ -0,0 +1,14 @@
++NPC Teleport for Trinity
++
++Original author : Wilibald09
++
++Allows you to add a custom NPC for teleporting, using .npc add 100000.
++The default NPC is entry 100000.
++
++All settings are located in the DB, so you can customize and add destinations,
++set level restrictions and also charge the player for teleporting.
++
++Installation:
++
++Run the query setup_npc_teleport.sql located in the trinity sql directory on
++your world DB. This will setup the DB and you can customize from there.
+diff --git a/WoWArmoryReadme b/WoWArmoryReadme
+new file mode 100644
+index 0000000..3640467
+--- /dev/null
++++ b/WoWArmoryReadme
+@@ -0,0 +1,11 @@
++Thanks to Darki73 from trinitycore.org
++
++This patch allows for web armory scripts to work with trinitycore. I have not looked at the script, so not sure
++exactly what it does. There are 2 known scripts that work with this patch:
++
++1. Shadez Armory (3D Viewer Included) - https://github.com/Shadez/wowarmory/
++2. Seejayz Armory (Never used this, but patch works with this armory) - https://github.com/S...fwarcraftArmory
++
++-- LordPsyan
++
++Yes, I am back! Prepare to be amazed... at how many things I can break in 1 day!
+\ No newline at end of file
+diff --git a/sql/Fake.Players/characters_fake.sql b/sql/Fake.Players/characters_fake.sql
+new file mode 100644
+index 0000000..1423845
+--- /dev/null
++++ b/sql/Fake.Players/characters_fake.sql
+@@ -0,0 +1,36 @@
++/*
++SQLyog Enterprise - MySQL GUI v8.18 
++MySQL - 5.1.66-0+squeeze1 : Database - lithathrad_characters
++*********************************************************************
++*/
++
++/*!40101 SET NAMES utf8 */;
++
++/*!40101 SET SQL_MODE=''*/;
++
++/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
++/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
++/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
++/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
++/*Table structure for table `characters_fake` */
++
++DROP TABLE IF EXISTS `characters_fake`;
++
++CREATE TABLE `characters_fake` (
++  `name` varchar(36) NOT NULL,
++  `race` mediumint(3) NOT NULL DEFAULT '0',
++  `class` mediumint(3) NOT NULL DEFAULT '0',
++  `level` mediumint(3) NOT NULL DEFAULT '0',
++  `zone` mediumint(9) NOT NULL DEFAULT '0',
++  `gender` mediumint(3) NOT NULL DEFAULT '0',
++  `online` mediumint(3) NOT NULL DEFAULT '0'
++) ENGINE=MyISAM DEFAULT CHARSET=latin1;
++
++/*Data for the table `characters_fake` */
++
++insert  into `characters_fake`(`name`,`race`,`class`,`level`,`zone`,`gender`,`online`) values ('Drikish',10,8,80,22,0,2),('Sovelis',1,1,75,11,0,2),('Cuddles',10,2,99,37,0,2),('Epiasdv',8,4,80,1,0,2),('Mac',5,4,80,44,0,2),('Tiesto',8,6,80,15,0,2),('Ihavfacebook',11,7,80,44,1,2),('Mimik',10,4,80,24,0,2),('Deadmau',5,4,99,36,0,2),('Smoosh',8,1,80,29,0,2),('Shadowcrest',4,4,80,24,1,2),('Lolol',4,5,75,30,1,2),('Prox',11,1,80,28,1,2),('Rovip',10,4,80,13,0,2),('Ryan',10,8,80,17,0,2),('Holysmite',1,2,80,24,0,2),('Airagon',10,2,80,36,0,2),('Fracture',5,1,80,4,0,2),('Supershen',10,2,80,14,1,2),('Jana',2,4,75,41,0,2),('Gamm',2,1,75,35,0,2),('Emoarchie',10,8,80,2,0,2),('Melia',10,2,75,4,1,2),('Balu',6,11,75,10,0,2),('Jabari',2,1,75,5,0,2),('Sinan',10,2,75,6,0,2),('Shisha',10,4,75,9,1,2),('Killbill',1,4,75,8,0,2),('Gaby',4,11,75,12,1,2),('Fallen',4,4,75,37,0,2),('Druidita',6,11,75,47,0,2),('Pigolo',6,11,75,22,0,2),('Saga',10,2,75,22,0,2),('Deadmask',10,2,75,41,0,2),('Assasincz',4,4,75,41,0,2),('Petracz',1,4,75,28,1,2),('Aleks',10,2,75,20,0,2),('Cazadormen',4,4,75,14,1,2),('Kireth',1,2,75,9,1,2),('Liesma',1,1,75,5,1,2),('Tyller',1,1,75,46,0,2),('Astrabutaz',1,2,75,13,0,2),('Carlita',7,8,75,26,1,2),('beanie',10,2,80,40,0,2),('Nergal',10,3,75,22,0,2),('Smikis',10,5,75,39,0,2),('Peperoma',11,2,75,30,0,2),('May',1,2,75,32,1,2),('Keyadis',8,7,75,47,0,2),('Preatorian',10,2,75,29,0,2),('Mitza',1,9,75,1,0,2),('Keedor',10,2,75,21,0,2),('Kekw',4,3,75,1,1,2),('Wark',1,2,75,42,0,2),('Barrabus',10,2,75,6,0,2),('Malodetehepy',4,11,75,1,0,2),('Dranati',10,2,75,40,0,2),('Sorin',2,1,75,36,0,2),('Resan',4,4,75,18,0,2),('Silverhilt',1,1,75,31,1,2),('Chirica',10,2,75,2,0,2),('Trias',10,8,75,16,0,2),('Prdo',5,1,75,22,0,2),('Guten',8,7,75,36,0,2),('Sonsia',4,3,75,48,1,2),('Smikiss',10,4,75,37,0,2),('Ledy',4,1,75,34,1,2),('Rymar',5,4,75,9,0,2),('Rokass',5,1,75,38,0,2),('Waisha',10,3,75,11,1,2),('Xenon',4,1,75,16,0,2),('Palanoski',1,2,75,6,0,2),('Helona',6,11,75,47,1,2),('Skalons',2,1,75,14,0,2),('Zazlock',5,9,75,31,0,2),('Zazk',6,7,75,20,0,2),('Ezekiel',10,9,75,12,0,2),('Deiv',10,8,75,1,0,2),('Crashwar',5,1,75,16,0,2),('Bandaid',5,5,75,28,0,2),('Hunterherbie',4,3,75,3,0,2),('Cheesebeard',3,1,90,4,0,2),('Phin',7,8,75,3,0,2),('Prig',10,5,75,48,0,2),('Eraevel',10,5,75,28,1,2),('Bourne',5,4,75,47,0,2),('Twoogi',5,8,75,48,0,2),('Devon',5,4,76,6,0,2),('Ledystar',1,2,75,29,1,2),('Frostie',10,8,75,25,1,2),('Kie',5,4,99,38,0,2),('Reios',1,2,75,16,0,2),('Zero',4,4,75,30,0,2),('Wuk',2,1,75,1,0,2),('Sylvaediir',4,3,75,21,0,2),('Kansetsu',11,2,75,10,0,2),('Makura',11,2,75,44,1,2),('Demonia',11,2,75,17,1,2),('Stonebull',6,11,75,50,0,2),('Marianus',10,2,75,50,0,2);
++
++/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
++/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
++/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
++/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+diff --git a/sql/Transmogrification/characters.sql b/sql/Transmogrification/characters.sql
+new file mode 100644
+index 0000000..83435cc
+--- /dev/null
++++ b/sql/Transmogrification/characters.sql
+@@ -0,0 +1,5 @@
++CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
++  `GUID` int(10) unsigned NOT NULL DEFAULT '0',
++  `FakeEntry` int(10) unsigned NOT NULL DEFAULT '0',
++  PRIMARY KEY (`GUID`)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='version 3.0';
+diff --git a/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql b/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+new file mode 100644
+index 0000000..ee57844
+--- /dev/null
++++ b/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+@@ -0,0 +1,12 @@
++CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
++	`GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++	`FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++	`FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
++)
++COLLATE='latin1_swedish_ci'
++ENGINE=InnoDB;
++
++REPLACE INTO custom_transmogrification (GUID, FakeOwner, FakeEntry) SELECT guid, FakeOwner, FakeEntry FROM item_instance WHERE FakeOwner != 0 AND FakeEntry != 0;
++ALTER TABLE `item_instance`
++	DROP COLUMN `FakeEntry`,
++	DROP COLUMN `FakeOwner`;
+diff --git a/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql b/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+new file mode 100644
+index 0000000..63059ee
+--- /dev/null
++++ b/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE `custom_transmogrification`
++	DROP COLUMN `FakeOwner`;
+diff --git a/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql b/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
+new file mode 100644
+index 0000000..03cc6d2
+--- /dev/null
++++ b/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
+@@ -0,0 +1 @@
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11129, 'You don\'t have enough %ss', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+diff --git a/sql/Transmogrification/world_NPC.sql b/sql/Transmogrification/world_NPC.sql
+new file mode 100644
+index 0000000..81879da
+--- /dev/null
++++ b/sql/Transmogrification/world_NPC.sql
+@@ -0,0 +1,6 @@
++SET
++@Entry = 190010,
++@Name = "Warpweaver";
++
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `equipment_id`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
++(@Entry, 0, 0, 0, 0, 0, 19646, 0, 0, 0, @Name, 'Transmogrifier', NULL, 0, 80, 80, 2, 35, 35, 1, 1, 1.14286, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 'NPC_Transmogrify', 0);
+diff --git a/sql/Transmogrification/world_texts.sql b/sql/Transmogrification/world_texts.sql
+new file mode 100644
+index 0000000..f55fb68
+--- /dev/null
++++ b/sql/Transmogrification/world_texts.sql
+@@ -0,0 +1,30 @@
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11100, 'Transmogrifications removed from equipped items', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11101, 'You have no transmogrified items equipped', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11102, '%s transmogrification removed', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11103, 'No transmogrification on %s slot', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11104, '%s transmogrified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11105, 'Selected items are not suitable', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11106, 'Selected item does not exist', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11107, 'Equipment slot is empty', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11108, 'Head', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11109, 'Shoulders', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11110, 'Shirt', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11111, 'Chest', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11112, 'Waist', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11113, 'Legs', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11114, 'Feet', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11115, 'Wrists', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11116, 'Hands', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11117, 'Back', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11118, 'Main hand', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11119, 'Off hand', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11120, 'Ranged', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11121, 'Tabard', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11122, 'Back..', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11123, 'Remove all transmogrifications', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11124, 'Remove transmogrifications from all equipped items?', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11125, 'Update menu', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11126, 'Remove transmogrification', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11127, 'Remove transmogrification from %s?', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11128, 'Using this item for transmogrify will bind it to you and make it non-refundable and non-tradeable.\r\nDo you wish to continue?\r\n\r\n', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11129, 'You don\'t have enough %ss', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+diff --git a/sql/tools/setup_npc_teleport.sql b/sql/tools/setup_npc_teleport.sql
+new file mode 100644
+index 0000000..03b9e93
+--- /dev/null
++++ b/sql/tools/setup_npc_teleport.sql
+@@ -0,0 +1,119 @@
++DROP TABLE IF EXISTS `custom_npc_tele_category`;
++CREATE TABLE `custom_npc_tele_category` (
++  `id` int(6) unsigned NOT NULL default '0',
++  `name` varchar(255) NOT NULL default '',
++  `flag` tinyint(3) unsigned NOT NULL default '0',
++  `data0` bigint(20) unsigned NOT NULL default '0',
++  `data1` int(6) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM DEFAULT CHARSET=utf8;
++
++DROP TABLE IF EXISTS `custom_npc_tele_destination`;
++CREATE TABLE `custom_npc_tele_destination` (
++  `id` int(6) unsigned NOT NULL auto_increment,
++  `name` char(100) NOT NULL default '',
++  `pos_X` float NOT NULL default '0',
++  `pos_Y` float NOT NULL default '0',
++  `pos_Z` float NOT NULL default '0',
++  `map` smallint(5) unsigned NOT NULL default '0',
++  `orientation` float NOT NULL default '0',
++  `level` tinyint(3) unsigned NOT NULL default '0',
++  `cost` int(10) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
++
++DROP TABLE IF EXISTS `custom_npc_tele_association`;
++CREATE TABLE `custom_npc_tele_association` (
++  `cat_id` int(6) unsigned NOT NULL default '0',
++  `dest_id` int(6) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`cat_id`, `dest_id`)
++) ENGINE=MyISAM DEFAULT CHARSET=utf8;
++
++TRUNCATE `custom_npc_tele_category`;
++INSERT INTO `custom_npc_tele_category`
++   (`id`, `name`, `flag`, `data0`, `data1`)
++VALUES
++   (1, 'Cities', 0, 1, 0),
++   (2, 'Cities', 0, 2, 0),
++   (3, 'Battlegrounds', 0, 1, 0),
++   (4, 'Battlegrounds', 0, 2, 0),
++   (5, 'Arenas', 0, 0, 0),
++   (6, '[Instances Lvl 1-60]', 0, 0, 0),
++   (7, '[Instances Lvl 60+]', 5, 60, 0),
++   (8, '[Instances Lvl 70+]', 5, 70, 0),
++   (9, 'Destinations MJ', 3, 0, 0);
++
++TRUNCATE `custom_npc_tele_destination`;
++INSERT INTO `custom_npc_tele_destination`
++   (`id`, `name`, `pos_X`, `pos_Y`, `pos_Z`, `map`, `orientation`, `level`, `cost`)
++VALUES
++   (1, 'Alterac Valley', 883.187, -489.375, 96.7618, 30, 3.06932, 0, 0),
++   (2, 'Alterac Valley', -818.155, -623.043, 54.0884, 30, 2.1, 0, 0),
++   (3, 'Arathi Basin', 686.053, 683.165, -12.9149, 529, 0.18, 0, 0),
++   (4, 'Arathi Basin', 1308.68, 1306.03, -9.0107, 529, 3.91285, 0, 0),
++   (5, 'Black Temple', -3610.72, 324.988, 37.4, 530, 3.28298, 0, 0),
++   (6, 'Blackfathom Deeps', 4254.58, 664.74, -29.04, 1, 1.97, 0, 0),
++   (7, 'Blackrock Depths', -7301.03, -913.19, 165.37, 0, 0.08, 0, 0),
++   (8, 'Blackrock Spire', -7535.43, -1212.04, 285.45, 0, 5.29, 0, 0),
++   (9, 'Blackwing Lair', -7665.55, -1102.49, 400.679, 469, 0, 0, 0),
++   (10, 'Caverns of Time', -8173.66, -4746.36, 33.8423, 1, 4.93989, 0, 0),
++   (11, 'Circle of Blood', 2839.44, 5930.17, 11.1002, 530, 3.16284, 0, 0),
++   (12, 'Coilfang Reservoir', 517.288, 6976.28, 32.0072, 530, 0, 0, 0),
++   (13, 'Darnassus', 9947.52, 2482.73, 1316.21, 1, 0, 0, 0),
++   (14, 'Dire Maul', -3982.47, 1127.79, 161.02, 1, 0.05, 0, 0),
++   (15, 'Exodar', -4073.03, -12020.4, -1.47, 530, 0, 0, 0),
++   (16, 'Eye of the Storm', 2487.72, 1609.12, 1224.64, 566, 3.35671, 0, 0),
++   (17, 'Eye of the Storm', 1843.73, 1529.77, 1224.43, 566, 0.297579, 0, 0),
++   (18, 'Goldshire', -9464, 62, 56, 0, 0, 0, 0),
++   (19, 'Gruul\'s Lair', 3539.01, 5082.36, 1.69107, 530, 0, 0, 0),
++   (20, 'Gurubashi', -13261.3, 168.294, 35.0792, 0, 1.00688, 0, 0),
++   (21, 'Hellfire Citadel', -305.816, 3056.4, -2.47318, 530, 2.01, 0, 0),
++   (22, 'Ironforge', -4924.07, -951.95, 501.55, 0, 5.4, 0, 0),
++   (23, 'Isle Of Quel\'Danas', 12947.4, -6893.31, 5.68398, 530, 3.09154, 0, 0),
++   (24, 'Karazhan', -11118.8, -2010.84, 47.0807, 0, 0, 0, 0),
++   (25, 'Maraudon', -1433.33, 2955.34, 96.21, 1, 4.82, 0, 0),
++   (26, 'Molten Core', 1121.45, -454.317, -101.33, 230, 3.5, 0, 0),
++   (27, 'Naxxramas', 3125.18, -3748.02, 136.049, 0, 0, 0, 0),
++   (28, 'Onyxia\'s Lair', -4707.44, -3726.82, 54.6723, 1, 3.8, 0, 0),
++   (29, 'Orgrimmar', 1552.5, -4420.66, 8.94802, 1, 0, 0, 0),
++   (30, 'Razor Hill', 315.721, -4743.4, 10.4867, 1, 0, 0, 0),
++   (31, 'Razorfen Downs', -4645.08, -2470.85, 85.53, 1, 4.39, 0, 0),
++   (32, 'Razorfen Kraul', -4484.04, -1739.4, 86.47, 1, 1.23, 0, 0),
++   (33, 'Ring of Trials', -1999.94, 6581.71, 11.32, 530, 2.3, 0, 0),
++   (34, 'Ruins of Ahn\'Qiraj', -8409.03, 1498.83, 27.3615, 1, 2.49757, 0, 0),
++   (35, 'Scholomance', 1219.01, -2604.66, 85.61, 0, 0.5, 0, 0),
++   (36, 'Shadowfang Keep', -254.47, 1524.68, 76.89, 0, 1.56, 0, 0),
++   (37, 'Shattrath City', -1850.21, 5435.82, -10.9614, 530, 3.40391, 0, 0),
++   (38, 'Silvermoon', 9338.74, -7277.27, 13.7895, 530, 0, 0, 0),
++   (39, 'Stormwind', -8960.14, 516.266, 96.3568, 0, 0, 0, 0),
++   (40, 'Stratholme', 3263.54, -3379.46, 143.59, 0, 0, 0, 0),
++   (41, 'Tempest Keep', 3089.58, 1399.05, 187.653, 530, 4.79407, 0, 0),
++   (42, 'Temple of Ahn\'Qiraj', -8245.84, 1983.74, 129.072, 1, 0.936195, 0, 0),
++   (43, 'The Deadmines', -11212, 1658.58, 25.67, 0, 1.45, 0, 0),
++   (44, 'The Maul', -3761.49, 1133.43, 132.083, 1, 4.57259, 0, 0),
++   (45, 'The Scarlet Monastery', 2843.89, -693.74, 139.32, 0, 5.11, 0, 0),
++   (46, 'The Sunken Temple', -10346.9, -3851.9, -43.41, 0, 6.09, 0, 0),
++   (47, 'The Wailing Caverns', -722.53, -2226.3, 16.94, 1, 2.71, 0, 0),
++   (48, 'Thunder Bluff', -1290, 147.034, 129.682, 1, 4.919, 0, 0),
++   (49, 'Uldaman', -6119.7, -2957.3, 204.11, 0, 0.03, 0, 0),
++   (50, 'Undercity', 1819.71, 238.79, 60.5321, 0, 0, 0, 0),
++   (51, 'Warsong Gulch', 930.851, 1431.57, 345.537, 489, 0.015704, 0, 0),
++   (52, 'Warsong Gulch', 1525.95, 1481.66, 352.001, 489, 3.20756, 0, 0),
++   (53, 'Zul\'Aman', 6846.95, -7954.5, 170.028, 530, 4.61501, 0, 0),
++   (54, 'Zul\'Farrak', -6839.39, -2911.03, 8.87, 1, 0.41, 0, 0),
++   (55, 'Zul\'Gurub', -11916.7, -1212.82, 92.2868, 0, 4.6095, 0, 0),
++   (56, 'Ile des MJ', 16254, 16276.9, 14.5082, 1, 1.70269, 0, 0);
++
++TRUNCATE `custom_npc_tele_association`;
++INSERT INTO `custom_npc_tele_association`
++  (`cat_id`, `dest_id`)
++VALUES
++  (1, 13), (1, 15), (1, 18), (1, 22), (1, 23), (1, 37), (1, 39), (2, 23), (2, 29), (2, 30), (2, 37), (2, 38), (2, 48), (2, 50), (3, 1), (3, 4), (3, 16), (3, 52), (4, 2), (4, 3), (4, 17), (4, 51), (5, 11), (5, 20), (5, 33), (5, 44), (6, 6), (6, 7), (6, 8), (6, 14), (6, 25), (6, 31), (6, 32), (6, 35), (6, 36), (6, 40), (6, 43), (6, 45), (6, 46), (6, 47), (6, 49), (6, 54), (7, 9), (7, 26), (7, 27), (7, 28), (7, 34), (7, 42), (7, 55), (8, 5), (8, 10), (8, 12), (8, 19), (8, 21), (8, 24), (8, 41), (8, 53), (9, 56);
++
++-- `npc_text`
++REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
++   (100000, 'Choose your Category.'),
++   (100001, 'Choose your Destination.');
++
++-- `creature_template`
++INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 'npc_teleport', 1);
+diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
+new file mode 100644
+index 0000000..fd51a6c
+--- /dev/null
++++ b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
+@@ -0,0 +1,376 @@
++/**
++ *
++ * @File : sc_npc_teleport.cpp
++ *
++ * @Authors : Wilibald09
++ *
++ * @Date : 28/08/2008
++ *
++ * @Version : 1.2
++ *
++ **/
++
++
++#include "ScriptPCH.h"
++#include "sc_npc_teleport.h"
++//#include "ProgressBar.h"
++
++#define TELE    nsNpcTel::CatDest
++#define PAGE    nsNpcTel::Page
++#define PAGEI   PAGE::Instance
++
++
++nsNpcTel::VCatDest nsNpcTel::TabCatDest;
++
++
++uint32 PAGE::operator [] (Player * const player) const
++{
++    for (VInst_t i(0); i < m_TabInstance.size(); ++i)
++    {
++        if (m_TabInstance[i].GetPlayer() == player)
++            return m_TabInstance[i].GetPageId();
++    }
++    return 0;
++}
++
++PAGE::Instance & PAGE::operator () (Player * const player)
++{
++    for (VInst_t i(0); i < m_TabInstance.size(); ++i)
++    {
++        if (m_TabInstance[i].GetPlayer() == player)
++            return m_TabInstance[i];
++    }
++    m_TabInstance.push_back(Instance(player));
++    return m_TabInstance.back();
++}
++
++PAGE::Instance & PAGEI::operator = (const uint32 &id)
++{
++    m_PageId = id;
++    return *this;
++}
++
++PAGE::Instance & PAGEI::operator ++ (void)
++{
++    ++m_PageId;
++    return *this;
++}
++
++PAGE::Instance PAGEI::operator ++ (int32)
++{
++    Instance tmp (*this);
++    ++m_PageId;
++    return tmp;
++}
++
++PAGE::Instance & PAGEI::operator -- (void)
++{
++    --m_PageId;
++    return *this;
++}
++
++PAGE::Instance PAGEI::operator -- (int32)
++{
++    Instance tmp (*this);
++    --m_PageId;
++    return tmp;
++}
++
++TELE::CatDest(const uint32 &id, const std::string &name,
++              const Flag &flag, const uint64 &data0, const uint32 &data1)
++    : m_id(id), m_name(name), m_flag(flag), m_data0(data0), m_data1(data1)
++{
++    m_TabDest.clear();
++}
++
++std::string TELE::GetName(const bool IsGM /* = false */) const
++{
++    if (!IsGM || m_flag != FLAG_TEAM)
++        return m_name;
++
++    switch (m_data0)
++    {
++      case TEAM_HORDE:      return std::string(m_name + " (H)");
++      case TEAM_ALLIANCE:   return std::string(m_name + " (A)");
++    }
++    return m_name;
++}
++
++bool TELE::IsAllowedToTeleport(Player * const player) const
++{
++    if (player->isGameMaster())
++    {
++        if (m_flag == FLAG_GMLEVEL)
++            return player->GetSession()->GetSecurity() >= m_data0;
++        return true;
++    }
++
++    switch (m_flag)
++    {
++      case FLAG_TEAM:
++        switch (m_data0)
++        {
++          case TEAM_HORDE:      return player->GetTeam() == HORDE;
++          case TEAM_ALLIANCE:   return player->GetTeam() == ALLIANCE;
++          case TEAM_ALL:        return true;
++        }
++
++      case FLAG_GUILD:
++        return player->GetGuildId() == m_data0;
++
++      case FLAG_GMLEVEL:
++        return player->GetSession()->GetSecurity() >= m_data0;
++
++      case FLAG_ISGM:
++        return player->isGameMaster();
++
++      case FLAG_ACCOUNT:
++        return player->GetSession()->GetAccountId() == m_data0;
++
++      case FLAG_LEVEL:
++        return player->getLevel() >= m_data0;
++
++      case FLAG_ITEM:
++        return player->HasItemCount(m_data0, m_data1, true);
++
++      case FLAG_QUEST:
++        if (m_data1 < MAX_QUEST_STATUS)
++            return player->GetQuestStatus(m_data0) == m_data1;
++        return player->GetQuestRewardStatus(m_data0);
++
++      case FLAG_GENDER:
++        return player->getGender() == m_data0;
++
++      case FLAG_RACE:
++        return player->getRace() == m_data0;
++
++      case FLAG_CLASS:
++        return player->getClass() == m_data0;
++
++      case FLAG_REPUTATION:
++        return player->GetReputationRank(m_data0) >= m_data1;
++
++      case FLAG_PLAYER:
++        return player->GetGUID() == m_data0;
++    }
++
++    sLog->outError(LOG_FILTER_GENERAL, "Invalid flag (category: %u). Important problem...", GetCatID());
++    return false;
++}
++
++uint32 TELE::CountOfCategoryAllowedBy(Player * const player)
++{
++    uint32 count (0);
++    for (VCatDest_t i(0); i < TabCatDest.size(); ++i)
++    {
++        if (TabCatDest[i].IsAllowedToTeleport(player))
++            ++count;
++    }
++    return count;
++}
++
++bool nsNpcTel::IsValidData(const uint32 &cat,   const Flag &flag,
++                           const uint64 &data0, const uint32 &data1)
++{
++    switch(flag)
++    {
++      case FLAG_TEAM:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (data0 < MAX_FLAG_TEAM)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Team) (category: %u).", cat);
++        return false;
++
++      case FLAG_GUILD:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (data0)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (GuildID) (category: %u).", cat);
++        return false;
++
++      case FLAG_GMLEVEL:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (0 < data0 && data0 < 256)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (GmLevel) (category: %u).", cat);
++        return false;
++
++      case FLAG_ISGM:
++        if (data0)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (category: %u).", cat);
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        return true;
++
++      case FLAG_ACCOUNT:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (data0)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (AccountID) (category: %u).", cat);
++        return false;
++
++      case FLAG_LEVEL:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (0 < data0 && data0 < 256)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Level) (category: %u).", cat);
++        return false;
++
++      case FLAG_ITEM:
++        if (!data0)
++        {
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (ItemID) (category: %u).", cat);
++            return false;
++        }
++        if (data1)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Item Count) (category: %u).", cat);
++        return false;
++
++      case FLAG_QUEST:
++        if (!data0)
++        {
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (QuestID) (category: %u).", cat);
++            return false;
++        }
++        if (data1 < MAX_QUEST_STATUS + 1)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Quest Status) (category: %u).", cat);
++        return false;
++
++      case FLAG_GENDER:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (data0 < GENDER_NONE)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Gender) (category: %u).", cat);
++        return false;
++
++      case FLAG_RACE:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (0 < data0 && data0 < MAX_RACES)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Race) (category: %u).", cat);
++        return false;
++
++      case FLAG_CLASS:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (0 < data0 && data0 < MAX_CLASSES)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Class) (category: %u).", cat);
++        return false;
++
++      case FLAG_REPUTATION:
++        if (!data0)
++        {
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (Faction/Reputation) (category: %u).", cat);
++            return false;
++        }
++        if (data1 <= REP_EXALTED)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (Faction/Reputation) (category: %u).", cat);
++        return false;
++
++      case FLAG_PLAYER:
++        if (data1)
++            sLog->outError(LOG_FILTER_GENERAL, "Invalid data1 (category: %u).", cat);
++        if (data0)
++            return true;
++        sLog->outError(LOG_FILTER_GENERAL, "Invalid data0 (PlayerGuid) (category: %u).", cat);
++        return false;
++    }
++
++    sLog->outError(LOG_FILTER_GENERAL, "Invalid flag (category: %u).", cat);
++    return false;
++}
++
++void LoadNpcTele(void)
++{
++    const char *Table[] =
++    {
++        "custom_npc_tele_category",
++        "custom_npc_tele_destination",
++        "custom_npc_tele_association",
++    };
++
++
++    QueryResult result = WorldDatabase.PQuery(
++        "SELECT `flag`, `data0`, `data1`, `cat_id`, C.`name` `namecat`, D.`name` `namedest`, "
++        //      0        1        2        3                  4                   5
++               "`pos_X`, `pos_Y`, `pos_Z`, `orientation`, `map`, `level`, `cost` "
++        //      6        7        8        9              10     11       12
++        "FROM `%s` C, `%s` D, `%s` A "
++        "WHERE C.`id` = `cat_id` AND D.`id` = `dest_id` "
++        "ORDER BY `namecat`, `cat_id`, `namedest`", Table[0], Table[1], Table[2]);
++
++    nsNpcTel::TabCatDest.clear();
++
++    if (result)
++    {
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading %s, %s and %s...", Table[0], Table[1], Table[2]);
++        // barGoLink bar(result->GetRowCount());
++
++        uint32 catid = 0;
++        uint32 nbDest = 0;
++        bool IsValidCat = true;
++        bool FirstTime = true;
++
++        do
++        {
++            // bar.step();
++            Field *fields = result->Fetch();
++
++            if (!IsValidCat && catid == fields[3].GetUInt32() && !FirstTime)
++                continue;
++
++            IsValidCat = true;
++            FirstTime = false;
++
++            if (!nsNpcTel::IsValidData(fields[3].GetUInt32(), (nsNpcTel::Flag)fields[0].GetUInt8(),
++                                       fields[1].GetUInt64(), fields[2].GetUInt32()))
++            {
++                IsValidCat = false;
++                catid = fields[3].GetUInt32();
++                continue;
++            }
++
++            if (catid != fields[3].GetUInt32())
++            {
++                catid = fields[3].GetUInt32();
++                nsNpcTel::CatDest categorie (catid, fields[4].GetString(), (nsNpcTel::Flag)fields[0].GetUInt8(),
++                                             fields[1].GetUInt64(), fields[2].GetUInt32());
++                nsNpcTel::TabCatDest.push_back(categorie);
++            }
++
++            nsNpcTel::Dest item =
++            {
++                fields[5].GetString(),   // Name
++                fields[6].GetFloat(),       // X
++                fields[7].GetFloat(),       // Y
++                fields[8].GetFloat(),       // Z
++                fields[9].GetFloat(),       // Orientation
++                fields[10].GetUInt16(),     // Map
++                fields[11].GetUInt8(),      // Level
++                fields[12].GetUInt32(),     // Cost
++            };
++
++            nsNpcTel::TabCatDest.back().AddDest(item);
++            ++nbDest;
++        } while (result->NextRow());
++
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "");
++        sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loaded %u npc_teleport.", nbDest);
++    } else sLog->outError(LOG_FILTER_GENERAL, "WARNING >> Loaded 0 npc_teleport.");
++}
++
++
++#undef TELE
++#undef PAGE
++#undef PAGEI
+diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.h b/src/server/game/AI/ScriptedAI/sc_npc_teleport.h
+new file mode 100644
+index 0000000..4830245
+--- /dev/null
++++ b/src/server/game/AI/ScriptedAI/sc_npc_teleport.h
+@@ -0,0 +1,151 @@
++/**
++ *
++ * @File : sc_npc_teleport.h
++ *
++ * @Authors : Wilibald09
++ *
++ * @Date : 19/08/2008
++ *
++ * @Version : 1.2
++ *
++ **/
++
++
++#ifndef SC_NPC_TELEPORT_H
++#define SC_NPC_TELEPORT_H
++
++#include <vector>
++
++
++namespace nsNpcTel
++{
++    // Different types of permissions
++    enum Flag
++    {
++        FLAG_TEAM       = 0,
++        FLAG_GUILD      = 1,
++        FLAG_GMLEVEL    = 2,
++        FLAG_ISGM       = 3,
++        FLAG_ACCOUNT    = 4,
++        FLAG_LEVEL      = 5,
++        FLAG_ITEM       = 6,
++        FLAG_QUEST      = 7,
++        FLAG_GENDER     = 8,
++        FLAG_RACE       = 9,
++        FLAG_CLASS      = 10,
++        FLAG_REPUTATION = 11,
++        FLAG_PLAYER     = 12,
++        MAX_FLAG,
++    };
++
++    // Different parameters of FLAG_TEAM
++    enum
++    {
++        TEAM_ALL        = 0,
++        TEAM_ALLIANCE   = 1,
++        TEAM_HORDE      = 2,
++        MAX_FLAG_TEAM,
++    };
++
++    // Structure representing the destinations
++    struct Dest
++    {
++        std::string m_name;
++        float       m_X, m_Y, m_Z, m_orient;
++        uint16      m_map;
++        uint8       m_level;
++        uint32      m_cost;
++    };
++
++    // Class representing the categories of destinations
++    class CatDest
++    {
++      public:
++
++        typedef std::vector<Dest> VDest;
++        typedef VDest::size_type  VDest_t;
++
++        CatDest(const uint32 &id, const std::string &name,
++                const Flag &flag, const uint64 &data0, const uint32 &data1);
++
++        void   AddDest  (const Dest &item)       { m_TabDest.push_back(item); }
++        Dest   GetDest  (const uint32 &id) const { return m_TabDest[id]; }
++        uint32 GetCatID (void)             const { return m_id; }
++        uint32 size     (void)             const { return m_TabDest.size(); }
++
++        std::string GetName(const bool IsGM = false)    const;
++        bool IsAllowedToTeleport(Player * const player) const;
++
++        static uint32 CountOfCategoryAllowedBy(Player * const player);
++
++      private:
++
++        uint32      m_id;
++        std::string m_name;
++        Flag        m_flag;
++        uint64      m_data0;
++        uint32      m_data1;
++        VDest       m_TabDest;
++    };
++
++    // Class page for current player
++    class Page
++    {
++      protected:
++
++        // Class instance for current player
++        class Instance
++        {
++          public:
++
++            Instance(Player * const player, const uint32 &PageId = 0)
++                : m_player(player), m_PageId(PageId) {}
++
++            Instance & operator =  (const uint32 &id);
++            Instance & operator ++ (void);
++            Instance   operator ++ (int32);
++            Instance & operator -- (void);
++            Instance   operator -- (int32);
++
++            uint32   GetPageId(void) const { return m_PageId; }
++            Player * GetPlayer(void) const { return m_player; }
++
++          private:
++
++            Player *m_player;
++            uint32  m_PageId;
++        };
++
++
++      public:
++
++        typedef std::vector<Instance> VInst;
++        typedef VInst::size_type      VInst_t;
++
++        Page(void) { m_TabInstance.clear(); }
++
++        Instance &   operator () (Player * const player);
++        uint32 operator [] (Player * const player) const;
++
++
++      private:
++
++        VInst m_TabInstance;
++    };
++
++    typedef std::vector <CatDest> VCatDest;
++    typedef VCatDest::size_type   VCatDest_t;
++
++    // Verification of data integrity
++    bool IsValidData(const uint32 &cat,   const Flag &flag,
++                     const uint64 &data0, const uint32 &data1);
++
++    extern VCatDest TabCatDest;
++}
++
++// Loading contents of database
++void LoadNpcTele(void);
++
++extern WorldDatabaseWorkerPool WorldDatabase;
++
++#endif
+diff --git a/src/server/game/Achievements/AchievementMgr.cpp b/src/server/game/Achievements/AchievementMgr.cpp
+index 2fd55ac..1292234 100644
+--- a/src/server/game/Achievements/AchievementMgr.cpp
++++ b/src/server/game/Achievements/AchievementMgr.cpp
+@@ -2043,6 +2043,12 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
+         achievement->ID, m_player->GetName().c_str(), m_player->GetGUIDLow());
+ 
+     SendAchievementEarned(achievement);
++
++       /** World of Warcraft Armory **/
++    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++        GetPlayer()->CreateWowarmoryFeed(1, achievement->ID, 0, 0);
++    /** World of Warcraft Armory **/
++
+     CompletedAchievementData& ca = m_completedAchievements[achievement->ID];
+     ca.date = time(NULL);
+     ca.changed = true;
+diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
+index e717a10..74bfd5c 100644
+--- a/src/server/game/Battlegrounds/Battleground.cpp
++++ b/src/server/game/Battlegrounds/Battleground.cpp
+@@ -1397,6 +1397,14 @@ void Battleground::UpdatePlayerScore(Player* Source, uint32 type, uint32 value,
+         case SCORE_HEALING_DONE:                            // Healing Done
+             itr->second->HealingDone += value;
+             break;
++                               /** World of Warcraft Armory **/
++        case SCORE_DAMAGE_TAKEN:
++            itr->second->DamageTaken += value;              // Damage Taken
++            break;
++        case SCORE_HEALING_TAKEN:
++            itr->second->HealingTaken += value;             // Healing Taken
++            break;
++        /** World of Warcraft Armory **/
+         default:
+             sLog->outError(LOG_FILTER_BATTLEGROUND, "Battleground::UpdatePlayerScore: unknown score type (%u) for BG (map: %u, instance id: %u)!",
+                 type, m_MapId, m_InstanceID);
+diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
+index 8aba0ae..1b29cb3 100644
+--- a/src/server/game/Battlegrounds/Battleground.h
++++ b/src/server/game/Battlegrounds/Battleground.h
+@@ -193,7 +193,11 @@ enum ScoreType
+     SCORE_SECONDARY_OBJECTIVES  = 17,
+     //SOTA
+     SCORE_DESTROYED_DEMOLISHER  = 18,
+-    SCORE_DESTROYED_WALL        = 19
++    SCORE_DESTROYED_WALL        = 19,
++    /** World of Warcraft Armory **/
++    SCORE_DAMAGE_TAKEN          = 20,
++    SCORE_HEALING_TAKEN         = 21
++    /** World of Warcraft Armory **/
+ };
+ 
+ enum ArenaType
+@@ -250,6 +254,10 @@ struct BattlegroundScore
+     uint32 BonusHonor;
+     uint32 DamageDone;
+     uint32 HealingDone;
++    /** World of Warcraft Armory **/
++    uint32 DamageTaken;
++    uint32 HealingTaken;
++    /** World of Warcraft Armory **/
+ };
+ 
+ enum BGHonorMode
+diff --git a/src/server/game/Entities/Item/Item.cpp b/src/server/game/Entities/Item/Item.cpp
+index 5dd7260..723e490 100644
+--- a/src/server/game/Entities/Item/Item.cpp
++++ b/src/server/game/Entities/Item/Item.cpp
+@@ -278,6 +278,17 @@ bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
+ 
+     SetUInt32Value(ITEM_FIELD_DURATION, itemProto->Duration);
+     SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, 0);
++       /** World of Warcraft Armory **/
++    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++    {
++        if (itemProto->Quality > 2 && itemProto->Flags != 2048 && (itemProto->Class == ITEM_CLASS_WEAPON || itemProto->Class == ITEM_CLASS_ARMOR))
++        {
++            if (!GetOwner())
++                return true;
++            GetOwner()->CreateWowarmoryFeed(2, itemid, guidlow, itemProto->Quality);
++        }
++    }
++    /** World of Warcraft Armory **/
+     return true;
+ }
+ 
+@@ -479,6 +490,7 @@ bool Item::LoadFromDB(uint32 guid, uint64 owner_guid, Field* fields, uint32 entr
+ /*static*/
+ void Item::DeleteFromDB(SQLTransaction& trans, uint32 itemGuid)
+ {
++    DeleteFakeFromDB(itemGuid); // custom
+     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ITEM_INSTANCE);
+     stmt->setUInt32(0, itemGuid);
+     trans->Append(stmt);
+@@ -1386,3 +1398,29 @@ void Item::ItemContainerDeleteLootMoneyAndLootItemsFromDB()
+     ItemContainerDeleteLootMoneyFromDB();
+     ItemContainerDeleteLootItemsFromDB();
+ }
++
++uint32 Item::GetFakeEntry() // custom
++{
++    ItemFakeEntryContainer::const_iterator itr = sObjectMgr->_itemFakeEntryStore.find(GetGUIDLow());
++    if (itr == sObjectMgr->_itemFakeEntryStore.end()) return NULL;
++    return itr->second;
++}
++bool Item::DeleteFakeEntry() // custom
++{
++    if (!GetFakeEntry())
++        return false;
++    GetOwner()->UpdateUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (GetSlot() * 2), GetEntry());
++    DeleteFakeFromDB(GetGUIDLow());
++    return true;
++}
++void Item::DeleteFakeFromDB(uint32 lowGUID) // custom
++{
++    sObjectMgr->_itemFakeEntryStore.erase(lowGUID);
++    CharacterDatabase.PExecute("DELETE FROM custom_transmogrification WHERE GUID = %u", lowGUID);
++}
++void Item::SetFakeEntry(uint32 entry) // custom
++{
++    GetOwner()->UpdateUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (GetSlot() * 2), entry);
++    sObjectMgr->_itemFakeEntryStore[GetGUIDLow()] = entry;
++    CharacterDatabase.PExecute("REPLACE INTO custom_transmogrification (GUID, FakeEntry) VALUES (%u, %u)", GetGUIDLow(), entry);
++}
+\ No newline at end of file
+diff --git a/src/server/game/Entities/Item/Item.h b/src/server/game/Entities/Item/Item.h
+index 2f5ba02..64fb1a2 100644
+--- a/src/server/game/Entities/Item/Item.h
++++ b/src/server/game/Entities/Item/Item.h
+@@ -349,6 +349,12 @@ class Item : public Object
+ 
+         void BuildUpdate(UpdateDataMapType&);
+ 
++        // custom
++        uint32 GetFakeEntry();
++        bool DeleteFakeEntry();
++        static void DeleteFakeFromDB(uint32 lowGUID);
++        void SetFakeEntry(uint32 entry);
++
+         uint32 GetScriptId() const { return GetTemplate()->ScriptId; }
+     private:
+         std::string m_text;
+diff --git a/src/server/game/Entities/Item/ItemPrototype.h b/src/server/game/Entities/Item/ItemPrototype.h
+index f689237..fe8ee13 100644
+--- a/src/server/game/Entities/Item/ItemPrototype.h
++++ b/src/server/game/Entities/Item/ItemPrototype.h
+@@ -751,6 +751,8 @@ struct ItemTemplate
+ // Benchmarked: Faster than std::map (insert/find)
+ typedef UNORDERED_MAP<uint32, ItemTemplate> ItemTemplateContainer;
+ 
++typedef UNORDERED_MAP<uint32, uint32> ItemFakeEntryContainer; // custom
++
+ struct ItemLocale
+ {
+     StringVector Name;
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index 073fadd..293dc6d 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -78,6 +78,7 @@
+ #include "World.h"
+ #include "WorldPacket.h"
+ #include "WorldSession.h"
++#include "../../../scripts/Custom/Transmogrification.h"
+ 
+ #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
+ 
+@@ -1744,6 +1745,10 @@ void Player::Update(uint32 p_time)
+             sScriptMgr->OnPlayerSave(this);
+             SaveToDB();
+             sLog->outDebug(LOG_FILTER_PLAYER, "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
++            // If Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min) 
++            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++                CharacterDatabase.PExecute("UPDATE characters_fake SET zone = (FLOOR(50 * RAND()) + 1) WHERE online>1"); 
++                CharacterDatabase.PExecute("UPDATE characters_fake SET level=level+1 WHERE online>1 AND level<5"); 
+         }
+         else
+             m_nextSave -= p_time;
+@@ -4952,6 +4957,12 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+             stmt->setUInt32(0, guid);
+             trans->Append(stmt);
+ 
++                       /* World of Warcraft Armory */
++            trans->PAppend("DELETE FROM armory_character_stats WHERE guid = '%u'",guid);
++            trans->PAppend("DELETE FROM character_feed_log WHERE guid = '%u'",guid);
++            /* World of Warcraft Armory */
++
++
+             CharacterDatabase.CommitTransaction(trans);
+             break;
+         }
+@@ -12363,7 +12374,11 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+ {
+     if (pItem)
+     {
+-        SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), pItem->GetEntry());
++        // custom
++        if (pItem->GetFakeEntry())
++            SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), pItem->GetFakeEntry());
++        else
++            SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), pItem->GetEntry());
+         SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
+         SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
+     }
+@@ -12484,6 +12499,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+ {
+     if (Item* it = GetItemByPos(bag, slot))
+     {
++        it->DeleteFakeFromDB(it->GetGUIDLow()); // custom
+         ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
+         RemoveItem(bag, slot, update);
+         it->SetNotRefundable(this, false);
+@@ -16768,6 +16784,8 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+         CharacterDatabase.Execute(stmt);
+         return false;
+     }
++       // Cleanup old Wowarmory feeds
++    InitWowarmoryFeeds();
+ 
+     // overwrite possible wrong/corrupted guid
+     SetUInt64Value(OBJECT_FIELD_GUID, MAKE_NEW_GUID(guid, 0, HIGHGUID_PLAYER));
+@@ -18949,6 +18967,33 @@ void Player::SaveToDB(bool create /*=false*/)
+ 
+     CharacterDatabase.CommitTransaction(trans);
+ 
++           /* World of Warcraft Armory */
++    // Place this code AFTER CharacterDatabase.CommitTransaction(); to avoid some character saving errors.
++    // Wowarmory feeds
++    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++    {
++        std::ostringstream sWowarmory;
++        for (WowarmoryFeeds::iterator iter = m_wowarmory_feeds.begin(); iter < m_wowarmory_feeds.end(); ++iter) {
++            sWowarmory << "INSERT IGNORE INTO character_feed_log (guid,type,data,date,counter,difficulty,item_guid,item_quality) VALUES ";
++            //                      guid                    type                        data                    date                            counter                   difficulty                        item_guid                      item_quality
++            sWowarmory << "(" << (*iter).guid << ", " << (*iter).type << ", " << (*iter).data << ", " << uint64((*iter).date) << ", " << (*iter).counter << ", " << uint32((*iter).difficulty) << ", " << (*iter).item_guid << ", " << (*iter).item_quality <<  ");";
++            CharacterDatabase.PExecute(sWowarmory.str().c_str());
++            sWowarmory.str("");
++        }
++        // Clear old saved feeds from storage - they are not required for server core.
++        InitWowarmoryFeeds();
++        // Character stats
++        std::ostringstream ps;
++        time_t t = time(NULL);
++        CharacterDatabase.PExecute("DELETE FROM armory_character_stats WHERE guid = %u", GetGUIDLow());
++        ps << "INSERT INTO armory_character_stats (guid, data, save_date) VALUES (" << GetGUIDLow() << ", '";
++        for (uint16 i = 0; i < m_valuesCount; ++i)
++            ps << GetUInt32Value(i) << " ";
++        ps << "', " << uint64(t) << ");";
++        CharacterDatabase.PExecute(ps.str().c_str());
++    }
++    /* World of Warcraft Armory */
++
+     // save pet (hunter pet level and experience and all type pets health/mana).
+     if (Pet* pet = GetPet())
+         pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+@@ -25667,6 +25712,47 @@ void Player::_SaveInstanceTimeRestrictions(SQLTransaction& trans)
+     }
+ }
+ 
++/** World of Warcraft Armory **/
++void Player::InitWowarmoryFeeds() {
++    // Clear feeds
++    m_wowarmory_feeds.clear();
++}
++
++void Player::CreateWowarmoryFeed(uint32 type, uint32 data, uint32 item_guid, uint32 item_quality) {
++    /*
++        1 - TYPE_ACHIEVEMENT_FEED
++        2 - TYPE_ITEM_FEED
++        3 - TYPE_BOSS_FEED
++    */
++    if (GetGUIDLow() == 0)
++    {
++        sLog->outError(LOG_FILTER_SQL, "[Wowarmory]: player is not initialized, unable to create log entry!");
++        return;
++    }
++    if (type <= 0 || type > 3)
++    {
++        sLog->outError(LOG_FILTER_SQL, "[Wowarmory]: unknown feed type: %d, ignore.", type);
++        return;
++    }
++    if (data == 0)
++    {
++        sLog->outError(LOG_FILTER_SQL, "[Wowarmory]: empty data (GUID: %u), ignore.", GetGUIDLow());
++        return;
++    }
++    WowarmoryFeedEntry feed;
++    feed.guid = GetGUIDLow();
++    feed.type = type;
++    feed.data = data;
++    feed.difficulty = type == 3 ? GetMap()->GetDifficulty() : 0;
++    feed.item_guid  = item_guid;
++    feed.item_quality = item_quality;
++    feed.counter = 0;
++    feed.date = time(NULL);
++    sLog->outDebug(LOG_FILTER_UNITS, "[Wowarmory]: create wowarmory feed (GUID: %u, type: %d, data: %u).", feed.guid, feed.type, feed.data);
++    m_wowarmory_feeds.push_back(feed);
++}
++/** World of Warcraft Armory **/
++
+ bool Player::IsInWhisperWhiteList(uint64 guid)
+ {
+     for (WhisperListContainer::const_iterator itr = WhisperList.begin(); itr != WhisperList.end(); ++itr)
+@@ -25837,3 +25923,48 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
+ 
+     return pet;
+ }
++
++uint32 Player::SuitableForTransmogrification(Item* oldItem, Item* newItem) // custom
++{
++    // not possibly the best structure here, but atleast I got my head around this
++    if (!sTransmogrification->AllowedQuality(newItem->GetTemplate()->Quality))
++        return ERR_FAKE_NEW_BAD_QUALITY;
++    if (!sTransmogrification->AllowedQuality(oldItem->GetTemplate()->Quality))
++        return ERR_FAKE_OLD_BAD_QUALITY;
++
++    if (oldItem->GetTemplate()->DisplayInfoID == newItem->GetTemplate()->DisplayInfoID)
++        return ERR_FAKE_SAME_DISPLAY;
++    if (oldItem->GetFakeEntry())
++        if (const ItemTemplate* fakeItemTemplate = sObjectMgr->GetItemTemplate(oldItem->GetFakeEntry()))
++            if (fakeItemTemplate->DisplayInfoID == newItem->GetTemplate()->DisplayInfoID)
++                return ERR_FAKE_SAME_DISPLAY_FAKE;
++    if (CanUseItem(newItem, false) != EQUIP_ERR_OK)
++        return ERR_FAKE_CANT_USE;
++    uint32 newClass = newItem->GetTemplate()->Class;
++    uint32 oldClass = oldItem->GetTemplate()->Class;
++    uint32 newSubClass = newItem->GetTemplate()->SubClass;
++    uint32 oldSubClass = oldItem->GetTemplate()->SubClass;
++    uint32 newInventorytype = newItem->GetTemplate()->InventoryType;
++    uint32 oldInventorytype = oldItem->GetTemplate()->InventoryType;
++    if (newClass != oldClass)
++        return ERR_FAKE_NOT_SAME_CLASS;
++    if (newClass == ITEM_CLASS_WEAPON && newSubClass != ITEM_SUBCLASS_WEAPON_FISHING_POLE && oldSubClass != ITEM_SUBCLASS_WEAPON_FISHING_POLE)
++    {
++        if (newSubClass == oldSubClass || ((newSubClass == ITEM_SUBCLASS_WEAPON_BOW || newSubClass == ITEM_SUBCLASS_WEAPON_GUN || newSubClass == ITEM_SUBCLASS_WEAPON_CROSSBOW) && (oldSubClass == ITEM_SUBCLASS_WEAPON_BOW || oldSubClass == ITEM_SUBCLASS_WEAPON_GUN || oldSubClass == ITEM_SUBCLASS_WEAPON_CROSSBOW)))
++            if (newInventorytype == oldInventorytype || (newInventorytype == INVTYPE_WEAPON && (oldInventorytype == INVTYPE_WEAPONMAINHAND || oldInventorytype == INVTYPE_WEAPONOFFHAND)))
++                return ERR_FAKE_OK;
++            else
++                return ERR_FAKE_BAD_INVENTORYTYPE;
++        else
++            return ERR_FAKE_BAD_SUBLCASS;
++    }
++    else if (newClass == ITEM_CLASS_ARMOR)
++        if (newSubClass == oldSubClass)
++            if (newInventorytype == oldInventorytype || (newInventorytype == INVTYPE_CHEST && oldInventorytype == INVTYPE_ROBE) || (newInventorytype == INVTYPE_ROBE && oldInventorytype == INVTYPE_CHEST))
++                return ERR_FAKE_OK;
++            else
++                return ERR_FAKE_BAD_INVENTORYTYPE;
++        else
++            return ERR_FAKE_BAD_SUBLCASS;
++    return ERR_FAKE_BAD_CLASS;
++}
+diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
+index 52e81d6..e0a271a 100644
+--- a/src/server/game/Entities/Player/Player.h
++++ b/src/server/game/Entities/Player/Player.h
+@@ -85,6 +85,20 @@ enum BuyBankSlotResult
+     ERR_BANKSLOT_OK                 = 3
+ };
+ 
++enum TransmogrificationResult // custom
++{
++    ERR_FAKE_NEW_BAD_QUALITY,
++    ERR_FAKE_OLD_BAD_QUALITY,
++    ERR_FAKE_SAME_DISPLAY,
++    ERR_FAKE_SAME_DISPLAY_FAKE,
++    ERR_FAKE_CANT_USE,
++    ERR_FAKE_NOT_SAME_CLASS,
++    ERR_FAKE_BAD_CLASS,
++    ERR_FAKE_BAD_SUBLCASS,
++    ERR_FAKE_BAD_INVENTORYTYPE,
++    ERR_FAKE_OK
++};
++
+ enum PlayerSpellState
+ {
+     PLAYERSPELL_UNCHANGED = 0,
+@@ -1056,6 +1070,21 @@ private:
+     bool _isPvP;
+ };
+ 
++/* World of Warcraft Armory */
++struct WowarmoryFeedEntry {
++    uint32 guid;         // Player GUID
++    time_t date;         // Log date
++    uint32 type;         // TYPE_ACHIEVEMENT_FEED, TYPE_ITEM_FEED, TYPE_BOSS_FEED
++    uint32 data;         // TYPE_ITEM_FEED: item_entry, TYPE_BOSS_FEED: creature_entry
++    uint32 item_guid;    // Can be 0
++    uint32 item_quality; // Can be 0
++    uint8  difficulty;   // Can be 0
++    int    counter;      // Can be 0
++};
++
++typedef std::vector<WowarmoryFeedEntry> WowarmoryFeeds;
++/* World of Warcraft Armory */
++
+ class Player : public Unit, public GridObject<Player>
+ {
+     friend class WorldSession;
+@@ -2362,6 +2391,10 @@ class Player : public Unit, public GridObject<Player>
+         void SendCinematicStart(uint32 CinematicSequenceId);
+         void SendMovieStart(uint32 MovieId);
+ 
++           /* World of Warcraft Armory */
++        void CreateWowarmoryFeed(uint32 type, uint32 data, uint32 item_guid, uint32 item_quality);
++        void InitWowarmoryFeeds();
++        /* World of Warcraft Armory */
+         /*********************************************************/
+         /***                 INSTANCE SYSTEM                   ***/
+         /*********************************************************/
+@@ -2531,6 +2564,8 @@ class Player : public Unit, public GridObject<Player>
+             }
+         }
+ 
++        uint32 SuitableForTransmogrification(Item* oldItem, Item* newItem); // custom
++
+     protected:
+         // Gamemaster whisper whitelist
+         WhisperListContainer WhisperList;
+@@ -2859,6 +2894,8 @@ class Player : public Unit, public GridObject<Player>
+         uint32 m_timeSyncTimer;
+         uint32 m_timeSyncClient;
+         uint32 m_timeSyncServer;
++               // World of Warcraft Armory Feeds
++        WowarmoryFeeds m_wowarmory_feeds;
+ 
+         InstanceTimeMap _instanceResetTimes;
+         uint32 _pendingBindId;
+diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
+index 49b86cf..2638f50 100644
+--- a/src/server/game/Entities/Unit/Unit.cpp
++++ b/src/server/game/Entities/Unit/Unit.cpp
+@@ -685,8 +685,17 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
+ 
+         // in bg, count dmg if victim is also a player
+         if (victim->GetTypeId() == TYPEID_PLAYER)
++               {
+             if (Battleground* bg = killer->GetBattleground())
++                       {
+                 bg->UpdatePlayerScore(killer, SCORE_DAMAGE_DONE, damage);
++               /** World of Warcraft Armory **/
++                if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++                    if (Battleground *bgV = ((Player*)victim)->GetBattleground())
++                        bgV->UpdatePlayerScore(((Player*)victim), SCORE_DAMAGE_TAKEN, damage);
++                /** World of Warcraft Armory **/
++            }
++        }
+ 
+         killer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_DAMAGE_DONE, damage, 0, victim);
+         killer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HIT_DEALT, damage);
+@@ -10140,7 +10149,11 @@ int32 Unit::DealHeal(Unit* victim, uint32 addhealth)
+         player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_HEALING_RECEIVED, gain);
+         player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALING_RECEIVED, addhealth);
+     }
+-
++    /** World of Warcraft Armory **/
++    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++        if (Battleground *bgV = victim->ToPlayer()->GetBattleground())
++            bgV->UpdatePlayerScore((Player*)victim, SCORE_HEALING_TAKEN, gain);
++    /** World of Warcraft Armory **/
+     return gain;
+ }
+ 
+@@ -15816,7 +15829,13 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
+                 if (instanceMap->IsRaidOrHeroicDungeon())
+                 {
+                     if (creature->GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_INSTANCE_BIND)
++                                       {
+                         ((InstanceMap*)instanceMap)->PermBindAllPlayers(creditedPlayer);
++                                       /** World of Warcraft Armory **/
++                        if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
++                            creditedPlayer->CreateWowarmoryFeed(3, creature->GetCreatureTemplate()->Entry, 0, 0);
++                        /** World of Warcraft Armory **/
++                    }
+                 }
+                 else
+                 {
+diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
+index 3025779..7bea3e1 100644
+--- a/src/server/game/Globals/ObjectMgr.cpp
++++ b/src/server/game/Globals/ObjectMgr.cpp
+@@ -1991,6 +1991,32 @@ uint32 ObjectMgr::GetPlayerAccountIdByPlayerName(const std::string& name) const
+     return 0;
+ }
+ 
++void ObjectMgr::LoadTransmogrifications() // custom
++{
++    sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Deleting non-existing transmogrification entries...");
++    CharacterDatabase.Execute("DELETE FROM custom_transmogrification WHERE NOT EXISTS (SELECT 1 FROM item_instance WHERE item_instance.guid = custom_transmogrification.GUID)");
++
++    uint32 oldMSTime = getMSTime();
++    _itemFakeEntryStore.clear();
++    QueryResult result = CharacterDatabase.Query("SELECT GUID, FakeEntry FROM custom_transmogrification WHERE EXISTS (SELECT 1 FROM item_instance WHERE item_instance.guid = custom_transmogrification.GUID)");
++    if (result)
++    {
++        do
++        {
++            uint32 lowGUID = (*result)[0].GetUInt32();
++            uint32 entry = (*result)[1].GetUInt32();
++            if (GetItemTemplate(entry))
++                _itemFakeEntryStore[lowGUID] = entry;
++            else
++            {
++                sLog->outError(LOG_FILTER_SQL, "Item entry (Entry: %u, GUID: %u) does not exist, deleting.", entry, lowGUID);
++                CharacterDatabase.PExecute("DELETE FROM custom_transmogrification WHERE GUID = %u", lowGUID);
++            }
++        } while (result->NextRow());
++    }
++    sLog->outInfo(LOG_FILTER_SERVER_LOADING, ">> Loaded %lu Item fake entries in %u ms", (unsigned long)_itemFakeEntryStore.size(), GetMSTimeDiffToNow(oldMSTime));
++}
++
+ void ObjectMgr::LoadItemLocales()
+ {
+     uint32 oldMSTime = getMSTime();
+diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
+index 9339684..18c8153 100644
+--- a/src/server/game/Globals/ObjectMgr.h
++++ b/src/server/game/Globals/ObjectMgr.h
+@@ -888,6 +888,7 @@ class ObjectMgr
+         void LoadItemLocales();
+         void LoadItemSetNames();
+         void LoadItemSetNameLocales();
++        void LoadTransmogrifications();
+         void LoadQuestLocales();
+         void LoadNpcTextLocales();
+         void LoadPageTextLocales();
+@@ -1176,6 +1177,8 @@ class ObjectMgr
+         void LoadFactionChangeReputations();
+         void LoadFactionChangeTitles();
+ 
++        ItemFakeEntryContainer _itemFakeEntryStore; // custom
++
+     private:
+         // first free id for selected id type
+         uint32 _auctionId;
+diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
+index d04d365..f8cdc8e 100644
+--- a/src/server/game/Handlers/ChatHandler.cpp
++++ b/src/server/game/Handlers/ChatHandler.cpp
+@@ -277,8 +277,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+             bool receiverIsPlayer = AccountMgr::IsPlayerAccount(receiver ? receiver->GetSession()->GetSecurity() : SEC_PLAYER);
+             if (!receiver || (senderIsPlayer && !receiverIsPlayer && !receiver->isAcceptWhispers() && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
+             {
++                // If Fake WHO List system on then show player DND 
++                if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++                { 
++                    sWorld->SendWorldText(LANG_NOT_WHISPER); 
++                    return; 
++                } 
++                else 
++                { 
+                 SendPlayerNotFoundNotice(to);
+                 return;
++                }
+             }
+ 
+             if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHAT) && senderIsPlayer && receiverIsPlayer)
+diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
+index c16a33a..b9fd851 100644
+--- a/src/server/game/Handlers/MiscHandler.cpp
++++ b/src/server/game/Handlers/MiscHandler.cpp
+@@ -360,8 +360,40 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+ 
+         ++displaycount;
+     }
+-
+-    data.put(0, displaycount);                            // insert right count, count displayed
++	
++    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49) 
++    { 
++        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5 
++        QueryResult result = CharacterDatabase.Query("SELECT name,race,class,level,zone,gender FROM characters_fake WHERE online>1 AND level > 3"); 
++        if (result) 
++        { 
++            do 
++            { 
++                Field *fields = result->Fetch(); 
++ 
++                std::string pname = fields[1].GetString();    // player name 
++                std::string gname;                                // guild name 
++                uint32 lvl = fields[4].GetUInt32();                // player level 
++                uint32 class_ = fields[3].GetUInt32();            // player class 
++                uint32 race = fields[2].GetUInt32();            // player race 
++                uint32 pzoneid = fields[5].GetUInt32();            // player zone id 
++                uint8 gender = fields[6].GetUInt8();            // player gender 
++ 
++                data << pname;                              // player name 
++                data << gname;                              // guild name 
++                data << uint32(lvl);                        // player level 
++                data << uint32(class_);                     // player class 
++                data << uint32(race);                       // player race 
++                data << uint8(gender);                      // player gender 
++                data << uint32(pzoneid);                    // player zone id 
++ 
++                if ((++matchcount) == 49) 
++                    break; 
++            } while (result->NextRow()); 
++        } 
++    } 
++ 
++    data.put(0, matchcount);                            // insert right count, count displayed
+     data.put(4, matchcount);                              // insert right count, count of matches
+ 
+     SendPacket(&data);
+diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
+index 35b0a6f..b24f3d2 100644
+--- a/src/server/game/Miscellaneous/Language.h
++++ b/src/server/game/Miscellaneous/Language.h
+@@ -1125,7 +1125,41 @@ enum TrinityStrings
+     LANG_AUTO_BROADCAST                 = 11000,
+     LANG_INVALID_REALMID                = 11001,
+ 
++    LANG_REM_TRANSMOGRIFICATIONS_ITEMS  = 11100,
++    LANG_ERR_NO_TRANSMOGRIFICATIONS     = 11101,
++    LANG_REM_TRANSMOGRIFICATION_ITEM    = 11102,
++    LANG_ERR_NO_TRANSMOGRIFICATION      = 11103,
++    LANG_ITEM_TRANSMOGRIFIED            = 11104,
++    LANG_ERR_NO_ITEM_SUITABLE           = 11105,
++    LANG_ERR_NO_ITEM_EXISTS             = 11106,
++    LANG_ERR_EQUIP_SLOT_EMPTY           = 11107,
++
++    LANG_SLOT_NAME_HEAD                 = 11108,
++    LANG_SLOT_NAME_SHOULDERS            = 11109,
++    LANG_SLOT_NAME_BODY                 = 11110,
++    LANG_SLOT_NAME_CHEST                = 11111,
++    LANG_SLOT_NAME_WAIST                = 11112,
++    LANG_SLOT_NAME_LEGS                 = 11113,
++    LANG_SLOT_NAME_FEET                 = 11114,
++    LANG_SLOT_NAME_WRISTS               = 11115,
++    LANG_SLOT_NAME_HANDS                = 11116,
++    LANG_SLOT_NAME_BACK                 = 11117,
++    LANG_SLOT_NAME_MAINHAND             = 11118,
++    LANG_SLOT_NAME_OFFHAND              = 11119,
++    LANG_SLOT_NAME_RANGED               = 11120,
++    LANG_SLOT_NAME_TABARD               = 11121,
++
++    LANG_OPTION_BACK                    = 11122,
++    LANG_OPTION_REMOVE_ALL              = 11123,
++    LANG_POPUP_REMOVE_ALL               = 11124,
++    LANG_OPTION_UPDATE_MENU             = 11125,
++    LANG_OPTION_REMOVE_ONE              = 11126,
++    LANG_POPUP_REMOVE_ONE               = 11127,
++    LANG_POPUP_TRANSMOGRIFY             = 11128,
++
++    LANG_ERR_NO_TOKEN                   = 11129,
+     // NOT RESERVED IDS                   12000-1999999999
++    LANG_NOT_WHISPER                    = 12001, 
+     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // For other tables maybe             2000010000-2147483647 (max index)
+ };
+diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
+index 3e30e95..f676f44 100644
+--- a/src/server/game/Scripting/ScriptLoader.cpp
++++ b/src/server/game/Scripting/ScriptLoader.cpp
+@@ -24,6 +24,9 @@ void AddSC_example_gossip_codebox();
+ void AddSC_example_misc();
+ void AddSC_example_commandscript();
+ 
++//TeleNPC2
++void AddSC_npc_teleport();
++
+ // spells
+ void AddSC_deathknight_spell_scripts();
+ void AddSC_druid_spell_scripts();
+@@ -1285,12 +1288,16 @@ void AddBattlegroundScripts()
+ #ifdef SCRIPTS
+ /* This is where custom scripts' loading functions should be declared. */
+ 
++void AddSC_NPC_Transmogrify();
+ #endif
+ 
+ void AddCustomScripts()
+ {
+ #ifdef SCRIPTS
+     /* This is where custom scripts should be added. */
+-
++    // Transmogrification
++    AddSC_NPC_Transmogrify();
++    // TeleNPC2
++    AddSC_npc_teleport();
+ #endif
+ }
+diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
+index cae8ea9..366bf7b 100644
+--- a/src/server/game/Scripting/ScriptMgr.cpp
++++ b/src/server/game/Scripting/ScriptMgr.cpp
+@@ -23,6 +23,7 @@
+ #include "ObjectMgr.h"
+ #include "OutdoorPvPMgr.h"
+ #include "ScriptLoader.h"
++#include "sc_npc_teleport.h"
+ #include "ScriptSystem.h"
+ #include "Transport.h"
+ #include "Vehicle.h"
+@@ -176,6 +177,8 @@ void ScriptMgr::Initialize()
+     uint32 oldMSTime = getMSTime();
+ 
+     LoadDatabase();
++       // Load TeleNPC2 - maybe not the best place to load it ...
++       LoadNpcTele();
+ 
+     sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading C++ scripts");
+ 
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index 2536ad6..4ba9186 100644
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -665,6 +665,7 @@ void World::LoadConfigSettings(bool reload)
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_WHO_LIST]            = ConfigMgr::GetBoolDefault("AllowTwoSide.WhoList", false);
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_ADD_FRIEND]          = ConfigMgr::GetBoolDefault("AllowTwoSide.AddFriend", false);
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_TRADE]               = ConfigMgr::GetBoolDefault("AllowTwoSide.trade", false);
++    m_bool_configs[CONFIG_FAKE_WHO_LIST]					  = ConfigMgr::GetBoolDefault("Fake.WHO.List", false);
+     m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = ConfigMgr::GetIntDefault ("StrictPlayerNames",  0);
+     m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = ConfigMgr::GetIntDefault ("StrictCharterNames", 0);
+     m_int_configs[CONFIG_STRICT_PET_NAMES]                    = ConfigMgr::GetIntDefault ("StrictPetNames",     0);
+@@ -1205,6 +1206,10 @@ void World::LoadConfigSettings(bool reload)
+         m_timers[WUPDATE_AUTOBROADCAST].Reset();
+     }
+ 
++       /** World of Warcraft Armory **/
++    m_bool_configs[CONFIG_ARMORY_ENABLE] = ConfigMgr::GetBoolDefault("Armory.Enable", true);
++    /** World of Warcraft Armory **/
++
+     // MySQL ping time interval
+     m_int_configs[CONFIG_DB_PING_INTERVAL] = ConfigMgr::GetIntDefault("MaxPingTime", 30);
+ 
+@@ -1391,6 +1396,9 @@ void World::SetInitialWorldSettings()
+     sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading Item set names...");                // must be after LoadItemPrototypes
+     sObjectMgr->LoadItemSetNames();
+ 
++    sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading Transmogrifications...");           // custom must be after LoadItemTemplates
++    sObjectMgr->LoadTransmogrifications();
++
+     sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Loading Creature Model Based Info Data...");
+     sObjectMgr->LoadCreatureModelInfo();
+ 
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 768f1d3..b191688 100644
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -101,6 +101,7 @@ enum WorldBoolConfigs
+     CONFIG_ALLOW_TWO_SIDE_WHO_LIST,
+     CONFIG_ALLOW_TWO_SIDE_ADD_FRIEND,
+     CONFIG_ALLOW_TWO_SIDE_TRADE,
++	CONFIG_FAKE_WHO_LIST,
+     CONFIG_ALL_TAXI_PATHS,
+     CONFIG_INSTANT_TAXI,
+     CONFIG_INSTANCE_IGNORE_LEVEL,
+@@ -159,6 +160,7 @@ enum WorldBoolConfigs
+     CONFIG_ALLOW_TICKETS,
+     CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
+     CONFIG_PRESERVE_CUSTOM_CHANNELS,
++       CONFIG_ARMORY_ENABLE,
+     CONFIG_PDUMP_NO_PATHS,
+     CONFIG_PDUMP_NO_OVERWRITE,
+     CONFIG_QUEST_IGNORE_AUTO_ACCEPT,
+diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
+index 9726cc1..fe4e676 100644
+--- a/src/server/scripts/CMakeLists.txt
++++ b/src/server/scripts/CMakeLists.txt
+@@ -24,6 +24,9 @@ include(Examples/CMakeLists.txt)
+ 
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
++  Custom/npc_teleport.cpp
++  ../game/AI/ScriptedAI/sc_npc_teleport.cpp
++  ../game/AI/ScriptedAI/sc_npc_teleport.h
+   ../game/AI/ScriptedAI/ScriptedEscortAI.cpp
+   ../game/AI/ScriptedAI/ScriptedCreature.cpp
+   ../game/AI/ScriptedAI/ScriptedFollowerAI.cpp
+diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
+index 99cf026..6fdc8d2 100644
+--- a/src/server/scripts/Custom/CMakeLists.txt
++++ b/src/server/scripts/Custom/CMakeLists.txt
+@@ -10,6 +10,8 @@
+ 
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
++    Custom/Transmogrification.cpp
++    Custom/Transmogrification.h
+ )
+ 
+ message("  -> Prepared: Custom")
+diff --git a/src/server/scripts/Custom/Transmogrification.cpp b/src/server/scripts/Custom/Transmogrification.cpp
+new file mode 100644
+index 0000000..d2e047d
+--- /dev/null
++++ b/src/server/scripts/Custom/Transmogrification.cpp
+@@ -0,0 +1,275 @@
++/*
++3.7
++Transmogrification 3.3.5a - Gossip Menu
++By Rochet2
++
++ScriptName for NPC:
++NPC_Transmogrify
++
++
++TODO:
++Make DB saving even better (Deleting)? What about coding?
++
++Fix the cost formula
++
++TODO in the distant future:
++
++Are the qualities right? Blizzard might have changed the quality requirements.
++What can and cant be used as source or target..?
++
++Cant transmogrify:
++rediculus _items // Foereaper: would be fun to stab people with a fish
++-- Cant think of any good way to handle this easily
++
++Cataclysm:
++Test on cata -> implement UI xD?
++Item link icon to Are You sure text
++*/
++
++#include "ScriptPCH.h"
++#include "Transmogrification.h"
++#include "Language.h"
++
++class NPC_Transmogrify : public CreatureScript
++{
++public:
++    NPC_Transmogrify() : CreatureScript("NPC_Transmogrify") { }
++
++    bool OnGossipHello(Player* player, Creature* creature)
++    {
++        WorldSession* session = player->GetSession();
++        for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_TABARD; slot++) // EQUIPMENT_SLOT_END
++        {
++            if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++            {
++                if (sTransmogrification->AllowedQuality(newItem->GetTemplate()->Quality))
++                {
++                    if (const char* slotName = GetSlotName(slot, session))
++                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, slotName, EQUIPMENT_SLOT_END, slot);
++                }
++            }
++        }
++        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, session->GetTrinityString(LANG_OPTION_REMOVE_ALL), EQUIPMENT_SLOT_END+2, 0, session->GetTrinityString(LANG_POPUP_REMOVE_ALL), 0, false);
++        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, session->GetTrinityString(LANG_OPTION_UPDATE_MENU), EQUIPMENT_SLOT_END+1, 0);
++        player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
++        return true;
++    }
++
++    bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 uiAction)
++    {
++        WorldSession* session = player->GetSession();
++        player->PlayerTalkClass->ClearMenus();
++        switch(sender)
++        {
++        case EQUIPMENT_SLOT_END: // Show items you can use
++            {
++                if (Item* oldItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, uiAction))
++                {
++                    uint32 lowGUID = player->GetGUIDLow();
++                    _items[lowGUID].clear();
++                    uint32 limit = 0;
++                    uint32 price = 0;
++                    switch (sTransmogrification->GetRequireGold())
++                    {
++                    case 1: { price = (unsigned int)(GetFakePrice(oldItem)*sTransmogrification->GetGoldModifier()); } break;
++                    case 2: { price = (unsigned int)sTransmogrification->GetGoldCost(); } break;
++                    }
++                    char tokenCost[250] = "\n";
++                    if(sTransmogrification->GetRequireToken())
++                        snprintf(tokenCost, 250, "\n\n%u x %s", sTransmogrification->GetTokenAmount(), GetItemName(sObjectMgr->GetItemTemplate(sTransmogrification->GetTokenEntry()), session).c_str());
++
++                    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; i++)
++                    {
++                        if (limit > 30)
++                            break;
++                        if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
++                        {
++                            uint32 display = newItem->GetTemplate()->DisplayInfoID;
++                            if (player->SuitableForTransmogrification(oldItem, newItem) == ERR_FAKE_OK)
++                            {
++                                if (_items[lowGUID].find(display) == _items[lowGUID].end())
++                                {
++                                    limit++;
++                                    _items[lowGUID][display] = newItem;
++                                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, GetItemName(newItem->GetTemplate(), session), uiAction, display, session->GetTrinityString(LANG_POPUP_TRANSMOGRIFY)+GetItemName(newItem->GetTemplate(), session)+tokenCost, price, false);
++                                }
++                            }
++                        }
++                    }
++
++                    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; i++)
++                    {
++                        if (Bag* bag = player->GetBagByPos(i))
++                        {
++                            for (uint32 j = 0; j < bag->GetBagSize(); j++)
++                            {
++                                if (limit > 30)
++                                    break;
++                                if (Item* newItem = player->GetItemByPos(i, j))
++                                {
++                                    uint32 display = newItem->GetTemplate()->DisplayInfoID;
++                                    if (player->SuitableForTransmogrification(oldItem, newItem) == ERR_FAKE_OK)
++                                    {
++                                        if (_items[lowGUID].find(display) == _items[lowGUID].end())
++                                        {
++                                            limit++;
++                                            _items[lowGUID][display] = newItem;
++                                            player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, GetItemName(newItem->GetTemplate(), session), uiAction, display, session->GetTrinityString(LANG_POPUP_TRANSMOGRIFY)+GetItemName(newItem->GetTemplate(), session)+tokenCost, price, false);
++                                        }
++                                    }
++                                }
++                            }
++                        }
++                    }
++
++                    char removeOnePopup[250];
++                    snprintf(removeOnePopup, 250, session->GetTrinityString(LANG_POPUP_REMOVE_ONE), GetSlotName(uiAction, session));
++                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, session->GetTrinityString(LANG_OPTION_REMOVE_ONE), EQUIPMENT_SLOT_END+3, uiAction, removeOnePopup, 0, false);
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, session->GetTrinityString(LANG_OPTION_BACK), EQUIPMENT_SLOT_END+1, 0);
++                    player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
++                }
++                else
++                    OnGossipHello(player, creature);
++            } break;
++        case EQUIPMENT_SLOT_END+1: // Back
++            {
++                OnGossipHello(player, creature);
++            } break;
++        case EQUIPMENT_SLOT_END+2: // Remove Transmogrifications
++            {
++                bool removed = false;
++                for (uint8 Slot = EQUIPMENT_SLOT_START; Slot < EQUIPMENT_SLOT_END; Slot++)
++                {
++                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, Slot))
++                    {
++                        if (newItem->DeleteFakeEntry() && !removed)
++                            removed = true;
++                    }
++                }
++                if (removed)
++                {
++                    session->SendAreaTriggerMessage(session->GetTrinityString(LANG_REM_TRANSMOGRIFICATIONS_ITEMS));
++                    player->PlayDirectSound(3337);
++                }
++                else
++                    session->SendNotification(session->GetTrinityString(LANG_ERR_NO_TRANSMOGRIFICATIONS));
++                OnGossipHello(player, creature);
++            } break;
++        case EQUIPMENT_SLOT_END+3: // Remove Transmogrification from single item
++            {
++                if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, uiAction))
++                {
++                    if (newItem->DeleteFakeEntry())
++                    {
++                        session->SendAreaTriggerMessage(session->GetTrinityString(LANG_REM_TRANSMOGRIFICATION_ITEM), GetSlotName(uiAction, session));
++                        player->PlayDirectSound(3337);
++                    }
++                    else
++                        session->SendNotification(session->GetTrinityString(LANG_ERR_NO_TRANSMOGRIFICATION), GetSlotName(uiAction, session));
++                }
++                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, uiAction);
++            } break;
++        default: // Transmogrify
++            {
++                uint32 lowGUID = player->GetGUIDLow();
++                if(!sTransmogrification->GetRequireToken() || player->GetItemCount(sTransmogrification->GetTokenEntry()) >= sTransmogrification->GetTokenAmount())
++                {
++                    if (Item* oldItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, sender))
++                    {
++                        if (_items[lowGUID].find(uiAction) != _items[lowGUID].end() && _items[lowGUID][uiAction]->IsInWorld())
++                        {
++                            Item* newItem = _items[lowGUID][uiAction];
++                            if (newItem->GetOwnerGUID() == player->GetGUIDLow() && (newItem->IsInBag() || newItem->GetBagSlot() == INVENTORY_SLOT_BAG_0) && player->SuitableForTransmogrification(oldItem, newItem) == ERR_FAKE_OK)
++                            {
++                                switch(sTransmogrification->GetRequireGold())
++                                {
++                                case 1: { player->ModifyMoney(-1*(uint32)(GetFakePrice(oldItem)*sTransmogrification->GetGoldModifier())); } break;
++                                case 2: { player->ModifyMoney(-1*(unsigned int)sTransmogrification->GetGoldCost()); } break;
++                                }
++                                if(sTransmogrification->GetRequireToken())
++                                    player->DestroyItemCount(sTransmogrification->GetTokenEntry(), sTransmogrification->GetTokenAmount(), true);
++                                oldItem->SetFakeEntry(newItem->GetEntry());
++                                newItem->SetNotRefundable(player);
++                                newItem->SetBinding(true);
++                                player->PlayDirectSound(3337);
++                                session->SendAreaTriggerMessage(session->GetTrinityString(LANG_ITEM_TRANSMOGRIFIED), GetSlotName(sender, session));
++                            }
++                            else
++                                session->SendNotification(session->GetTrinityString(LANG_ERR_NO_ITEM_SUITABLE));
++                        }
++                        else
++                            session->SendNotification(session->GetTrinityString(LANG_ERR_NO_ITEM_EXISTS));
++                    }
++                    else
++                        session->SendNotification(session->GetTrinityString(LANG_ERR_EQUIP_SLOT_EMPTY));
++                }
++                else
++                    session->SendNotification(session->GetTrinityString(LANG_ERR_NO_TOKEN), GetItemName(sObjectMgr->GetItemTemplate(sTransmogrification->GetTokenEntry()), session).c_str());
++                _items[lowGUID].clear();
++                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, sender);
++            } break;
++        }
++        return true;
++    }
++
++private:
++    std::map<uint64, std::map<uint32, Item*> > _items; // _items[lowGUID][DISPLAY] = item
++
++    const char * GetSlotName(uint8 slot, WorldSession* session)
++    {
++        switch (slot)
++        {
++        case EQUIPMENT_SLOT_HEAD      : return session->GetTrinityString(LANG_SLOT_NAME_HEAD);
++        case EQUIPMENT_SLOT_SHOULDERS : return session->GetTrinityString(LANG_SLOT_NAME_SHOULDERS);
++        case EQUIPMENT_SLOT_BODY      : return session->GetTrinityString(LANG_SLOT_NAME_BODY);
++        case EQUIPMENT_SLOT_CHEST     : return session->GetTrinityString(LANG_SLOT_NAME_CHEST);
++        case EQUIPMENT_SLOT_WAIST     : return session->GetTrinityString(LANG_SLOT_NAME_WAIST);
++        case EQUIPMENT_SLOT_LEGS      : return session->GetTrinityString(LANG_SLOT_NAME_LEGS);
++        case EQUIPMENT_SLOT_FEET      : return session->GetTrinityString(LANG_SLOT_NAME_FEET);
++        case EQUIPMENT_SLOT_WRISTS    : return session->GetTrinityString(LANG_SLOT_NAME_WRISTS);
++        case EQUIPMENT_SLOT_HANDS     : return session->GetTrinityString(LANG_SLOT_NAME_HANDS);
++        case EQUIPMENT_SLOT_BACK      : return session->GetTrinityString(LANG_SLOT_NAME_BACK);
++        case EQUIPMENT_SLOT_MAINHAND  : return session->GetTrinityString(LANG_SLOT_NAME_MAINHAND);
++        case EQUIPMENT_SLOT_OFFHAND   : return session->GetTrinityString(LANG_SLOT_NAME_OFFHAND);
++        case EQUIPMENT_SLOT_RANGED    : return session->GetTrinityString(LANG_SLOT_NAME_RANGED);
++        case EQUIPMENT_SLOT_TABARD    : return session->GetTrinityString(LANG_SLOT_NAME_TABARD);
++        default: return NULL;
++        }
++    }
++
++    std::string GetItemName(const ItemTemplate* itemTemplate, WorldSession* session)
++    {
++        std::string name = itemTemplate->Name1;
++        int loc_idx = session->GetSessionDbLocaleIndex();
++        if (loc_idx >= 0)
++            if (ItemLocale const* il = sObjectMgr->GetItemLocale(itemTemplate->ItemId))
++                sObjectMgr->GetLocaleString(il->Name, loc_idx, name);
++        return name;
++    }
++
++    uint32 GetFakePrice(Item* item)
++    {
++        uint32 sellPrice = item->GetTemplate()->SellPrice;
++        uint32 minPrice = item->GetTemplate()->RequiredLevel * 1176;
++        if (sellPrice < minPrice)
++            sellPrice = minPrice;
++        return sellPrice;
++    }
++};
++
++class config_Transmogrify : public WorldScript
++{
++public:
++    config_Transmogrify() : WorldScript("config_Transmogrify") { }
++
++    void OnConfigLoad(bool reload)
++    {
++        sTransmogrification->LoadConfig();
++    }
++};
++
++void AddSC_NPC_Transmogrify()
++{
++    new NPC_Transmogrify();
++    new config_Transmogrify();
++}
+diff --git a/src/server/scripts/Custom/Transmogrification.h b/src/server/scripts/Custom/Transmogrification.h
+new file mode 100644
+index 0000000..6205cbb
+--- /dev/null
++++ b/src/server/scripts/Custom/Transmogrification.h
+@@ -0,0 +1,83 @@
++#ifndef DEF_TRANSMOGRIFICATION_H
++#define DEF_TRANSMOGRIFICATION_H
++
++#include "Config.h"
++
++class Transmogrification
++{
++public:
++    Transmogrification() { };
++    ~Transmogrification() { };
++
++    uint32 GetRequireGold() { return RequireGold; }
++    float GetGoldModifier() { return GoldModifier; }
++    uint32 GetGoldCost() { return GoldCost; }
++
++    bool GetRequireToken() { return RequireToken; }
++    uint32 GetTokenEntry() { return TokenEntry; }
++    uint32 GetTokenAmount() { return TokenAmount; }
++
++    bool AllowedQuality(uint32 quality) // Only thing used elsewhere (Player.cpp)
++    {
++        switch(quality)
++        {
++        case ITEM_QUALITY_POOR: return AllowPoor;
++        case ITEM_QUALITY_NORMAL: return AllowCommon;
++        case ITEM_QUALITY_UNCOMMON: return AllowUncommon;
++        case ITEM_QUALITY_RARE: return AllowRare;
++        case ITEM_QUALITY_EPIC: return AllowEpic;
++        case ITEM_QUALITY_LEGENDARY: return AllowLegendary;
++        case ITEM_QUALITY_ARTIFACT: return AllowArtifact;
++        case ITEM_QUALITY_HEIRLOOM: return AllowHeirloom;
++        default: return false;
++        }
++    }
++
++    void LoadConfig()
++    {
++        RequireGold = (uint32)ConfigMgr::GetIntDefault("Transmogrification.RequireGold", 1);
++        GoldModifier = ConfigMgr::GetFloatDefault("Transmogrification.GoldModifier", 1.0f);
++        GoldCost = (uint32)ConfigMgr::GetIntDefault("Transmogrification.GoldCost", 100000);
++
++        RequireToken = ConfigMgr::GetBoolDefault("Transmogrification.RequireToken", false);
++        TokenEntry = (uint32)ConfigMgr::GetIntDefault("Transmogrification.TokenEntry", 49426);
++        TokenAmount = (uint32)ConfigMgr::GetIntDefault("Transmogrification.TokenAmount", 1);
++
++        AllowPoor = ConfigMgr::GetBoolDefault("Transmogrification.AllowPoor", false);
++        AllowCommon = ConfigMgr::GetBoolDefault("Transmogrification.AllowCommon", false);
++        AllowUncommon = ConfigMgr::GetBoolDefault("Transmogrification.AllowUncommon", true);
++        AllowRare = ConfigMgr::GetBoolDefault("Transmogrification.AllowRare", true);
++        AllowEpic = ConfigMgr::GetBoolDefault("Transmogrification.AllowEpic", true);
++        AllowLegendary = ConfigMgr::GetBoolDefault("Transmogrification.AllowLegendary", false);
++        AllowArtifact = ConfigMgr::GetBoolDefault("Transmogrification.AllowArtifact", false);
++        AllowHeirloom = ConfigMgr::GetBoolDefault("Transmogrification.AllowHeirloom", true);
++
++        if(!sObjectMgr->GetItemTemplate(TokenEntry))
++        {
++            sLog->outError(LOG_FILTER_SERVER_LOADING, "Transmogrification.TokenEntry (%u) does not exist. Using default.", TokenEntry);
++            TokenEntry = 49426;
++        }
++    }
++
++private:
++
++    uint32 RequireGold;
++    float GoldModifier;
++    uint32 GoldCost;
++
++    bool RequireToken;
++    uint32 TokenEntry;
++    uint32 TokenAmount;
++
++    bool AllowPoor;
++    bool AllowCommon;
++    bool AllowUncommon;
++    bool AllowRare;
++    bool AllowEpic;
++    bool AllowLegendary;
++    bool AllowArtifact;
++    bool AllowHeirloom;
++};
++#define sTransmogrification ACE_Singleton<Transmogrification, ACE_Null_Mutex>::instance()
++
++#endif
+diff --git a/src/server/scripts/Custom/npc_teleport.cpp b/src/server/scripts/Custom/npc_teleport.cpp
+new file mode 100644
+index 0000000..fddd18d
+--- /dev/null
++++ b/src/server/scripts/Custom/npc_teleport.cpp
+@@ -0,0 +1,222 @@
++/**
++ *
++ * @File : npc_teleport.cpp
++ *
++ * @Authors : Wilibald09
++ *
++ * @Date : 19/08/2008
++ *
++ * @Version : 1.2
++ *
++ **/
++
++
++
++#include "ScriptPCH.h"
++#include "sc_npc_teleport.h"
++#include <sstream>
++
++#define GOSSIP_SHOW_DEST        1000
++#define GOSSIP_TELEPORT         1001
++#define GOSSIP_NEXT_PAGEC       1002
++#define GOSSIP_PREV_PAGEC       1003
++#define GOSSIP_NEXT_PAGED       1004
++#define GOSSIP_PREV_PAGED       1005
++#define GOSSIP_MAIN_MENU        1006
++
++#define SPELL_ID_PASSIVE_RESURRECTION_SICKNESS  15007
++#define SPELL_VISUAL_TELEPORT   35517
++
++#define NB_ITEM_PAGE            10
++#define MSG_CAT                 100000
++#define MSG_DEST                100001
++
++#define NEXT_PAGE               "-> [Next Page]"
++#define PREV_PAGE               "<- [Previous Page]"
++#define MAIN_MENU               "<= [Main Menu]"
++
++
++using namespace nsNpcTel;
++
++
++namespace
++{
++    Page PageC, PageD;
++    Page Cat;
++
++    // Conversion function int->string
++    std::string ConvertStr(const int64 &val)
++    {
++        std::ostringstream ostr;
++        ostr << val;
++        return ostr.str();
++    }
++
++    // Conversion function intMoney->stringMoney
++    std::string ConvertMoney(const uint32 &Money)
++    {
++        std::string Str(ConvertStr(Money));
++        uint32 SizeStr = Str.length();
++
++        if (SizeStr > 4)
++            Str = Str.insert(Str.length()-4, "po");
++        if (SizeStr > 2)
++            Str = Str.insert(Str.length()-2, "pa");
++        Str += "pc";
++
++        return Str;
++    }
++
++    // Teleport Player
++    void Teleport(Player * const player, const uint16 &map,
++                  const float &X, const float &Y, const float &Z, const float &orient)
++    {
++        player->CastSpell(player, SPELL_VISUAL_TELEPORT, true);
++        player->TeleportTo(map, X, Y, Z, orient);
++    }
++
++    // Display categories
++    void AffichCat(Player * const player, Creature * const creature)
++    {
++        if (PageC[player] > 0)
++            player->ADD_GOSSIP_ITEM(7, PREV_PAGE, GOSSIP_PREV_PAGEC, 0);
++
++        VCatDest_t i (PageC[player] * NB_ITEM_PAGE);
++        for ( ; i < TabCatDest.size() && i < (NB_ITEM_PAGE * (PageC[player] + 1)); ++i)
++        {
++            if (TabCatDest[i].IsAllowedToTeleport(player))
++                player->ADD_GOSSIP_ITEM(7, TabCatDest[i].GetName(player->isGameMaster()).c_str(), GOSSIP_SHOW_DEST, i);
++        }
++
++        if (i < TabCatDest.size())
++            player->ADD_GOSSIP_ITEM(7, NEXT_PAGE, GOSSIP_NEXT_PAGEC, 0);
++
++        player->SEND_GOSSIP_MENU(MSG_CAT, creature->GetGUID());
++    }
++
++    // Display destination categories
++    void AffichDest(Player * const player, Creature * const creature)
++    {
++        if (PageD[player] > 0)
++            player->ADD_GOSSIP_ITEM(7, PREV_PAGE, GOSSIP_PREV_PAGED, 0);
++
++        CatDest::VDest_t i (PageD[player] * NB_ITEM_PAGE);
++        for ( ; i < TabCatDest[Cat[player]].size() && i < (NB_ITEM_PAGE * (PageD[player] + 1)); ++i)
++        {
++            player->ADD_GOSSIP_ITEM(5, TabCatDest[Cat[player]].GetDest(i).m_name.c_str(), GOSSIP_TELEPORT, i);
++        }
++
++        if (i < TabCatDest[Cat[player]].size())
++            player->ADD_GOSSIP_ITEM(7, NEXT_PAGE, GOSSIP_NEXT_PAGED, 0);
++
++        if (CatDest::CountOfCategoryAllowedBy(player) > 1)
++            player->ADD_GOSSIP_ITEM(7, MAIN_MENU, GOSSIP_MAIN_MENU, 0);
++
++        player->SEND_GOSSIP_MENU(MSG_DEST, creature->GetGUID());
++    }
++
++    // Verification before teleportation
++    void ActionTeleport(Player * const player, Creature * const creature, const uint32 &id)
++    {
++        Dest dest (TabCatDest[Cat[player]].GetDest(id));
++
++        if (player->getLevel() < dest.m_level && !player->isGameMaster())
++        {
++            std::string msg ("You do not have the required level. This destination requires level " + ConvertStr(dest.m_level) + ".");
++            creature->MonsterWhisper(msg.c_str(), player->GetGUID());
++            return;
++        }
++
++        if (player->GetMoney() < dest.m_cost && !player->isGameMaster())
++        {
++            std::string msg ("You do not have enough money. The price for teleportation is " + ConvertMoney(dest.m_cost) + ".");
++            creature->MonsterWhisper(msg.c_str(), player->GetGUID());
++            return;
++        }
++
++        if (!player->isGameMaster() && dest.m_cost)
++            player->ModifyMoney(-1 * dest.m_cost);
++
++        Teleport(player, dest.m_map, dest.m_X, dest.m_Y, dest.m_Z, dest.m_orient);
++    }
++}
++
++class npc_teleport : public CreatureScript
++{
++public:
++    npc_teleport() : CreatureScript("npc_teleport") {}
++
++bool OnGossipHello(Player *player, Creature *creature)
++{
++    PageC(player) = PageD(player) = Cat(player) = 0;
++
++    if(player->isInCombat())
++    {
++        player->CLOSE_GOSSIP_MENU();
++        creature->MonsterWhisper("You are in combat. Come back later", player->GetGUID());
++        return true;
++    }
++    AffichCat(player, creature);
++    return true;
++}
++
++bool OnGossipSelect(Player *player, Creature *creature, uint32 sender, uint32 param)
++{
++    player->PlayerTalkClass->ClearMenus();
++    switch(sender)
++    {
++      // Display destinations
++      case GOSSIP_SHOW_DEST:
++        Cat(player) = param;
++        AffichDest(player, creature);
++        break;
++
++      // Previous categories page
++      case GOSSIP_PREV_PAGEC:
++        --PageC(player);
++        AffichCat(player, creature);
++        break;
++
++      // Next page categories
++      case GOSSIP_NEXT_PAGEC:
++        ++PageC(player);
++        AffichCat(player, creature);
++        break;
++
++      // Previous destinations page
++      case GOSSIP_PREV_PAGED:
++        --PageD(player);
++        AffichDest(player, creature);
++        break;
++
++      // Next destination page
++      case GOSSIP_NEXT_PAGED:
++        ++PageD(player);
++        AffichDest(player, creature);
++        break;
++
++      // Display main menu
++      case GOSSIP_MAIN_MENU:
++        OnGossipHello(player, creature);
++        break;
++
++      // Teleportation
++      case GOSSIP_TELEPORT:
++        player->CLOSE_GOSSIP_MENU();
++        if(player->HasAura(SPELL_ID_PASSIVE_RESURRECTION_SICKNESS,0)) {
++            creature->CastSpell(player,38588,false); // Healing effect
++            player->RemoveAurasDueToSpell(SPELL_ID_PASSIVE_RESURRECTION_SICKNESS);
++        }
++
++        ActionTeleport(player, creature, param);
++        break;
++    }
++    return true;
++}
++};
++
++void AddSC_npc_teleport()
++{
++    new npc_teleport;
++}
++// End of TeleNPC2
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 505a657..066eea1 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -1300,6 +1300,14 @@ AllowTwoSide.Trade = 0
+ 
+ TalentsInspecting = 1
+ 
++#    Fake.WHO.List 
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then 
++#        49 real players online (need to set online=2 in character database in order to work) 
++#        Default: 0 (disabled) 
++#                 1 (enabled) 
++
++Fake.Who.List = 0 
++
+ #
+ ###################################################################################################
+ 
+@@ -2833,3 +2841,91 @@ Log.Async.Enable = 0
+ 
+ #
+ ###################################################################################################
++
++###################################################################################################
++#    Transmogrification config
++###################################################################################################
++#
++#    GOLD COST
++#
++#    Transmogrification.RequireGold
++#        Description: 0 No gold cost, 1 scaling gold cost, 2 custom gold cost
++#        Default:    1
++#
++#    Transmogrification.GoldModifier
++#        Description: A multiplier for the default gold cost (Transmogrification.RequireGold is 1)
++#        Default:    1.0
++#
++#    Transmogrification.GoldCost
++#        Description: Cost of transmogrification in copper for custom gold cost (Transmogrification.RequireGold is 2)
++#        Default:    100000
++
++Transmogrification.RequireGold = 1
++Transmogrification.GoldModifier = 1.0
++Transmogrification.GoldCost = 100000
++
++#
++#    TOKEN COST
++#
++#    Transmogrification.RequireToken
++#        Description: Adds/disables token cost
++#        Default:    0
++#
++#    Transmogrification.TokenEntry
++#        Description: Entry of the token item
++#        Default:    49426
++#
++#    Transmogrification.TokenAmount
++#        Description: Amount of tokens required
++#        Default:    1
++
++Transmogrification.RequireToken = 0
++Transmogrification.TokenEntry = 49426
++Transmogrification.TokenAmount = 1
++
++#
++#    QUALITIES
++#
++#    Transmogrification.AllowPoor
++#        Description: Allow poor quality items to be used as source and target items
++#        Default:    0
++#
++#    Transmogrification.AllowCommon
++#        Description: Allow common quality items to be used as source and target items
++#        Default:    0
++#
++#    Transmogrification.AllowUncommon
++#        Description: Allow uncommon quality items to be used as source and target items
++#        Default:    1
++#
++#    Transmogrification.AllowRare
++#        Description: Allow rare quality items to be used as source and target items
++#        Default:    1
++#
++#    Transmogrification.AllowEpic
++#        Description: Allow epic quality items to be used as source and target items
++#        Default:    1
++#
++#    Transmogrification.AllowLegendary
++#        Description: Allow legendary quality items to be used as source and target items
++#        Default:    0
++#
++#    Transmogrification.AllowArtifact
++#        Description: Allow artifact quality items to be used as source and target items
++#        Default:    0
++#
++#    Transmogrification.AllowHeirloom
++#        Description: Allow heirloom quality items to be used as source and target items
++#        Default:    1
++
++Transmogrification.AllowPoor = 0
++Transmogrification.AllowCommon = 0
++Transmogrification.AllowUncommon = 1
++Transmogrification.AllowRare = 1
++Transmogrification.AllowEpic = 1
++Transmogrification.AllowLegendary = 0
++Transmogrification.AllowArtifact = 0
++Transmogrification.AllowHeirloom = 1
++
++#
++###################################################################################################
+-- 
+1.7.2.5
+

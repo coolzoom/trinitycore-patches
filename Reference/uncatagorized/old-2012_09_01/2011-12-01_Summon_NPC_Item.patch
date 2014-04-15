@@ -1,0 +1,66 @@
+From 7069232556a73e70ff0fb26195a785dc70ba24f0 Mon Sep 17 00:00:00 2001
+From: LordPsyan <uppp@juno.com>
+Date: Thu, 1 Dec 2011 00:07:49 -0600
+Subject: [PATCH 1/2] 2011-12-01_Summon_NPC_Item
+
+---
+ src/server/scripts/Custom/summon.cpp |   46 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
+ create mode 100644 src/server/scripts/Custom/summon.cpp
+
+diff --git a/src/server/scripts/Custom/summon.cpp b/src/server/scripts/Custom/summon.cpp
+new file mode 100644
+index 0000000..aa0e9cd
+--- /dev/null
++++ b/src/server/scripts/Custom/summon.cpp
+@@ -0,0 +1,46 @@
++#include "ScriptPCH.h"
++ 
++class summon : public ItemScript
++{
++        public:
++                summon() : ItemScript("summon")
++                {
++                }
++                bool OnUse(Player* pPlayer, Item* pItem, SpellCastTargets const& /*targets*/)
++                {
++   uint32 sSpell = 18282; //Icerune Visual Spell when used
++   if (pPlayer->isInCombat())
++   {
++        pPlayer->GetSession()->SendNotification("You are in combat.");
++   }
++  
++   else if (pPlayer->isMoving())
++   {
++        pPlayer->GetSession()->SendNotification("You can not do that while moving.");
++   }
++  
++   else if (pPlayer->FindNearestCreature(80410, 40) || pPlayer->FindNearestCreature(100000, 8))
++   {
++        pPlayer->GetSession()->SendNotification("Sister Sin can not be summoned right now.");
++   }
++  
++   else
++   {
++        float x, y, z, o = pPlayer->GetOrientation();
++  
++        if (o >= 3.141592)
++         o = o - 3.141592;
++        else
++         o = o + 3.141592;
++        pPlayer->GetClosePoint(x, y, z, pPlayer->GetObjectSize());
++        Creature* pCreature = pPlayer->SummonCreature(100000, x, y, z+1.2, o, TEMPSUMMON_TIMED_DESPAWN, 480000);
++        pCreature->CastSpell(pCreature, 63660);
++        return false;
++   }
++  return false;
++                }
++};
++void AddSC_summon()
++{
++        new summon();
++}
+\ No newline at end of file
+-- 
+1.7.2.3
+

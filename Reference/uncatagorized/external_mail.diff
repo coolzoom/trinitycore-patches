@@ -1,0 +1,191 @@
+
+diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
+index 1f44c24..b39298c 100755
+--- a/src/server/game/Mails/Mail.cpp
++++ b/src/server/game/Mails/Mail.cpp
+@@ -281,3 +281,63 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+         deleteIncludedItems(temp);
+     }
+ }
++
++void WorldSession::SendExternalMails()
++{
++    sLog->outDetail("EXTERNAL MAIL> Sending mails in queue...");
++
++    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_GET_EXTERNAL_MAIL);
++    PreparedQueryResult result = CharacterDatabase.Query(stmt);
++    if (!result)
++    {
++        sLog->outDetail("EXTERNAL MAIL> No mails in queue...");
++        return;
++    }
++
++    SQLTransaction trans = CharacterDatabase.BeginTransaction();
++
++    MailDraft* mail = NULL;
++
++    do
++    {
++        Field *fields = result->Fetch();
++        uint32 id = fields[0].GetUInt32();
++        uint32 receiver_guid = fields[1].GetUInt32();
++        std::string subject = fields[2].GetString();
++        std::string body = fields[3].GetString();
++        uint32 money = fields[4].GetUInt32();
++        uint32 itemId = fields[5].GetUInt32();
++        uint32 itemCount = fields[6].GetUInt32();
++
++        Player *receiver = sObjectMgr->GetPlayer(receiver_guid);
++
++        mail = new MailDraft(subject, body);
++
++        if (money)
++        {
++            sLog->outDetail("EXTERNAL MAIL> Adding money");
++            mail->AddMoney(money);
++        }
++
++        if (itemId)
++        {
++            sLog->outDetail("EXTERNAL MAIL> Adding %u of item with id %u", itemCount, itemId);
++            Item* mailItem = Item::CreateItem(itemId, itemCount);
++            mailItem->SaveToDB(trans);
++            mail->AddItem(mailItem);
++        }
++
++        mail->SendMailTo(trans, receiver ? receiver : MailReceiver(receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
++        delete mail;
++
++        stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_EXTERNAL_MAIL);
++        stmt->setUInt32(0, id);
++        trans->Append(stmt);
++
++        sLog->outDetail("EXTERNAL MAIL> Mail sent");
++    }
++    while (result->NextRow());
++
++    CharacterDatabase.CommitTransaction(trans);
++    sLog->outDetail("EXTERNAL MAIL> All Mails Sent...");
++}
+\ No newline at end of file
+diff --git a/src/server/game/OutdoorPvP/OutdoorPvP.h b/src/server/game/OutdoorPvP/OutdoorPvP.h
+index d45994b..2aa1c0b 100755
+--- a/src/server/game/OutdoorPvP/OutdoorPvP.h
++++ b/src/server/game/OutdoorPvP/OutdoorPvP.h
+@@ -33,9 +33,10 @@ enum OutdoorPvPTypes
+     OUTDOOR_PVP_SI = 5,
+     OUTDOOR_PVP_EP = 6,
+     OUTDOOR_PVP_WG = 7,
++    OUTDOOR_PVP_GH = 8,
+ };
+ 
+-#define MAX_OUTDOORPVP_TYPES 8
++#define MAX_OUTDOORPVP_TYPES 9
+ 
+ const uint8 CapturePointArtKit[3] = {2, 1, 21};
+ 
+diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
+index 5bf186f..a6606ac 100755
+--- a/src/server/game/Server/WorldSession.h
++++ b/src/server/game/Server/WorldSession.h
+@@ -331,6 +331,7 @@ class WorldSession
+             }
+         }
+         //used with item_page table
++        static void SendExternalMails();
+         bool SendItemInfo(uint32 itemid, WorldPacket data);
+         //auction
+         void SendAuctionHello(uint64 guid, Creature* unit);
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index fb9470a..435f422 100755
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -895,6 +895,8 @@ void World::LoadConfigSettings(bool reload)
+     m_int_configs[CONFIG_GROUP_VISIBILITY] = sConfig->GetIntDefault("Visibility.GroupMode", 1);
+ 
+     m_int_configs[CONFIG_MAIL_DELIVERY_DELAY] = sConfig->GetIntDefault("MailDeliveryDelay", HOUR);
++    m_bool_configs[CONFIG_EXTERNAL_MAIL] = sConfig->GetBoolDefault("ExternalMail", false);
++    m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] = sConfig->GetIntDefault("ExternalMailInterval", 1);
+ 
+     m_int_configs[CONFIG_UPTIME_UPDATE] = sConfig->GetIntDefault("UpdateUptimeInterval", 10);
+     if (int32(m_int_configs[CONFIG_UPTIME_UPDATE]) <= 0)
+@@ -1709,6 +1711,7 @@ void World::SetInitialWorldSettings()
+     //TODO: Get rid of magic numbers
+     mail_timer = ((((localtime(&m_gameTime)->tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
+                                                             //1440
++    extmail_timer.SetInterval(m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] * MINUTE * IN_MILLISECONDS);
+     mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
+     sLog->outDetail("Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
+ 
+@@ -1931,6 +1934,17 @@ void World::Update(uint32 diff)
+     if (m_gameTime > m_NextRandomBGReset)
+         ResetRandomBG();
+ 
++    // Handle external mail
++    if (sWorld->getBoolConfig(CONFIG_EXTERNAL_MAIL))
++    {
++        extmail_timer.Update(diff);
++        if (extmail_timer.Passed())
++        {
++            WorldSession::SendExternalMails();
++            extmail_timer.Reset();
++        }
++    }
++
+     /// <ul><li> Handle auctions when the timer has passed
+     if (m_timers[WUPDATE_AUCTIONS].Passed())
+     {
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index bbd5505..f23fa72 100755
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -103,6 +103,7 @@ enum WorldBoolConfigs
+     CONFIG_INSTANT_TAXI,
+     CONFIG_INSTANCE_IGNORE_LEVEL,
+     CONFIG_INSTANCE_IGNORE_RAID,
++    CONFIG_EXTERNAL_MAIL,
+     CONFIG_CAST_UNSTUCK,
+     CONFIG_GM_LOG_TRADE,
+     CONFIG_ALLOW_GM_GROUP,
+@@ -236,6 +237,7 @@ enum WorldIntConfigs
+     CONFIG_START_GM_LEVEL,
+     CONFIG_GROUP_VISIBILITY,
+     CONFIG_MAIL_DELIVERY_DELAY,
++    CONFIG_EXTERNAL_MAIL_INTERVAL,
+     CONFIG_UPTIME_UPDATE,
+     CONFIG_SKILL_CHANCE_ORANGE,
+     CONFIG_SKILL_CHANCE_YELLOW,
+@@ -815,6 +817,7 @@ class World
+         time_t m_startTime;
+         time_t m_gameTime;
+         IntervalTimer m_timers[WUPDATE_COUNT];
++        IntervalTimer extmail_timer;
+         time_t mail_timer;
+         time_t mail_timer_expires;
+         uint32 m_updateTime, m_updateTimeSum;
+diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
+index dddfbd2..adb7598 100755
+--- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
+@@ -92,6 +92,8 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PREPARE_STATEMENT(CHAR_SET_MAIL_RETURNED, "UPDATE mail SET sender = ?, receiver = ?, expire_time = ?, deliver_time = ?, cod = 0, checked = ? WHERE id = ?", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(CHAR_SET_MAIL_ITEM_RECEIVER, "UPDATE mail_items SET receiver = ? WHERE item_guid = ?", CONNECTION_ASYNC)
+     PREPARE_STATEMENT(CHAR_SET_ITEM_OWNER, "UPDATE item_instance SET owner_guid = ? WHERE guid = ?", CONNECTION_ASYNC)
++    PREPARE_STATEMENT(CHAR_GET_EXTERNAL_MAIL, "SELECT id, receiver, subject, message, money, item, item_count FROM mail_external ORDER BY id ASC", CONNECTION_SYNCH)
++    PREPARE_STATEMENT(CHAR_DEL_EXTERNAL_MAIL, "DELETE FROM mail_external WHERE id = ?", CONNECTION_ASYNC)
+ 
+     PREPARE_STATEMENT(CHAR_LOAD_ITEM_REFUNDS, "SELECT player_guid, paidMoney, paidExtendedCost FROM item_refund_instance WHERE item_guid = ? AND player_guid = ? LIMIT 1", CONNECTION_SYNCH)
+     PREPARE_STATEMENT(CHAR_LOAD_ITEM_BOP_TRADE, "SELECT allowedPlayers FROM item_soulbound_trade_data WHERE itemGuid = ? LIMIT 1", CONNECTION_SYNCH)
+diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
+index dd75291..6e17183 100755
+--- a/src/server/shared/Database/Implementation/CharacterDatabase.h
++++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
+@@ -101,6 +101,8 @@ enum CharacterDatabaseStatements
+     CHAR_SET_MAIL_RETURNED,
+     CHAR_SET_MAIL_ITEM_RECEIVER,
+     CHAR_SET_ITEM_OWNER,
++    CHAR_GET_EXTERNAL_MAIL,
++    CHAR_DEL_EXTERNAL_MAIL,
+     CHAR_LOAD_GUILD_BANK_ITEMS,
+     CHAR_LOAD_ITEM_REFUNDS,
+     CHAR_LOAD_ITEM_BOP_TRADE,

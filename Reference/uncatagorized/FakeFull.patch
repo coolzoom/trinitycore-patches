@@ -1,0 +1,157 @@
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index b749126..d0a8e1f 100755
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -1715,6 +1715,11 @@ void Player::Update(uint32 p_time)
+             // m_nextSave reseted in SaveToDB call
+             SaveToDB();
+             sLog->outDetail("Player '%s' (GUID: %u) saved", GetName(), GetGUIDLow());
++            // If Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min) 
++            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++                CharacterDatabase.PExecute("UPDATE characters SET zone = (FLOOR(50 * RAND()) + 1) WHERE online>1"); 
++                CharacterDatabase.PExecute("UPDATE characters SET level=level+1 WHERE online>1 AND level<5"); 
++
+         }
+         else
+             m_nextSave -= p_time;
+diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
+index 41458ec..cd4209c 100755
+--- a/src/server/game/Miscellaneous/Language.h
++++ b/src/server/game/Miscellaneous/Language.h
+@@ -1049,6 +1049,7 @@ enum TrinityStrings
+     LANG_INVALID_REALMID                = 11001,
+ 
+     // NOT RESERVED IDS                   12000-1999999999
++    LANG_NOT_WHISPER                    = 12001, 
+     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // For other tables maybe             2000010000-2147483647 (max index)
+ };
+diff --git a/src/server/game/Server/Protocol/Handlers/ChatHandler.cpp b/src/server/game/Server/Protocol/Handlers/ChatHandler.cpp
+index 6b056a3..3f1c1ab 100755
+--- a/src/server/game/Server/Protocol/Handlers/ChatHandler.cpp
++++ b/src/server/game/Server/Protocol/Handlers/ChatHandler.cpp
+@@ -267,8 +267,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recv_data)
+             uint32 pSecurity = player ? player->GetSession()->GetSecurity() : SEC_PLAYER;
+             if (!player || (tSecurity == SEC_PLAYER && pSecurity > SEC_PLAYER && !player->isAcceptWhispers()))
+             {
++                // If Fake WHO List system on then show player DND 
++                if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++                { 
++                    sWorld->SendWorldText(LANG_NOT_WHISPER); 
++                    return; 
++                } 
++                else 
++                { 
+                 SendPlayerNotFoundNotice(to);
+                 return;
++                }
+             }
+ 
+             if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHAT) && tSecurity == SEC_PLAYER && pSecurity == SEC_PLAYER)
+diff --git a/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp b/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
+index 2095590..7a2f197 100755
+--- a/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
++++ b/src/server/game/Server/Protocol/Handlers/MiscHandler.cpp
+@@ -346,7 +346,40 @@ void WorldSession::HandleWhoOpcode(WorldPacket & recv_data)
+ 
+         ++displaycount;
+     }
+-
++	
++    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49) 
++    { 
++        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5     6 
++        QueryResult result = CharacterDatabase.Query("SELECT guid,name,race,class,level,zone,gender FROM characters WHERE online>1 AND level > 3"); 
++        if (result) 
++        { 
++            do 
++            { 
++                Field *fields = result->Fetch(); 
++ 
++                std::string pname = fields[1].GetString();    // player name 
++                std::string gname;                                // guild name 
++                uint32 lvl = fields[4].GetUInt32();                // player level 
++                uint32 class_ = fields[3].GetUInt32();            // player class 
++                uint32 race = fields[2].GetUInt32();            // player race 
++                uint32 pzoneid = fields[5].GetUInt32();            // player zone id 
++                uint8 gender = fields[6].GetUInt8();            // player gender 
++ 
++                data << pname;                              // player name 
++                data << gname;                              // guild name 
++                data << uint32(lvl);                        // player level 
++                data << uint32(class_);                     // player class 
++                data << uint32(race);                       // player race 
++                data << uint8(gender);                      // player gender 
++                data << uint32(pzoneid);                    // player zone id 
++ 
++                if ((++matchcount) == 49) 
++                    break; 
++            } while (result->NextRow()); 
++        } 
++        //delete result; 
++    } 
++ 
+     data.put(0, matchcount);                            // insert right count, count displayed
+     data.put(4, matchcount);                              // insert right count, count of matches
+ 
+diff --git a/src/server/game/Weather/Weather.cpp b/src/server/game/Weather/Weather.cpp
+index 7ccfd58..4a8e135 100755
+--- a/src/server/game/Weather/Weather.cpp
++++ b/src/server/game/Weather/Weather.cpp
+@@ -52,6 +52,13 @@ bool Weather::Update(uint32 diff)
+     if (m_timer.Passed())
+     {
+         m_timer.Reset();
++		// If Fake WHO List system on then update level of fake plyer with every weather change interval (we will set it on 90 minutes) 
++        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++        { 
++        CharacterDatabase.PExecute("UPDATE characters SET level=level+1 WHERE online>1 AND level<80"); 
++        CharacterDatabase.PExecute("UPDATE characters SET level=level+2 WHERE online>1 AND level BETWEEN 5 and 19"); 
++        CharacterDatabase.PExecute("UPDATE characters SET level=level+1 WHERE online>1 AND level BETWEEN 20 and 40"); 
++        } 
+         // update only if Regenerate has changed the weather
+         if (ReGenerate())
+         {
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index 97dda09..bd51710 100755
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -662,6 +662,7 @@ void World::LoadConfigSettings(bool reload)
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_WHO_LIST]            = sConfig->GetBoolDefault("AllowTwoSide.WhoList", false);
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_ADD_FRIEND]          = sConfig->GetBoolDefault("AllowTwoSide.AddFriend", false);
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_TRADE]               = sConfig->GetBoolDefault("AllowTwoSide.trade", false);
++	m_bool_configs[CONFIG_FAKE_WHO_LIST]					  = sConfig->GetBoolDefault("Fake.WHO.List", false);
+     m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfig->GetIntDefault ("StrictPlayerNames",  0);
+     m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfig->GetIntDefault ("StrictCharterNames", 0);
+     m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfig->GetIntDefault ("StrictPetNames",     0);
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 1f3cd3c..4f1dffa 100755
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -99,6 +99,7 @@ enum WorldBoolConfigs
+     CONFIG_ALLOW_TWO_SIDE_WHO_LIST,
+     CONFIG_ALLOW_TWO_SIDE_ADD_FRIEND,
+     CONFIG_ALLOW_TWO_SIDE_TRADE,
++	CONFIG_FAKE_WHO_LIST,
+     CONFIG_ALL_TAXI_PATHS,
+     CONFIG_INSTANT_TAXI,
+     CONFIG_INSTANCE_IGNORE_LEVEL,
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 66ca764..e7cf790 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -1497,6 +1497,14 @@ AllowTwoSide.Trade = 0
+ 
+ TalentsInspecting = 1
+ 
++#    Fake.WHO.List 
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then 
++#        49 real players online (need to set online=2 in character database in order to work) 
++#        Default: 0 (disabled) 
++#                 1 (enabled) 
++
++Fake.Who.List = 0 
++
+ #
+ ###################################################################################################
+ 
