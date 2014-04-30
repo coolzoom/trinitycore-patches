@@ -1,7 +1,7 @@
-From 6ba6aa0a8577bd3dd0210efef4d42e1158bd66e7 Mon Sep 17 00:00:00 2001
+From f21baa9f3a67ab575b29bf739f23d15658c81fb7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 19 Apr 2014 11:14:31 -0500
-Subject: [PATCH] 2014_04_18-All
+Date: Wed, 30 Apr 2014 06:48:00 -0500
+Subject: [PATCH] 2014_04_30-All-No-Playerbots
 
 ---
  doc/AuctionHouseBot.txt                            |  235 +
@@ -14,6 +14,7 @@ Subject: [PATCH] 2014_04_18-All
  sql/extras/Bots/world_bots.sql                     |  555 +++
  .../Bots/world_creature_template_outfits.sql       |   42 +
  sql/extras/World_TrinityChat.sql                   |   81 +
+ sql/guildhouses/world_guildhouses.sql              |   67 +
  sql/tools/auth_VIPAccount.sql                      |    8 +
  sql/tools/setup_ahbot.sql                          |   72 +
  src/server/authserver/Server/AuthSocket.cpp        |    1 +
@@ -66,7 +67,7 @@ Subject: [PATCH] 2014_04_18-All
  src/server/game/Mails/Mail.cpp                     |    8 +
  src/server/game/Maps/Map.cpp                       |    3 +
  src/server/game/Miscellaneous/Formulas.h           |    4 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   55 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   59 +-
  src/server/game/Server/WorldSession.cpp            |   20 +-
  src/server/game/Server/WorldSession.h              |   29 +-
  src/server/game/Server/WorldSocket.cpp             |   13 +-
@@ -118,8 +119,9 @@ Subject: [PATCH] 2014_04_18-All
  src/server/scripts/CMakeLists.txt                  |    2 +
  src/server/scripts/Commands/cs_ah_bot.cpp          |  482 ++
  src/server/scripts/Commands/cs_message.cpp         |   14 +
- src/server/scripts/Custom/CMakeLists.txt           |    4 +
+ src/server/scripts/Custom/CMakeLists.txt           |    5 +
  src/server/scripts/Custom/beastmaster.cpp          |  385 ++
+ src/server/scripts/Custom/guildmaster.cpp          |  316 ++
  src/server/scripts/Custom/npcbuff.cpp              |  426 ++
  src/server/scripts/Custom/professionnpc.cpp        |  396 ++
  src/server/scripts/Custom/summon.cpp               |   46 +
@@ -134,8 +136,8 @@ Subject: [PATCH] 2014_04_18-All
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
- src/server/worldserver/worldserver.conf.dist       |  774 ++-
- 131 files changed, 35950 insertions(+), 18 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  804 +++-
+ 133 files changed, 36368 insertions(+), 18 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/All/world_npc_buff.sql
  create mode 100644 sql/beastmaster/2014_04_12-world-beastmaster.sql
@@ -146,6 +148,7 @@ Subject: [PATCH] 2014_04_18-All
  create mode 100644 sql/extras/Bots/world_bots.sql
  create mode 100644 sql/extras/Bots/world_creature_template_outfits.sql
  create mode 100644 sql/extras/World_TrinityChat.sql
+ create mode 100644 sql/guildhouses/world_guildhouses.sql
  create mode 100644 sql/tools/auth_VIPAccount.sql
  create mode 100644 sql/tools/setup_ahbot.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
@@ -212,6 +215,7 @@ Subject: [PATCH] 2014_04_18-All
  create mode 100644 src/server/game/TriniChat/framework/Utilities/UnorderedMap.h
  create mode 100644 src/server/scripts/Commands/cs_ah_bot.cpp
  create mode 100644 src/server/scripts/Custom/beastmaster.cpp
+ create mode 100644 src/server/scripts/Custom/guildmaster.cpp
  create mode 100644 src/server/scripts/Custom/npcbuff.cpp
  create mode 100644 src/server/scripts/Custom/professionnpc.cpp
  create mode 100644 src/server/scripts/Custom/summon.cpp
@@ -1479,6 +1483,79 @@ index 0000000..b3a6950
 +INSERT INTO `trinity_string` VALUES ('6610', '|cffff0000[System Message]: %s|r', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('6611', '|cffff0000[Server Event]: %s|r', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('6612', '|cffff0000[Automatic]: %s|r', null, null, null, null, null, null, null, null);
+diff --git a/sql/guildhouses/world_guildhouses.sql b/sql/guildhouses/world_guildhouses.sql
+new file mode 100644
+index 0000000..553a5d6
+--- /dev/null
++++ b/sql/guildhouses/world_guildhouses.sql
+@@ -0,0 +1,67 @@
++-- ----------------------------
++-- Table structure for guildhouses
++-- ----------------------------
++
++DROP TABLE IF EXISTS `guildhouses`;
++
++CREATE TABLE `guildhouses` (
++  `id` int(8) unsigned NOT NULL auto_increment,
++  `guildId` bigint(20) NOT NULL default '0',
++  `x` double NOT NULL,
++  `y` double NOT NULL,
++  `z` double NOT NULL,
++  `map` int(11) NOT NULL,
++  `comment` varchar(255) NOT NULL default '',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM AUTO_INCREMENT=42 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
++
++-- ----------------------------
++-- Records
++-- ----------------------------
++INSERT INTO `guildhouses` VALUES 
++('1', '0', '16222', '16266', '14.2', '1', 'GM Island'),
++('2', '0', '-10711', '2483', '8', '1', 'Tauren village at Veiled Sea (Silithus)'),
++('3', '0', '-8323', '-343', '146', '0', 'Fishing outside an Northshire Abbey (Elwynn Forest'),
++('4', '0', '7368', '-1560', '163', '1', 'Troll Village in mountains (Darkshore)'),
++('5', '0', '-4151', '-1400', '198', '0', 'Dwarven village outside Ironforge (Wetlands)'),
++('6', '0', '-1840', '-4233', '2.14', '0', 'Dwarven village (Arathi Highlands, Forbidding Sea)'),
++('8', '0', '-723', '-1076', '179', '1', 'Tauren camp (Mulgore, Red Rock)'),
++('9', '0', '-206', '1666', '80', '0', 'Shadowfang Keep an outside instance (Silverpine Forest)'),
++('10', '0', '-6374', '1262', '7', '0', 'Harbor house outside Stormwind (Elwynn Forest)'),
++('11', '0', '-8640', '580', '96', '0', 'Empty jail between canals (Stormwind) DELETE'),
++('12', '0', '-4844', '-1066', '502', '0', 'Old Ironforge'),
++('13', '0', '-4863', '-1658', '503.5', '0', 'Ironforge Airport'),
++('14', '0', '1146', '-165', '313', '37', 'Azshara Crater instance (Alliance entrance)'),
++('15', '0', '-123', '858', '298', '37', 'Azshara Crater instance (Horde entrance)'),
++('16', '0', '4303', '-2760', '16.8', '0', 'Quel\'Thalas Tower'),
++('17', '0', '-6161', '-790', '423', '0', 'Crashed gnome airplane (between Dun Morogh and Searing Gorge)'),
++('18', '0', '-11790', '-1640', '54.7', '0', 'Zul\'Gurub an outside instance (Stranglethorn Vale)'),
++('19', '0', '-11805', '-4754', '6', '1', 'Goblin village (Tanaris, South Seas)'),
++('20', '0', '-9296', '670', '132', '0', 'Villains camp outside an Stormwind (Elwynn Forest)'),
++('21', '0', '3414', '-3380', '142.2', '0', 'Stratholm an outside instance'),
++('22', '0', '4654', '-3772', '944', '1', 'Kalimdor Hyjal (Aka World Tree)'),
++('23', '0', '2176', '-4766', '55', '1', 'The Ring of Valor (Aka. Orgrimmar Arena)'),
++('24', '0', '1951.512085', '1530.475586', '247.288147', '1', 'Stonetalon Logging Camp'),
++('25', '0', '2813.660645', '2248.552979', '215.524643', '1', 'Stonetalon Ruins'),
++('28', '0', '9725.27', '-21.43', '20.03', '1', 'Teldrassil Furbold camp'),
++('29', '0', '-3855', '-3479', '579', '0', 'Wetlands mountain camp'),
++('30', '0', '-5362', '-2540', '485', '0', 'Ortell\'s Hideout'),
++('31', '0', '-12865', '-1396', '115', '0', 'Stranglethorn Secret Cave'),
++('32', '0', '-11073', '-1956', '39', '0', 'Karazhan Smiley'),
++('33', '0', '-11084', '-1801', '53', '0', 'Well of the Forgotten (Aka. Karazhan Crypt or Lower Karazhan)'),
++('34', '0', '1683.235474', '286.458801', '-45.451775', '0', 'Undercity Top Tier'),
++('35', '0', '-8521.3', '599.5', '101.399338', '0', 'Stormwind Cut-Throat Alley'),
++('36', '0', '-5933', '452', '509', '0', 'Forgotten gnome camp'),
++('37', '0', '-920.231323', '7096.489258', '170.35289', '530', 'Outland Nagrand : Newton\'s Remains'),
++('38', '0', '-2140.501953', '9142.6875', '137.041855', '530', 'Outland Nagrand : Tomb'),
++('39', '0', '-483.401794', '7461.944824', '186.120987', '530', 'Outland Nagrand: Challe\'s Home for Little Tykes'),
++('40', '0', '2387.753906', '3191.757324', '152.669388', '530', 'Outland Netherstorm: Nova\'s Shrine');
++
++-- *************************
++-- * NPC Guildhouse Keeper *
++-- *************************
++
++DELETE FROM creature_template WHERE `entry`=13;
++
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
++('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','35','1','1','1.14286','0.75','0','181','189','0','158','1','1400','1900','1','0','0','8','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
 diff --git a/sql/tools/auth_VIPAccount.sql b/sql/tools/auth_VIPAccount.sql
 new file mode 100644
 index 0000000..df317ed
@@ -20154,7 +20231,7 @@ index 0000000..1310b4d
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index dc5a276..fcaeaf4 100644
+index 9ce1f9b..33e065c 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -683,6 +683,19 @@ enum RBACPermissions
@@ -23449,7 +23526,7 @@ index 0000000..b5ea012
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index 29d80f5..6c36b87 100644
+index f4699f0..4dda7ec 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 @@ -171,7 +171,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
@@ -23671,7 +23748,7 @@ index a56b790..c66e9cb 100644
 +
  #endif
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index e4bdc2d..10516bb 100644
+index 36997eb..d1fcf79 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -23709,7 +23786,7 @@ index e4bdc2d..10516bb 100644
  
      m_corpseRemoveTime = time(NULL);
      setDeathState(DEAD);
-@@ -444,6 +458,11 @@ bool Creature::UpdateEntry(uint32 Entry, uint32 team, const CreatureData* data)
+@@ -441,6 +455,11 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/)
  
  void Creature::Update(uint32 diff)
  {
@@ -23721,7 +23798,7 @@ index e4bdc2d..10516bb 100644
      if (IsAIEnabled && TriggerJustRespawned)
      {
          TriggerJustRespawned = false;
-@@ -1274,6 +1293,11 @@ void Creature::SetCanDualWield(bool value)
+@@ -1268,6 +1287,11 @@ void Creature::SetCanDualWield(bool value)
  
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
@@ -23733,7 +23810,7 @@ index e4bdc2d..10516bb 100644
      if (id == 0)
      {
          if (force)
-@@ -2134,6 +2158,9 @@ void Creature::SetInCombatWithZone()
+@@ -2128,6 +2152,9 @@ void Creature::SetInCombatWithZone()
  
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
@@ -23743,7 +23820,7 @@ index e4bdc2d..10516bb 100644
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
  
-@@ -2710,3 +2737,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
+@@ -2704,3 +2731,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
          ClearUnitState(UNIT_STATE_ROTATING);
  }
  
@@ -23914,7 +23991,7 @@ index e4bdc2d..10516bb 100644
 +        (m_creatureInfo->unit_flags2 & UNIT_FLAG2_ALLOW_ENEMY_INTERACT);
 +}
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 69c3d16..33cf813 100644
+index 920c262..3b65d45 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -23929,7 +24006,7 @@ index 69c3d16..33cf813 100644
  enum CreatureFlagsExtra
  {
      CREATURE_FLAG_EXTRA_INSTANCE_BIND   = 0x00000001,       // creature kill bind instance with killer and killer's group
-@@ -678,6 +683,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -677,6 +682,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
  
@@ -23974,9 +24051,9 @@ index 69c3d16..33cf813 100644
 +        //End Bot commands
 +
      protected:
-         bool CreateFromProto(uint32 guidlow, uint32 Entry, uint32 vehId, uint32 team, const CreatureData* data = NULL);
-         bool InitEntry(uint32 entry, uint32 team=ALLIANCE, const CreatureData* data=NULL);
-@@ -728,6 +773,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+         bool CreateFromProto(uint32 guidlow, uint32 entry, CreatureData const* data = nullptr, uint32 vehId = 0);
+         bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
+@@ -727,6 +772,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const;
  
      private:
@@ -24012,10 +24089,10 @@ index d31117c..fb8ed9c 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index c0a5406..f540668 100644
+index f2215fa..8bccaee 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
-@@ -2192,6 +2192,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2187,6 +2187,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
              summon = new Puppet(properties, summoner);
              break;
          case UNIT_MASK_TOTEM:
@@ -24027,7 +24104,7 @@ index c0a5406..f540668 100644
              summon = new Totem(properties, summoner);
              break;
          case UNIT_MASK_MINION:
-@@ -2213,6 +2218,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2208,6 +2213,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
      AddToMap(summon->ToCreature());
      summon->InitSummon();
  
@@ -24041,7 +24118,7 @@ index c0a5406..f540668 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2691a68..fdfd6a7 100644
+index 2da94d3..70aaf5f 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -31,6 +31,7 @@
@@ -24083,7 +24160,7 @@ index 2691a68..fdfd6a7 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -881,6 +899,28 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -874,6 +892,28 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -24112,7 +24189,7 @@ index 2691a68..fdfd6a7 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -935,6 +975,16 @@ Player::~Player()
+@@ -928,6 +968,16 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -24129,7 +24206,7 @@ index 2691a68..fdfd6a7 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1333,8 +1383,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
+@@ -1326,8 +1376,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
  {
      switch (timer)
      {
@@ -24141,7 +24218,7 @@ index 2691a68..fdfd6a7 100644
          case BREATH_TIMER:
          {
              if (!IsAlive() || HasAuraType(SPELL_AURA_WATER_BREATHING) || GetSession()->GetSecurity() >= AccountTypes(sWorld->getIntConfig(CONFIG_DISABLE_BREATHING)))
-@@ -1417,6 +1470,9 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1410,6 +1463,9 @@ void Player::HandleDrowning(uint32 time_diff)
      }
  
      // In dark water
@@ -24151,7 +24228,7 @@ index 2691a68..fdfd6a7 100644
      if (m_MirrorTimerFlags & UNDERWARER_INDARKWATER)
      {
          // Fatigue timer not activated - activate it
-@@ -1453,7 +1509,7 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1446,7 +1502,7 @@ void Player::HandleDrowning(uint32 time_diff)
          else if (m_MirrorTimerFlagsLast & UNDERWARER_INDARKWATER)
              SendMirrorTimer(FATIGUE_TIMER, DarkWaterTime, m_MirrorTimer[FATIGUE_TIMER], 10);
      }
@@ -24160,7 +24237,7 @@ index 2691a68..fdfd6a7 100644
      if (m_MirrorTimerFlags & (UNDERWATER_INLAVA /*| UNDERWATER_INSLIME*/) && !(_lastLiquid && _lastLiquid->SpellId))
      {
          // Breath timer not activated - activate it
-@@ -1854,6 +1910,17 @@ void Player::Update(uint32 p_time)
+@@ -1847,6 +1903,17 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -24178,7 +24255,7 @@ index 2691a68..fdfd6a7 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2232,6 +2299,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2224,6 +2291,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -24192,7 +24269,7 @@ index 2691a68..fdfd6a7 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2463,6 +2537,925 @@ void Player::RemoveFromWorld()
+@@ -2455,6 +2529,925 @@ void Player::RemoveFromWorld()
              SetViewpoint(viewpoint, false);
          }
      }
@@ -25118,7 +25195,7 @@ index 2691a68..fdfd6a7 100644
  }
  
  void Player::RegenerateAll()
-@@ -2742,6 +3735,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2734,6 +3727,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
  
      // not enemy
      if (creature->IsHostileTo(this))
@@ -25128,7 +25205,7 @@ index 2691a68..fdfd6a7 100644
          return NULL;
  
      // not unfriendly
-@@ -2930,6 +3926,26 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2922,6 +3918,26 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -25155,7 +25232,7 @@ index 2691a68..fdfd6a7 100644
          group->RemoveMember(guid, method, kicker, reason);
          group = NULL;
      }
-@@ -3070,6 +4086,17 @@ void Player::GiveLevel(uint8 level)
+@@ -3062,6 +4078,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
  
@@ -25173,7 +25250,7 @@ index 2691a68..fdfd6a7 100644
      UpdateAllStats();
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
-@@ -4994,6 +6021,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4986,6 +6013,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -25187,7 +25264,7 @@ index 2691a68..fdfd6a7 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -6896,7 +7930,8 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6886,7 +7920,8 @@ void Player::CheckAreaExploreAndOutdoor()
                  {
                      XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
@@ -25197,7 +25274,7 @@ index 2691a68..fdfd6a7 100644
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -15293,6 +16328,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15301,6 +16336,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
          AddPct(XP, (*i)->GetAmount());
  
      int32 moneyRew = 0;
@@ -25208,7 +25285,7 @@ index 2691a68..fdfd6a7 100644
          GiveXP(XP, NULL);
      else
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 2eb740f..6a65834 100644
+index a3d8d09..bb794df 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -52,6 +52,11 @@ class PlayerSocial;
@@ -25337,10 +25414,10 @@ index 0413622..27e7bb3 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 9cc214b..6a33ed4 100644
+index 69c47ad..001f107 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -345,6 +345,17 @@ void Unit::Update(uint32 p_time)
+@@ -339,6 +339,17 @@ void Unit::Update(uint32 p_time)
                  m_CombatTimer -= p_time;
          }
      }
@@ -25358,7 +25435,7 @@ index 9cc214b..6a33ed4 100644
  
      // not implemented before 3.0.2
      if (uint32 base_att = getAttackTimer(BASE_ATTACK))
-@@ -582,6 +593,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
+@@ -576,6 +587,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
          if (pet && pet->IsAlive())
              pet->AI()->OwnerAttackedBy(this);
  
@@ -25371,7 +25448,7 @@ index 9cc214b..6a33ed4 100644
          if (victim->ToPlayer()->GetCommandStatus(CHEAT_GOD))
              return 0;
      }
-@@ -996,6 +1013,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
+@@ -990,6 +1007,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
          case SPELL_DAMAGE_CLASS_RANGED:
          case SPELL_DAMAGE_CLASS_MELEE:
          {
@@ -25383,7 +25460,7 @@ index 9cc214b..6a33ed4 100644
              // Physical Damage
              if (damageSchoolMask & SPELL_SCHOOL_MASK_NORMAL)
              {
-@@ -1053,6 +1075,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
+@@ -1047,6 +1069,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
          case SPELL_DAMAGE_CLASS_NONE:
          case SPELL_DAMAGE_CLASS_MAGIC:
          {
@@ -25395,7 +25472,7 @@ index 9cc214b..6a33ed4 100644
              // If crit add critical bonus
              if (crit)
              {
-@@ -1169,6 +1196,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
+@@ -1163,6 +1190,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
      // Script Hook For CalculateMeleeDamage -- Allow scripts to change the Damage pre class mitigation calculations
      sScriptMgr->ModifyMeleeDamage(damageInfo->target, damageInfo->attacker, damage);
  
@@ -25407,7 +25484,7 @@ index 9cc214b..6a33ed4 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10421,6 +10453,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
+@@ -10409,6 +10441,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CREATURE_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
@@ -25415,7 +25492,7 @@ index 9cc214b..6a33ed4 100644
          return false;
  
      // not critting spell
-@@ -13150,6 +13183,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13138,6 +13171,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -25427,7 +25504,7 @@ index 9cc214b..6a33ed4 100644
      return true;
  }
  
-@@ -16590,6 +16628,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16575,6 +16613,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -25637,10 +25714,10 @@ index 95d4c7e..170621f 100644
  
      //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 8784e2c..39a59b4 100644
+index afe4226..019dd21 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7792,6 +7792,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
+@@ -7840,6 +7840,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
      }
  }
  
@@ -25724,7 +25801,7 @@ index 8784e2c..39a59b4 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index b1f80af..2038ee4 100644
+index 797d870..47d2ee7 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -144,6 +144,21 @@ struct GameTele
@@ -25749,7 +25826,7 @@ index b1f80af..2038ee4 100644
  enum ScriptsType
  {
      SCRIPTS_FIRST = 1,
-@@ -966,6 +981,7 @@ class ObjectMgr
+@@ -1004,6 +1019,7 @@ class ObjectMgr
  
          void LoadNPCSpellClickSpells();
  
@@ -25757,7 +25834,7 @@ index b1f80af..2038ee4 100644
          void LoadGameTele();
  
          void LoadGossipMenu();
-@@ -1166,6 +1182,8 @@ class ObjectMgr
+@@ -1212,6 +1228,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
  
@@ -25766,7 +25843,7 @@ index b1f80af..2038ee4 100644
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
-@@ -1310,6 +1328,8 @@ class ObjectMgr
+@@ -1356,6 +1374,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
  
@@ -25848,7 +25925,7 @@ index 64122b0..58f5ee7 100644
          bool _setMembersGroup(uint64 guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index d9e4feb..f43f65b 100644
+index 86fa042..6346691 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -22,6 +22,7 @@
@@ -25867,7 +25944,7 @@ index d9e4feb..f43f65b 100644
  
  //void called when player click on auctioneer npc
  void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recvData)
-@@ -555,10 +557,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
+@@ -574,10 +576,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
      SendAuctionCommandResult(auction->Id, AUCTION_CANCEL, ERR_AUCTION_OK);
  
      // Now remove the auction
@@ -25886,7 +25963,7 @@ index d9e4feb..f43f65b 100644
      uint32 itemEntry = auction->itemEntry;
      sAuctionMgr->RemoveAItem(auction->itemGUIDLow);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index f9a5ec2..584354e 100644
+index f4ea497..9012350 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,9 @@
@@ -25955,7 +26032,7 @@ index e0b2952..f9d63d2 100644
                  {
                      sScriptMgr->OnPlayerChat(sender, type, lang, msg, chn);
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 4fd1d51..a49c1a7 100644
+index 1b04c89..dd65d0f 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -56,6 +56,9 @@
@@ -26140,7 +26217,7 @@ index 2c65e36..283efa7 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index 6865764..4f54fb9 100644
+index cd39129..0fd5de0 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
 @@ -2679,7 +2679,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
@@ -26170,7 +26247,7 @@ index 8d0e97d..622dbae 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7365d59..80b47c1 100644
+index 7365d59..1973ab5 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -24,6 +24,9 @@ void AddSC_example_gossip_codebox();
@@ -26205,7 +26282,16 @@ index 7365d59..80b47c1 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -752,6 +766,7 @@ void AddCommandScripts()
+@@ -97,6 +111,8 @@ void AddSC_npc_innkeeper();
+ void AddSC_npcs_special();
+ void AddSC_npc_taxi();
+ void AddSC_achievement_scripts();
++//guildhouse
++void AddSC_guildmaster();
+ 
+ //eastern kingdoms
+ void AddSC_alterac_valley();                 //Alterac Valley
+@@ -752,6 +768,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -26213,7 +26299,7 @@ index 7365d59..80b47c1 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1436,13 +1451,49 @@ void AddBattlegroundScripts()
+@@ -1436,13 +1453,51 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -26263,13 +26349,15 @@ index 7365d59..80b47c1 100644
 +    AddSC_summon();
 +    // Beastmaster
 +    AddSC_Npc_Beastmaster();
++    //guildhouse
++    AddSC_guildmaster();
  #endif
  }
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 58e7ba0..0945cc7 100644
+index 89242ba..fbd209e 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
-@@ -96,7 +96,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
+@@ -97,7 +97,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
  }
  
  /// WorldSession constructor
@@ -26278,7 +26366,7 @@ index 58e7ba0..0945cc7 100644
      m_muteTime(mute_time),
      m_timeOutTime(0),
      AntiDOS(this),
-@@ -104,6 +104,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
+@@ -105,6 +105,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
      _player(NULL),
      m_Socket(sock),
      _security(sec),
@@ -26286,7 +26374,7 @@ index 58e7ba0..0945cc7 100644
      _accountId(id),
      m_expansion(expansion),
      _warden(NULL),
-@@ -432,6 +433,20 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -433,6 +434,20 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
  /// %Log the player out
  void WorldSession::LogoutPlayer(bool save)
  {
@@ -26307,7 +26395,7 @@ index 58e7ba0..0945cc7 100644
      // finish pending transfers before starting the logout
      while (_player && _player->IsBeingTeleportedFar())
          HandleMoveWorldportAckOpcode();
-@@ -525,6 +540,9 @@ void WorldSession::LogoutPlayer(bool save)
+@@ -526,6 +541,9 @@ void WorldSession::LogoutPlayer(bool save)
          // remove player from the group if he is:
          // a) in group; b) not in raid group; c) logging out normally (not being kicked or disconnected)
          if (_player->GetGroup() && !_player->GetGroup()->isRaidGroup() && m_Socket)
@@ -26318,10 +26406,10 @@ index 58e7ba0..0945cc7 100644
  
          //! Send update to group and reset stored max enchanting level
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 0af6069..d5f368e 100644
+index 94c6f83..e9624cc 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -192,11 +192,36 @@ class CharacterCreateInfo
+@@ -196,11 +196,36 @@ class CharacterCreateInfo
          uint8 CharCount;
  };
  
@@ -26359,7 +26447,7 @@ index 0af6069..d5f368e 100644
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -228,6 +253,7 @@ class WorldSession
+@@ -232,6 +257,7 @@ class WorldSession
          void InvalidateRBACData(); // Used to force LoadPermissions at next HasPermission check
  
          AccountTypes GetSecurity() const { return _security; }
@@ -26367,7 +26455,7 @@ index 0af6069..d5f368e 100644
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          std::string const& GetPlayerName() const;
-@@ -978,6 +1004,7 @@ class WorldSession
+@@ -985,6 +1011,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
@@ -34781,7 +34869,7 @@ index 0000000..fce5ec8
 +#endif
 +
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 8f29418..5cfae17 100644
+index e40e2f7..8ae0a93 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -72,6 +72,7 @@
@@ -34984,7 +35072,7 @@ index 8f29418..5cfae17 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1433,6 +1596,9 @@ void World::SetInitialWorldSettings()
+@@ -1437,6 +1600,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -34994,7 +35082,7 @@ index 8f29418..5cfae17 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1723,6 +1889,9 @@ void World::SetInitialWorldSettings()
+@@ -1727,6 +1893,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
  
@@ -35004,7 +35092,7 @@ index 8f29418..5cfae17 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1736,6 +1905,8 @@ void World::SetInitialWorldSettings()
+@@ -1740,6 +1909,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -35013,7 +35101,7 @@ index 8f29418..5cfae17 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -1812,6 +1983,9 @@ void World::SetInitialWorldSettings()
+@@ -1816,6 +1987,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -35023,7 +35111,7 @@ index 8f29418..5cfae17 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1979,6 +2153,7 @@ void World::Update(uint32 diff)
+@@ -1983,6 +2157,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -35031,7 +35119,7 @@ index 8f29418..5cfae17 100644
          m_timers[WUPDATE_AUCTIONS].Reset();
  
          ///- Update mails (return old mails with item, or delete them)
-@@ -2103,6 +2278,12 @@ void World::Update(uint32 diff)
+@@ -2107,6 +2282,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -35044,7 +35132,7 @@ index 8f29418..5cfae17 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2718,6 +2899,20 @@ void World::SendAutoBroadcast()
+@@ -2722,6 +2903,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -35066,7 +35154,7 @@ index 8f29418..5cfae17 100644
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index a58dcc8..c75b725 100644
+index 1557baf..c1c0c23 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -35089,7 +35177,7 @@ index a58dcc8..c75b725 100644
      RATE_REPAIRCOST,
      RATE_REPUTATION_GAIN,
      RATE_REPUTATION_LOWLEVEL_KILL,
-@@ -525,6 +529,9 @@ class World
+@@ -526,6 +530,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -35647,10 +35735,10 @@ index dd1366a..ca351fe 100644
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 78db719..0b9df75 100644
+index 78db719..f30ce96 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -10,6 +10,10 @@
+@@ -10,6 +10,11 @@
  
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
@@ -35658,6 +35746,7 @@ index 78db719..0b9df75 100644
 +  Custom/professionnpc.cpp
 +  Custom/summon.cpp
 +  Custom/beastmaster.cpp
++  Custom/guildmaster.cpp
  )
  
  message("  -> Prepared: Custom")
@@ -36051,6 +36140,328 @@ index 0000000..705e778
 +void AddSC_Npc_Beastmaster()
 +{
 +    new Npc_Beastmaster();
++}
+diff --git a/src/server/scripts/Custom/guildmaster.cpp b/src/server/scripts/Custom/guildmaster.cpp
+new file mode 100644
+index 0000000..5563a17
+--- /dev/null
++++ b/src/server/scripts/Custom/guildmaster.cpp
+@@ -0,0 +1,316 @@
++#include "ScriptPCH.h"
++#include "Config.h"
++
++//extern DatabaseMysql SD2Database;
++
++//extern WorldDatabaseWorkerPool WorldDatabase;
++
++#define MSG_GOSSIP_TELE          "Teleport to GuildHouse"
++#define MSG_GOSSIP_BUY           "Buy GuildHouse"
++#define MSG_GOSSIP_SELL          "Sell GuildHouse"
++#define MSG_GOSSIP_NEXTPAGE      "Next -->"
++#define MSG_INCOMBAT             "You are in combat and cannot be teleported to your GuildHouse."
++#define MSG_NOGUILDHOUSE         "Your guild currently does not own a GuildHouse."
++#define MSG_NOFREEGH             "Unfortunately, all GuildHouses are in use."
++#define MSG_ALREADYHAVEGH        "Sorry, but you already own a GuildHouse (%s)."
++#define MSG_NOTENOUGHMONEY       "You do not have the %u gold required to purchase a GuildHouse."
++#define MSG_GHOCCUPIED           "This GuildHouse is unavailable for purchase as it is currently in use."
++#define MSG_CONGRATULATIONS      "Congratulations! You have successfully purchased a GuildHouse."
++#define MSG_SOLD                 "You have sold your GuildHouse and have received %u gold."
++#define MSG_NOTINGUILD           "You need to be in a guild before you can use a GuildHouse."
++#define MSG_SELL_CONFIRM         "Are you sure you want to sell your guildhouse for half the buy price?"
++
++#define OFFSET_GH_ID_TO_ACTION 1500
++#define OFFSET_SHOWBUY_FROM 10000
++
++#define ACTION_TELE 1001
++#define ACTION_SHOW_BUYLIST 1002 //deprecated. Use (OFFSET_SHOWBUY_FROM + 0) instead
++#define ACTION_SELL_GUILDHOUSE 1003
++
++#define ICON_GOSSIP_BALOON 0
++#define ICON_GOSSIP_WING 2
++#define ICON_GOSSIP_BOOK 3
++#define ICON_GOSSIP_WHEEL1 4
++#define ICON_GOSSIP_WHEEL2 5
++#define ICON_GOSSIP_GOLD 6
++#define ICON_GOSSIP_BALOONDOTS 7
++#define ICON_GOSSIP_TABARD 8
++#define ICON_GOSSIP_XSWORDS 9
++
++#define COST_GH_BUY 10000000 //1000 g.
++#define COST_GH_SELL 5000000 //500 g.
++
++#define GOSSIP_COUNT_MAX 10
++
++class guildmaster : public CreatureScript
++{
++ public:
++ guildmaster() : CreatureScript("guildmaster") { }
++
++bool isPlayerGuildLeader(Player *player)
++{
++ return (player->GetRank() == 0) && (player->GetGuildId() != 0);
++}
++
++bool getGuildHouseCoords(uint32 guildId, float &x, float &y, float &z, uint32 &map)
++{
++ if (guildId == 0)
++ {
++ //if player has no guild
++ return false;
++ }
++
++ QueryResult result;
++ result = WorldDatabase.PQuery("SELECT `x`, `y`, `z`, `map` FROM `guildhouses` WHERE `guildId` = %u", guildId);
++ if (result)
++ {
++ Field *fields = result->Fetch();
++ x = fields[0].GetFloat();
++ y = fields[1].GetFloat();
++ z = fields[2].GetFloat();
++ map = fields[3].GetUInt32();
++ return true;
++ }
++
++ return false;
++}
++
++void teleportPlayerToGuildHouse(Player *player, Creature *_creature)
++{
++ if (player->GetGuildId() == 0)
++ {
++ //if player has no guild
++ _creature->MonsterWhisper(MSG_NOTINGUILD, player);
++ return;
++ }
++
++ if (!player->getAttackers().empty())
++ {
++ //if player in combat
++ _creature->MonsterSay(MSG_INCOMBAT, LANG_UNIVERSAL, player);
++ return;
++ }
++
++ float x, y, z;
++ uint32 map;
++
++ if (getGuildHouseCoords(player->GetGuildId(), x, y, z, map))
++ {
++ //teleport player to the specified location
++ player->TeleportTo(map, x, y, z, 0.0f);
++ }
++ else
++ _creature->MonsterWhisper(MSG_NOGUILDHOUSE, player);
++}
++
++bool showBuyList(Player *player, Creature *_creature, uint32 showFromId = 0)
++{
++ //show not occupied guildhouses
++
++ QueryResult result;
++ result = WorldDatabase.PQuery("SELECT `id`, `comment` FROM `guildhouses` WHERE `guildId` = 0 AND `id` > %u ORDER BY `id` ASC LIMIT %u",
++ showFromId, GOSSIP_COUNT_MAX);
++
++ if (result)
++ {
++ uint32 guildhouseId = 0;
++ std::string comment = "";
++ do
++ {
++ Field *fields = result->Fetch();
++ guildhouseId = fields[0].GetInt32();
++ comment = fields[1].GetString();
++
++ //send comment as a gossip item
++ //transmit guildhouseId in Action variable
++ player->ADD_GOSSIP_ITEM(ICON_GOSSIP_TABARD, comment, GOSSIP_SENDER_MAIN,
++ guildhouseId + OFFSET_GH_ID_TO_ACTION);
++ }
++ while (result->NextRow());
++
++ if (result->GetRowCount() == GOSSIP_COUNT_MAX)
++ {
++ //assume that we have additional page
++ //add link to next GOSSIP_COUNT_MAX items
++ player->ADD_GOSSIP_ITEM(ICON_GOSSIP_BALOONDOTS, MSG_GOSSIP_NEXTPAGE, GOSSIP_SENDER_MAIN,
++ guildhouseId + OFFSET_SHOWBUY_FROM);
++ }
++
++ player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, _creature->GetGUID());
++
++ return true;
++ }
++ else
++ {
++ if (showFromId = 0)
++ {
++ //all guildhouses are occupied
++ _creature->MonsterWhisper(MSG_NOFREEGH, player);
++ player->CLOSE_GOSSIP_MENU();
++ }
++ else
++ {
++ //this condition occurs when COUNT(guildhouses) % GOSSIP_COUNT_MAX == 0
++ //just show GHs from beginning
++ showBuyList(player, _creature, 0);
++ }
++ }
++
++ return false;
++}
++
++bool isPlayerHasGuildhouse(Player *player, Creature *_creature, bool whisper = false)
++{
++ QueryResult result;
++ result = WorldDatabase.PQuery("SELECT `comment` FROM `guildhouses` WHERE `guildId` = %u",
++ player->GetGuildId());
++
++ if (result)
++ {
++ if (whisper)
++ {
++ //whisper to player "already have etc..."
++ Field *fields = result->Fetch();
++ char msg[100];
++ sprintf(msg, MSG_ALREADYHAVEGH, fields[0].GetString());
++ _creature->MonsterWhisper(msg, player);
++ }
++
++ return true;
++ }
++
++ return false;
++}
++
++void buyGuildhouse(Player *player, Creature *_creature, uint32 guildhouseId)
++{
++
++ bool token = sConfigMgr->GetBoolDefault("GuildHouse.TokenOrGold", false);
++ int cost = sConfigMgr->GetBoolDefault("GuildHouse.Cost", false);
++ 
++ if (player->GetMoney() < COST_GH_BUY)
++ {
++ //show how much money player need to buy GH (in gold)
++ char msg[100];
++ sprintf(msg, MSG_NOTENOUGHMONEY, COST_GH_BUY - sConfigMgr->GetBoolDefault("GuildHouse.Cost", false));
++ _creature->MonsterWhisper(msg, player);
++ return;
++ }
++
++ if (isPlayerHasGuildhouse(player, _creature, true))
++ {
++ //player already have GH
++ return;
++ }
++
++ QueryResult result;
++
++ //check if somebody already occupied this GH
++ result = WorldDatabase.PQuery("SELECT `id` FROM `guildhouses` WHERE `id` = %u AND `guildId` <> 0", guildhouseId);
++
++ if (result)
++ {
++ _creature->MonsterWhisper(MSG_GHOCCUPIED, player);
++ return;
++ }
++
++ //update DB
++ result = WorldDatabase.PQuery("UPDATE `guildhouses` SET `guildId` = %u WHERE `id` = %u",
++ player->GetGuildId(), guildhouseId);
++
++
++ player->ModifyMoney(-sConfigMgr->GetIntDefault("GuildHouse.BuyCost", false) * 10000);
++
++ //player->DestroyItemCount(token, cost, true);
++ _creature->MonsterSay(MSG_CONGRATULATIONS, LANG_UNIVERSAL, player);
++
++}
++
++void sellGuildhouse(Player *player, Creature *_creature)
++{
++ if (isPlayerHasGuildhouse(player, _creature))
++ {
++ QueryResult result;
++ result = WorldDatabase.PQuery("UPDATE `guildhouses` SET `guildId` = 0 WHERE `guildId` = %u",
++ player->GetGuildId());
++
++ player->ModifyMoney(sConfigMgr->GetIntDefault("GuildHouse.SellCost", false) * 10000);
++
++ //display message e.g. "here your money etc."
++ char msg[100];
++ sprintf(msg, MSG_SOLD, sConfigMgr->GetIntDefault("GuildHouse.SellCost", false));
++ _creature->MonsterWhisper(msg, player);
++ }
++}
++
++ bool OnGossipSelect(Player *player, Creature *_creature, uint32 sender, uint32 action)
++ {
++ player->PlayerTalkClass->ClearMenus();
++ if (sender != GOSSIP_SENDER_MAIN)
++ return false;
++
++ switch (action)
++ {
++ case ACTION_TELE:
++ //teleport player to GH
++ player->CLOSE_GOSSIP_MENU();
++ teleportPlayerToGuildHouse(player, _creature);
++ break;
++ case ACTION_SHOW_BUYLIST:
++ //show list of GHs which currently not occupied
++ showBuyList(player, _creature);
++ break;
++ case ACTION_SELL_GUILDHOUSE:
++  sellGuildhouse(player, _creature);
++  player->CLOSE_GOSSIP_MENU();
++ break;
++ default:
++ if (action > OFFSET_SHOWBUY_FROM)
++ {
++ showBuyList(player, _creature, action - OFFSET_SHOWBUY_FROM);
++ }
++ else if (action > OFFSET_GH_ID_TO_ACTION)
++ {
++ //player clicked on buy list
++ player->CLOSE_GOSSIP_MENU();
++
++ //get guildhouseId from action
++ //guildhouseId = action - OFFSET_GH_ID_TO_ACTION
++ buyGuildhouse(player, _creature, action - OFFSET_GH_ID_TO_ACTION);
++ }
++ break;
++ }
++
++ return true;
++ }
++
++
++ bool OnGossipHello(Player *player, Creature *_creature)
++ {
++ player->ADD_GOSSIP_ITEM(ICON_GOSSIP_BALOON, MSG_GOSSIP_TELE, GOSSIP_SENDER_MAIN, ACTION_TELE);
++
++ if (isPlayerGuildLeader(player))
++ {
++ if (isPlayerHasGuildhouse(player, _creature))
++ {
++ //and additional for guildhouse owner (Removed :
++ player->ADD_GOSSIP_ITEM_EXTENDED(ICON_GOSSIP_GOLD, MSG_GOSSIP_SELL, GOSSIP_SENDER_MAIN, ACTION_SELL_GUILDHOUSE, MSG_SELL_CONFIRM, 0, false);
++ 
++ }
++ else
++ {
++ //show additional menu for guild leader
++ player->ADD_GOSSIP_ITEM(ICON_GOSSIP_GOLD, MSG_GOSSIP_BUY, GOSSIP_SENDER_MAIN, ACTION_SHOW_BUYLIST);
++ }
++ }
++
++ player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, _creature->GetGUID());
++ return true;
++ }
++
++
++};
++void AddSC_guildmaster()
++{
++ new guildmaster();
 +}
 diff --git a/src/server/scripts/Custom/npcbuff.cpp b/src/server/scripts/Custom/npcbuff.cpp
 new file mode 100644
@@ -36941,12 +37352,12 @@ index 0000000..5dbbd8a
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Spells/spell_priest.cpp b/src/server/scripts/Spells/spell_priest.cpp
-index f12a57a..98980f9 100644
+index f96a30c..439075c 100644
 --- a/src/server/scripts/Spells/spell_priest.cpp
 +++ b/src/server/scripts/Spells/spell_priest.cpp
 @@ -561,6 +561,7 @@ class spell_pri_penance : public SpellScriptLoader
  
-             bool Load() OVERRIDE
+             bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster()->GetTypeId() == TYPEID_PLAYER;
@@ -36963,7 +37374,7 @@ index f12a57a..98980f9 100644
                          return SPELL_FAILED_BAD_TARGETS;
 @@ -744,6 +747,7 @@ class spell_pri_renew : public SpellScriptLoader
  
-             bool Load() OVERRIDE
+             bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster() && GetCaster()->GetTypeId() == TYPEID_PLAYER;
@@ -37038,7 +37449,7 @@ index 01f9fd9..a1ebf56 100644
      LOGIN_SEL_BANS,
      LOGIN_SEL_ACCOUNT_WHOIS,
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-index 644d3b3..72fae63 100644
+index d0e9c46..0531136 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.cpp
 @@ -91,4 +91,8 @@ void WorldDatabaseConnection::DoPrepareStatements()
@@ -37117,7 +37528,7 @@ index 75d9ca5..1b8c794 100644
  #ifndef _TRINITY_CORE_CONFIG
  # define _TRINITY_CORE_CONFIG  "worldserver.conf"
 diff --git a/src/server/worldserver/Master.cpp b/src/server/worldserver/Master.cpp
-index c3075de..c968f40 100644
+index c542437..40f46de 100644
 --- a/src/server/worldserver/Master.cpp
 +++ b/src/server/worldserver/Master.cpp
 @@ -42,7 +42,7 @@
@@ -37146,7 +37557,7 @@ index c3075de..c968f40 100644
      if (uint32 freezeDelay = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
      {
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..0d3f4d4 100644
+index f71ef5d..6df3a91 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -757,6 +757,20 @@ RecruitAFriend.MaxDifference = 4
@@ -37839,7 +38250,7 @@ index f71ef5d..0d3f4d4 100644
  
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
-@@ -2771,3 +3406,136 @@ PacketSpoof.BanDuration = 86400
+@@ -2771,3 +3406,166 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
@@ -37973,6 +38384,36 @@ index f71ef5d..0d3f4d4 100644
 +#
 +
 +BeastMaster.EnableExoticPet = 1
++
++#
++###################################################################################################
++
++###################################################################################################
++# GuildHouse
++#
++# Settings for the GuildHouse Keeper.
++#
++#    Guildhouse.TokenOrGold
++#        Description: Use tokens or money to buy guild houses.
++#        Default:     0 - Use Money
++#                     1 - Use Token
++#
++
++Guildhouse.TokenOrGold = 0
++
++#    GuildHouse.BuyCost
++#        Description: Amount of gold or quantity of tokens to buy guildhouse.
++#        Default:     1000 - 1000 gold
++#
++
++Guildhouse.BuyCost = 1000
++
++#    GuildHouse.BuyCost
++#        Description: Amount of gold or quantity of tokens gained when selling guildhouse.
++#        Default:     5000000 - 500 gold
++#
++
++Guildhouse.SellCost = 500
 +
 +#
 +###################################################################################################
