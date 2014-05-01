@@ -1,7 +1,7 @@
-From 43f761557f840af8fb0506f53c380fde1766452d Mon Sep 17 00:00:00 2001
+From 19cfc95a30bb6d793c434cb3b9305c5833153e89 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 27 Apr 2014 14:01:39 -0500
-Subject: [PATCH] 2014_04_27-Playerbots_NPCBots
+Date: Thu, 1 May 2014 07:17:26 -0500
+Subject: [PATCH] 2014_05_01-Playerbots_NPCBots
 
 ---
  sql/Bots/character_NPC_bots.sql                    |    10 +
@@ -33401,7 +33401,7 @@ index bf46c1f..be53fe9 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/ScriptedAI
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 58a55d2..2d96b58 100644
+index 36997eb..c62196d 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -33436,7 +33436,7 @@ index 58a55d2..2d96b58 100644
  
      m_corpseRemoveTime = time(NULL);
      setDeathState(DEAD);
-@@ -2710,3 +2721,118 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
+@@ -2704,3 +2715,118 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
          ClearUnitState(UNIT_STATE_ROTATING);
  }
  
@@ -33556,7 +33556,7 @@ index 58a55d2..2d96b58 100644
 +    if (bot_AI) bot_AI->SetShouldUpdateStats();
 +}
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 69c3d16..6828473 100644
+index 920c262..ad2ff10 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -33571,7 +33571,7 @@ index 69c3d16..6828473 100644
  enum CreatureFlagsExtra
  {
      CREATURE_FLAG_EXTRA_INSTANCE_BIND   = 0x00000001,       // creature kill bind instance with killer and killer's group
-@@ -678,6 +683,29 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -677,6 +682,29 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
  
@@ -33599,9 +33599,9 @@ index 69c3d16..6828473 100644
 +        //Bot commands
 +
      protected:
-         bool CreateFromProto(uint32 guidlow, uint32 Entry, uint32 vehId, uint32 team, const CreatureData* data = NULL);
-         bool InitEntry(uint32 entry, uint32 team=ALLIANCE, const CreatureData* data=NULL);
-@@ -728,6 +756,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+         bool CreateFromProto(uint32 guidlow, uint32 entry, CreatureData const* data = nullptr, uint32 vehId = 0);
+         bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
+@@ -727,6 +755,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const;
  
      private:
@@ -33634,7 +33634,7 @@ index d31117c..8773d1f 100644
  }
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index ecea710..ad3edb1 100644
+index 13aae30..2df7bde 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,10 @@
@@ -33668,7 +33668,7 @@ index ecea710..ad3edb1 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -881,6 +898,20 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -870,6 +887,20 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -33689,7 +33689,7 @@ index ecea710..ad3edb1 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -935,6 +966,16 @@ Player::~Player()
+@@ -924,6 +955,16 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -33706,7 +33706,7 @@ index ecea710..ad3edb1 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1854,6 +1895,20 @@ void Player::Update(uint32 p_time)
+@@ -1843,6 +1884,20 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -33727,7 +33727,7 @@ index ecea710..ad3edb1 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2117,6 +2172,18 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2106,6 +2161,18 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -33746,7 +33746,7 @@ index ecea710..ad3edb1 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2464,6 +2531,582 @@ void Player::RemoveFromWorld()
+@@ -2453,6 +2520,582 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -34329,7 +34329,7 @@ index ecea710..ad3edb1 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2929,6 +3572,48 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2918,6 +3561,48 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -34378,7 +34378,7 @@ index ecea710..ad3edb1 100644
          group->RemoveMember(guid, method, kicker, reason);
          group = NULL;
      }
-@@ -3111,6 +3796,9 @@ void Player::GiveLevel(uint8 level)
+@@ -3100,6 +3785,9 @@ void Player::GiveLevel(uint8 level)
              }
  
      sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
@@ -34388,7 +34388,7 @@ index ecea710..ad3edb1 100644
  }
  
  void Player::InitTalentForLevel()
-@@ -4994,6 +5682,9 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4983,6 +5671,9 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              trans->Append(stmt);
  
              CharacterDatabase.CommitTransaction(trans);
@@ -34399,7 +34399,7 @@ index ecea710..ad3edb1 100644
          }
          // The character gets unlinked from the account, the name gets freed up and appears as deleted ingame
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 2eb740f..6112798 100644
+index a3d8d09..819f4e5 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -52,6 +52,12 @@ class PlayerSocial;
@@ -34493,10 +34493,10 @@ index 2eb740f..6112798 100644
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index a6871cd..6a01b54 100644
+index b01c17e..69e7ed9 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -345,6 +345,17 @@ void Unit::Update(uint32 p_time)
+@@ -337,6 +337,17 @@ void Unit::Update(uint32 p_time)
                  m_CombatTimer -= p_time;
          }
      }
@@ -34514,7 +34514,7 @@ index a6871cd..6a01b54 100644
  
      // not implemented before 3.0.2
      if (uint32 base_att = getAttackTimer(BASE_ATTACK))
-@@ -582,6 +593,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
+@@ -574,6 +585,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
          if (pet && pet->IsAlive())
              pet->AI()->OwnerAttackedBy(this);
  
@@ -34527,7 +34527,7 @@ index a6871cd..6a01b54 100644
          if (victim->ToPlayer()->GetCommandStatus(CHEAT_GOD))
              return 0;
      }
-@@ -996,6 +1013,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
+@@ -988,6 +1005,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
          case SPELL_DAMAGE_CLASS_RANGED:
          case SPELL_DAMAGE_CLASS_MELEE:
          {
@@ -34539,7 +34539,7 @@ index a6871cd..6a01b54 100644
              // Physical Damage
              if (damageSchoolMask & SPELL_SCHOOL_MASK_NORMAL)
              {
-@@ -1053,6 +1075,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
+@@ -1045,6 +1067,11 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
          case SPELL_DAMAGE_CLASS_NONE:
          case SPELL_DAMAGE_CLASS_MAGIC:
          {
@@ -34551,7 +34551,7 @@ index a6871cd..6a01b54 100644
              // If crit add critical bonus
              if (crit)
              {
-@@ -1169,6 +1196,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
+@@ -1161,6 +1188,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
      // Script Hook For CalculateMeleeDamage -- Allow scripts to change the Damage pre class mitigation calculations
      sScriptMgr->ModifyMeleeDamage(damageInfo->target, damageInfo->attacker, damage);
  
@@ -34563,7 +34563,7 @@ index a6871cd..6a01b54 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10415,6 +10447,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
+@@ -10407,6 +10439,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CREATURE_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
@@ -34571,7 +34571,7 @@ index a6871cd..6a01b54 100644
          return false;
  
      // not critting spell
-@@ -13144,6 +13177,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13136,6 +13169,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -34583,7 +34583,7 @@ index a6871cd..6a01b54 100644
      return true;
  }
  
-@@ -16584,6 +16622,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16573,6 +16611,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -35347,7 +35347,7 @@ index 89242ba..182858c 100644
      if (_addFriendCallback.IsReady())
      {
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 71703cb..0ad61b3 100644
+index 94c6f83..4169193 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -196,6 +196,27 @@ class CharacterCreateInfo
@@ -35414,12 +35414,12 @@ index 71703cb..0ad61b3 100644
          void InitializeQueryCallbackParameters();
          void ProcessQueryCallbacks();
 diff --git a/src/server/scripts/Spells/spell_priest.cpp b/src/server/scripts/Spells/spell_priest.cpp
-index f12a57a..98980f9 100644
+index f96a30c..439075c 100644
 --- a/src/server/scripts/Spells/spell_priest.cpp
 +++ b/src/server/scripts/Spells/spell_priest.cpp
 @@ -561,6 +561,7 @@ class spell_pri_penance : public SpellScriptLoader
  
-             bool Load() OVERRIDE
+             bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster()->GetTypeId() == TYPEID_PLAYER;
@@ -35436,7 +35436,7 @@ index f12a57a..98980f9 100644
                          return SPELL_FAILED_BAD_TARGETS;
 @@ -744,6 +747,7 @@ class spell_pri_renew : public SpellScriptLoader
  
-             bool Load() OVERRIDE
+             bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster() && GetCaster()->GetTypeId() == TYPEID_PLAYER;
