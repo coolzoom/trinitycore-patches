@@ -1,13 +1,13 @@
-From 636d50eaab285c0afcbf63bd6f1b61682a079d89 Mon Sep 17 00:00:00 2001
+From b00c0af97dac2bef502bc0b3245f78addc1e86fd Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 3 May 2014 09:35:51 -0500
-Subject: [PATCH] 2014_05_03-Playerbot-NPCBots
+Date: Sat, 3 May 2014 11:29:13 -0500
+Subject: [PATCH] Updated Playerbots. fixed bot command. Fixes issue #44
 
 ---
  sql/extras/Bots/auth_rbac.sql                      |    25 +
  sql/extras/Bots/character_NPC_bots.sql             |    28 +
  ...world_bot_helper_locales_gossip_menu_option.sql |    92 +
- sql/extras/Bots/world_bots.sql                     |   557 +
+ sql/extras/Bots/world_bots.sql                     |   562 +
  .../Bots/world_creature_template_outfits.sql       |    42 +
  src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp    |   121 +
  src/server/game/AI/NpcBots/bot_GridNotifiers.h     |   594 +
@@ -23,7 +23,7 @@ Subject: [PATCH] 2014_05_03-Playerbot-NPCBots
  src/server/game/AI/NpcBots/bot_shaman_ai.cpp       |  1381 +++
  src/server/game/AI/NpcBots/bot_warlock_ai.cpp      |   547 +
  src/server/game/AI/NpcBots/bot_warrior_ai.cpp      |  1144 ++
- src/server/game/AI/NpcBots/botcommands.cpp         |   475 +
+ src/server/game/AI/NpcBots/botcommands.cpp         |   663 ++
  src/server/game/AI/NpcBots/botgiver.cpp            |   338 +
  src/server/game/AI/NpcBots/bothelper.cpp           |   421 +
  src/server/game/AI/NpcBots/bothelper.h             |    32 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2014_05_03-Playerbot-NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |     4 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42591 insertions(+), 1 deletion(-)
+ 78 files changed, 42784 insertions(+), 1 deletion(-)
  create mode 100644 sql/extras/Bots/auth_rbac.sql
  create mode 100644 sql/extras/Bots/character_NPC_bots.sql
  create mode 100644 sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql
@@ -294,10 +294,10 @@ index 0000000..a9f5c6b
 +-- UPDATE `locales_gossip_menu_option` SET `option_text_loc1` = ' ' WHERE `menu_id` = 60000 AND `id` = 36;
 diff --git a/sql/extras/Bots/world_bots.sql b/sql/extras/Bots/world_bots.sql
 new file mode 100644
-index 0000000..9a393e8
+index 0000000..f61d761
 --- /dev/null
 +++ b/sql/extras/Bots/world_bots.sql
-@@ -0,0 +1,557 @@
+@@ -0,0 +1,562 @@
 +
 +-- GENERAL --
 +
@@ -855,6 +855,11 @@ index 0000000..9a393e8
 +
 +-- pets
 +UPDATE `creature_template` SET exp:=2, faction_A:=35, faction_H:=35, dmg_multiplier:=1.0, attackpower:=0, mindmg:= 2, maxdmg:= 3, minlevel:=80, maxlevel:=80, baseattacktime:=2000, rangeattacktime:=2000, minrangedmg:=0, maxrangedmg:=0, rangedattackpower:=0, dynamicflags:=0, speed_walk:=1.2, speed_run:=1.3, InhabitType:=3, health_mod:=1, mana_mod:=1, armor_mod:=1, mechanic_immune_mask:=1, flags_extra:=@FLAGS_EX, AIName='' where entry between 70001 and 70248 and name='Voidwalker';
++
++-- Command
++insert into `command` (`name`, `permission`, `help`) values('bot add','1010',NULL);
++insert into `command` (`name`, `permission`, `help`) values('bot remove','1011',NULL);
++insert into `command` (`name`, `permission`, `help`) values('bot','1009',NULL);
 diff --git a/sql/extras/Bots/world_creature_template_outfits.sql b/sql/extras/Bots/world_creature_template_outfits.sql
 new file mode 100644
 index 0000000..df8a9b1
@@ -18528,10 +18533,10 @@ index 0000000..c4acdd4
 +}
 diff --git a/src/server/game/AI/NpcBots/botcommands.cpp b/src/server/game/AI/NpcBots/botcommands.cpp
 new file mode 100644
-index 0000000..61c2ab7
+index 0000000..c12fdfb
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/botcommands.cpp
-@@ -0,0 +1,475 @@
+@@ -0,0 +1,663 @@
 +/*
 +Name: script_bot_commands
 +%Complete: ???
@@ -18548,6 +18553,7 @@ index 0000000..61c2ab7
 +#include "Player.h"
 +#include "ScriptedGossip.h"
 +#include "ScriptMgr.h"
++#include "PlayerbotAI.h"
 +
 +class script_bot_commands : public CommandScript
 +{
@@ -18571,6 +18577,7 @@ index 0000000..61c2ab7
 +
 +        static ChatCommand commandTable[] =
 +        {
++            { "bot",            SEC_PLAYER,         false, &HandlePlayerbotCommand,                     "", NULL },
 +            { "npcbot",     rbac::RBAC_PERM_COMMAND_NPCBOT,         false, NULL,                  "", npcbotCommandTable },
 +            { NULL,         0,                                      false, NULL,                                "", NULL }
 +        };
@@ -18584,6 +18591,192 @@ index 0000000..61c2ab7
 +    //    handler->SendGlobalGMSysMessage("DB table `creature_equip_template` (creature equipment) reloaded.");
 +    //    return true;
 +    //}
++    static bool HandlePlayerbotCommand(ChatHandler* handler, const char* args)
++    {
++        if (!handler->GetSession())
++        {
++            handler->PSendSysMessage("You may only add bots from an active session");
++            handler->SetSentErrorMessage(true);
++            return false;
++        }
++
++        if (!*args)
++        {
++            handler->PSendSysMessage("usage: add PLAYERNAME  or  remove PLAYERNAME");
++            handler->SetSentErrorMessage(true);
++            return false;
++        }
++        Player* player = handler->GetSession()->GetPlayer();
++
++        char* cmd = strtok ((char*)args, " ");
++        if (!cmd)
++        {
++            handler->PSendSysMessage("usage: add PLAYERNAME  or  remove PLAYERNAME");
++            handler->SetSentErrorMessage(true);
++            return false;
++        }
++        std::string cmdStr = cmd;
++        
++        if (cmdStr.compare("tele") == 0 || cmdStr.compare("teleport") == 0 || cmdStr.compare("summ") == 0 || cmdStr.compare("summon") == 0)
++        {
++            if (handler->GetSession()->m_playerBots.empty())
++            {
++                handler->PSendSysMessage("You Have No Playerbots!");
++                handler->SetSentErrorMessage(true);
++                return false;
++            }
++            PlayerbotChatHandler ch(player->GetSession());
++            for (PlayerBotMap::const_iterator itr = handler->GetSession()->GetPlayerBotsBegin(); itr != handler->GetSession()->GetPlayerBotsEnd(); ++itr)
++            {
++                Player* botPlayer = itr->second;
++                if (!botPlayer)
++                    continue;
++                ch.teleport(*botPlayer);
++                //botPlayer->TeleportTo(*player);
++            }
++            return true;
++        }
++        char* charname = strtok (NULL, " ");
++        if (!charname)
++        {
++            handler->PSendSysMessage("usage: add PLAYERNAME  or  remove PLAYERNAME");
++            handler->SetSentErrorMessage(true);
++            return false;
++        }
++        std::string charnameStr = charname;
++
++        uint64 guid;
++
++       if (charnameStr.compare("all") != 0)
++       {
++           if (!normalizePlayerName(charnameStr))
++               return false;
++
++           guid = sObjectMgr->GetPlayerGUIDByName(charnameStr.c_str());
++           if (guid == 0 || (guid == handler->GetSession()->GetPlayer()->GetGUID()))
++           {
++               handler->PSendSysMessage(LANG_PLAYER_NOT_FOUND);
++               handler->SetSentErrorMessage(true);
++               return false;
++           }
++
++           uint32 accountId = sObjectMgr->GetPlayerAccountIdByGUID(guid);
++           if (accountId != handler->GetSession()->GetAccountId())
++           {
++               handler->PSendSysMessage("You may only add bots from the same account.");
++               handler->SetSentErrorMessage(true);
++               return false;
++           }
++       }
++
++        if (cmdStr.compare("add") == 0 || cmdStr.compare("login") == 0)
++        {
++            if (charnameStr.compare("all") == 0)
++            {
++                std::list<std::string>* names;
++                names = handler->GetSession()->GetPlayer()->GetCharacterList();
++                std::list<std::string>::iterator iter,next;
++                for (iter = names->begin(); iter != names->end(); iter++)
++                {
++                    std::stringstream arg;
++                    arg << "add " << (*iter).c_str();
++                    HandlePlayerbotCommand(handler, arg.str().c_str());
++                }
++                handler->PSendSysMessage("Bots added successfully.");
++                return true;
++            }
++            else
++            {
++                guid = sObjectMgr->GetPlayerGUIDByName(charnameStr.c_str());
++                if (player->GetSession()->GetPlayerBot(guid) != NULL)
++                {
++                    handler->PSendSysMessage("Bot already exists in world.");
++                    handler->SetSentErrorMessage(true);
++                    return false;
++                }
++                player->GetSession()->AddPlayerBot(guid);
++            }
++        }
++        else if (cmdStr.compare("remove") == 0 || cmdStr.compare("logout") == 0)
++        {
++            if (charnameStr.compare("all") == 0)
++            {
++                std::list<std::string>* names = new std::list<std::string>;
++                for (PlayerBotMap::const_iterator iter = handler->GetSession()->GetPlayerBotsBegin(); iter != handler->GetSession()->GetPlayerBotsEnd(); ++iter)
++                {
++                    names->push_back(iter->second->GetName());
++                }
++                std::list<std::string>::iterator iter, next;
++                for (iter = names->begin(); iter != names->end(); iter++)
++                {
++                    std::stringstream arg;
++                    arg << "remove " << (*iter).c_str();
++                    HandlePlayerbotCommand(handler, arg.str().c_str());
++                }
++                return true;
++            }
++            else
++            {
++                guid = sObjectMgr->GetPlayerGUIDByName(charnameStr.c_str());
++                if (!handler->GetSession()->GetPlayerBot(guid))
++                {
++                    handler->PSendSysMessage("Bot can not be removed because bot does not exist in world.");
++                    handler->SetSentErrorMessage(true);
++                    return false;
++                }
++                handler->GetSession()->LogoutPlayerBot(guid);
++                handler->PSendSysMessage("Bot removed successfully.");
++                return true;
++            }
++        }
++        else if (cmdStr == "co" || cmdStr == "combatorder")
++        {
++            Unit* target = NULL;
++            char* orderChar = strtok(NULL, " ");
++            if (!orderChar || handler->GetSession()->m_playerBots.empty())
++            {
++                handler->PSendSysMessage("|cffff0000Syntax error:|cffffffff .bot co <botName> <order=reset|tank|assist|heal|protect> [targetPlayer]");
++                handler->SetSentErrorMessage(true);
++                return false;
++            }
++            std::string orderStr = orderChar;
++            if (orderStr == "protect" || orderStr == "assist")
++            {
++                char* targetChar = strtok(NULL, " ");
++                uint64 targetGUID = handler->GetSession()->GetPlayer()->GetTarget();
++                if (!targetChar && !targetGUID)
++                {
++                    handler->PSendSysMessage("|cffff0000Combat orders protect and assist expect a target either by selection or by giving target player in command string!");
++                    handler->SetSentErrorMessage(true);
++                    return false;
++                }
++                if (targetChar)
++                {
++                    std::string targetStr = targetChar;
++                    targetGUID = sObjectMgr->GetPlayerGUIDByName(targetStr.c_str());
++                }
++                target = sObjectAccessor->GetUnit(*handler->GetSession()->GetPlayer(), targetGUID);
++                if (!target)
++                {
++                    handler->PSendSysMessage("|cffff0000Invalid target for combat order protect or assist!");
++                    handler->SetSentErrorMessage(true);
++                    return false;
++                }
++            }
++            //if (handler->GetSession()->GetPlayerBot(guid) == NULL)
++            //{
++            //    handler->PSendSysMessage("|cffff0000Bot can not receive combat order because bot does not exist in world.");
++            //    handler->SetSentErrorMessage(true);
++            //    return false;
++            //}
++            //if (mgr)
++            PlayerBotMap::const_iterator itr;
++            for (itr = handler->GetSession()->GetPlayerBotsBegin(); itr != handler->GetSession()->GetPlayerBotsEnd(); ++itr)
++                if (Player* bot = sObjectAccessor->GetPlayer(*player, itr->first))
++                    bot->GetPlayerbotAI()->SetCombatOrderByStr(orderStr, target);
++        }
++        return true;
++    }
 +
 +    static bool HandleBotHelperCommand(ChatHandler* handler, const char* /*args*/)
 +    {
@@ -19818,7 +20011,7 @@ index 0000000..1310b4d
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 new file mode 100644
-index 0000000..ef703b4
+index 0000000..247a003
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 @@ -0,0 +1,11892 @@
@@ -25798,7 +25991,7 @@ index 0000000..ef703b4
 +    }
 +    else if (charClass == CLASS_DRUID)
 +    {
-+        if (DRUID_FEROCITY != talent && DRUID_FERAL_AGGRESSION != talent && DRUID_FERAL_INSTINCT != talent && DRUID_SAVAGE_FURY != talent && DRUID_THICK_HIDE != talent && DRUID_FERAL_SWIFTNESS != talent && DRUID_SURVIVAL_INSTINCTS != talent && DRUID_SHARPENED_CLAWS != talent && DRUID_SHREDDING_ATTACKS != talent && DRUID_PREDATORY_STRIKES != talent && DRUID_PRIMAL_FURY != talent && DRUID_PRIMAL_PRECISION != talent && DRUID_BRUTAL_IMPACT != talent && DRUID_FERAL_CHARGE != talent && DRUID_NURTURING_INSTINCT != talent && DRUID_NATURAL_REACTION != talent && DRUID_HEART_OF_THE_WILD != talent && DRUID_SURVIVAL_OF_THE_FITTEST != talent && DRUID_LEADER_OF_THE_PACK != talent && DRUID_IMPROVED_LEADER_OF_THE_PACK != talent && DRUID_PRIMAL_TENACITY != talent && DRUID_PROTECTOR_OF_THE_PACK != talent && DRUID_PREDATORY_INSTINCTS != talent && DRUID_INFECTED_WOUNDS != talent && DRUID_KING_OF_THE_JUNGLE != talent && DRUID_MANGLE != talent && DRUID_IMPROVED_MANGLE != talent && DRUID_REND_AND_TEAR != talent && DRUID_PRIMAL_GORE != talent && DRUID_BERSERK != talent && DRUID_IMPROVED_MARK_OF_THE_WILD != talent && DRUID_NATURES_FOCUS != talent && DRUID_FUROR != talent && DRUID_NATURALIST != talent && DRUID_SUBTLETY != talent && DRUID_NATURAL_SHAPESHIFTER != talent && DRUID_INTENSITY != talent && DRUID_OMEN_OF_CLARITY != talent && DRUID_MASTER_SHAPESHIFTER != talent && DRUID_TRANQUIL_SPIRIT != talent && DRUID_IMPROVED_REJUVENATION != talent && DRUID_NATURES_SWIFTNESS != talent && DRUID_GIFT_OF_NATURE != talent && DRUID_IMPROVED_TRANQUILITY != talent && DRUID_EMPOWERED_TOUCH != talent && DRUID_NATURES_BOUNTY != talent && DRUID_LIVING_SPIRIT != talent && DRUID_SWIFTMEND != talent && DRUID_NATURAL_PERFECTION != talent && DRUID_EMPOWERED_REJUVENATION != talent && DRUID_LIVING_SEED != talent && DRUID_REVITALIZE != talent && DRUID_TREE_OF_LIFE != talent && DRUID_IMPROVED_TREE_OF_LIFE != talent && DRUID_IMPROVED_BARKSKIN != talent && DRUID_GIFT_OF_THE_EARTHMOTHER != talent && DRUID_WILD_GROWTH != talent && DRUID_STARLIGHT_WRATH != talent && DRUID_GENESIS != talent && DRUID_MOONGLOW != talent && DRUID_NATURES_MAJESTY != talent && DRUID_IMPROVED_MOONFIRE != talent && DRUID_BRAMBLES != talent && DRUID_NATURES_GRACE != talent && DRUID_NATURES_SPLENDOR_A != talent && DRUID_NATURES_REACH != talent && DRUID_VENGEANCE != talent && DRUID_CELESTIAL_FOCUS != talent && DRUID_LUNAR_GUIDANCE != talent && DRUID_INSECT_SWARM != talent && DRUID_IMPROVED_INSECT_SWARM != talent && DRUID_DREAMSTATE != talent && DRUID_MOONFURY != talent && DRUID_BALANCE_OF_POWER != talent && DRUID_MOONKIN_FORM != talent && DRUID_IMPROVED_MOONKIN_FORM != talent && DRUID_IMPROVED_FAERIE_FIRE != talent && DRUID_OWLKIN_FRENZY != talent && DRUID_WRATH_OF_CENARIUS != talent && DRUID_ECLIPSE != talent && DRUID_TYPHOON != talent && DRUID_FORCE_OF_NATURE != talent && DRUID_GALE_WINDS != talent && DRUID_EARTH_AND_MOON != talent && DRUID_STARFALL != talent)
++        if (DRUID_FEROCITY != talent && DRUID_FERAL_AGGRESSION != talent && DRUID_FERAL_INSTINCT != talent && DRUID_SAVAGE_FURY != talent && DRUID_THICK_HIDE != talent && DRUID_FERAL_SWIFTNESS != talent && DRUID_SURVIVAL_INSTINCTS != talent && DRUID_SHARPENED_CLAWS != talent && DRUID_SHREDDING_ATTACKS != talent && DRUID_PREDATORY_STRIKES != talent && DRUID_PRIMAL_FURY != talent && DRUID_PRIMAL_PRECISION != talent && DRUID_BRUTAL_IMPACT != talent && DRUID_FERAL_CHARGE != talent && DRUID_NURTURING_INSTINCT != talent && DRUID_NATURAL_REACTION != talent && DRUID_HEART_OF_THE_WILD != talent && DRUID_SURVIVAL_OF_THE_FITTEST != talent && DRUID_LEADER_OF_THE_PACK != talent && DRUID_IMPROVED_LEADER_OF_THE_PACK != talent && DRUID_PRIMAL_TENACITY != talent && DRUID_PROTECTOR_OF_THE_PACK != talent && DRUID_PREDATORY_INSTINCTS != talent && DRUID_INFECTED_WOUNDS != talent && DRUID_KING_OF_THE_JUNGLE != talent && DRUID_MANGLE != talent && DRUID_IMPROVED_MANGLE != talent && DRUID_REND_AND_TEAR != talent && DRUID_PRIMAL_GORE != talent && DRUID_BERSERK != talent && DRUID_IMPROVED_MARK_OF_THE_WILD != talent && DRUID_NATURES_FOCUS != talent && DRUID_FUROR != talent && DRUID_NATURALIST != talent && DRUID_SUBTLETY != talent && DRUID_NATURAL_SHAPESHIFTER != talent && DRUID_INTENSITY != talent && DRUID_OMEN_OF_CLARITY != talent && DRUID_MASTER_SHAPESHIFTER != talent && DRUID_TRANQUIL_SPIRIT != talent && DRUID_IMPROVED_REJUVENATION != talent && DRUID_NATURES_SWIFTNESS != talent && DRUID_GIFT_OF_NATURE != talent && DRUID_IMPROVED_TRANQUILITY != talent && DRUID_EMPOWERED_TOUCH != talent && DRUID_NATURES_BOUNTY != talent && DRUID_LIVING_SPIRIT != talent && DRUID_SWIFTMEND != talent && DRUID_NATURAL_PERFECTION != talent && DRUID_EMPOWERED_REJUVENATION != talent && DRUID_LIVING_SEED != talent && DRUID_REVITALIZE != talent && DRUID_TREE_OF_LIFE != talent && DRUID_IMPROVED_TREE_OF_LIFE != talent && DRUID_IMPROVED_BARKSKIN != talent && DRUID_GIFT_OF_THE_EARTHMOTHER != talent && DRUID_WILD_GROWTH != talent && DRUID_STARLIGHT_WRATH != talent && DRUID_GENESIS != talent && DRUID_MOONGLOW != talent && DRUID_NATURES_MAJESTY != talent && DRUID_IMPROVED_MOONFIRE != talent && DRUID_BRAMBLES != talent && DRUID_NATURES_GRACE != talent && DRUID_NATURES_SPLENDOR_A != talent && DRUID_NATURES_REACH != talent && DRUID_VENGEANCE != talent && DRUID_CELESTIAL_FOCUS != talent && DRUID_LUNAR_GUIDANCE != talent && DRUID_INSECT_SWARM != talent && DRUID_IMPROVED_INSECT_SWARM != talent && DRUID_DREAMSTATE != talent && DRUID_MOONFURY != talent && DRUID_BALANCE_OF_POWER != talent && DRUID_IMPROVED_MOONKIN_FORM != talent && DRUID_IMPROVED_FAERIE_FIRE != talent && DRUID_OWLKIN_FRENZY != talent && DRUID_WRATH_OF_CENARIUS != talent && DRUID_ECLIPSE != talent && DRUID_TYPHOON != talent && DRUID_FORCE_OF_NATURE != talent && DRUID_GALE_WINDS != talent && DRUID_EARTH_AND_MOON != talent && DRUID_STARFALL != talent)
 +            return false;
 +    }
 +    else if (charClass == CLASS_HUNTER)
@@ -31716,7 +31909,7 @@ index 0000000..ef703b4
 +}
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.h b/src/server/game/AI/PlayerBots/PlayerbotAI.h
 new file mode 100644
-index 0000000..a65c2e9
+index 0000000..1c6849b
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.h
 @@ -0,0 +1,2130 @@
@@ -31990,7 +32183,7 @@ index 0000000..a65c2e9
 +    DRUID_DREAMSTATE                            = 1784,  // TabId = 283, Tab = 0, Row = 5, Column = 0
 +    DRUID_MOONFURY                              = 790,   // TabId = 283, Tab = 0, Row = 5, Column = 1
 +    DRUID_BALANCE_OF_POWER                      = 1783,  // TabId = 283, Tab = 0, Row = 5, Column = 2
-+    DRUID_MOONKIN_FORM                          = 793,   // TabId = 283, Tab = 0, Row = 6, Column = 1
++    //DRUID_MOONKIN_FORM                          = 793,   // TabId = 283, Tab = 0, Row = 6, Column = 1
 +    DRUID_IMPROVED_MOONKIN_FORM                 = 1912,  // TabId = 283, Tab = 0, Row = 6, Column = 2
 +    DRUID_IMPROVED_FAERIE_FIRE                  = 1785,  // TabId = 283, Tab = 0, Row = 6, Column = 3
 +    DRUID_OWLKIN_FRENZY                         = 1913,  // TabId = 283, Tab = 0, Row = 7, Column = 0
@@ -42557,7 +42750,7 @@ index 2905b04..d01804e 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 42fdfbf..13cac8f 100644
+index 8cf8f22..4ffe536 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -144,6 +144,21 @@ struct GameTele
@@ -42582,7 +42775,7 @@ index 42fdfbf..13cac8f 100644
  enum ScriptsType
  {
      SCRIPTS_FIRST = 1,
-@@ -1010,6 +1025,7 @@ class ObjectMgr
+@@ -1011,6 +1026,7 @@ class ObjectMgr
  
          void LoadNPCSpellClickSpells();
  
@@ -42590,7 +42783,7 @@ index 42fdfbf..13cac8f 100644
          void LoadGameTele();
  
          void LoadGossipMenu();
-@@ -1218,6 +1234,8 @@ class ObjectMgr
+@@ -1219,6 +1235,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
  
@@ -42599,7 +42792,7 @@ index 42fdfbf..13cac8f 100644
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
-@@ -1362,6 +1380,8 @@ class ObjectMgr
+@@ -1363,6 +1381,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
  
