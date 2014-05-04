@@ -1,7 +1,7 @@
-From b6bfd867212c1580c02bd8773fc087848e10c6c6 Mon Sep 17 00:00:00 2001
+From b3c2b41c2329511ff45acee91d45dd0536e597d6 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 1 May 2014 08:22:09 -0500
-Subject: [PATCH] 2014_05_01-NPCBots
+Date: Sun, 4 May 2014 14:46:19 -0500
+Subject: [PATCH] 2014_05_04-NPCBots
 
 ---
  sql/extras/Bots/auth_rbac.sql                      |   25 +
@@ -6616,7 +6616,7 @@ index 0000000..842bb38
 +}
 diff --git a/src/server/game/AI/NpcBots/bot_ai.h b/src/server/game/AI/NpcBots/bot_ai.h
 new file mode 100644
-index 0000000..b116543
+index 0000000..14fc49f
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_ai.h
 @@ -0,0 +1,607 @@
@@ -7004,7 +7004,7 @@ index 0000000..b116543
 +        static inline uint8 GetManaPCT(Unit* hTarget) { if (!hTarget || hTarget->isDead() || hTarget->getPowerType() != POWER_MANA) return 100; return (hTarget->GetPower(POWER_MANA)*100/(hTarget->GetMaxPower(POWER_MANA) + 1)); }
 +
 +        typedef std::set<Unit*> AttackerSet;
-+        typedef UNORDERED_MAP<uint32 /*stat*/, int32 /*statvalue*/> BotStat;
++        typedef std::unordered_map<uint32 /*stat*/, int32 /*statvalue*/> BotStat;
 +        typedef std::pair<uint32 /*spellId*/, uint32 /*cooldown*/> BotCTCSpell;
 +
 +        BotStat _stats[BOT_MAX_SLOTS - 1];
@@ -7024,7 +7024,7 @@ index 0000000..b116543
 +        void _LocalizeGameObject(Player* forPlayer, std::string &gameobjectName, uint32 entry) const;
 +
 +        typedef std::pair<uint32 /*spellId*/, uint32 /*cooldown*/> BotSpell;
-+        typedef UNORDERED_MAP<uint32 /*spellId_1*/, BotSpell /*spell*/> BotSpellMap;
++        typedef std::unordered_map<uint32 /*spellId_1*/, BotSpell /*spell*/> BotSpellMap;
 +
 +        BotSpellMap const& GetSpellMap() const { return spells; }
 +
@@ -10134,7 +10134,7 @@ index 0000000..5c940e8
 +}
 diff --git a/src/server/game/AI/NpcBots/bot_hunter_ai.cpp b/src/server/game/AI/NpcBots/bot_hunter_ai.cpp
 new file mode 100644
-index 0000000..d379f29
+index 0000000..3be7672
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_hunter_ai.cpp
 @@ -0,0 +1,1167 @@
@@ -11220,7 +11220,7 @@ index 0000000..d379f29
 +        }
 +
 +    private:
-+        typedef UNORDERED_MAP<uint32 /*spellId*/, int32 /*manaCost*/> ManaRestoreList;
++        typedef std::unordered_map<uint32 /*spellId*/, int32 /*manaCost*/> ManaRestoreList;
 +        ManaRestoreList TotH;
 +        uint32 Trap_cd;
 +        uint32 ScorpidSting_Timer, Aspect_Timer;
@@ -19703,7 +19703,7 @@ index 36997eb..d1fcf79 100644
 +        (m_creatureInfo->unit_flags2 & UNIT_FLAG2_ALLOW_ENEMY_INTERACT);
 +}
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 920c262..3b65d45 100644
+index 9cc08e3..c164283 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -19830,7 +19830,7 @@ index f2215fa..8bccaee 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 13aae30..d390056 100644
+index a701e6f..1842d09 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,10 @@
@@ -20910,7 +20910,7 @@ index 13aae30..d390056 100644
              break;
          }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index a3d8d09..65e0aff 100644
+index 92691c3..5e86544 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -52,6 +52,11 @@ class PlayerSocial;
@@ -21030,7 +21030,7 @@ index 0413622..27e7bb3 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index b01c17e..69e7ed9 100644
+index 00172fa..67bee28 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -337,6 +337,17 @@ void Unit::Update(uint32 p_time)
@@ -21391,12 +21391,12 @@ index 2905b04..d01804e 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 42fdfbf..13cac8f 100644
+index 48c9e61..7eb8b2c 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -144,6 +144,21 @@ struct GameTele
  
- typedef UNORDERED_MAP<uint32, GameTele > GameTeleContainer;
+ typedef std::unordered_map<uint32, GameTele > GameTeleContainer;
  
 +#define MAX_CREATURE_OUTFIT_DISPLAYS 11
 +struct CreatureOutfit
@@ -21411,12 +21411,12 @@ index 42fdfbf..13cac8f 100644
 +    uint32 outfit[MAX_CREATURE_OUTFIT_DISPLAYS];
 +};
 +
-+typedef UNORDERED_MAP<uint32, CreatureOutfit > CreatureOutfitContainer;
++typedef std::unordered_map<uint32, CreatureOutfit > CreatureOutfitContainer;
 +
  enum ScriptsType
  {
      SCRIPTS_FIRST = 1,
-@@ -1010,6 +1025,7 @@ class ObjectMgr
+@@ -1011,6 +1026,7 @@ class ObjectMgr
  
          void LoadNPCSpellClickSpells();
  
@@ -21424,7 +21424,7 @@ index 42fdfbf..13cac8f 100644
          void LoadGameTele();
  
          void LoadGossipMenu();
-@@ -1218,6 +1234,8 @@ class ObjectMgr
+@@ -1219,6 +1235,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
  
@@ -21433,7 +21433,7 @@ index 42fdfbf..13cac8f 100644
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
-@@ -1362,6 +1380,8 @@ class ObjectMgr
+@@ -1363,6 +1381,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
  
@@ -21501,7 +21501,7 @@ index 113df99..60045b1 100644
  
          return true;
 diff --git a/src/server/game/Groups/Group.h b/src/server/game/Groups/Group.h
-index 64122b0..58f5ee7 100644
+index f0061a7..6d28e40 100644
 --- a/src/server/game/Groups/Group.h
 +++ b/src/server/game/Groups/Group.h
 @@ -309,6 +309,9 @@ class Group
@@ -21821,7 +21821,7 @@ index 89242ba..eb66e26 100644
  
          //! Send update to group and reset stored max enchanting level
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 94c6f83..cc94b81 100644
+index 9d1a05a..db7a021 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -196,6 +196,31 @@ class CharacterCreateInfo
