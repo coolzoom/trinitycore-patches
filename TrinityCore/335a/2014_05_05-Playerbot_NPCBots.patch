@@ -1,10 +1,10 @@
-From 33b4f71b9f2362f9467e30d1f349903d559c0a93 Mon Sep 17 00:00:00 2001
+From d50e42a657c634fdde3c6ebb4badd43c5661e662 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 5 May 2014 08:53:09 -0500
+Date: Mon, 5 May 2014 17:27:11 -0500
 Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
 
 ---
- sql/extras/Bots/auth_rbac.sql                      |    25 +
+ sql/extras/Bots/auth_rbac.sql                      |    31 +
  sql/extras/Bots/character_NPC_bots.sql             |    28 +
  ...world_bot_helper_locales_gossip_menu_option.sql |    92 +
  sql/extras/Bots/world_bots.sql                     |   562 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |     4 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42786 insertions(+), 1 deletion(-)
+ 78 files changed, 42792 insertions(+), 1 deletion(-)
  create mode 100644 sql/extras/Bots/auth_rbac.sql
  create mode 100644 sql/extras/Bots/character_NPC_bots.sql
  create mode 100644 sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql
@@ -131,13 +131,13 @@ Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
 
 diff --git a/sql/extras/Bots/auth_rbac.sql b/sql/extras/Bots/auth_rbac.sql
 new file mode 100644
-index 0000000..5804f0f
+index 0000000..a61fd14
 --- /dev/null
 +++ b/sql/extras/Bots/auth_rbac.sql
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,31 @@
 +SET @NPCB_PERM := '1000';
 +
-+DELETE FROM `rbac_permissions` WHERE `id` BETWEEN @NPCB_PERM AND @NPCB_PERM+8;
++DELETE FROM `rbac_permissions` WHERE `id` BETWEEN @NPCB_PERM AND @NPCB_PERM+11;
 +INSERT INTO `rbac_permissions` (`id`,`name`) VALUES
 +(@NPCB_PERM+0,'npcbot'),
 +(@NPCB_PERM+1,'npcbot add'),
@@ -147,9 +147,12 @@ index 0000000..5804f0f
 +(@NPCB_PERM+5,'npcbot distance'),
 +(@NPCB_PERM+6,'npcbot info'),
 +(@NPCB_PERM+7,'npcbot helper'),
-+(@NPCB_PERM+8,'npcbot revive');
++(@NPCB_PERM+8,'npcbot revive'),
++(@NPCB_PERM+9,'bot'),
++(@NPCB_PERM+10,'bot add'),
++(@NPCB_PERM+11,'bot remove');
 +
-+DELETE FROM `rbac_linked_permissions` WHERE `linkedId` BETWEEN @NPCB_PERM AND @NPCB_PERM+8;
++DELETE FROM `rbac_linked_permissions` WHERE `linkedId` BETWEEN @NPCB_PERM AND @NPCB_PERM+11;
 +INSERT INTO `rbac_linked_permissions` (`id`,`linkedId`) VALUES
 +('199',@NPCB_PERM+0), -- player command .npcbot
 +('199',@NPCB_PERM+1), -- player command .npcbot add
@@ -159,7 +162,11 @@ index 0000000..5804f0f
 +('199',@NPCB_PERM+5), -- player command .npcbot distance
 +('199',@NPCB_PERM+6), -- player command .npcbot info
 +('199',@NPCB_PERM+7), -- player command .npcbot helper
-+('198',@NPCB_PERM+8); -- moderator command .npcbot revive
++('198',@NPCB_PERM+8), -- moderator command .npcbot revive
++('199',@NPCB_PERM+9), -- player command .bot
++('199',@NPCB_PERM+10), -- player command .bot add
++('199',@NPCB_PERM+11); -- player command .bot remove
+\ No newline at end of file
 diff --git a/sql/extras/Bots/character_NPC_bots.sql b/sql/extras/Bots/character_NPC_bots.sql
 new file mode 100644
 index 0000000..486eeae
