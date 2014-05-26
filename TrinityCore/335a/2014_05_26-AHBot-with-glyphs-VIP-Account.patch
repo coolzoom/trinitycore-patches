@@ -1,12 +1,13 @@
-From ba7121d28e33ea34e599cfb9849c20dc23e0cba6 Mon Sep 17 00:00:00 2001
+From 08a1ee741a18ffd07974d5d14c4e1a4ba8bbcbda Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 14 Apr 2014 08:40:35 -0500
-Subject: [PATCH] 2014-04-14_AHBot-with-glyphs-VIP-Account
+Date: Mon, 26 May 2014 08:06:38 -0500
+Subject: [PATCH] Fixes issue #47 ahbot patch error. Redid sql folder structure
+ again.
 
 ---
  doc/AuctionHouseBot.txt                            |  235 +++
- sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql                      |    8 +
- sql/TrinityCore-Patches/TeleNPC2/characters_ahbot.sql                          |   72 +
+ sql/TrinityCore-Patches/AHBot/auth_VIPAccount.sql  |    8 +
+ sql/TrinityCore-Patches/AHBot/characters_ahbot.sql |   72 +
  src/server/authserver/Server/AuthSocket.cpp        |    1 +
  .../AuctionHouseBot/AuctionHouseBot.cpp            | 2002 ++++++++++++++++++++
  .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1257 ++++++++++++
@@ -30,8 +31,8 @@ Subject: [PATCH] 2014-04-14_AHBot-with-glyphs-VIP-Account
  src/server/worldserver/worldserver.conf.dist       |  294 ++-
  24 files changed, 4410 insertions(+), 12 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
- create mode 100644 sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
- create mode 100644 sql/TrinityCore-Patches/TeleNPC2/characters_ahbot.sql
+ create mode 100644 sql/TrinityCore-Patches/AHBot/auth_VIPAccount.sql
+ create mode 100644 sql/TrinityCore-Patches/AHBot/characters_ahbot.sql
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
  create mode 100644 src/server/scripts/Commands/cs_ah_bot.cpp
@@ -277,11 +278,11 @@ index 0000000..8170bd2
 +AHBot Originally made by Chris K. Currently maintained by Paradox
 +Much thanks to Chris K, grether and Dolomit6!
 +AHBot Now includes AHBuyer created by Kerbe as a derivative of AHBot, and later modified by Paradox
-diff --git a/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql b/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
+diff --git a/sql/TrinityCore-Patches/AHBot/auth_VIPAccount.sql b/sql/TrinityCore-Patches/AHBot/auth_VIPAccount.sql
 new file mode 100644
 index 0000000..df317ed
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
++++ b/sql/TrinityCore-Patches/AHBot/auth_VIPAccount.sql
 @@ -0,0 +1,8 @@
 +CREATE TABLE IF NOT EXISTS `account_premium` (
 +  `id` int(11) NOT NULL default '0' COMMENT 'Account id',
@@ -292,11 +293,11 @@ index 0000000..df317ed
 +  PRIMARY KEY  (`id`,`setdate`)
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Premium Accounts';
 \ No newline at end of file
-diff --git a/sql/tools/setup_ahbot.sql b/sql/tools/setup_ahbot.sql
+diff --git a/sql/TrinityCore-Patches/AHBot/characters_ahbot.sql b/sql/TrinityCore-Patches/AHBot/characters_ahbot.sql
 new file mode 100644
 index 0000000..767a01e
 --- /dev/null
-+++ b/sql/tools/setup_ahbot.sql
++++ b/sql/TrinityCore-Patches/AHBot/characters_ahbot.sql
 @@ -0,0 +1,72 @@
 +CREATE TABLE `auctionhousebot` (
 +    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
@@ -3654,7 +3655,7 @@ index 0000000..b5ea012
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index 29d80f5..6c36b87 100644
+index f4699f0..4dda7ec 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 @@ -171,7 +171,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
@@ -3700,7 +3701,7 @@ index 29d80f5..6c36b87 100644
  
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-index 506c4be..6125409 100644
+index f45fc41..88cd0b5 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.h
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.h
 @@ -25,6 +25,8 @@
@@ -3741,10 +3742,10 @@ index bf46c1f..12890e3 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlefield/Zones
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2691a68..c733bd7 100644
+index f30c989..3f343ec 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -6896,7 +6896,8 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6890,7 +6890,8 @@ void Player::CheckAreaExploreAndOutdoor()
                  {
                      XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
@@ -3754,7 +3755,7 @@ index 2691a68..c733bd7 100644
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -15293,6 +15294,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15324,6 +15325,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
          AddPct(XP, (*i)->GetAmount());
  
      int32 moneyRew = 0;
@@ -3765,7 +3766,7 @@ index 2691a68..c733bd7 100644
          GiveXP(XP, NULL);
      else
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index d9e4feb..1ee7ef4 100644
+index 86fa042..6806a54 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -22,6 +22,7 @@
@@ -3838,10 +3839,10 @@ index 7365d59..43ff623 100644
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 58e7ba0..e9d098a 100644
+index a784a5d..f0d4423 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
-@@ -96,7 +96,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
+@@ -97,7 +97,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
  }
  
  /// WorldSession constructor
@@ -3850,7 +3851,7 @@ index 58e7ba0..e9d098a 100644
      m_muteTime(mute_time),
      m_timeOutTime(0),
      AntiDOS(this),
-@@ -104,6 +104,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
+@@ -105,6 +105,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
      _player(NULL),
      m_Socket(sock),
      _security(sec),
@@ -3859,10 +3860,10 @@ index 58e7ba0..e9d098a 100644
      m_expansion(expansion),
      _warden(NULL),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 0af6069..f8b5c91 100644
+index 1b16ce8..ed5f3fb 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -196,7 +196,7 @@ class CharacterCreateInfo
+@@ -207,7 +207,7 @@ struct PacketCounter
  class WorldSession
  {
      public:
@@ -3871,7 +3872,7 @@ index 0af6069..f8b5c91 100644
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -228,6 +228,7 @@ class WorldSession
+@@ -239,6 +239,7 @@ class WorldSession
          void InvalidateRBACData(); // Used to force LoadPermissions at next HasPermission check
  
          AccountTypes GetSecurity() const { return _security; }
@@ -3879,7 +3880,7 @@ index 0af6069..f8b5c91 100644
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          std::string const& GetPlayerName() const;
-@@ -978,6 +979,7 @@ class WorldSession
+@@ -997,6 +998,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
@@ -3926,7 +3927,7 @@ index 605b863..c2c6ade 100644
      m_Crypt.Init(&k);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 8f29418..11736c9 100644
+index e40e2f7..e843aee 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -72,6 +72,7 @@
@@ -3949,7 +3950,7 @@ index 8f29418..11736c9 100644
      rate_values[RATE_REPAIRCOST]  = sConfigMgr->GetFloatDefault("Rate.RepairCost", 1.0f);
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
-@@ -1812,6 +1816,9 @@ void World::SetInitialWorldSettings()
+@@ -1816,6 +1820,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -3959,7 +3960,7 @@ index 8f29418..11736c9 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1979,6 +1986,7 @@ void World::Update(uint32 diff)
+@@ -1983,6 +1990,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -3968,7 +3969,7 @@ index 8f29418..11736c9 100644
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index a58dcc8..5205f89 100644
+index 9bac303..acf6d5b 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -357,8 +357,11 @@ enum Rates
@@ -4828,3 +4829,4 @@ index f71ef5d..bd8da0d 100644
  #
 -- 
 1.8.3.msysgit.0
+
