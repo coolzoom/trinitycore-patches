@@ -31,8 +31,8 @@ Subject: [PATCH] 2014_05_23-ALL
  .../guildhouses/world_guildhouses.sql              |    67 +
  .../npc_buff/world_npc_buff.sql                    |    62 +
  .../profession_npc/world_professionnpc.sql         |     4 +
- sql/TrinityCore-Patches/tools/auth_VIPAccount.sql  |     8 +
- sql/TrinityCore-Patches/tools/setup_ahbot.sql      |    72 +
+ sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql  |     8 +
+ sql/TrinityCore-Patches/TeleNPC2/setup_ahbot.sql      |    72 +
  src/server/authserver/Server/AuthSocket.cpp        |     1 +
  src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp    |   121 +
  src/server/game/AI/NpcBots/bot_GridNotifiers.h     |   594 +
@@ -220,8 +220,8 @@ Subject: [PATCH] 2014_05_23-ALL
  create mode 100644 sql/TrinityCore-Patches/guildhouses/world_guildhouses.sql
  create mode 100644 sql/TrinityCore-Patches/npc_buff/world_npc_buff.sql
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
- create mode 100644 sql/TrinityCore-Patches/tools/auth_VIPAccount.sql
- create mode 100644 sql/TrinityCore-Patches/tools/setup_ahbot.sql
+ create mode 100644 sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
+ create mode 100644 sql/TrinityCore-Patches/TeleNPC2/setup_ahbot.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
  create mode 100644 src/server/game/AI/NpcBots/bot_GridNotifiers.h
  create mode 100644 src/server/game/AI/NpcBots/bot_ai.cpp
@@ -2089,11 +2089,11 @@ index 0000000..602fa57
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('60001', '0', '0', '0', '0', '0', '18', '0', '18', '0', 'Cyon', 'Profession master', '', '0', '59', '61', '0', '35', '1', '1.48', '1.14286', '0.0', '0', '655.0', '663.0', '0', '158', '1.0', '1500', '1900', '1', '0', '0', '0', '0', '0', '0', '0', '0.0', '0.0', '100', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1.0', '1.0', '1.0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'professionnpc', '1');
 +
-diff --git a/sql/TrinityCore-Patches/tools/auth_VIPAccount.sql b/sql/TrinityCore-Patches/tools/auth_VIPAccount.sql
+diff --git a/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql b/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
 new file mode 100644
 index 0000000..df317ed
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/tools/auth_VIPAccount.sql
++++ b/sql/TrinityCore-Patches/TeleNPC2/auth_VIPAccount.sql
 @@ -0,0 +1,8 @@
 +CREATE TABLE IF NOT EXISTS `account_premium` (
 +  `id` int(11) NOT NULL default '0' COMMENT 'Account id',
@@ -3386,7 +3386,7 @@ index 0000000..842bb38
 +    {
 +        Unit* target = master;
 +        if (master->IsAlive()) return;
-+        if (master->isRessurectRequested()) return; //resurrected
++        if (master->isResurrectRequested()) return; //resurrected
 +        if (master->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
 +            target = (Unit*)master->GetCorpse();
 +        if (!target || !target->IsInWorld()) return;
@@ -3412,7 +3412,7 @@ index 0000000..842bb38
 +        Player* tPlayer = itr->GetSource();
 +        Unit* target = tPlayer;
 +        if (!tPlayer || tPlayer->IsAlive()) continue;
-+        if (tPlayer->isRessurectRequested()) continue; //resurrected
++        if (tPlayer->isResurrectRequested()) continue; //resurrected
 +        if (Rand() > 5) continue;
 +        if (tPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
 +            target = (Unit*)tPlayer->GetCorpse();
@@ -11105,7 +11105,7 @@ index 0000000..5c940e8
 +            {
 +                Unit* target = master;
 +                if (master->IsAlive()) return;
-+                if (master->isRessurectRequested()) return; //ressurected
++                if (master->isResurrectRequested()) return; //ressurected
 +                if (master->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
 +                    target = (Unit*)master->GetCorpse();
 +                if (!target || !target->IsInWorld())
@@ -11131,7 +11131,7 @@ index 0000000..5c940e8
 +                Player* tPlayer = itr->GetSource();
 +                Unit* target = tPlayer;
 +                if (!tPlayer || tPlayer->IsAlive()) continue;
-+                if (tPlayer->isRessurectRequested()) continue; //ressurected
++                if (tPlayer->isResurrectRequested()) continue; //ressurected
 +                if (tPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
 +                    target = (Unit*)tPlayer->GetCorpse();
 +                if (!target || !target->IsInWorld()) continue;
