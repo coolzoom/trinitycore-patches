@@ -4,10 +4,10 @@ Date: Mon, 5 May 2014 17:27:11 -0500
 Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
 
 ---
- sql/extras/Bots/auth_rbac.sql                      |    31 +
- sql/extras/Bots/character_NPC_bots.sql             |    28 +
+ sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql                      |    31 +
+ sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql             |    28 +
  ...world_bot_helper_locales_gossip_menu_option.sql |    92 +
- sql/extras/Bots/world_bots.sql                     |   562 +
+ sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql                     |   562 +
  .../Bots/world_creature_template_outfits.sql       |    42 +
  src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp    |   121 +
  src/server/game/AI/NpcBots/bot_GridNotifiers.h     |   594 +
@@ -83,11 +83,11 @@ Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
  78 files changed, 42792 insertions(+), 1 deletion(-)
- create mode 100644 sql/extras/Bots/auth_rbac.sql
- create mode 100644 sql/extras/Bots/character_NPC_bots.sql
- create mode 100644 sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql
- create mode 100644 sql/extras/Bots/world_bots.sql
- create mode 100644 sql/extras/Bots/world_creature_template_outfits.sql
+ create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
+ create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
+ create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
+ create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql
+ create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_creature_template_outfits.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
  create mode 100644 src/server/game/AI/NpcBots/bot_GridNotifiers.h
  create mode 100644 src/server/game/AI/NpcBots/bot_ai.cpp
@@ -129,11 +129,11 @@ Subject: [PATCH] 2014_05_05-Playerbot_NPCBots
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotWarriorAI.cpp
  create mode 100644 src/server/game/AI/PlayerBots/PlayerbotWarriorAI.h
 
-diff --git a/sql/extras/Bots/auth_rbac.sql b/sql/extras/Bots/auth_rbac.sql
+diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
 new file mode 100644
 index 0000000..a61fd14
 --- /dev/null
-+++ b/sql/extras/Bots/auth_rbac.sql
++++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
 @@ -0,0 +1,31 @@
 +SET @NPCB_PERM := '1000';
 +
@@ -167,11 +167,11 @@ index 0000000..a61fd14
 +('199',@NPCB_PERM+10), -- player command .bot add
 +('199',@NPCB_PERM+11); -- player command .bot remove
 \ No newline at end of file
-diff --git a/sql/extras/Bots/character_NPC_bots.sql b/sql/extras/Bots/character_NPC_bots.sql
+diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
 new file mode 100644
 index 0000000..486eeae
 --- /dev/null
-+++ b/sql/extras/Bots/character_NPC_bots.sql
++++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
 @@ -0,0 +1,28 @@
 +DROP TABLE IF EXISTS `character_npcbot`;
 +CREATE TABLE `character_npcbot` (
@@ -201,11 +201,11 @@ index 0000000..486eeae
 +  `active` tinyint(3) default NULL,
 +  PRIMARY KEY  (`owner`,`entry`)
 +)  ENGINE=InnoDB DEFAULT CHARSET=utf8;
-diff --git a/sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql b/sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql
+diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
 new file mode 100644
 index 0000000..a9f5c6b
 --- /dev/null
-+++ b/sql/extras/Bots/world_bot_helper_locales_gossip_menu_option.sql
++++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
 @@ -0,0 +1,92 @@
 +delete from `locales_gossip_menu_option` where `menu_id` = '60000';
 +
@@ -299,11 +299,11 @@ index 0000000..a9f5c6b
 +-- UPDATE `locales_gossip_menu_option` SET `option_text_loc1` = ' ' WHERE `menu_id` = 60000 AND `id` = 34;
 +-- UPDATE `locales_gossip_menu_option` SET `option_text_loc1` = ' ' WHERE `menu_id` = 60000 AND `id` = 35;
 +-- UPDATE `locales_gossip_menu_option` SET `option_text_loc1` = ' ' WHERE `menu_id` = 60000 AND `id` = 36;
-diff --git a/sql/extras/Bots/world_bots.sql b/sql/extras/Bots/world_bots.sql
+diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql
 new file mode 100644
 index 0000000..f61d761
 --- /dev/null
-+++ b/sql/extras/Bots/world_bots.sql
++++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql
 @@ -0,0 +1,562 @@
 +
 +-- GENERAL --
@@ -867,11 +867,11 @@ index 0000000..f61d761
 +insert into `command` (`name`, `permission`, `help`) values('bot add','1010',NULL);
 +insert into `command` (`name`, `permission`, `help`) values('bot remove','1011',NULL);
 +insert into `command` (`name`, `permission`, `help`) values('bot','1009',NULL);
-diff --git a/sql/extras/Bots/world_creature_template_outfits.sql b/sql/extras/Bots/world_creature_template_outfits.sql
+diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/world_creature_template_outfits.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_creature_template_outfits.sql
 new file mode 100644
 index 0000000..df8a9b1
 --- /dev/null
-+++ b/sql/extras/Bots/world_creature_template_outfits.sql
++++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_creature_template_outfits.sql
 @@ -0,0 +1,42 @@
 +
 +
@@ -41897,7 +41897,7 @@ index a701e6f..d4ef21f 100644
 +    stmt->setString(index++, classStr.str());
 +    stmt->setUInt8(index++, bot_class);
 +
-+    //maybe we should remove this check? ;Ü
++    //maybe we should remove this check? ;ï¿½
 +    switch (getRace())
 +    {
 +        case RACE_NONE:
@@ -43997,4 +43997,3 @@ index f71ef5d..48b2f3f 100644
 +###################################################################################################
 -- 
 1.8.3.msysgit.0
-
