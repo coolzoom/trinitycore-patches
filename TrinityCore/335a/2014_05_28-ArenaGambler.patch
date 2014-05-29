@@ -1,16 +1,16 @@
-From 24eb11b927c4f795c7b744a6bcaa31c5772959f8 Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 27 May 2014 11:48:02 -0500
-Subject: [PATCH] 2014_05_27-ArenaGambler
+From fda0111ca3258546b015f22d59d1132e732758a8 Mon Sep 17 00:00:00 2001
+From: root <root@debian>
+Date: Wed, 28 May 2014 22:19:31 -0400
+Subject: [PATCH] 2014_05_28-ArenaGambler
 
 ---
- .../ArenaGambler/CharactersDB SQL.sql              |  71 ++
- .../ArenaGambler/WorldDB SQL.sql                   | 502 ++++++++++++++
- src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
- src/server/scripts/Custom/ArenaGambler.cpp         | 308 +++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.cpp  | 723 +++++++++++++++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.h    | 443 +++++++++++++
- src/server/scripts/Custom/CMakeLists.txt           |   3 +
+ .../ArenaGambler/CharactersDB SQL.sql              |   71 ++
+ .../ArenaGambler/WorldDB SQL.sql                   |  502 ++++++++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
+ src/server/scripts/Custom/ArenaGambler.cpp         |  308 +++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 ++++++++++++++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.h    |  443 ++++++++++++
+ src/server/scripts/Custom/CMakeLists.txt           |    3 +
  7 files changed, 2055 insertions(+), 1 deletion(-)
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB SQL.sql
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql
@@ -97,7 +97,7 @@ index 0000000..9d5b84c
 +);
 diff --git a/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql b/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql
 new file mode 100644
-index 0000000..28287b8
+index 0000000..f6769fd
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql	
 @@ -0,0 +1,502 @@
@@ -628,7 +628,7 @@ index 7365d59..a6ee863 100644
  }
 diff --git a/src/server/scripts/Custom/ArenaGambler.cpp b/src/server/scripts/Custom/ArenaGambler.cpp
 new file mode 100644
-index 0000000..b13401e
+index 0000000..c4d8cb4
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGambler.cpp
 @@ -0,0 +1,308 @@
@@ -868,8 +868,8 @@ index 0000000..b13401e
 +							return true;
 +						}
 +						sGamblingSystem.SetupMatch(pPlayer, pDefender);
-+						ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGE_ISSUED, pDefender->GetName());
-+						ChatHandler(pDefender->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGED, pPlayer->GetName());
++						ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGE_ISSUED, pDefender);
++						ChatHandler(pDefender->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGED, pPlayer);
 +						OnGossipSelect(pPlayer, pCreature, ARENA_GAMBLER_MENU_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 +					}
 +					else
@@ -943,7 +943,7 @@ index 0000000..b13401e
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.cpp b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 new file mode 100644
-index 0000000..209a175
+index 0000000..351079d
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 @@ -0,0 +1,723 @@
@@ -1314,7 +1314,7 @@ index 0000000..209a175
 +		else
 +			secondPlayer = ObjectAccessor::FindPlayer(matchData->GetChallengerGUID());
 +		if(secondPlayer)
-+			ChatHandler(secondPlayer->GetSession()).PSendSysMessage("|cffffffffThe player |cff00ccff%s |cffffffffhas bet |cff00ccff%u|cffffffffx of the item |%s|Hitem:%u:0:0:0:0:0:0:0:%u|h[%s]|h|r", pPlayer->GetName(), amount, GetQualityColor(itemProto->Quality).c_str(),  pItem->GetEntry(), pPlayer->getLevel(),  itemProto->Name1.c_str());
++			ChatHandler(secondPlayer->GetSession()).PSendSysMessage("|cffffffffThe player |cff00ccff%s |cffffffffhas bet |cff00ccff%u|cffffffffx of the item |%s|Hitem:%u:0:0:0:0:0:0:0:%u|h[%s]|h|r", pPlayer, amount, GetQualityColor(itemProto->Quality).c_str(),  pItem->GetEntry(), pPlayer->getLevel(),  itemProto->Name1.c_str());
 +		return true;
 +	}
 +	return false;
@@ -1427,7 +1427,7 @@ index 0000000..209a175
 +		matchData->SetMatchStatus(GAMBLER_MATCH_STATUS_TELEPORT);
 +	}
 +	else
-+		SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_ACCEPTED_CHALLENGE, pPlayer->GetName());
++		SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_ACCEPTED_CHALLENGE, pPlayer);
 +}
 +
 +void GamblingSystem::CancelChallenge(Player *pPlayer)
@@ -1435,7 +1435,7 @@ index 0000000..209a175
 +	GamblerMatchData *matchData = GetMatchDataBy(pPlayer);
 +	if(matchData == NULL)
 +		return;
-+	SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_CANCELED, pPlayer->GetName(), matchData->GetChallengerGUID() == pPlayer->GetGUIDLow() ? GAMBLER_SYSTEM_MSG_CANCELED_1 : GAMBLER_SYSTEM_MSG_CANCELED_2);
++	SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_CANCELED, pPlayer, matchData->GetChallengerGUID() == pPlayer->GetGUIDLow() ? GAMBLER_SYSTEM_MSG_CANCELED_1 : GAMBLER_SYSTEM_MSG_CANCELED_2);
 +	if(matchData->IsDefender(pPlayer))
 +		_updatePlayerStats(pPlayer->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_REFUSED, 1);
 +	_deleteMatchData(matchData->GetMatchId());
@@ -1460,7 +1460,7 @@ index 0000000..209a175
 +		{
 +			_createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
 +			_createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
-+			SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner->GetName());
++			SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner);
 +		}break;
 +		case DUEL_FLED:
 +		{
@@ -1468,7 +1468,7 @@ index 0000000..209a175
 +			{
 +				_createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
 +				_createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
-+				SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner->GetName());
++				SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner);
 +				
 +			}else{
 +				_createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
@@ -2136,4 +2136,5 @@ index 78db719..571f0e5 100644
  
  message("  -> Prepared: Custom")
 -- 
-1.8.3.msysgit.0
+1.7.10.4
+
