@@ -1,10 +1,10 @@
-From 6c8c1316e6523522715f5f06f2b07d911a0a7d26 Mon Sep 17 00:00:00 2001
+From 7cf15fe62e1d2728dcdf775b0fb4b0fba001cd3a Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 3 Apr 2014 09:11:39 -0700
-Subject: [PATCH] 2014_04_03-TriniIRC
+Date: Thu, 29 May 2014 00:26:35 -0400
+Subject: [PATCH] 2014_05_28-TriniIRC
 
 ---
- sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql                   |   81 +
+ .../TriniIRC/World_TrinityChat.sql                 |   81 +
  src/server/game/CMakeLists.txt                     |    3 +
  src/server/game/Chat/Channels/Channel.cpp          |    4 +
  src/server/game/Chat/Chat.cpp                      |   41 +
@@ -24,7 +24,7 @@ Subject: [PATCH] 2014_04_03-TriniIRC
  src/server/game/TriniChat/IRCLog.cpp               |   81 +
  src/server/game/TriniChat/IRCLog.h                 |   42 +
  src/server/game/TriniChat/IRCSock.cpp              |  166 ++
- src/server/game/TriniChat/MCS_OnlinePlayers.cpp    |   97 +
+ src/server/game/TriniChat/MCS_OnlinePlayers.cpp    |   98 +
  src/server/game/TriniChat/MCS_OnlinePlayers.h      |   38 +
  src/server/game/TriniChat/framework/CMakeLists.txt |   11 +
  .../TriniChat/framework/Dynamic/FactoryHolder.h    |   63 +
@@ -66,7 +66,7 @@ Subject: [PATCH] 2014_04_03-TriniIRC
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
  src/server/worldserver/worldserver.conf.dist       |  245 ++
- 62 files changed, 8739 insertions(+), 3 deletions(-)
+ 62 files changed, 8740 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -228,7 +228,7 @@ index bf46c1f..fb549e8 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Tickets
    ${CMAKE_CURRENT_SOURCE_DIR}/Warden
 diff --git a/src/server/game/Chat/Channels/Channel.cpp b/src/server/game/Chat/Channels/Channel.cpp
-index 3f6a40d..a2713a8 100644
+index 3f6a40d..525d9fde 100644
 --- a/src/server/game/Chat/Channels/Channel.cpp
 +++ b/src/server/game/Chat/Channels/Channel.cpp
 @@ -24,6 +24,7 @@
@@ -257,7 +257,7 @@ index 3f6a40d..a2713a8 100644
  
      if (!IsConstant())
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
-index 2d2266a..f3d6c14 100644
+index d77ee5b..3f5f5f5 100644
 --- a/src/server/game/Chat/Chat.cpp
 +++ b/src/server/game/Chat/Chat.cpp
 @@ -365,6 +365,15 @@ bool ChatHandler::ExecuteCommandInTable(ChatCommand* table, const char* text, st
@@ -276,7 +276,7 @@ index 2d2266a..f3d6c14 100644
              }
          }
          // some commands have custom error messages. Don't send the default one in these cases.
-@@ -894,6 +903,38 @@ char* ChatHandler::extractKeyFromLink(char* text, char const* const* linkTypes,
+@@ -912,6 +921,38 @@ char* ChatHandler::extractKeyFromLink(char* text, char const* const* linkTypes,
      return NULL;
  }
  
@@ -316,7 +316,7 @@ index 2d2266a..f3d6c14 100644
  {
      if (!m_session)
 diff --git a/src/server/game/Chat/Chat.h b/src/server/game/Chat/Chat.h
-index f9000f6..8a92bdc 100644
+index a56b790..c66e9cb 100644
 --- a/src/server/game/Chat/Chat.h
 +++ b/src/server/game/Chat/Chat.h
 @@ -22,6 +22,7 @@
@@ -327,7 +327,7 @@ index f9000f6..8a92bdc 100644
  
  #include <vector>
  
-@@ -159,4 +160,6 @@ class CliHandler : public ChatHandler
+@@ -161,4 +162,6 @@ class CliHandler : public ChatHandler
          Print* m_print;
  };
  
@@ -335,7 +335,7 @@ index f9000f6..8a92bdc 100644
 +
  #endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index e8bb798..27eb7af 100644
+index f30c989..2703223 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -31,6 +31,7 @@
@@ -346,7 +346,7 @@ index e8bb798..27eb7af 100644
  #include "Common.h"
  #include "ConditionMgr.h"
  #include "CreatureAI.h"
-@@ -2463,6 +2464,15 @@ void Player::RemoveFromWorld()
+@@ -2459,6 +2460,15 @@ void Player::RemoveFromWorld()
              SetViewpoint(viewpoint, false);
          }
      }
@@ -362,7 +362,7 @@ index e8bb798..27eb7af 100644
  }
  
  void Player::RegenerateAll()
-@@ -3070,6 +3080,17 @@ void Player::GiveLevel(uint8 level)
+@@ -3066,6 +3076,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
  
@@ -381,10 +381,10 @@ index e8bb798..27eb7af 100644
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 2eb740f..50979c8 100644
+index 48a2209..f8ebddd 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2625,6 +2625,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2628,6 +2628,8 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -394,7 +394,7 @@ index 2eb740f..50979c8 100644
  
  void AddItemsSetItem(Player*player, Item* item);
 diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
-index 95d4c7e..170621f 100644
+index e452253..d4d80d3 100644
 --- a/src/server/game/Events/GameEventMgr.cpp
 +++ b/src/server/game/Events/GameEventMgr.cpp
 @@ -29,6 +29,7 @@
@@ -420,7 +420,7 @@ index 95d4c7e..170621f 100644
  
      //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index d9e4feb..33ce117 100644
+index 86fa042..83033db 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -29,6 +29,7 @@
@@ -431,7 +431,7 @@ index d9e4feb..33ce117 100644
  
  //void called when player click on auctioneer npc
  void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recvData)
-@@ -555,10 +556,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
+@@ -574,10 +575,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
      SendAuctionCommandResult(auction->Id, AUCTION_CANCEL, ERR_AUCTION_OK);
  
      // Now remove the auction
@@ -450,7 +450,7 @@ index d9e4feb..33ce117 100644
      uint32 itemEntry = auction->itemEntry;
      sAuctionMgr->RemoveAItem(auction->itemGUIDLow);
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index fbc7856..137d7af 100644
+index eccf7a6..e4c50df 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -39,6 +39,7 @@
@@ -461,7 +461,7 @@ index fbc7856..137d7af 100644
  
  void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  {
-@@ -439,6 +440,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -431,6 +432,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  
              if (ChannelMgr* cMgr = ChannelMgr::forTeam(sender->GetTeam()))
              {
@@ -587,7 +587,7 @@ index 0000000..308cefc
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCClient.h b/src/server/game/TriniChat/IRCClient.h
 new file mode 100644
-index 0000000..3c34944
+index 0000000..ce912ab
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCClient.h
 @@ -0,0 +1,253 @@
@@ -847,7 +847,7 @@ index 0000000..3c34944
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCCmd.cpp b/src/server/game/TriniChat/IRCCmd.cpp
 new file mode 100644
-index 0000000..251cc6a
+index 0000000..9b6fe32
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCCmd.cpp
 @@ -0,0 +1,930 @@
@@ -1784,7 +1784,7 @@ index 0000000..251cc6a
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCCmd.h b/src/server/game/TriniChat/IRCCmd.h
 new file mode 100644
-index 0000000..fb959b9
+index 0000000..c71fa2d
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCCmd.h
 @@ -0,0 +1,141 @@
@@ -1932,7 +1932,7 @@ index 0000000..fb959b9
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCCmde.cpp b/src/server/game/TriniChat/IRCCmde.cpp
 new file mode 100644
-index 0000000..f422446
+index 0000000..bbf6c6a
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCCmde.cpp
 @@ -0,0 +1,2337 @@
@@ -4561,7 +4561,7 @@ index 0000000..42605e1
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCIO.cpp b/src/server/game/TriniChat/IRCIO.cpp
 new file mode 100644
-index 0000000..4541639
+index 0000000..9de491e
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCIO.cpp
 @@ -0,0 +1,470 @@
@@ -5347,10 +5347,10 @@ index 0000000..eccf86b
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/MCS_OnlinePlayers.cpp b/src/server/game/TriniChat/MCS_OnlinePlayers.cpp
 new file mode 100644
-index 0000000..7455f22
+index 0000000..16297ad
 --- /dev/null
 +++ b/src/server/game/TriniChat/MCS_OnlinePlayers.cpp
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,98 @@
 +/*
 + * Copyright (C) 2005-2008 MaNGOS <http://www.mangosproject.org/>
 + *
@@ -5376,6 +5376,7 @@ index 0000000..7455f22
 +#include "MapManager.h"
 +#include "ObjectMgr.h"
 +#include "Config.h"
++#include "WorldSession.h"
 +
 +mcs_OnlinePlayers::mcs_OnlinePlayers() { CD = NULL; }
 +
@@ -8837,7 +8838,7 @@ index 0000000..fce5ec8
 +#endif
 +
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 729dfac..e824d6e 100644
+index e40e2f7..90ac1bd 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -80,6 +80,7 @@
@@ -8848,7 +8849,7 @@ index 729dfac..e824d6e 100644
  
  ACE_Atomic_Op<ACE_Thread_Mutex, bool> World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1267,6 +1268,163 @@ void World::LoadConfigSettings(bool reload)
+@@ -1256,6 +1257,163 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
@@ -9012,7 +9013,7 @@ index 729dfac..e824d6e 100644
  }
  
  extern void LoadGameObjectModelList();
-@@ -1285,6 +1443,7 @@ void World::SetInitialWorldSettings()
+@@ -1274,6 +1432,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -9020,7 +9021,7 @@ index 729dfac..e824d6e 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1734,6 +1893,9 @@ void World::SetInitialWorldSettings()
+@@ -1727,6 +1886,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
  
@@ -9030,7 +9031,7 @@ index 729dfac..e824d6e 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1747,6 +1909,8 @@ void World::SetInitialWorldSettings()
+@@ -1740,6 +1902,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -9039,7 +9040,7 @@ index 729dfac..e824d6e 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -2114,6 +2278,12 @@ void World::Update(uint32 diff)
+@@ -2107,6 +2271,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -9052,7 +9053,7 @@ index 729dfac..e824d6e 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2729,6 +2899,20 @@ void World::SendAutoBroadcast()
+@@ -2722,6 +2892,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -9074,7 +9075,7 @@ index 729dfac..e824d6e 100644
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 4c43507..0f076db 100644
+index 9bac303..1d3ac85 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -9085,7 +9086,7 @@ index 4c43507..0f076db 100644
      WUPDATE_MAILBOXQUEUE,
      WUPDATE_DELETECHARS,
      WUPDATE_PINGDB,
-@@ -534,6 +535,9 @@ class World
+@@ -526,6 +527,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -9198,7 +9199,7 @@ index 75d9ca5..1b8c794 100644
  #ifndef _TRINITY_CORE_CONFIG
  # define _TRINITY_CORE_CONFIG  "worldserver.conf"
 diff --git a/src/server/worldserver/Master.cpp b/src/server/worldserver/Master.cpp
-index c3075de..c968f40 100644
+index c542437..40f46de 100644
 --- a/src/server/worldserver/Master.cpp
 +++ b/src/server/worldserver/Master.cpp
 @@ -42,7 +42,7 @@
@@ -9227,10 +9228,10 @@ index c3075de..c968f40 100644
      if (uint32 freezeDelay = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
      {
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 1762859..a490140 100644
+index f71ef5d..85746c8 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2662,6 +2662,251 @@ UI.ShowQuestLevelsInDialogs = 0
+@@ -2590,6 +2590,251 @@ UI.ShowQuestLevelsInDialogs = 0
  
  #
  ###################################################################################################
@@ -9483,4 +9484,5 @@ index 1762859..a490140 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
 -- 
-1.8.1.msysgit.1
+1.7.10.4
+
