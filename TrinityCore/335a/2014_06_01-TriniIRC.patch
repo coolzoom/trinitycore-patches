@@ -1,7 +1,7 @@
-From 7cf15fe62e1d2728dcdf775b0fb4b0fba001cd3a Mon Sep 17 00:00:00 2001
+From 203774e1cabc05830809a2f49d6d5b5a931345aa Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 29 May 2014 00:26:35 -0400
-Subject: [PATCH] 2014_05_28-TriniIRC
+Date: Tue, 3 Jun 2014 10:35:04 -0400
+Subject: [PATCH] 2014_06_01-TriniIRC
 
 ---
  .../TriniIRC/World_TrinityChat.sql                 |   81 +
@@ -335,7 +335,7 @@ index a56b790..c66e9cb 100644
 +
  #endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f30c989..2703223 100644
+index 7792192..aaf8825 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -31,6 +31,7 @@
@@ -346,7 +346,7 @@ index f30c989..2703223 100644
  #include "Common.h"
  #include "ConditionMgr.h"
  #include "CreatureAI.h"
-@@ -2459,6 +2460,15 @@ void Player::RemoveFromWorld()
+@@ -2461,6 +2462,15 @@ void Player::RemoveFromWorld()
              SetViewpoint(viewpoint, false);
          }
      }
@@ -362,7 +362,7 @@ index f30c989..2703223 100644
  }
  
  void Player::RegenerateAll()
-@@ -3066,6 +3076,17 @@ void Player::GiveLevel(uint8 level)
+@@ -3068,6 +3078,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
  
@@ -381,10 +381,10 @@ index f30c989..2703223 100644
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 48a2209..f8ebddd 100644
+index 5267403..f1bdb01 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2628,6 +2628,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2631,6 +2631,8 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -471,7 +471,7 @@ index eccf7a6..e4c50df 100644
                      sScriptMgr->OnPlayerChat(sender, type, lang, msg, chn);
 diff --git a/src/server/game/TriniChat/IRCClient.cpp b/src/server/game/TriniChat/IRCClient.cpp
 new file mode 100644
-index 0000000..308cefc
+index 0000000..3dcdb60
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCClient.cpp
 @@ -0,0 +1,109 @@
@@ -527,14 +527,14 @@ index 0000000..308cefc
 +    // mangos is still starting up.
 +    ACE_Based::Thread::Sleep(500);
 +    TC_LOG_ERROR("misc" "\n%s\n%s\n%s\n%s",
-+        "***************************************",
++        "****************************************",
 +        "**   TriniChat2 Threaded IRC Client   **",
-+        "**     With Enhanced GM Control.     **",
-+        "***************************************");
++        "**     With Enhanced GM Control.      **",
++        "****************************************");
 +    TC_LOG_ERROR("misc" "****** TriniChat: %s ********", sIRC._Mver.c_str());
 +    int cCount = 1;
 +    // Clean Up MySQL Tables
-+    TC_LOG_ERROR("misc" "*** TriniChat: Cleaning Up Inchan Table*","");
++    TC_LOG_ERROR("misc" "*** TriniChat: Cleaning Up Inchan Table*"," ");
 +    WorldDatabase.PExecute("DELETE FROM `irc_inchan`");
 +    sIRC._Max_Script_Inst = 0;
 +    // Create a loop to keep the thread running untill active is set to false
@@ -549,15 +549,15 @@ index 0000000..308cefc
 +           {
 +               // On connection success reset the connection counter
 +               cCount = 0;
-+               TC_LOG_ERROR("misc" "*** TriniChat: Connected And Logging In*","");
++               TC_LOG_ERROR("misc" "*** TriniChat: Connected And Logging In*"," ");
 +                // Login to the IRC server
 +                if (this->Login(sIRC._Nick, sIRC._User, sIRC._Pass))
 +                {
-+                    TC_LOG_ERROR("misc" "*** TriniChat: Logged In And Running!! *","");
++                    TC_LOG_ERROR("misc" "*** TriniChat: Logged In And Running!! *"," ");
 +                    // While we are connected to the irc server keep listening for data on the socket
 +                    while (sIRC.Connected && !World::IsStopped()){ sIRC.SockRecv(); }
 +                }
-+                TC_LOG_ERROR("misc" "*** TriniChat: Connection To IRC Server Lost! ***","");
++                TC_LOG_ERROR("misc" "*** TriniChat: Connection To IRC Server Lost! ***"," ");
 +            }
 +            // When an error occures or connection lost cleanup
 +            Disconnect();
@@ -574,7 +574,7 @@ index 0000000..308cefc
 +        {
 +            // Socket could not initialize cancel
 +            sIRC.Active = false;
-+            TC_LOG_ERROR("misc" "** TriniChat: Could not initialize socket","");
++            TC_LOG_ERROR("misc" "** TriniChat: Could not initialize socket"," ");
 +        }
 +    }
 +    while (!World::IsStopped()){};
@@ -4276,7 +4276,7 @@ index 0000000..bbf6c6a
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCFunc.h b/src/server/game/TriniChat/IRCFunc.h
 new file mode 100644
-index 0000000..42605e1
+index 0000000..c81f855
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCFunc.h
 @@ -0,0 +1,278 @@
@@ -4328,7 +4328,7 @@ index 0000000..42605e1
 +    while((pos = msg.find("|Hitem")) != std::string::npos)
 +    {
 +        std::size_t find1 = msg.find("|h", pos);
-+         std::size_t find2 = msg.find("|h", find1 + 2);
++        std::size_t find2 = msg.find("|h", find1 + 2);
 +        msg.replace(pos, find1 - pos + 2, "\x2");
 +        msg.replace(msg.find("|h", pos), 2, "\x2");
 +    }
@@ -4343,14 +4343,14 @@ index 0000000..42605e1
 +    while((pos = msg.find("|Hquest")) != std::string::npos)
 +    {
 +        std::size_t find1 = msg.find("|h", pos);
-+         std::size_t find2 = msg.find("|h", find1 + 2);
++        std::size_t find2 = msg.find("|h", find1 + 2);
 +        msg.replace(pos, find1 - pos + 2, "\x2");
 +        msg.replace(msg.find("|h", pos), 2, "\x2");
 +    }
 +    while((pos = msg.find("|Hspell")) != std::string::npos)
 +    {
-+         std::size_t find1 = msg.find("|h", pos);
-+         std::size_t find2 = msg.find("|h", find1 + 2);
++        std::size_t find1 = msg.find("|h", pos);
++        std::size_t find2 = msg.find("|h", find1 + 2);
 +        msg.replace(pos, find1 - pos + 2, "\x2");
 +        msg.replace(msg.find("|h", pos), 2, "\x2");
 +    }
@@ -4561,7 +4561,7 @@ index 0000000..42605e1
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCIO.cpp b/src/server/game/TriniChat/IRCIO.cpp
 new file mode 100644
-index 0000000..9de491e
+index 0000000..c0cc5d8
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCIO.cpp
 @@ -0,0 +1,470 @@
@@ -4854,9 +4854,9 @@ index 0000000..9de491e
 +                    case 3: GMRank = "\0037"+sIRC.ojGM3;break;
 +                    case 4: GMRank = "\0037"+sIRC.ojGM4;break;
 +                    case 5: GMRank = "\0037"+sIRC.ojGM5;break;
-+              case 6: GMRank = "\0037"+sIRC.ojGM6;break;
-+             case 7: GMRank = "\0037"+sIRC.ojGM7;break;
-+             case 8: GMRank = "\0037"+sIRC.ojGM8;break;
++                    case 6: GMRank = "\0037"+sIRC.ojGM6;break;
++                    case 7: GMRank = "\0037"+sIRC.ojGM7;break;
++                    case 8: GMRank = "\0037"+sIRC.ojGM8;break;
 +                }
 +            }
 +            std::string ChatTag = "";
@@ -5174,7 +5174,7 @@ index 0000000..426ff4e
 \ No newline at end of file
 diff --git a/src/server/game/TriniChat/IRCSock.cpp b/src/server/game/TriniChat/IRCSock.cpp
 new file mode 100644
-index 0000000..eccf86b
+index 0000000..0b879da
 --- /dev/null
 +++ b/src/server/game/TriniChat/IRCSock.cpp
 @@ -0,0 +1,166 @@
@@ -5218,19 +5218,19 @@ index 0000000..eccf86b
 +    WSADATA wsaData;                                        //WSAData
 +    if (WSAStartup(MAKEWORD(2,0),&wsaData) != 0)
 +    {
-+        TC_LOG_ERROR("misc" "IRC Error: Winsock Initialization Error","");
++        TC_LOG_ERROR("misc" "IRC Error: Winsock Initialization Error"," ");
 +        return false;
 +    }
 +    #endif
 +    if ((sIRC.SOCKET = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
 +    {
-+        TC_LOG_ERROR("misc" "IRC Error: Socket Error","");
++        TC_LOG_ERROR("misc" "IRC Error: Socket Error"," ");
 +        return false;
 +    }
 +    int on = 1;
 +    if (setsockopt (sIRC.SOCKET, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof (on)) == -1)
 +    {
-+        TC_LOG_ERROR("misc" "IRC Error: Invalid Socket","");
++        TC_LOG_ERROR("misc" "IRC Error: Invalid Socket"," ");
 +        return false;
 +    }
 +    #ifdef _WIN32
@@ -5286,7 +5286,7 @@ index 0000000..eccf86b
 +    {
 +        if (send(sIRC.SOCKET, data, strlen(data), 0) == -1)
 +        {
-+            TC_LOG_ERROR("misc" "IRC Error: Socket Receieve ** \n","");
++            TC_LOG_ERROR("misc" "IRC Error: Socket Receieve ** \n"," ");
 +            //Disconnect();
 +            return false;
 +        }
@@ -5324,14 +5324,14 @@ index 0000000..eccf86b
 +    int nBytesRecv = ::recv(sIRC.SOCKET, szBuffer, MAXDATASIZE - 1, 0);
 +    if (nBytesRecv == -1)
 +    {
-+        TC_LOG_ERROR("misc" "Connection lost.","");
++        TC_LOG_ERROR("misc" "Connection lost."," ");
 +        sIRC.Connected = false;
 +    }
 +    else
 +    {
 +        if (-1 == nBytesRecv)
 +        {
-+            TC_LOG_ERROR("misc" "Error occurred while receiving from socket.","");
++            TC_LOG_ERROR("misc" "Error occurred while receiving from socket."," ");
 +        }
 +        else
 +        {
@@ -8838,7 +8838,7 @@ index 0000000..fce5ec8
 +#endif
 +
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e40e2f7..90ac1bd 100644
+index e40e2f7..76c3c08 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -80,6 +80,7 @@
@@ -8901,7 +8901,7 @@ index e40e2f7..90ac1bd 100644
 +            sIRC._wow_chan[sIRC._chan_count] = sConfigMgr->GetStringDefault(ci.c_str(), t_chan.c_str());
 +        }
 +    }
-+    sIRC.JoinMsg = sConfigMgr->GetStringDefault("irc.joinmsg", "TriniChat2 $Ver for Trinitycore 3.3.x Maintained by SPGM of Trinitycore http://code.google.com/p/spgm-trinity/");
++    sIRC.JoinMsg = sConfigMgr->GetStringDefault("irc.joinmsg", "TriniChat2 $Ver for Trinitycore 3.3.5a Maintained by LordPsyan of Infinitycore http://www.infinitycore.org/");
 +    sIRC.RstMsg  = sConfigMgr->GetStringDefault("irc.rstmsg", "TriniChat Is Restarting, I Will Be Right Back!");
 +    sIRC.kikmsg = sConfigMgr->GetStringDefault("irc.kickmsg", "Do Not Kick Me Again, Severe Actions Will Be Taken!");
 +    // IRC LINES
