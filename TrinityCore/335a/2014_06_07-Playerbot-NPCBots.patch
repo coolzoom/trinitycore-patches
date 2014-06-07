@@ -1,7 +1,7 @@
-From 8b7fa23314d50a41794f951cfd71ede3fb6c60e9 Mon Sep 17 00:00:00 2001
+From 5580d832a647e5207f188568213b1bfae3d3e107 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 6 Jun 2014 16:34:17 -0400
-Subject: [PATCH] 2014_06_06-Playerbot_NPCBots
+Date: Sat, 7 Jun 2014 09:07:40 -0400
+Subject: [PATCH] 2014_06_07-Playerbot-NPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |   31 +
@@ -65,7 +65,7 @@ Subject: [PATCH] 2014_06_06-Playerbot_NPCBots
  src/server/game/Groups/Group.cpp                   |   16 +
  src/server/game/Groups/Group.h                     |    3 +
  src/server/game/Handlers/CharacterHandler.cpp      |  150 +
- src/server/game/Handlers/ChatHandler.cpp           |   30 +
+ src/server/game/Handlers/ChatHandler.cpp           |   32 +-
  src/server/game/Handlers/GroupHandler.cpp          |   14 +
  src/server/game/Handlers/MiscHandler.cpp           |   35 +
  src/server/game/Handlers/NPCHandler.cpp            |   33 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2014_06_06-Playerbot_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |    4 +
  .../shared/Database/Implementation/WorldDatabase.h |    4 +
  src/server/worldserver/worldserver.conf.dist       |  208 +
- 78 files changed, 42797 insertions(+), 1 deletion(-)
+ 78 files changed, 42798 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -43091,7 +43091,7 @@ index d4af17c..748fe08 100644
  {
      uint32 data;
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index eccf7a6..f2085f1 100644
+index eccf7a6..e07727f 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -39,6 +39,8 @@
@@ -43103,6 +43103,15 @@ index eccf7a6..f2085f1 100644
  
  void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  {
+@@ -269,7 +271,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+             }
+ 
+             Player* receiver = sObjectAccessor->FindPlayerByName(to);
+-            if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
++            if (!receiver)
+             {
+                 SendPlayerNotFoundNotice(to);
+                 return;
 @@ -298,6 +300,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                  (HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !sender->isAcceptWhispers() && !sender->IsInWhisperWhiteList(receiver->GetGUID())))
                  sender->AddWhisperWhiteList(receiver->GetGUID());
