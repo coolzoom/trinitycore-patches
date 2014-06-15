@@ -1,7 +1,7 @@
-From 5580d832a647e5207f188568213b1bfae3d3e107 Mon Sep 17 00:00:00 2001
+From aa442c2518fb0b8178f6abb0eea782cd99f244f3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 7 Jun 2014 09:07:40 -0400
-Subject: [PATCH] 2014_06_07-Playerbot-NPCBots
+Date: Sun, 15 Jun 2014 18:37:24 -0400
+Subject: [PATCH] Playerbot-NPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |   31 +
@@ -301,7 +301,7 @@ index 0000000..a9f5c6b
 +-- UPDATE `locales_gossip_menu_option` SET `option_text_loc1` = ' ' WHERE `menu_id` = 60000 AND `id` = 36;
 diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql
 new file mode 100644
-index 0000000..88fe33f
+index 0000000..037bbb5
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/world_bots.sql
 @@ -0,0 +1,562 @@
@@ -40727,7 +40727,7 @@ index bf46c1f..0070c71 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 9052791..b4f6dc5 100644
+index c81ba40..eb41ce6 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -40777,7 +40777,7 @@ index 9052791..b4f6dc5 100644
      if (IsAIEnabled && TriggerJustRespawned)
      {
          TriggerJustRespawned = false;
-@@ -1268,6 +1287,11 @@ void Creature::SetCanDualWield(bool value)
+@@ -1276,6 +1295,11 @@ void Creature::SetCanDualWield(bool value)
  
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
@@ -40789,7 +40789,7 @@ index 9052791..b4f6dc5 100644
      if (id == 0)
      {
          if (force)
-@@ -2128,6 +2152,9 @@ void Creature::SetInCombatWithZone()
+@@ -2136,6 +2160,9 @@ void Creature::SetInCombatWithZone()
  
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
@@ -40799,7 +40799,7 @@ index 9052791..b4f6dc5 100644
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
  
-@@ -2704,3 +2731,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
+@@ -2712,3 +2739,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
          ClearUnitState(UNIT_STATE_ROTATING);
  }
  
@@ -41068,10 +41068,10 @@ index d31117c..fb8ed9c 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index f2215fa..8bccaee 100644
+index 4ff0153..9bb43e9 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
-@@ -2187,6 +2187,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2190,6 +2190,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
              summon = new Puppet(properties, summoner);
              break;
          case UNIT_MASK_TOTEM:
@@ -41083,7 +41083,7 @@ index f2215fa..8bccaee 100644
              summon = new Totem(properties, summoner);
              break;
          case UNIT_MASK_MINION:
-@@ -2208,6 +2213,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2211,6 +2216,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
      AddToMap(summon->ToCreature());
      summon->InitSummon();
  
@@ -41097,7 +41097,7 @@ index f2215fa..8bccaee 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index fdb0b52..ef9780e 100644
+index 8ceb6c0..a75f222 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -78,6 +78,12 @@
@@ -41223,7 +41223,7 @@ index fdb0b52..ef9780e 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2230,6 +2311,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2224,6 +2305,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -41237,7 +41237,7 @@ index fdb0b52..ef9780e 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2463,6 +2551,935 @@ void Player::RemoveFromWorld()
+@@ -2457,6 +2545,935 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -42173,7 +42173,7 @@ index fdb0b52..ef9780e 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2740,6 +3757,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2734,6 +3751,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
  
      // not enemy
      if (creature->IsHostileTo(this))
@@ -42183,7 +42183,7 @@ index fdb0b52..ef9780e 100644
          return NULL;
  
      // not unfriendly
-@@ -2928,6 +3948,48 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2922,6 +3942,48 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (group)
      {
@@ -42232,7 +42232,7 @@ index fdb0b52..ef9780e 100644
          group->RemoveMember(guid, method, kicker, reason);
          group = NULL;
      }
-@@ -3110,6 +4172,9 @@ void Player::GiveLevel(uint8 level)
+@@ -3104,6 +4166,9 @@ void Player::GiveLevel(uint8 level)
              }
  
      sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
@@ -42242,7 +42242,7 @@ index fdb0b52..ef9780e 100644
  }
  
  void Player::InitTalentForLevel()
-@@ -4992,6 +6057,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4986,6 +6051,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -42257,7 +42257,7 @@ index fdb0b52..ef9780e 100644
              break;
          }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 5267403..5491c23 100644
+index aeac9db..479f33c 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,14 @@ class PlayerSocial;
@@ -42275,9 +42275,9 @@ index 5267403..5491c23 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2303,6 +2311,58 @@ class Player : public Unit, public GridObject<Player>
-         std::string GetMapAreaAndZoneString();
-         std::string GetCoordsMapAreaAndZoneString();
+@@ -2305,6 +2313,58 @@ class Player : public Unit, public GridObject<Player>
+ 
+         bool IsLoading() const;
  
 +        /*********************************************************/
 +        /***                     BOT SYSTEM                    ***/
@@ -42334,7 +42334,7 @@ index 5267403..5491c23 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2566,6 +2626,33 @@ class Player : public Unit, public GridObject<Player>
+@@ -2568,6 +2628,33 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -42410,7 +42410,7 @@ index 0413622..3170a37 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 4efa137..81ef7be 100644
+index 1b26294..f84017e 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -337,6 +337,17 @@ void Unit::Update(uint32 p_time)
@@ -42480,15 +42480,15 @@ index 4efa137..81ef7be 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10411,6 +10443,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
+@@ -10452,6 +10484,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
-     if (IS_CREATURE_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
+     if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
 +        if (!ToCreature()->GetIAmABot())
-         return false;
+         return 0.0f;
  
      // not critting spell
-@@ -13125,6 +13158,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13196,6 +13229,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -42500,7 +42500,7 @@ index 4efa137..81ef7be 100644
      return true;
  }
  
-@@ -16562,6 +16600,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16628,6 +16666,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -42684,7 +42684,7 @@ index 4efa137..81ef7be 100644
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 207f80e..0e3d08f 100644
+index 72ea1b1..adea928 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
 @@ -7840,6 +7840,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
@@ -43155,7 +43155,7 @@ index eccf7a6..e07727f 100644
              ChatHandler::BuildChatPacket(data, ChatMsg(type), Language(lang), sender, NULL, msg);
              group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetGUID()));
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index eae95d2..df93058 100644
+index 97867e2..3dba783 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
 @@ -307,6 +307,13 @@ void WorldSession::HandleGroupUninviteGuidOpcode(WorldPacket& recvData)
@@ -43187,7 +43187,7 @@ index eae95d2..df93058 100644
          return;
      }
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 11fa89d..2ce2c39 100644
+index c4ff258..8e33fc8 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -56,6 +56,9 @@
@@ -43254,7 +43254,7 @@ index 11fa89d..2ce2c39 100644
          {
              go->AI()->GossipSelect(_player, menuId, gossipListId);
 diff --git a/src/server/game/Handlers/NPCHandler.cpp b/src/server/game/Handlers/NPCHandler.cpp
-index fc14797..5dea4a7 100644
+index d8a518a..5b9a19c 100644
 --- a/src/server/game/Handlers/NPCHandler.cpp
 +++ b/src/server/game/Handlers/NPCHandler.cpp
 @@ -38,6 +38,9 @@
@@ -43267,7 +43267,7 @@ index fc14797..5dea4a7 100644
  enum StableResultCode
  {
      STABLE_ERR_MONEY        = 0x01,                         // "you don't have enough money"
-@@ -302,6 +305,36 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recvData)
+@@ -303,6 +306,36 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recvData)
      uint64 guid;
      recvData >> guid;
  
@@ -43373,10 +43373,10 @@ index ba30803..896c522 100644
          return;
  
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index ba27123..f9f77db 100644
+index 01e3af1..fef8b2e 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
-@@ -2679,7 +2679,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
+@@ -2673,7 +2673,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
      uint32 count = 0;
      for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
          if (!itr->GetSource()->IsGameMaster())
@@ -43388,10 +43388,10 @@ index ba27123..f9f77db 100644
  }
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7365d59..dd91d77 100644
+index 07db809..0c75bc5 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1436,6 +1436,23 @@ void AddBattlegroundScripts()
+@@ -1434,6 +1434,23 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -43415,7 +43415,7 @@ index 7365d59..dd91d77 100644
  
  #endif
  
-@@ -1443,6 +1460,22 @@ void AddCustomScripts()
+@@ -1441,6 +1458,22 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -43439,7 +43439,7 @@ index 7365d59..dd91d77 100644
  #endif
  }
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index eda7b89..14e1eef 100644
+index 9f8b378..ba3e3a3 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -47,6 +47,8 @@
@@ -43451,7 +43451,7 @@ index eda7b89..14e1eef 100644
  
  namespace {
  
-@@ -189,6 +191,10 @@ uint32 WorldSession::GetGuidLow() const
+@@ -190,6 +192,10 @@ uint32 WorldSession::GetGuidLow() const
  /// Send a packet to the client
  void WorldSession::SendPacket(WorldPacket const* packet)
  {
@@ -43462,7 +43462,7 @@ index eda7b89..14e1eef 100644
      if (!m_Socket)
          return;
  
-@@ -262,9 +268,10 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -263,9 +269,10 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
  
      ///- Before we process anything:
      /// If necessary, kick the player from the character select screen
@@ -43474,7 +43474,7 @@ index eda7b89..14e1eef 100644
      ///- Retrieve packets from the receive queue and call the appropriate handlers
      /// not process packets if socket already closed
      WorldPacket* packet = NULL;
-@@ -326,6 +333,17 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -327,6 +334,17 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
                              (this->*opHandle.handler)(*packet);
                              LogUnprocessedTail(packet);
                          }
@@ -43492,7 +43492,7 @@ index eda7b89..14e1eef 100644
                          // lag can cause STATUS_LOGGEDIN opcodes to arrive after the player started a transfer
                          break;
                      case STATUS_LOGGEDIN_OR_RECENTLY_LOGGOUT:
-@@ -418,6 +436,28 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -419,6 +437,28 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
          if (m_Socket && GetPlayer() && _warden)
              _warden->Update();
  
@@ -43521,7 +43521,7 @@ index eda7b89..14e1eef 100644
          ///- Cleanup socket pointer if need
          if (m_Socket && m_Socket->IsClosed())
          {
-@@ -439,6 +479,30 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
+@@ -440,6 +480,30 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
  /// %Log the player out
  void WorldSession::LogoutPlayer(bool save)
  {
@@ -43552,7 +43552,7 @@ index eda7b89..14e1eef 100644
      // finish pending transfers before starting the logout
      while (_player && _player->IsBeingTeleportedFar())
          HandleMoveWorldportAckOpcode();
-@@ -531,6 +595,9 @@ void WorldSession::LogoutPlayer(bool save)
+@@ -532,6 +596,9 @@ void WorldSession::LogoutPlayer(bool save)
          // remove player from the group if he is:
          // a) in group; b) not in raid group; c) logging out normally (not being kicked or disconnected)
          if (_player->GetGroup() && !_player->GetGroup()->isRaidGroup() && m_Socket)
@@ -43562,7 +43562,7 @@ index eda7b89..14e1eef 100644
              _player->RemoveFromGroup();
  
          //! Send update to group and reset stored max enchanting level
-@@ -676,6 +743,33 @@ void WorldSession::LoadGlobalAccountData()
+@@ -677,6 +744,33 @@ void WorldSession::LoadGlobalAccountData()
      LoadAccountData(CharacterDatabase.Query(stmt), GLOBAL_CACHE_MASK);
  }
  
@@ -43596,7 +43596,7 @@ index eda7b89..14e1eef 100644
  void WorldSession::LoadAccountData(PreparedQueryResult result, uint32 mask)
  {
      for (uint32 i = 0; i < NUM_ACCOUNT_DATA_TYPES; ++i)
-@@ -1127,6 +1221,15 @@ void WorldSession::ProcessQueryCallbacks()
+@@ -1128,6 +1222,15 @@ void WorldSession::ProcessQueryCallbacks()
          _charLoginCallback.cancel();
      }
  
@@ -43613,7 +43613,7 @@ index eda7b89..14e1eef 100644
      if (_addFriendCallback.IsReady())
      {
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 82125aa..4805486 100644
+index 61d2fa6..f92aa86 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -204,6 +204,34 @@ struct PacketCounter
@@ -43700,10 +43700,10 @@ index e40e2f7..c97ac37 100644
      sObjectMgr->LoadEquipmentTemplates();
  
 diff --git a/src/server/scripts/Spells/spell_priest.cpp b/src/server/scripts/Spells/spell_priest.cpp
-index dea67b5..98c03b8 100644
+index 76781e0..75b98d7 100644
 --- a/src/server/scripts/Spells/spell_priest.cpp
 +++ b/src/server/scripts/Spells/spell_priest.cpp
-@@ -561,6 +561,7 @@ class spell_pri_penance : public SpellScriptLoader
+@@ -568,6 +568,7 @@ class spell_pri_penance : public SpellScriptLoader
  
              bool Load() override
              {
@@ -43711,7 +43711,7 @@ index dea67b5..98c03b8 100644
                  return GetCaster()->GetTypeId() == TYPEID_PLAYER;
              }
  
-@@ -603,6 +604,8 @@ class spell_pri_penance : public SpellScriptLoader
+@@ -610,6 +611,8 @@ class spell_pri_penance : public SpellScriptLoader
              SpellCastResult CheckCast()
              {
                  Player* caster = GetCaster()->ToPlayer();
@@ -43720,7 +43720,7 @@ index dea67b5..98c03b8 100644
                  if (Unit* target = GetExplTargetUnit())
                      if (!caster->IsFriendlyTo(target) && !caster->IsValidAttackTarget(target))
                          return SPELL_FAILED_BAD_TARGETS;
-@@ -744,6 +747,7 @@ class spell_pri_renew : public SpellScriptLoader
+@@ -751,6 +754,7 @@ class spell_pri_renew : public SpellScriptLoader
  
              bool Load() override
              {

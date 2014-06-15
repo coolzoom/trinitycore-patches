@@ -1,7 +1,7 @@
-From ebff90e796045443f369194c01257f529b253dcb Mon Sep 17 00:00:00 2001
+From 9325499c47bcd3671174c32dbc59a7a534731270 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 13 Jun 2014 11:13:46 -0400
-Subject: [PATCH] 2014_06_13-ALL
+Date: Sun, 15 Jun 2014 16:04:07 -0400
+Subject: [PATCH] ALL
 
 ---
  README.NPCTELEPORT                                 |   14 +
@@ -129,7 +129,7 @@ Subject: [PATCH] 2014_06_13-ALL
  src/server/game/Mails/Mail.cpp                     |    8 +
  src/server/game/Maps/Map.cpp                       |    3 +
  src/server/game/Miscellaneous/Formulas.h           |   11 +
- src/server/game/Miscellaneous/Language.h           |   20 +-
+ src/server/game/Miscellaneous/Language.h           |   19 +-
  src/server/game/Reputation/ReputationMgr.cpp       |   10 +
  src/server/game/Scripting/ScriptLoader.cpp         |   73 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
@@ -210,7 +210,7 @@ Subject: [PATCH] 2014_06_13-ALL
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
  src/server/worldserver/worldserver.conf.dist       | 1067 ++
- 206 files changed, 66075 insertions(+), 34 deletions(-)
+ 206 files changed, 66074 insertions(+), 34 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 npc-entry-list.txt
@@ -46827,7 +46827,7 @@ index 2223534..14b8199 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 9052791..b4f6dc5 100644
+index c81ba40..eb41ce6 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -46877,7 +46877,7 @@ index 9052791..b4f6dc5 100644
      if (IsAIEnabled && TriggerJustRespawned)
      {
          TriggerJustRespawned = false;
-@@ -1268,6 +1287,11 @@ void Creature::SetCanDualWield(bool value)
+@@ -1276,6 +1295,11 @@ void Creature::SetCanDualWield(bool value)
  
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
@@ -46889,7 +46889,7 @@ index 9052791..b4f6dc5 100644
      if (id == 0)
      {
          if (force)
-@@ -2128,6 +2152,9 @@ void Creature::SetInCombatWithZone()
+@@ -2136,6 +2160,9 @@ void Creature::SetInCombatWithZone()
  
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
@@ -46899,7 +46899,7 @@ index 9052791..b4f6dc5 100644
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
  
-@@ -2704,3 +2731,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
+@@ -2712,3 +2739,169 @@ void Creature::ReleaseFocus(Spell const* focusSpell)
          ClearUnitState(UNIT_STATE_ROTATING);
  }
  
@@ -48715,7 +48715,7 @@ index 0413622..3170a37 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index c0f179e..31d07d3 100644
+index 1b26294..4ccbaff 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -60,6 +60,7 @@
@@ -48793,7 +48793,7 @@ index c0f179e..31d07d3 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10434,6 +10467,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
+@@ -10452,6 +10485,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
@@ -48801,7 +48801,7 @@ index c0f179e..31d07d3 100644
          return 0.0f;
  
      // not critting spell
-@@ -12171,6 +12205,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12189,6 +12223,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
      float stack_bonus     = 1.0f;
      float non_stack_bonus = 1.0f;
  
@@ -48825,7 +48825,7 @@ index c0f179e..31d07d3 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12184,7 +12235,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12202,7 +12253,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -48834,7 +48834,7 @@ index c0f179e..31d07d3 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12218,7 +12269,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12236,7 +12287,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -48843,7 +48843,7 @@ index c0f179e..31d07d3 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
-@@ -13178,6 +13229,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13196,6 +13247,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -48855,7 +48855,7 @@ index c0f179e..31d07d3 100644
      return true;
  }
  
-@@ -16610,6 +16666,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16628,6 +16684,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -49065,7 +49065,7 @@ index e452253..d4d80d3 100644
  
      //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 207f80e..0e3d08f 100644
+index 72ea1b1..adea928 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
 @@ -7840,6 +7840,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
@@ -50203,7 +50203,7 @@ index 8d0e97d..185c073 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3487108..d08d657 100644
+index 3a680e3..01a0298 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -50226,20 +50226,20 @@ index 3487108..d08d657 100644
      // Pinfo commands
      LANG_PINFO_PLAYER                   = 453,
      LANG_PINFO_GM_ACTIVE                = 548,
-@@ -1224,7 +1235,12 @@ enum TrinityStrings
-     LANG_BAN_ACCOUNT_YOUBANNEDMESSAGE_WORLD       = 11006,
+@@ -1225,8 +1236,12 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
--    LANG_NPCINFO_INHABIT_TYPE                     = 11008
-+    LANG_NPCINFO_INHABIT_TYPE                     = 11008,
-+
+     LANG_NPCINFO_INHABIT_TYPE                     = 11008,
+-    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
++    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
+ 
 +	//Guild-Level-System
 +    LANG_NOT_WHISPER                              = 12001,
 +    LANG_GUILDINFO_LEVEL                          = 13000,
 +    LANG_GUILDINFO_XP_INFO                        = 13001
- 
      // NOT RESERVED IDS                   12000-1999999999
      // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // For other tables maybe             2000010000-2147483647 (max index)
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
 index 46b73e7..a6f2437 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
@@ -50269,7 +50269,7 @@ index 46b73e7..a6f2437 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7365d59..1c7f17e 100644
+index 07db809..b7502a5 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -47,6 +47,7 @@ void AddSC_SmartSCripts();
@@ -50280,7 +50280,7 @@ index 7365d59..1c7f17e 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -696,7 +697,6 @@ void AddSC_outdoorpvp_zm();
+@@ -695,7 +696,6 @@ void AddSC_outdoorpvp_zm();
  
  // player
  void AddSC_chat_log();
@@ -50288,7 +50288,7 @@ index 7365d59..1c7f17e 100644
  #endif
  
  void AddScripts()
-@@ -752,6 +752,7 @@ void AddCommandScripts()
+@@ -751,6 +751,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -50296,7 +50296,7 @@ index 7365d59..1c7f17e 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1436,13 +1437,79 @@ void AddBattlegroundScripts()
+@@ -1434,13 +1435,79 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
