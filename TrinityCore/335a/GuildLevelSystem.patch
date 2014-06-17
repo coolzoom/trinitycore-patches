@@ -1,4 +1,4 @@
-From 7eb568de7340f1e6aee4904e744f29d68b353776 Mon Sep 17 00:00:00 2001
+From 85fbea9a3f3c803b502c65ce47ed0c78498a1fa4 Mon Sep 17 00:00:00 2001
 From: DarkBrain2580 <darkbrain@gods-of-nation.eu>
 Date: Tue, 27 May 2014 12:33:01 -0500
 Subject: [PATCH] 2014_06_17-GuildLevelSystem
@@ -16,14 +16,14 @@ Subject: [PATCH] 2014_06_17-GuildLevelSystem
  src/server/game/Guilds/Guild.h                     |  37 ++++++
  src/server/game/Handlers/LootHandler.cpp           |  11 ++
  src/server/game/Miscellaneous/Formulas.h           |  11 ++
- src/server/game/Miscellaneous/Language.h           |   4 +
+ src/server/game/Miscellaneous/Language.h           |   6 +-
  src/server/game/Reputation/ReputationMgr.cpp       |  10 ++
  src/server/game/World/World.cpp                    |  87 +++++++++++++
  src/server/game/World/World.h                      |  20 +++
  src/server/scripts/Commands/cs_guild.cpp           | 133 ++++++++++++++++++-
  .../Database/Implementation/CharacterDatabase.cpp  |  10 ++
  .../Database/Implementation/CharacterDatabase.h    |   7 +
- 19 files changed, 625 insertions(+), 9 deletions(-)
+ 19 files changed, 626 insertions(+), 10 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
@@ -109,8 +109,8 @@ index 0000000..4540ec4
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
 @@ -0,0 +1,6 @@
-+INSERT INTO `trinity_string` VALUES ('13000', 'Guild Level: %u.', null, null, null, null, null, null, null, null);
-+INSERT INTO `trinity_string` VALUES ('13001', 'Guild Experience: %u/%u.', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('13000', 'Gildenlevel: %u.', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('13001', 'Gildenerfahrung: %u/%u.', null, null, null, null, null, null, null, null);
 +
 +INSERT INTO `command` VALUES ('guild info', '1000', 'Syntax: .guild info');
 +INSERT INTO `command` VALUES ('guild setlevel', '1001', 'Syntax: .guild setlevel $GuildName $Level');
@@ -620,13 +620,15 @@ index 8d0e97d..185c073 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3a680e3..d265e26 100644
+index 3a680e3..f144aff 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1226,6 +1226,10 @@ enum TrinityStrings
+@@ -1225,7 +1225,11 @@ enum TrinityStrings
+     LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
-     LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
+-    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
++    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
 +    
 +    //Guild-Level-System
 +    LANG_GUILDINFO_LEVEL = 13000,
