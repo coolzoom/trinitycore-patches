@@ -1,0 +1,266 @@
+From 96399c5a2c815afb50a4173b2fdd692add4bb8c6 Mon Sep 17 00:00:00 2001
+From: Cashew <19Roca91@web.de>
+Date: Fri, 20 Jun 2014 17:42:36 +0200
+Subject: [PATCH] Individuale XP-Raten
+
+---
+ .../auth_individuale_xp_raten.sql                  |  5 ++
+ .../world_individuale_xp_raten.sql                 |  8 +++
+ src/server/game/Accounts/RBAC.h                    |  2 +
+ src/server/game/Entities/Player/Player.cpp         | 25 ++++++++-
+ src/server/game/Entities/Player/Player.h           | 16 ++++++
+ src/server/game/Miscellaneous/Formulas.h           |  5 +-
+ src/server/game/Miscellaneous/Language.h           |  9 ++-
+ src/server/scripts/Commands/cs_modify.cpp          | 64 ++++++++++++++++++++++
+ 8 files changed, 131 insertions(+), 3 deletions(-)
+ create mode 100644 sql/TrinityCore-Patches/Individuale XP-Raten/auth_individuale_xp_raten.sql
+ create mode 100644 sql/TrinityCore-Patches/Individuale XP-Raten/world_individuale_xp_raten.sql
+
+diff --git a/sql/WoW-Studio/Individuale XP-Raten/auth_individuale_xp_raten.sql b/sql/WoW-Studio/Individuale XP-Raten/auth_individuale_xp_raten.sql
+new file mode 100644
+index 0000000..145342c
+--- /dev/null
++++ b/sql/WoW-Studio/Individuale XP-Raten/auth_individuale_xp_raten.sql	
+@@ -0,0 +1,5 @@
++INSERT INTO `rbac_permissions` VALUES ('1010', 'Command: modify xpkill');
++INSERT INTO `rbac_permissions` VALUES ('1011', 'Command: modify xpquest');
++
++INSERT INTO `rbac_linked_permissions` VALUES ('195', '1010');
++INSERT INTO `rbac_linked_permissions` VALUES ('195', '1011');
+diff --git a/sql/WoW-Studio/Individuale XP-Raten/world_individuale_xp_raten.sql b/sql/WoW-Studio/Individuale XP-Raten/world_individuale_xp_raten.sql
+new file mode 100644
+index 0000000..b1c092a
+--- /dev/null
++++ b/sql/WoW-Studio/Individuale XP-Raten/world_individuale_xp_raten.sql	
+@@ -0,0 +1,8 @@
++INSERT INTO `trinity_string` VALUES ('15004', 'Current XpKill Rate: %f.$BCurrent XpQuest Rate: %f.', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('15003', 'The specified value is too low, it should be between 1 and 8.', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('15001', 'XpQuest Rate set to %f ', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('15002', 'The specified value is too high, it should be between 1 and 8.', null, null, null, null, null, null, null, null);
++INSERT INTO `trinity_string` VALUES ('15000', 'XpKill Rate set to %f ', null, null, null, null, null, null, null, null);
++
++INSERT INTO `command` VALUES ('modify xpkill', '1010', 'Syntax: .modify xpkill #wert');
++INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
+\ No newline at end of file
+diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
+index 9ce1f9b..b1af8ea 100644
+--- a/src/server/game/Accounts/RBAC.h
++++ b/src/server/game/Accounts/RBAC.h
+@@ -683,6 +683,8 @@ enum RBACPermissions
+     RBAC_PERM_COMMAND_MAILBOX                                = 777,
+ 
+     // custom permissions 1000+
++	RBAC_PERM_COMMAND_MODIFY_XP_KILL                         = 1010,
++	RBAC_PERM_COMMAND_MODIFY_XP_QUEST                        = 1011,
+     RBAC_PERM_MAX
+ };
+ 
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index 741eaba..4e0f256 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -896,6 +896,10 @@ Player::Player(WorldSession* session): Unit(true)
+     _activeCheats = CHEAT_NONE;
+     m_achievementMgr = new AchievementMgr(this);
+     m_reputationMgr = new ReputationMgr(this);
++
++	//Individuale XP-Raten
++	_individual_kill = 0.0f;
++	_individual_quest = 0.0f;
+ }
+ 
+ Player::~Player()
+@@ -15326,7 +15330,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+     bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
+ 
+     // Not give XP in case already completed once repeatable quest
+-    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
++	uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*(_individual_quest > 0 ? _individual_quest : sWorld->getRate(RATE_XP_QUEST)));
+ 
+     // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
+     Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
+@@ -26757,3 +26761,22 @@ bool Player::IsLoading() const
+ {
+     return GetSession()->PlayerLoading();
+ }
++
++//Individuale XP-Raten
++void Player::SetIndividualRate(IndividualXpRate rate, float value)
++{
++	if (value < 1 || value > 8)
++		return;
++
++	switch (rate)
++	{
++	    case INDIVIDUAL_XP_KILL:
++		    _individual_kill = value;
++		    break;
++	    case INDIVIDUAL_XP_QUEST:
++		    _individual_quest = value;
++	    break;
++	    default:
++		    break;
++	}
++}
+diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
+index aeac9db..196f51e 100644
+--- a/src/server/game/Entities/Player/Player.h
++++ b/src/server/game/Entities/Player/Player.h
+@@ -900,6 +900,13 @@ enum PlayerCommandStates
+     CHEAT_WATERWALK = 0x10
+ };
+ 
++//Individuale XP-Raten
++enum IndividualXpRate
++{
++	INDIVIDUAL_XP_KILL  = 1,
++	INDIVIDUAL_XP_QUEST = 2,
++};
++
+ class PlayerTaxi
+ {
+     public:
+@@ -2305,6 +2312,11 @@ class Player : public Unit, public GridObject<Player>
+ 
+         bool IsLoading() const;
+ 
++		//Individuale XP-Raten
++		void SetIndividualRate(IndividualXpRate rate, float value);
++		float GetIndividualXpKillRate() { return _individual_kill; };
++		float GetIndividualXpQuestRate() { return _individual_quest; };
++
+     protected:
+         // Gamemaster whisper whitelist
+         WhisperListContainer WhisperList;
+@@ -2633,6 +2645,10 @@ class Player : public Unit, public GridObject<Player>
+         uint32 _pendingBindTimer;
+ 
+         uint32 _activeCheats;
++
++		//Individuale XP-Raten
++		float _individual_kill;
++		float _individual_quest;
+ };
+ 
+ void AddItemsSetItem(Player*player, Item* item);
+diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
+index 8d0e97d..d8ccde2 100644
+--- a/src/server/game/Miscellaneous/Formulas.h
++++ b/src/server/game/Miscellaneous/Formulas.h
+@@ -180,7 +180,10 @@ namespace Trinity
+                         gain *= 2;
+                 }
+ 
+-                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL));
++				//Individuale XP-Raten
++				float individualXpKill = player->GetIndividualXpKillRate();
++
++				gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
+             }
+ 
+             sScriptMgr->OnGainCalculation(gain, player, u);
+diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
+index 3a680e3..e346d78 100644
+--- a/src/server/game/Miscellaneous/Language.h
++++ b/src/server/game/Miscellaneous/Language.h
+@@ -1225,7 +1225,14 @@ enum TrinityStrings
+     LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
+ 
+     LANG_NPCINFO_INHABIT_TYPE                     = 11008,
+-    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
++    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
++
++	//Individuale Xp-Raten
++    LANG_INDIVIDUAL_KILLRATE_SET  = 15000,
++    LANG_INDIVIDUAL_QUESTRATE_SET = 15001,
++    LANG_INDIVIDUAL_RATE_TO_HIGH  = 15002,
++    LANG_INDIVIDUAL_RATE_TO_LOW   = 15003,
++    LANG_INDIVIDUAL_RATES_INFO    = 15004,
+ 
+     // NOT RESERVED IDS                   12000-1999999999
+     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
+index 5dbe95b..218f85c 100644
+--- a/src/server/scripts/Commands/cs_modify.cpp
++++ b/src/server/scripts/Commands/cs_modify.cpp
+@@ -70,6 +70,8 @@ public:
+             { "spell",        rbac::RBAC_PERM_COMMAND_MODIFY_SPELL,        false, &HandleModifySpellCommand,         "", NULL },
+             { "standstate",   rbac::RBAC_PERM_COMMAND_MODIFY_STANDSTATE,   false, &HandleModifyStandStateCommand,    "", NULL },
+             { "talentpoints", rbac::RBAC_PERM_COMMAND_MODIFY_TALENTPOINTS, false, &HandleModifyTalentCommand,        "", NULL },
++			{ "xpkill",       rbac::RBAC_PERM_COMMAND_MODIFY_XP_KILL,      false, &HandleModifyXpKillCommand, "", NULL },
++			{ "xpquest",      rbac::RBAC_PERM_COMMAND_MODIFY_XP_QUEST,     false, &HandleModifyXpQuestCommand, "", NULL },
+             { NULL,           0,                                     false, NULL,                              "", NULL }
+         };
+         static ChatCommand commandTable[] =
+@@ -1393,6 +1395,68 @@ public:
+ 
+         return true;
+     }
++
++	static bool HandleModifyXpKillCommand(ChatHandler* handler, const char* args)
++	{
++		if (!*args)
++			return false;
++
++		float killRate = (float)atof((char*)args);
++
++		if (killRate < 1)
++		{
++			handler->SendSysMessage(LANG_INDIVIDUAL_RATE_TO_LOW);
++			handler->SetSentErrorMessage(true);
++			return false;
++		}
++
++		if (killRate > 8)
++		{
++			handler->SendSysMessage(LANG_INDIVIDUAL_RATE_TO_HIGH);
++			handler->SetSentErrorMessage(true);
++			return false;
++		}
++
++		if (Player* player = handler->GetSession()->GetPlayer())
++		{
++			player->SetIndividualRate(INDIVIDUAL_XP_KILL, killRate);
++			handler->PSendSysMessage(LANG_INDIVIDUAL_KILLRATE_SET, killRate);
++			return true;
++		}
++
++		return true;
++	}
++
++	static bool HandleModifyXpQuestCommand(ChatHandler* handler, const char* args)
++	{
++		if (!*args)
++			return false;
++
++		float questRate = (float)atof((char*)args);
++
++		if (questRate < 1)
++		{
++			handler->SendSysMessage(LANG_INDIVIDUAL_RATE_TO_LOW);
++			handler->SetSentErrorMessage(true);
++			return false;
++		}
++
++		if (questRate > 8)
++		{
++			handler->SendSysMessage(LANG_INDIVIDUAL_RATE_TO_HIGH);
++			handler->SetSentErrorMessage(true);
++			return false;
++		}
++
++		if (Player* player = handler->GetSession()->GetPlayer())
++		{
++			player->SetIndividualRate(INDIVIDUAL_XP_QUEST, questRate);
++			handler->PSendSysMessage(LANG_INDIVIDUAL_QUESTRATE_SET, questRate);
++			return true;
++		}
++
++		return true;
++	}
+ };
+ 
+ void AddSC_modify_commandscript()
+-- 
+1.8.0.msysgit.0
+
