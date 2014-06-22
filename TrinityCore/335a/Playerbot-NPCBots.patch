@@ -1,6 +1,6 @@
-From aa442c2518fb0b8178f6abb0eea782cd99f244f3 Mon Sep 17 00:00:00 2001
+From 0e5066dea60a163e822690b8e30273547b2c9336 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Jun 2014 18:37:24 -0400
+Date: Sun, 22 Jun 2014 12:23:02 -0400
 Subject: [PATCH] Playerbot-NPCBots
 
 ---
@@ -40714,10 +40714,10 @@ index 9ce1f9b..33e065c 100644
  };
  
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index bf46c1f..0070c71 100644
+index 26fd081..4960050 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
-@@ -130,6 +130,8 @@ include_directories(
+@@ -132,6 +132,8 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/Addons
    ${CMAKE_CURRENT_SOURCE_DIR}/AI
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/CoreAI
@@ -41097,7 +41097,7 @@ index 4ff0153..9bb43e9 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8ceb6c0..a75f222 100644
+index 9733c0f..c3f106c 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -78,6 +78,12 @@
@@ -42410,7 +42410,7 @@ index 0413622..3170a37 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 1b26294..f84017e 100644
+index 492197d..c4d194a 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -337,6 +337,17 @@ void Unit::Update(uint32 p_time)
@@ -42480,7 +42480,7 @@ index 1b26294..f84017e 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10452,6 +10484,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
+@@ -10454,6 +10486,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
@@ -42488,7 +42488,7 @@ index 1b26294..f84017e 100644
          return 0.0f;
  
      // not critting spell
-@@ -13196,6 +13229,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13202,6 +13235,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -42500,7 +42500,7 @@ index 1b26294..f84017e 100644
      return true;
  }
  
-@@ -16628,6 +16666,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16634,6 +16672,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -42823,7 +42823,7 @@ index ba5940d..1eac9bb 100644
          void LoadScripts(ScriptsType type);
          void CheckScripts(ScriptsType type, std::set<int32>& ids);
 diff --git a/src/server/game/Groups/Group.cpp b/src/server/game/Groups/Group.cpp
-index 113df99..1ff60fc 100644
+index 45ecbf0..4227340 100644
 --- a/src/server/game/Groups/Group.cpp
 +++ b/src/server/game/Groups/Group.cpp
 @@ -107,6 +107,9 @@ bool Group::Create(Player* leader)
@@ -42913,7 +42913,7 @@ index f0061a7..6d28e40 100644
          bool _setMembersGroup(uint64 guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index d4af17c..748fe08 100644
+index 330b11e..270eb0b 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
@@ -42927,7 +42927,7 @@ index d4af17c..748fe08 100644
  class LoginQueryHolder : public SQLQueryHolder
  {
      private:
-@@ -1026,9 +1030,104 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -1027,10 +1031,105 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      // Handle Login-Achievements (should be handled after loading)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
@@ -42959,7 +42959,8 @@ index d4af17c..748fe08 100644
 +        }
 +    }
 +
-     sScriptMgr->OnPlayerLogin(pCurrChar);
+     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
+ 
      delete holder;
  }
 +//Playerbot mod: is different from the normal
@@ -43032,7 +43033,7 @@ index d4af17c..748fe08 100644
  
  void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
  {
-@@ -1050,6 +1149,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
+@@ -1052,6 +1151,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
  
