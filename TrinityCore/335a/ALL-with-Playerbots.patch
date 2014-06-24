@@ -1,7 +1,7 @@
-From d68c03994ab057f6b52ffa954653433a3ce9c32d Mon Sep 17 00:00:00 2001
+From b4d5767d88544bbdd05b42f122e7becc4658fb89 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 22 Jun 2014 12:50:05 -0400
-Subject: [PATCH] ALL
+Date: Tue, 24 Jun 2014 07:10:16 -0400
+Subject: [PATCH] ALL-with-Playerbots
 
 ---
  README.NPCTELEPORT                                 |   14 +
@@ -131,7 +131,7 @@ Subject: [PATCH] ALL
  src/server/game/Miscellaneous/Formulas.h           |   11 +
  src/server/game/Miscellaneous/Language.h           |   19 +-
  src/server/game/Reputation/ReputationMgr.cpp       |   10 +
- src/server/game/Scripting/ScriptLoader.cpp         |   73 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   72 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
  src/server/game/Server/WorldSession.cpp            |  105 +-
  src/server/game/Server/WorldSession.h              |   41 +
@@ -187,7 +187,7 @@ Subject: [PATCH] ALL
  src/server/scripts/Custom/ArenaGambler.cpp         |  308 +
  src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 ++
  src/server/scripts/Custom/ArenaGamblingSystem.h    |  443 +
- src/server/scripts/Custom/CMakeLists.txt           |   13 +
+ src/server/scripts/Custom/CMakeLists.txt           |    4 +-
  src/server/scripts/Custom/Transmogrification.cpp   |  681 ++
  src/server/scripts/Custom/Transmogrification.h     |  122 +
  src/server/scripts/Custom/Transmogrifier.cpp       |  457 +
@@ -210,7 +210,7 @@ Subject: [PATCH] ALL
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
  src/server/worldserver/worldserver.conf.dist       | 1067 ++
- 206 files changed, 66074 insertions(+), 34 deletions(-)
+ 206 files changed, 66063 insertions(+), 35 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 npc-entry-list.txt
@@ -48553,7 +48553,7 @@ index 9733c0f..edc8028 100644
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index aeac9db..8e25715 100644
+index fdebbde..3308bfc 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,14 @@ class PlayerSocial;
@@ -48672,7 +48672,7 @@ index aeac9db..8e25715 100644
 +        QuestStatusSaveMap m_RewardedQuestsSave2;
  };
  
- void AddItemsSetItem(Player*player, Item* item);
+ void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Entities/Totem/Totem.cpp b/src/server/game/Entities/Totem/Totem.cpp
 index b8f5fd1..8dcf817 100644
 --- a/src/server/game/Entities/Totem/Totem.cpp
@@ -49560,7 +49560,7 @@ index 86fa042..6346691 100644
      uint32 itemEntry = auction->itemEntry;
      sAuctionMgr->RemoveAItem(auction->itemGUIDLow);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 330b11e..270eb0b 100644
+index c2f9319..1824778 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
@@ -49574,7 +49574,7 @@ index 330b11e..270eb0b 100644
  class LoginQueryHolder : public SQLQueryHolder
  {
      private:
-@@ -1027,10 +1031,105 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -1040,10 +1044,105 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      // Handle Login-Achievements (should be handled after loading)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
@@ -49680,7 +49680,7 @@ index 330b11e..270eb0b 100644
  
  void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
  {
-@@ -1052,6 +1151,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
+@@ -1065,6 +1164,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
  
@@ -49854,7 +49854,7 @@ index 97867e2..3dba783 100644
          return;
      }
 diff --git a/src/server/game/Handlers/LootHandler.cpp b/src/server/game/Handlers/LootHandler.cpp
-index f92c6e0..2832bd8 100644
+index 61f0b9a..ab9bc11 100644
 --- a/src/server/game/Handlers/LootHandler.cpp
 +++ b/src/server/game/Handlers/LootHandler.cpp
 @@ -30,6 +30,7 @@
@@ -50270,10 +50270,10 @@ index 46b73e7..a6f2437 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 07db809..b7502a5 100644
+index f1359b7..01c5884 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -47,6 +47,7 @@ void AddSC_SmartSCripts();
+@@ -48,6 +48,7 @@ void AddSC_SmartScripts();
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
  void AddSC_arena_commandscript();
@@ -50281,15 +50281,7 @@ index 07db809..b7502a5 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -695,7 +696,6 @@ void AddSC_outdoorpvp_zm();
- 
- // player
- void AddSC_chat_log();
--
- #endif
- 
- void AddScripts()
-@@ -751,6 +751,7 @@ void AddCommandScripts()
+@@ -754,6 +755,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -50297,7 +50289,7 @@ index 07db809..b7502a5 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1434,13 +1435,79 @@ void AddBattlegroundScripts()
+@@ -1440,13 +1442,79 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -50380,7 +50372,7 @@ index 07db809..b7502a5 100644
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 39b1a3d..07f358d 100644
+index 83f401d..cac467b 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
@@ -50575,7 +50567,7 @@ index 9f8b378..ba3e3a3 100644
      if (_addFriendCallback.IsReady())
      {
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 61d2fa6..f92aa86 100644
+index 3422934..21712b1 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -204,6 +204,34 @@ struct PacketCounter
@@ -59016,7 +59008,7 @@ index 0000000..fce5ec8
 +#endif
 +
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e40e2f7..66562d8 100644
+index b643d12..4d6ae19 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -72,6 +72,7 @@
@@ -59043,9 +59035,9 @@ index e40e2f7..66562d8 100644
      m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfigMgr->GetIntDefault ("StrictPlayerNames",  0);
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
-@@ -1253,9 +1256,169 @@ void World::LoadConfigSettings(bool reload)
- 
-     m_int_configs[CONFIG_BIRTHDAY_TIME] = sConfigMgr->GetIntDefault("BirthdayTime", 1222964635);
+@@ -1257,9 +1260,169 @@ void World::LoadConfigSettings(bool reload)
+     
+     m_bool_configs[CONFIG_IP_BASED_LOGIN_LOGGING] = sConfigMgr->GetBoolDefault("Wrong.Password.Login.Logging", false);
  
 +	//Guild-Level-System
 +	LoadGuildBonusInfo();
@@ -59213,7 +59205,7 @@ index e40e2f7..66562d8 100644
  }
  
  extern void LoadGameObjectModelList();
-@@ -1274,6 +1437,7 @@ void World::SetInitialWorldSettings()
+@@ -1278,6 +1441,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -59221,7 +59213,7 @@ index e40e2f7..66562d8 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1437,6 +1601,9 @@ void World::SetInitialWorldSettings()
+@@ -1441,6 +1605,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -59231,7 +59223,7 @@ index e40e2f7..66562d8 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1599,6 +1766,9 @@ void World::SetInitialWorldSettings()
+@@ -1603,6 +1770,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
@@ -59241,7 +59233,7 @@ index e40e2f7..66562d8 100644
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1727,6 +1897,9 @@ void World::SetInitialWorldSettings()
+@@ -1731,6 +1901,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
  
@@ -59251,7 +59243,7 @@ index e40e2f7..66562d8 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1740,6 +1913,8 @@ void World::SetInitialWorldSettings()
+@@ -1744,6 +1917,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -59260,7 +59252,7 @@ index e40e2f7..66562d8 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -1816,6 +1991,9 @@ void World::SetInitialWorldSettings()
+@@ -1820,6 +1995,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -59270,7 +59262,7 @@ index e40e2f7..66562d8 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1983,6 +2161,7 @@ void World::Update(uint32 diff)
+@@ -1987,6 +2165,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -59278,7 +59270,7 @@ index e40e2f7..66562d8 100644
          m_timers[WUPDATE_AUCTIONS].Reset();
  
          ///- Update mails (return old mails with item, or delete them)
-@@ -2107,6 +2286,12 @@ void World::Update(uint32 diff)
+@@ -2111,6 +2290,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -59291,7 +59283,7 @@ index e40e2f7..66562d8 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2722,6 +2907,20 @@ void World::SendAutoBroadcast()
+@@ -2726,6 +2911,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -59312,7 +59304,7 @@ index e40e2f7..66562d8 100644
  void World::UpdateRealmCharCount(uint32 accountId)
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
-@@ -3200,3 +3399,87 @@ void World::ReloadRBAC()
+@@ -3204,3 +3403,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -59401,7 +59393,7 @@ index e40e2f7..66562d8 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9bac303..ae55429 100644
+index efd7570..a7abfa3 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -59420,7 +59412,7 @@ index 9bac303..ae55429 100644
      CONFIG_ALL_TAXI_PATHS,
      CONFIG_INSTANT_TAXI,
      CONFIG_INSTANCE_IGNORE_LEVEL,
-@@ -526,6 +528,9 @@ class World
+@@ -528,6 +530,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -59430,7 +59422,7 @@ index 9bac303..ae55429 100644
          /// Get the number of current active sessions
          void UpdateMaxSessionCounters();
          const SessionMap& GetAllSessions() const { return m_sessions; }
-@@ -739,6 +744,11 @@ class World
+@@ -741,6 +746,11 @@ class World
  
          void ReloadRBAC();
  
@@ -59442,7 +59434,7 @@ index 9bac303..ae55429 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -838,6 +848,21 @@ class World
+@@ -840,6 +850,21 @@ class World
  
          void ProcessQueryCallbacks();
          ACE_Future_Set<PreparedQueryResult> m_realmCharCallbacks;
@@ -61668,26 +61660,20 @@ index 0000000..928cdea
 +#endif // ArenaGambler_H
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 78db719..f663711 100644
+index 80ebe36..20c2bc9 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -10,6 +10,19 @@
+@@ -8,11 +8,11 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ 
+-# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
++file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
  
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
-+  Custom/Transmogrification.h
-+  Custom/Transmogrification.cpp
-+  Custom/Transmogrifier.cpp
-+  Custom/ArenaGambler.cpp
-+  Custom/ArenaGamblingSystem.cpp
-+  Custom/ArenaGamblingSystem.h
-+  Custom/beastmaster.cpp
-+  Custom/guildmaster.cpp
-+  Custom/npcbuff.cpp
-+  Custom/professionnpc.cpp
-+  Custom/summon.cpp
-+  Custom/enchant.cpp
-+  Custom/all-in-one.cpp
+-#  ${sources_Custom}
++  ${sources_Custom}
  )
  
  message("  -> Prepared: Custom")
@@ -68009,7 +67995,7 @@ index 6e42146..ac92dea 100644
      if (uint32 freezeDelay = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
      {
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..c81ffcd 100644
+index f71b7bb..72905dc 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -757,6 +757,13 @@ RecruitAFriend.MaxDifference = 4
@@ -68659,7 +68645,7 @@ index f71ef5d..c81ffcd 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
  #
-@@ -2771,3 +3376,465 @@ PacketSpoof.BanDuration = 86400
+@@ -2778,3 +3383,465 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

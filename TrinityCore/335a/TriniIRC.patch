@@ -1,6 +1,6 @@
-From 7ece2a9e3d814b4f09b38842dae3294c3e40811d Mon Sep 17 00:00:00 2001
+From e56f6c0087ebb86eac5f4ada31ecf8be52d211f7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Jun 2014 18:43:54 -0400
+Date: Tue, 24 Jun 2014 08:23:00 -0400
 Subject: [PATCH] TriniIRC
 
 ---
@@ -200,7 +200,7 @@ index 0000000..b3a6950
 +INSERT INTO `trinity_string` VALUES ('6611', '|cffff0000[Server Event]: %s|r', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('6612', '|cffff0000[Automatic]: %s|r', null, null, null, null, null, null, null, null);
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index bf46c1f..fb549e8 100644
+index 26fd081..bc5262a 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -43,6 +43,7 @@ file(GLOB_RECURSE sources_Server Server/*.cpp Server/*.h)
@@ -219,7 +219,7 @@ index bf46c1f..fb549e8 100644
    ${sources_Tools}
    ${sources_Tickets}
    ${sources_Warden}
-@@ -188,6 +190,7 @@ include_directories(
+@@ -190,6 +192,7 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/Spells
    ${CMAKE_CURRENT_SOURCE_DIR}/Spells/Auras
    ${CMAKE_CURRENT_SOURCE_DIR}/Texts
@@ -335,7 +335,7 @@ index a56b790..c66e9cb 100644
 +
  #endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8ceb6c0..fbd4655 100644
+index 9733c0f..77ecf89 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -31,6 +31,7 @@
@@ -381,7 +381,7 @@ index 8ceb6c0..fbd4655 100644
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index aeac9db..4e88b72 100644
+index fdebbde..38af57f 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -2633,6 +2633,8 @@ class Player : public Unit, public GridObject<Player>
@@ -392,7 +392,7 @@ index aeac9db..4e88b72 100644
 +        QuestStatusSaveMap m_RewardedQuestsSave2;
  };
  
- void AddItemsSetItem(Player*player, Item* item);
+ void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
 index e452253..d4d80d3 100644
 --- a/src/server/game/Events/GameEventMgr.cpp
@@ -8838,7 +8838,7 @@ index 0000000..fce5ec8
 +#endif
 +
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e40e2f7..76c3c08 100644
+index b643d12..59a6ffc 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -80,6 +80,7 @@
@@ -8849,7 +8849,7 @@ index e40e2f7..76c3c08 100644
  
  ACE_Atomic_Op<ACE_Thread_Mutex, bool> World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1256,6 +1257,163 @@ void World::LoadConfigSettings(bool reload)
+@@ -1260,6 +1261,163 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
@@ -9013,7 +9013,7 @@ index e40e2f7..76c3c08 100644
  }
  
  extern void LoadGameObjectModelList();
-@@ -1274,6 +1432,7 @@ void World::SetInitialWorldSettings()
+@@ -1278,6 +1436,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -9021,7 +9021,7 @@ index e40e2f7..76c3c08 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1727,6 +1886,9 @@ void World::SetInitialWorldSettings()
+@@ -1731,6 +1890,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
  
@@ -9031,7 +9031,7 @@ index e40e2f7..76c3c08 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1740,6 +1902,8 @@ void World::SetInitialWorldSettings()
+@@ -1744,6 +1906,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -9040,7 +9040,7 @@ index e40e2f7..76c3c08 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -2107,6 +2271,12 @@ void World::Update(uint32 diff)
+@@ -2111,6 +2275,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -9053,7 +9053,7 @@ index e40e2f7..76c3c08 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2722,6 +2892,20 @@ void World::SendAutoBroadcast()
+@@ -2726,6 +2896,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -9075,7 +9075,7 @@ index e40e2f7..76c3c08 100644
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9bac303..1d3ac85 100644
+index efd7570..bbf944b 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -9086,7 +9086,7 @@ index 9bac303..1d3ac85 100644
      WUPDATE_MAILBOXQUEUE,
      WUPDATE_DELETECHARS,
      WUPDATE_PINGDB,
-@@ -526,6 +527,9 @@ class World
+@@ -528,6 +529,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -9097,10 +9097,10 @@ index 9bac303..1d3ac85 100644
          void UpdateMaxSessionCounters();
          const SessionMap& GetAllSessions() const { return m_sessions; }
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index c1a9435..80f62ac 100644
+index 9385202..3eb9650 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
-@@ -132,6 +132,7 @@ include_directories(
+@@ -134,6 +134,7 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/game/Spells
    ${CMAKE_SOURCE_DIR}/src/server/game/Spells/Auras
    ${CMAKE_SOURCE_DIR}/src/server/game/Texts
@@ -9148,10 +9148,10 @@ index dd1366a..ca351fe 100644
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
 diff --git a/src/server/worldserver/CMakeLists.txt b/src/server/worldserver/CMakeLists.txt
-index d1d2ef1..2385c19 100644
+index 78a29db..ae5c342 100644
 --- a/src/server/worldserver/CMakeLists.txt
 +++ b/src/server/worldserver/CMakeLists.txt
-@@ -126,6 +126,7 @@ include_directories(
+@@ -127,6 +127,7 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/game/Spells
    ${CMAKE_SOURCE_DIR}/src/server/game/Spells/Auras
    ${CMAKE_SOURCE_DIR}/src/server/game/Tools
@@ -9228,7 +9228,7 @@ index 6e42146..ac92dea 100644
      if (uint32 freezeDelay = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
      {
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..85746c8 100644
+index f71b7bb..4d51caf 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2590,6 +2590,251 @@ UI.ShowQuestLevelsInDialogs = 0

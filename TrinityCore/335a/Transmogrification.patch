@@ -1,6 +1,6 @@
-From 267f7c4b5aa99105ea28d27646a9951ce2d9950c Mon Sep 17 00:00:00 2001
+From 3bfa4f064bb99c5515cdd58ec479b1914efe1cb4 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Jun 2014 18:42:16 -0400
+Date: Tue, 24 Jun 2014 08:15:18 -0400
 Subject: [PATCH] Transmogrification
 
 ---
@@ -22,13 +22,13 @@ Subject: [PATCH] Transmogrification
  src/server/game/Entities/Player/Player.cpp         |    8 +-
  src/server/game/Handlers/SpellHandler.cpp          |    8 +-
  src/server/game/Scripting/ScriptLoader.cpp         |    2 +
- src/server/scripts/Custom/CMakeLists.txt           |    3 +
+ src/server/scripts/Custom/CMakeLists.txt           |    4 +-
  src/server/scripts/Custom/Transmogrification.cpp   |  681 ++++++++++++++++++++
  src/server/scripts/Custom/Transmogrification.h     |  122 ++++
  src/server/scripts/Custom/Transmogrifier.cpp       |  457 +++++++++++++
  src/server/scripts/Spells/spell_generic.cpp        |   18 +-
  src/server/worldserver/worldserver.conf.dist       |  195 ++++++
- 24 files changed, 1608 insertions(+), 10 deletions(-)
+ 24 files changed, 1607 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
@@ -298,7 +298,7 @@ index 4573b85..87b3864 100644
      stmt->setUInt32(0, itemGuid);
      trans->Append(stmt);
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8ceb6c0..ae08657 100644
+index 9733c0f..e2a023a 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -78,6 +78,7 @@
@@ -357,10 +357,10 @@ index ba30803..1acc7cd 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 07db809..7ff162a 100644
+index f1359b7..0c25317 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1435,6 +1435,7 @@ void AddBattlegroundScripts()
+@@ -1441,6 +1441,7 @@ void AddBattlegroundScripts()
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
  
@@ -368,7 +368,7 @@ index 07db809..7ff162a 100644
  #endif
  
  void AddCustomScripts()
-@@ -1442,5 +1443,6 @@ void AddCustomScripts()
+@@ -1448,5 +1449,6 @@ void AddCustomScripts()
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
  
@@ -376,16 +376,20 @@ index 07db809..7ff162a 100644
  #endif
  }
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 78db719..13a5648 100644
+index 80ebe36..20c2bc9 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -10,6 +10,9 @@
+@@ -8,11 +8,11 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ 
+-# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
++file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
  
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
-+	Custom/Transmogrification.h
-+	Custom/Transmogrification.cpp
-+	Custom/Transmogrifier.cpp
+-#  ${sources_Custom}
++  ${sources_Custom}
  )
  
  message("  -> Prepared: Custom")
@@ -1718,10 +1722,10 @@ index 4c72d79..bfc1dca 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..5ace985 100644
+index f71b7bb..63f5fd1 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2771,3 +2771,198 @@ PacketSpoof.BanDuration = 86400
+@@ -2778,3 +2778,198 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

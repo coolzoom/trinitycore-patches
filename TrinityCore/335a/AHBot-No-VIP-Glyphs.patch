@@ -1,6 +1,6 @@
-From 74a482fd2b548c231c6880dde0ae35149a6ac826 Mon Sep 17 00:00:00 2001
+From 3b28a6718ab81362051f3a122054275b3e5c660c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Jun 2014 15:59:39 -0400
+Date: Tue, 24 Jun 2014 06:47:23 -0400
 Subject: [PATCH] AHBot-No-VIP-Glyphs
 
 ---
@@ -3562,7 +3562,7 @@ index f45fc41..88cd0b5 100644
  class Player;
  class WorldPacket;
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index bf46c1f..12890e3 100644
+index 26fd081..fc82767 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -13,6 +13,7 @@ file(GLOB_RECURSE sources_Achievements Achievements/*.cpp Achievements/*.h)
@@ -3581,7 +3581,7 @@ index bf46c1f..12890e3 100644
    ${sources_Battlefield}
    ${sources_Battlegrounds}
    ${sources_Calendar}
-@@ -133,6 +135,7 @@ include_directories(
+@@ -135,6 +137,7 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/ScriptedAI
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
@@ -3628,10 +3628,10 @@ index 2c65e36..283efa7 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 07db809..dadcfba 100644
+index f1359b7..9d32565 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -47,6 +47,7 @@ void AddSC_SmartSCripts();
+@@ -48,6 +48,7 @@ void AddSC_SmartScripts();
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
  void AddSC_arena_commandscript();
@@ -3639,7 +3639,7 @@ index 07db809..dadcfba 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -751,6 +752,7 @@ void AddCommandScripts()
+@@ -754,6 +755,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -3648,7 +3648,7 @@ index 07db809..dadcfba 100644
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e40e2f7..ce01a48 100644
+index b643d12..8609d68 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -72,6 +72,7 @@
@@ -3659,7 +3659,7 @@ index e40e2f7..ce01a48 100644
  #include "CreatureTextMgr.h"
  #include "SmartAI.h"
  #include "Channel.h"
-@@ -1599,6 +1600,9 @@ void World::SetInitialWorldSettings()
+@@ -1603,6 +1604,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
@@ -3669,7 +3669,7 @@ index e40e2f7..ce01a48 100644
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1816,6 +1820,9 @@ void World::SetInitialWorldSettings()
+@@ -1820,6 +1824,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -3679,7 +3679,7 @@ index e40e2f7..ce01a48 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1983,6 +1990,7 @@ void World::Update(uint32 diff)
+@@ -1987,6 +1994,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -3688,10 +3688,10 @@ index e40e2f7..ce01a48 100644
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index c1a9435..497f703 100644
+index 9385202..53e5ef2 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
-@@ -76,6 +76,7 @@ include_directories(
+@@ -78,6 +78,7 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/game/AI/ScriptedAI
    ${CMAKE_SOURCE_DIR}/src/server/game/AI/SmartScripts
    ${CMAKE_SOURCE_DIR}/src/server/game/AuctionHouse
@@ -4188,7 +4188,7 @@ index 0000000..2a96cb0
 +    new ah_bot_commandscript();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..5f71d71 100644
+index f71b7bb..09fd7c6 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2288,6 +2288,271 @@ Network.TcpNodelay = 1
