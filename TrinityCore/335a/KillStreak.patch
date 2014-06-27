@@ -1,0 +1,125 @@
+From 68aa2a4b6f2360d8d0e31164c077b02706d232b6 Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Fri, 27 Jun 2014 01:30:28 -0400
+Subject: [PATCH] KillStreak
+
+---
+ src/server/game/Scripting/ScriptLoader.cpp |    6 ++-
+ src/server/scripts/Custom/CMakeLists.txt   |    4 +-
+ src/server/scripts/Custom/killstreak.cpp   |   63 ++++++++++++++++++++++++++++
+ 3 files changed, 69 insertions(+), 4 deletions(-)
+ create mode 100644 src/server/scripts/Custom/killstreak.cpp
+
+diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
+index f1359b7..39fa4e5 100644
+--- a/src/server/game/Scripting/ScriptLoader.cpp
++++ b/src/server/game/Scripting/ScriptLoader.cpp
+@@ -1440,13 +1440,15 @@ void AddBattlegroundScripts()
+ 
+ #ifdef SCRIPTS
+ /* This is where custom scripts' loading functions should be declared. */
+-
++// Killstreak
++void AddSC_PvP_System();
+ #endif
+ 
+ void AddCustomScripts()
+ {
+ #ifdef SCRIPTS
+     /* This is where custom scripts should be added. */
+-
++    // Killstreak
++    AddSC_PvP_System();
+ #endif
+ }
+diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
+index 80ebe36..20c2bc9 100644
+--- a/src/server/scripts/Custom/CMakeLists.txt
++++ b/src/server/scripts/Custom/CMakeLists.txt
+@@ -8,11 +8,11 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ 
+-# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
++file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
+ 
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
+-#  ${sources_Custom}
++  ${sources_Custom}
+ )
+ 
+ message("  -> Prepared: Custom")
+diff --git a/src/server/scripts/Custom/killstreak.cpp b/src/server/scripts/Custom/killstreak.cpp
+new file mode 100644
+index 0000000..b0cad26
+--- /dev/null
++++ b/src/server/scripts/Custom/killstreak.cpp
+@@ -0,0 +1,63 @@
++/*
++Originally by Kjanko
++Edited by Tommy
++Edited by Rochet2 ~ Made dynamic
++Last Edit By Estorn
++Change : Fix For Last Rev
++*/
++
++#include "ScriptPCH.h"
++
++class System_OnKill : public PlayerScript
++{
++public:
++    System_OnKill() : PlayerScript("System_OnKill") {}
++
++    void OnPVPKill(Player * Killer, Player * Victim)
++    {
++        uint32 KillerGUID = Killer->GetGUIDLow();
++        uint32 VictimGUID = Victim->GetGUIDLow();
++
++        struct KillStreak_Info
++        {
++            uint32 killstreak;
++            uint32 lastkill;
++        };
++
++        static std::map<uint32, KillStreak_Info> KillStreakData;
++
++        if (KillerGUID == VictimGUID || KillStreakData[KillerGUID].lastkill == VictimGUID)
++            return;
++
++        if (KillStreakData[VictimGUID].killstreak >= 3)
++        {
++            std::ostringstream ss;
++            ss << "|cFF81CF42" << Killer->GetName() << "|r Server Killer Has Ended |cFFFFFFFF" << Victim->GetName() << " !!!! ";
++            sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
++        }
++
++        ++KillStreakData[KillerGUID].killstreak;
++        KillStreakData[KillerGUID].lastkill = VictimGUID;
++        KillStreakData[VictimGUID].killstreak = 0;
++        KillStreakData[VictimGUID].lastkill = 0;
++
++        if (KillStreakData[KillerGUID].killstreak % 10 == 0) // send killstreak message every 10 kills
++        {
++            std::ostringstream ss;
++            ss << "|cFF81CF42" << Killer->GetName() << "|r Server Killer Has A KillStreak Of |cFF42A0CF" << KillStreakData[KillerGUID].killstreak << "|r!!!!!";
++            sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
++        }
++        else if (KillStreakData[KillerGUID].killstreak == 3)
++        {
++            std::ostringstream ss;
++            ss << "|cFF81CF42" << Killer->GetName() << "|r Server Killer Is On A KillingSpree!!!!!!";
++            sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
++        }
++
++    }
++};
++
++void AddSC_PvP_System()
++{
++    new System_OnKill;
++}
+\ No newline at end of file
+-- 
+1.7.10.4
+
