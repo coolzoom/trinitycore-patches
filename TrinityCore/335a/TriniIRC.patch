@@ -130,7 +130,7 @@ index 0000000..b3a6950
 +) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='IRC Module System';
 +
 +/**
-+* Records 
++* Records
 +*/
 +INSERT INTO `irc_commands` VALUES ('acct', '[acct <Player> <(un)lock/email/pass/rename/gmlevel>] : Perform Action To <Player> Account.', '3');
 +INSERT INTO `irc_commands` VALUES ('ban', '[ban <Player/IP> <ip/acct/unban/reason>] : Ban/Unban <Player>', '3');
@@ -176,7 +176,7 @@ index 0000000..b3a6950
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='IRC Module System';
 +
 +/**
-+* Records 
++* Records
 +*/
 +
 +/**
@@ -191,7 +191,7 @@ index 0000000..b3a6950
 +) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='IRC Module System';
 +
 +/**
-+* Records 
++* Records
 +*/
 +INSERT INTO `irc_autoannounce` VALUES ('1', 'Welcome to IRC Channel', '');
 +
@@ -236,13 +236,13 @@ index 3f6a40d..525d9fde 100644
  #include "AccountMgr.h"
  #include "Player.h"
 +#include "IRCClient.h"
- 
+
  Channel::Channel(std::string const& name, uint32 channelId, uint32 team):
      _announce(true),
 @@ -209,6 +210,8 @@ void Channel::JoinChannel(Player* player, std::string const& pass)
- 
+
      JoinNotify(guid);
- 
+
 +    sIRC.Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_JOIN);
 +
      // Custom channel handling
@@ -251,10 +251,10 @@ index 3f6a40d..525d9fde 100644
 @@ -259,6 +262,7 @@ void Channel::LeaveChannel(Player* player, bool send)
          SendToAll(&data);
      }
- 
+
 +    sIRC.Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_LEAVE);
      LeaveNotify(guid);
- 
+
      if (!IsConstant())
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
 index d77ee5b..3f5f5f5 100644
@@ -264,7 +264,7 @@ index d77ee5b..3f5f5f5 100644
                      areaId, areaName.c_str(), zoneName.c_str(), GetLogNameForGuid(guid),
                      (player->GetSelectedUnit()) ? player->GetSelectedUnit()->GetName().c_str() : "",
                      GUID_LOPART(guid));
-+ 
++
 +                     if ((sIRC.logmask & 2) != 0)
 +                     {
 +                         std::string logchan = "#";
@@ -279,7 +279,7 @@ index d77ee5b..3f5f5f5 100644
 @@ -912,6 +921,38 @@ char* ChatHandler::extractKeyFromLink(char* text, char const* const* linkTypes,
      return NULL;
  }
- 
+
 +char const *fmtstring(char const *format, ...)
 +{
 +    va_list        argptr;
@@ -324,13 +324,13 @@ index a56b790..c66e9cb 100644
  #include "WorldSession.h"
  #include "RBAC.h"
 +#include "../TriniChat/IRCClient.h"
- 
+
  #include <vector>
- 
+
 @@ -161,4 +162,6 @@ class CliHandler : public ChatHandler
          Print* m_print;
  };
- 
+
 +char const *fmtstring(char const *format, ...);
 +
  #endif
@@ -360,12 +360,12 @@ index 9733c0f..77ecf89 100644
 +        }
 +    }
  }
- 
+
  void Player::RegenerateAll()
 @@ -3062,6 +3072,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
- 
+
 +  if ((sIRC.BOTMASK & 64) != 0)
 +    {
 +        char  temp [5];
@@ -378,7 +378,7 @@ index 9733c0f..77ecf89 100644
 +    }
 +
      UpdateAllStats();
- 
+
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index fdebbde..38af57f 100644
@@ -386,12 +386,12 @@ index fdebbde..38af57f 100644
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -2633,6 +2633,8 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
- 
+
          uint32 _activeCheats;
 +    public :
 +        QuestStatusSaveMap m_RewardedQuestsSave2;
  };
- 
+
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
 index e452253..d4d80d3 100644
@@ -402,7 +402,7 @@ index e452253..d4d80d3 100644
  #include "UnitAI.h"
  #include "GameObjectAI.h"
 +#include "IRCClient.h"
- 
+
  bool GameEventMgr::CheckOneGameEvent(uint16 entry) const
  {
 @@ -1088,7 +1089,12 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id)
@@ -413,11 +413,11 @@ index e452253..d4d80d3 100644
 +       if ((sIRC.BOTMASK & 256) != 0)
 +             {
 +                 std::string ircchan = "#";
-+                 ircchan += sIRC._irc_chan[sIRC.anchn].c_str();                
++                 ircchan += sIRC._irc_chan[sIRC.anchn].c_str();
 +                 sIRC.Send_IRC_Channel(ircchan, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 Game Event \00304,08\037/!\\\037\017 %s", "%s", mGameEvent[event_id].description.c_str()), true);
 +             }
      TC_LOG_INFO("gameevent", "GameEvent %u \"%s\" started.", event_id, mGameEvent[event_id].description.c_str());
- 
+
      //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
 index 86fa042..83033db 100644
@@ -428,12 +428,12 @@ index 86fa042..83033db 100644
  #include "Util.h"
  #include "AccountMgr.h"
 +#include "IRCClient.h"
- 
+
  //void called when player click on auctioneer npc
  void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recvData)
 @@ -574,10 +575,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
      SendAuctionCommandResult(auction->Id, AUCTION_CANCEL, ERR_AUCTION_OK);
- 
+
      // Now remove the auction
 -
 +    uint32 item;
@@ -446,7 +446,7 @@ index 86fa042..83033db 100644
 +  ItemTemplate const *pProto = sObjectMgr->GetItemTemplate(item);
 +    sIRC.AHFunc(auction->itemEntry, pProto->Name1, player->GetName(), auction->GetHouseId());
 +  }
- 
+
      uint32 itemEntry = auction->itemEntry;
      sAuctionMgr->RemoveAItem(auction->itemGUIDLow);
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
@@ -458,11 +458,11 @@ index eccf7a6..e4c50df 100644
  #include "ScriptMgr.h"
  #include "AccountMgr.h"
 +#include "IRCClient.h"
- 
+
  void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  {
 @@ -431,6 +432,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
- 
+
              if (ChannelMgr* cMgr = ChannelMgr::forTeam(sender->GetTeam()))
              {
 +                sIRC.Send_WoW_IRC(sender, channel, msg);
@@ -523,7 +523,7 @@ index 0000000..3dcdb60
 +{
 +    sIRC.iLog.WriteLog(" %s : ****** Trinity Core With TriniChat Has Been Started ******", sIRC.iLog.GetLogDateTimeStr().c_str());
 +
-+    // before we begin we wait a few 
++    // before we begin we wait a few
 +    // mangos is still starting up.
 +    ACE_Based::Thread::Sleep(500);
 +    TC_LOG_ERROR("misc" "\n%s\n%s\n%s\n%s",
@@ -932,8 +932,8 @@ index 0000000..9b6fe32
 +        if (CDATA.CMD == "LOGIN")
 +        {
 +            if (FROM == sIRC._Nick)
-+            {             
-+                if (ParamsValid(&CDATA, 2))  
++            {
++                if (ParamsValid(&CDATA, 2))
 +                    Handle_Login(&CDATA);
 +                else
 +                    sIRC.Send_IRC_Channel(USER, "\0034[ERROR] : Syntax Error! ("+sIRC._cmd_prefx+"login <Player> <Password>)", true, "ERROR");
@@ -1543,14 +1543,14 @@ index 0000000..9b6fe32
 +    if (result)
 +    {
 +        banned = (*result)[0].GetCString();
-+        
++
 +        return "IP Banned. Reason:" + banned;
 +    }
 +    QueryResult result2 = LoginDatabase.PQuery("SELECT banreason FROM account_banned WHERE id='%i'", acctid);
 +    if (result2)
 +    {
 +        banned = (*result2)[0].GetCString();
-+        
++
 +        return "Account Banned. Reason:" + banned;
 +    }
 +    return banned;
@@ -1616,7 +1616,7 @@ index 0000000..9b6fe32
 +    if (result)
 +    {
 +        std::string name = (*result)[0].GetCString();
-+        
++
 +        return name;
 +    }
 +
@@ -1629,14 +1629,14 @@ index 0000000..9b6fe32
 +    if (result)
 +    {
 +        std::string acctid = (*result)[0].GetCString();
-+        
++
 +        QueryResult result2 = LoginDatabase.PQuery("SELECT last_ip FROM account WHERE id = '%s'", acctid.c_str());
 +        if (result2)
 +        {
 +            std::string ip = (*result2)[0].GetCString();
-+            
++
 +            return ip;
-+        }       
++        }
 +    }
 +
 +    return "";
@@ -1729,7 +1729,7 @@ index 0000000..9b6fe32
 +            case 67:wowname="|cffff0000"+plname+"|r";ircname="\0034"+plname;break;      //horde
 +            case 469:wowname="|cff1589FF"+plname+"|r";ircname="\00312"+plname;break;    //alliance
 +        }
-+        
++
 +        std::string wowfact = "|cffFF8040[Auction House]:|r";
 +        std::string ircfact = "\00304,08\037/!\\\037\017\00307 Auction House \00304,08\037/!\\\037\017";
 +        switch(faction)
@@ -1761,7 +1761,7 @@ index 0000000..9b6fe32
 +        QueryResult_AutoPtr result = WorldDatabase.PQuery("SELECT name FROM Hell_GMI WHERE name = '%s'",player.c_str());
 +        if (result)
 +        {
-+            
++
 +            uint64 guid = sObjectMgr->GetPlayerGUIDByName(player);
 +            Player* plr = sObjectMgr->GetPlayer(guid);
 +
@@ -1863,7 +1863,7 @@ index 0000000..c71fa2d
 +    public:
 +        IRCCmd();
 +        ~IRCCmd();
-+        
++
 +        void    Handle_Logout(_CDATA *CD);
 +        bool    IsLoggedIn(std::string USER);
 +        bool    IsValid(std::string USER, std::string FROM, std::string CHAT, std::string TYPE);
@@ -2098,7 +2098,7 @@ index 0000000..bbf6c6a
 +            {
 +                const char *cgmlevel = _PARAMS[2].c_str();
 +                if (GetLevel(CD->USER) >= atoi(cgmlevel))
-+                {                    
++                {
 +                    LoginDatabase.PExecute("UPDATE `account_access` SET `gmlevel` = '%s' WHERE `id` = '%d'", _PARAMS[2].c_str(), account_id);
 +                    Send_IRCA(ChanOrPM(CD), "\00313["+GetAcctNameFromID(account_id)+"] : Has GM Level Successfully Changed To: "+_PARAMS[2], true, CD->TYPE);
 +                }
@@ -2141,15 +2141,15 @@ index 0000000..bbf6c6a
 +    }
 +    if (_PARAMS[1] == "acct")
 +    {
-+        
++
 +        if (_PARAMS[2] == "")
 +            _PARAMS[2] = "No reason";
 +        if (_PARAMS[3] == "")//set standard bantime to 1 day
 +            _PARAMS[3] = "1d";
-+        QueryResult result = LoginDatabase.PQuery("SELECT id FROM `account` WHERE username = '%s'", _PARAMS[0].c_str());             
++        QueryResult result = LoginDatabase.PQuery("SELECT id FROM `account` WHERE username = '%s'", _PARAMS[0].c_str());
 +        if (result)
 +        {
-+            sWorld->BanAccount(BAN_ACCOUNT, _PARAMS[0].c_str(), _PARAMS[3].c_str(), _PARAMS[2], CD->USER);            
++            sWorld->BanAccount(BAN_ACCOUNT, _PARAMS[0].c_str(), _PARAMS[3].c_str(), _PARAMS[2], CD->USER);
 +            Send_IRCA(ChanOrPM(CD), MakeMsg("[%s] has been account-banned. Reason: %s Duration: %s",_PARAMS[0].c_str(), _PARAMS[2].c_str(), _PARAMS[3].c_str()),  true, CD->TYPE);
 +        }
 +        else
@@ -2173,7 +2173,7 @@ index 0000000..bbf6c6a
 +                std::string id = fields[0].GetString();
 +
 +                LoginDatabase.PExecute("DELETE FROM account_banned WHERE id = %s", id.c_str());
-+                
++
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\00313[%s] : Has Been Removed From The Account Ban List.", _PARAMS[0].c_str()), true, CD->TYPE);
 +
 +            }
@@ -2301,7 +2301,7 @@ index 0000000..bbf6c6a
 +                        return;
 +                    }
 +                    qId = result->Fetch()->GetUInt16();
-+                    
++
 +                }
 +            }
 +            else
@@ -2314,7 +2314,7 @@ index 0000000..bbf6c6a
 +                    return;
 +                }
 +                QName = result->Fetch()->GetString();
-+                
++
 +            }
 +            if (_PARAMS[2] == "add")
 +            {
@@ -2341,7 +2341,7 @@ index 0000000..bbf6c6a
 +                {
 +                    Send_IRCA(CD->USER, "Cannot Add Quest To Player, He Either Has No Space Or He Already Has The Quest In His Quest Log.", true, "ERROR");
 +                }
-+            }            
++            }
 +            if (_PARAMS[2] == "complete")
 +            {
 +                Quest const* pQuest = sObjectMgr->GetQuestTemplate(qId);
@@ -2399,7 +2399,7 @@ index 0000000..bbf6c6a
 +                            plr->GetReputationMgr().SetReputation(factionEntry,repValue);
 +                        }
 +                    }*/
-+                    
++
 +                    int32 ReqOrRewMoney = pQuest->GetRewOrReqMoney();
 +                    if (ReqOrRewMoney < 0)
 +                        plr->ModifyMoney(-ReqOrRewMoney);
@@ -2495,7 +2495,7 @@ index 0000000..bbf6c6a
 +                        output += fields[0].GetString() + ", ";
 +                        result->NextRow();
 +                    }
-+                    
++
 +                    Send_IRCA(CD->USER, output, true, CD->TYPE.c_str());
 +                }
 +            }
@@ -2513,7 +2513,7 @@ index 0000000..bbf6c6a
 +                    if (result)
 +                    {
 +                        std::string cmdhlp = fields[0].GetString();
-+                        
++
 +                        Send_IRCA(CD->USER, cmdhlp, true, CD->TYPE.c_str());
 +                    }
 +                }
@@ -2535,7 +2535,7 @@ index 0000000..bbf6c6a
 +                        output += fields[0].GetString() + ", ";
 +                        result->NextRow();
 +                    }
-+                    
++
 +                    Send_IRCA(CD->USER, output, true, CD->TYPE.c_str());
 +                    Send_IRCA(CD->USER, "You Are Currently Not Logged In, Please Login To See A Complete List Of Commands Available To You.", true, CD->TYPE.c_str());
 +                }
@@ -2552,7 +2552,7 @@ index 0000000..bbf6c6a
 +                        return;
 +                    }
 +                    std::string cmdhlp = fields[0].GetString();
-+                    
++
 +                    Send_IRCA(CD->USER, cmdhlp, true, CD->TYPE.c_str());
 +                }
 +                else
@@ -2582,7 +2582,7 @@ index 0000000..bbf6c6a
 +            output += fields[1].GetString() + ", ";
 +            result->NextRow();
 +        }
-+        
++
 +        Send_IRCA(ChanOrPM(CD), output, true, CD->TYPE);
 +    }
 +    else
@@ -2603,7 +2603,7 @@ index 0000000..bbf6c6a
 +
 +    float rdm = (sConfigMgr->GetFloatDefault("Rate.Drop.Money", 1.0f));
 +    float rxk = (sConfigMgr->GetFloatDefault("Rate.XP.Kill", 1.0f));
-+    float rxq = (sConfigMgr->GetFloatDefault("Rate.XP.Quest", 1.0f));    
++    float rxq = (sConfigMgr->GetFloatDefault("Rate.XP.Quest", 1.0f));
 +    Send_IRCA(ChanOrPM(CD), "\00310Number Of Players Online: \xF"+(std::string)clientsNum+" | \00310Max Since Last Restart: \xF"+(std::string)maxClientsNum+" |\00310 UpTime: \xF"+str, true, CD->TYPE);
 +    Send_IRCA(ChanOrPM(CD), "\00310Server: \xF"+svnrev+" |\00310 Update Time: \xF"+(std::string)ircupdt, true, CD->TYPE);
 +    Send_IRCA(ChanOrPM(CD), MakeMsg("\00310Server Rates - \xF[Monster XP: %u][Quest XP: %u][Money Drop Rate: %u]", int(rxk), int(rxq), int(rdm)), true, CD->TYPE);
@@ -2637,7 +2637,7 @@ index 0000000..bbf6c6a
 +                    return;
 +                }
 +                itemId = result->Fetch()->GetUInt16();
-+                
++
 +            }
 +            else
 +            {
@@ -2654,7 +2654,7 @@ index 0000000..bbf6c6a
 +            {
 +                itemId = result->Fetch()->GetUInt16();
 +            }
-+            
++
 +
 +            char* cId = strtok(args, " ");
 +            if (!cId)
@@ -2712,7 +2712,7 @@ index 0000000..bbf6c6a
 +                }
 +                std::string iinfo = " \00313[" + _PARAMS[0] + "] : Has Been Given Item "+dbitemname+". From: "+CD->USER.c_str()+".";
 +                Send_IRCA(ChanOrPM(CD), iinfo, true, CD->TYPE);
-+                
++
 +        }
 +        if (noSpaceForCount > 0)
 +        {
@@ -2756,7 +2756,7 @@ index 0000000..bbf6c6a
 +                    rposx = fields[1].GetFloat();
 +                    rposy = fields[2].GetFloat();
 +                    rposz = fields[3].GetFloat();
-+                    
++
 +                    plr->SetMovement(MOVE_UNROOT);
 +                    plr->TeleportTo(rmapid, rposx, rposy, rposz, rposo);
 +                    plr->RemoveAurasDueToSpell(42201);
@@ -2864,12 +2864,12 @@ index 0000000..bbf6c6a
 +            uint32 praceid = fields[3].GetUInt32();
 +            uint32 pclassid = fields[4].GetUInt32();
 +            std::string ponline = (fields[5].GetInt32() == 1 ? "\x3\x30\x33Online" : "\x3\x30\x34Offline\xF");
-+            std::string plevel = fields[6].GetString();                
++            std::string plevel = fields[6].GetString();
 +            std::string pxp = fields[7].GetString();
 +            unsigned int money = fields[8].GetInt32();
 +            std::string honor = fields[9].GetString();
 +            std::string totaltim = SecToDay(fields[10].GetString());
-+            
++
 +            std::string sqlquery = "SELECT `gmlevel` FROM `account_access` WHERE `id` = '" + pacct + "';";
 +            QueryResult gmresult = LoginDatabase.Query(sqlquery.c_str());
 +            std::string pgmlvl = "0";
@@ -2877,8 +2877,8 @@ index 0000000..bbf6c6a
 +            {
 +                Field *fields2 = gmresult->Fetch();
 +                pgmlvl = fields2[0].GetString();
-+            }            
-+            
++            }
++
 +            ChrRacesEntry const* prace = sChrRacesStore.LookupEntry(praceid);
 +            ChrClassesEntry const* pclass = sChrClassesStore.LookupEntry(pclassid);
 +
@@ -2929,7 +2929,7 @@ index 0000000..bbf6c6a
 +                items.append(name+"(Account:"+account+" - GUID:"+guid+")\0031 | \xF");
 +                result->NextRow();
 +            }
-+            
++
 +            Send_IRCA(ChanOrPM(CD), items, true, CD->TYPE);
 +        }
 +        else
@@ -2955,13 +2955,13 @@ index 0000000..bbf6c6a
 +                Field *fields = result->Fetch();
 +
 +                uint32 id = fields[0].GetUInt32();
-+                std::string usrname = fields[1].GetString();                
++                std::string usrname = fields[1].GetString();
 +                std::string lastip = fields[2].GetString();
 +                std::string banreason = fields[3].GetString();
 +                std::string banreasonip = fields[4].GetString();
 +                uint32 banactive = (fields[5].GetInt32() == 1 ? 1 : 0);
 +                std::string TimeLeft = SecToDay(fields[6].GetString());
-+                std::string lastlogin = fields[7].GetString();                               
++                std::string lastlogin = fields[7].GetString();
 +
 +                QueryResult chars = CharacterDatabase.PQuery("SELECT guid, name, (SELECT SUM(totaltime) FROM characters WHERE account = %d) AS tottime FROM characters WHERE account = %u", id, id);
 +                std::string characters = "None";
@@ -2978,7 +2978,7 @@ index 0000000..bbf6c6a
 +                        characters.append(charname+"("+guid+"), ");
 +                        chars->NextRow();
 +                    }
-+                    
++
 +                }
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\00310Username: \xF %s | \00310AccountID: \xF %d | \00310Last IP: \xF %s | \00310Last Login: \xF %s", usrname.c_str(), id, lastip.c_str(), lastlogin.c_str()), true, CD->TYPE);
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\00310Total play time: \xF %s | \00310Characters:  \xF %s ", totaccttime.c_str(), characters.c_str()), true, CD->TYPE);
@@ -3004,7 +3004,7 @@ index 0000000..bbf6c6a
 +                    accts.append(acctname+"("+acctid+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), accts, true, CD->TYPE);
 +            }
 +            else
@@ -3036,21 +3036,21 @@ index 0000000..bbf6c6a
 +                uint32 praceid = fields[3].GetUInt32();
 +                uint32 pclassid = fields[4].GetUInt32();
 +                std::string ponline = (fields[5].GetInt32() == 1 ? "\x3\x30\x33Online" : "\x3\x30\x34Offline\xF");
-+                std::string plevel = fields[6].GetString();                
++                std::string plevel = fields[6].GetString();
 +                std::string pxp = fields[7].GetString();
 +                unsigned int money = fields[8].GetInt32();
 +                std::string honor = fields[9].GetString();
 +                std::string totaltim = SecToDay(fields[10].GetString());
-+                
++
 +                std::string sqlquery = "SELECT `gmlevel` FROM `account_access` WHERE `id` = '" + pacct + "';";
 +                QueryResult gmresult = LoginDatabase.Query(sqlquery.c_str());
 +                std::string pgmlvl = "0";
 +                if (gmresult)
-+                {                
++                {
 +                    Field *fields = result->Fetch();
 +                    pgmlvl = fields[0].GetString();
-+                }               
-+                
++                }
++
 +                ChrRacesEntry const* prace = sChrRacesStore.LookupEntry(praceid);
 +                ChrClassesEntry const* pclass = sChrClassesStore.LookupEntry(pclassid);
 +
@@ -3101,7 +3101,7 @@ index 0000000..bbf6c6a
 +                    items.append(name+"(Account:"+account+" - GUID:"+guid+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), items, true, CD->TYPE);
 +            }
 +            else
@@ -3119,13 +3119,13 @@ index 0000000..bbf6c6a
 +            {
 +                Field *fields = result->Fetch();
 +
-+                uint32 entry = fields[0].GetUInt32();                
++                uint32 entry = fields[0].GetUInt32();
 +                std::string name = fields[1].GetString();
 +                uint32 minlevel = fields[2].GetUInt32();
 +                uint32 maxlevel = fields[3].GetUInt32();
 +                uint32 faction = fields[4].GetUInt32();
 +                uint32 spawns = fields[5].GetUInt32();
-+                
++
 +
 +               Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Name:\x3\x31\x30 %s \xF|\x2 CreatureID:\x3\x31\x30 %d", name.c_str(), entry), true, CD->TYPE);
 +               Send_IRCA(ChanOrPM(CD), MakeMsg("\x2minlevel:\x3\x31\x30 %d \xF|\x2 maxlevel:\x3\x31\x30 %d \xF|\x2 Faction:\x3\x31\x30 %d \xF|\x2 Spawns:\x3\x31\x30 %d", minlevel, maxlevel, faction, spawns), true, CD->TYPE);
@@ -3148,7 +3148,7 @@ index 0000000..bbf6c6a
 +                    items.append(Name+"("+CreatureID+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), items, true, CD->TYPE);
 +            }
 +            else
@@ -3213,7 +3213,7 @@ index 0000000..bbf6c6a
 +                std::string name = fields[3].GetString();
 +                uint32 faction = fields[4].GetUInt32();
 +                uint32 spawns = fields[5].GetUInt32();
-+                
++
 +
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\x2GO Name:\x3\x31\x30 %s \xF|\x2 GameobjectID:\x3\x31\x30 %d \xF|\x2 DisplayID:\x3\x31\x30 %d \xF|\x2 Spawns:\x3\x31\x30 %d", name.c_str(), entry, modelid, spawns), true, CD->TYPE);
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Type:\x3\x31\x30 %d \xF|\x2 Faction:\x3\x31\x30 %d", type, faction), true, CD->TYPE);
@@ -3235,7 +3235,7 @@ index 0000000..bbf6c6a
 +                    gos.append(GoName+"("+GOID+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), gos, true, CD->TYPE);
 +            }
 +            else
@@ -3254,14 +3254,14 @@ index 0000000..bbf6c6a
 +                QueryResult result2 = CharacterDatabase.PQuery("SELECT count(*) FROM `character_inventory` WHERE item_template = %s", _PARAMS[1].c_str());
 +                Field *fields2 = result2->Fetch();
 +                uint32 charcnt = fields2[0].GetUInt32();
-+                
++
 +
 +                uint32 ItemID = fields[0].GetUInt32();
 +                std::string ItmName = fields[1].GetString();
 +                uint32 DisplayID = fields[2].GetUInt32();
 +                uint32 loots = 0;
 +                loots = fields[3].GetUInt32();
-+                
++
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Item:\x3\x31\x30 %s \xF|\x2 ItemID:\x3\x31\x30 %d \xF|\x2 DisplayID:\x3\x31\x30 %d \xF|\x2 Owned By:\x3\x31\x30 %d players \xF|\x2 Dropped By:\x3\x31\x30 %d creatures", ItmName.c_str(), ItemID, DisplayID, charcnt, loots), true, CD->TYPE);
 +            }
 +            else
@@ -3281,7 +3281,7 @@ index 0000000..bbf6c6a
 +                    items.append(ItemName+"("+ItemID+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), items, true, CD->TYPE);
 +            }
 +            else
@@ -3300,12 +3300,12 @@ index 0000000..bbf6c6a
 +                QueryResult result2 = CharacterDatabase.PQuery("SELECT count(*) FROM character_queststatus WHERE quest = '%s' AND status = '1';", _PARAMS[1].c_str());
 +                Field *fields2 = result2->Fetch();
 +                uint32 status = fields2[0].GetUInt32();
-+                
++
 +
 +                Field *fields = result->Fetch();
 +                uint32 entry = fields[0].GetUInt32();
 +                std::string name = fields[1].GetString();
-+                
++
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Quest Name:\x3\x31\x30 %s \xF|\x2 QuestID:\x3\x31\x30 %d \xF|\x2 Completed:\x3\x31\x30 %d times", name.c_str(), entry, status), true, CD->TYPE);
 +            }
 +            else
@@ -3326,7 +3326,7 @@ index 0000000..bbf6c6a
 +                    quests.append(QuestName+"("+QuestID+")\xF | \x3\x31\x30\x2");
 +                    result->NextRow();
 +                }
-+                
++
 +                Send_IRCA(ChanOrPM(CD), quests, true, CD->TYPE);
 +            }
 +            else
@@ -3432,7 +3432,7 @@ index 0000000..bbf6c6a
 +                uint32 oriet = fields[4].GetUInt32();
 +                uint32 map = fields[5].GetUInt32();
 +                std::string telname = fields[6].GetString();
-+                
++
 +
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Tele Name:\x3\x31\x30 %s \xF|\x2 TeleID:\x3\x31\x30 %d \xF|\x2 Coordinates:\x3\x31\x30 [X: %d, Y: %d, Z: %d, MAP: %d, Orientation: %d]", telname.c_str(), teleid, pos_x, pos_y, pos_z, map, oriet), true, CD->TYPE);
 +            }
@@ -3454,7 +3454,7 @@ index 0000000..bbf6c6a
 +                    result->NextRow();
 +                }
 +                Send_IRCA(ChanOrPM(CD), teles, true, CD->TYPE);
-+                
++
 +            }
 +            else
 +                Send_IRCA(CD->USER, "Unknown Item. I Cant Find Any Items With Those Search Terms." ,true, "ERROR");
@@ -3559,7 +3559,7 @@ index 0000000..bbf6c6a
 +        QueryResult result = CharacterDatabase.Query(sqlquery.c_str());
 +            Field *fields = result->Fetch();
 +            moneyuser = fields[0].GetInt32();
-+            
++
 +        }
 +            int32 addmoney = money;
 +            int32 newmoney = moneyuser + addmoney;
@@ -3638,11 +3638,11 @@ index 0000000..bbf6c6a
 +            time_t mutetime = time(NULL) + atoi(_PARAMS[1].c_str())*60;
 +            uint32 account_id = 0;
 +            account_id = sObjectMgr->GetPlayerAccountIdByGUID(guid);
-+            if (plr) 
++            if (plr)
 +                plr->GetSession()->m_muteTime = mutetime;
 +            LoginDatabase.PExecute("UPDATE `account` SET `mutetime` = " UI64FMTD " WHERE `id` = '%u'",uint64(mutetime), account_id);
 +            Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been Muted By: "+CD->USER+". For: "+_PARAMS[1]+" Minutes. Reason: "+_PARAMS[2] , true, CD->TYPE);
-+            if (plr) 
++            if (plr)
 +                Send_Player(plr, MakeMsg("You Have Been Muted By: %s. For: %s Minutes. Reason: %s", CD->USER.c_str(), _PARAMS[1].c_str(), _PARAMS[2].c_str()));
 +        }
 +    }
@@ -3879,7 +3879,7 @@ index 0000000..bbf6c6a
 +                std::string addedby = fields[2].GetString();
 +                Send_IRCA(ChanOrPM(CD), MakeMsg("ID: %s - Added By: %s - Message: %s", id.c_str(), addedby.c_str(), message.c_str()), true, CD->TYPE);
 +                result->NextRow();
-+            }            
++            }
 +        }
 +        else
 +            Send_IRCA(CD->USER, "No Auto Announce Messages Are In The Database.", true, "ERROR");
@@ -3924,7 +3924,7 @@ index 0000000..bbf6c6a
 +            pZ = fields[2].GetFloat();
 +            pO = fields[3].GetFloat();
 +            mapid = fields[4].GetUInt16();
-+            
++
 +            rMsg = MakeMsg(" \00313[%s] : Teleported To %s! By: %s.",
 +                _PARAMS[0].c_str(),
 +                _PARAMS[2].c_str(),
@@ -3948,7 +3948,7 @@ index 0000000..bbf6c6a
 +                    result->NextRow();
 +                    telename.append(" <> ");
 +                }
-+                
++
 +                Send_IRCA(CD->USER, "I Cannot Find Location: "+_PARAMS[2]+" . Perhaps One Of These Will Work For You.", true, "ERROR");
 +                Send_IRCA(CD->USER, telename, true, "ERROR");
 +                return;
@@ -4056,7 +4056,7 @@ index 0000000..bbf6c6a
 +            _PARAMS[2].c_str(),
 +            CD->USER.c_str());
 +        DoTeleport = true;
-+        
++
 +      }
 +    }
 +    else if (_PARAMS[1] == "go")
@@ -4083,7 +4083,7 @@ index 0000000..bbf6c6a
 +            _PARAMS[2].c_str(),
 +            CD->USER.c_str());
 +        DoTeleport = true;
-+        
++
 +      }
 +    }
 +    else if (_PARAMS[1] == "homebind")
@@ -4108,7 +4108,7 @@ index 0000000..bbf6c6a
 +            wMsg = MakeMsg("You Are Being Teleported To Your Homebind Location By: %s.",
 +            CD->USER.c_str());
 +            DoTeleport = true;
-+            
++
 +        }
 +
 +    }
@@ -4163,7 +4163,7 @@ index 0000000..bbf6c6a
 +                tptime.append(MakeMsg("[%u]%s %s \xF| \x3\x31\x30\x2", rank, PlName.c_str(), Time.c_str()));
 +                result->NextRow();
 +            }
-+            
++
 +            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
 +        }
 +        else
@@ -4184,7 +4184,7 @@ index 0000000..bbf6c6a
 +                tptime.append(MakeMsg("[%u]%s %s \xF| \x3\x31\x30\x2", rank, Name.c_str(), Time.c_str()));
 +                result->NextRow();
 +            }
-+            
++
 +            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
 +        }
 +        else
@@ -4213,7 +4213,7 @@ index 0000000..bbf6c6a
 +                tptime.append(MakeMsg("[%u]%s %s \xF| \x3\x31\x30\x2", rank, Name.c_str(), tempgold));
 +                result->NextRow();
 +            }
-+            
++
 +            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
 +        }
 +        else
@@ -4312,7 +4312,7 @@ index 0000000..c81f855
 +std::string Delink(std::string msg)
 +{
 +    std::size_t pos;
-+    
++
 +        while((pos = msg.find("|Htrade")) != std::string::npos)
 +    {
 +        std::size_t find1 = msg.find("|h", pos);
@@ -4429,7 +4429,7 @@ index 0000000..c81f855
 +        for (int I=0; I < 3; I++)
 +        {
 +            while ((pos = msg.find(Checker[I])) != std::string::npos)
-+            {    
++            {
 +                msg.replace(pos, 1, "");
 +            }
 +        }
@@ -4718,8 +4718,8 @@ index 0000000..c0cc5d8
 +            if (CMD == "nick" && (sIRC.BOTMASK & 128) != 0)
 +            {
 +                MakeMsg(MakeMsg(GetChatLine(CHANGE_NICK), "$Name", szUser), "$NewName", sData.substr(sData.find(":", p2) + 1));
-+                // If the user is logged in and changes their nick 
-+                // then we want to either log them out or update 
++                // If the user is logged in and changes their nick
++                // then we want to either log them out or update
 +                // their nick in the bot. I chose to update the bots user list.
 +                if (Command.IsLoggedIn(szUser))
 +                {
@@ -4736,7 +4736,7 @@ index 0000000..c0cc5d8
 +                        {
 +                            (*i)->Name     = NewNick;
 +                            sIRC.Send_IRC_Channel(NewNick.c_str(), "I Noticed You Changed Your Nick, I Have Updated My Internal Database Accordingly.", true, "NOTICE");
-+                            
++
 +                            // Figure why not output to the logfile, makes tracing problems easier.
 +                            sIRC.iLog.WriteLog(" %s : %s Changed Nick To: %s", sIRC.iLog.GetLogDateTimeStr().c_str(), szUser.c_str(), NewNick.c_str());
 +                        }
@@ -5015,7 +5015,7 @@ index 0000000..c0cc5d8
 +void IRCClient::AutoJoinChannel(Player *plr)
 +{
 +    //this will work if at least 1 player is logged in regrdless if he is on the channel or not
-+    // the first person that login empty server is the one with bad luck and wont be invited, 
++    // the first person that login empty server is the one with bad luck and wont be invited,
 +    // if at least 1 player is online the player will be inited to the chanel
 +
 +    std::string m_name = sIRC.ajchan;
@@ -5320,7 +5320,7 @@ index 0000000..0b879da
 +    char szBuffer[MAXDATASIZE];
 +
 +    memset(szBuffer, 0, MAXDATASIZE);
-+    
++
 +    int nBytesRecv = ::recv(sIRC.SOCKET, szBuffer, MAXDATASIZE - 1, 0);
 +    if (nBytesRecv == -1)
 +    {
@@ -5580,7 +5580,7 @@ index 0000000..282968d
 +        virtual int Permit(const T *) const = 0;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Dynamic/ObjectRegistry.h b/src/server/game/TriniChat/framework/Dynamic/ObjectRegistry.h
 new file mode 100644
 index 0000000..e661942
@@ -5697,7 +5697,7 @@ index 0000000..e661942
 +        }
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/Grid.h b/src/server/game/TriniChat/framework/GameSystem/Grid.h
 new file mode 100644
 index 0000000..65bf3c9
@@ -5846,7 +5846,7 @@ index 0000000..65bf3c9
 +        //ActiveGridObjects m_activeGridObjects;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/GridLoader.h b/src/server/game/TriniChat/framework/GameSystem/GridLoader.h
 new file mode 100644
 index 0000000..03fa0f5
@@ -5931,7 +5931,7 @@ index 0000000..03fa0f5
 +        }
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/GridRefManager.h b/src/server/game/TriniChat/framework/GameSystem/GridRefManager.h
 new file mode 100644
 index 0000000..7979910
@@ -5981,7 +5981,7 @@ index 0000000..7979910
 +        iterator rend() { return iterator(NULL); }
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/GridReference.h b/src/server/game/TriniChat/framework/GameSystem/GridReference.h
 new file mode 100644
 index 0000000..d2e3a45
@@ -6042,7 +6042,7 @@ index 0000000..d2e3a45
 +        GridReference *next() { return (GridReference*)Reference<GridRefManager<OBJECT>, OBJECT>::next(); }
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/NGrid.h b/src/server/game/TriniChat/framework/GameSystem/NGrid.h
 new file mode 100644
 index 0000000..3810286
@@ -6237,7 +6237,7 @@ index 0000000..3810286
 +        bool i_GridObjectDataLoaded;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/TypeContainer.h b/src/server/game/TriniChat/framework/GameSystem/TypeContainer.h
 new file mode 100644
 index 0000000..c2c9b4f
@@ -6369,7 +6369,7 @@ index 0000000..c2c9b4f
 +        ContainerMapList<OBJECT_TYPES> i_elements;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/TypeContainerFunctions.h b/src/server/game/TriniChat/framework/GameSystem/TypeContainerFunctions.h
 new file mode 100644
 index 0000000..edfbb40
@@ -6491,7 +6491,7 @@ index 0000000..edfbb40
 +
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/TypeContainerFunctionsPtr.h b/src/server/game/TriniChat/framework/GameSystem/TypeContainerFunctionsPtr.h
 new file mode 100644
 index 0000000..2affcc4
@@ -6667,7 +6667,7 @@ index 0000000..2affcc4
 +
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/GameSystem/TypeContainerVisitor.h b/src/server/game/TriniChat/framework/GameSystem/TypeContainerVisitor.h
 new file mode 100644
 index 0000000..f15075e
@@ -6792,7 +6792,7 @@ index 0000000..f15075e
 +        VISITOR &i_visitor;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Network/SocketDefines.h b/src/server/game/TriniChat/framework/Network/SocketDefines.h
 new file mode 100644
 index 0000000..4936609
@@ -6847,7 +6847,7 @@ index 0000000..4936609
 +typedef fd_set SelectSet;
 +#endif
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Platform/CompilerDefs.h b/src/server/game/TriniChat/framework/Platform/CompilerDefs.h
 new file mode 100644
 index 0000000..fb7dbfe
@@ -6917,7 +6917,7 @@ index 0000000..fb7dbfe
 +#  pragma warning( disable : 4786 )                         // identifier was truncated to '255' characters in the debug information
 +#endif
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Platform/Define.h b/src/server/game/TriniChat/framework/Platform/Define.h
 new file mode 100644
 index 0000000..9285bf2
@@ -7124,7 +7124,7 @@ index 0000000..c78382e
 +    };
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Policies/ObjectLifeTime.cpp b/src/server/game/TriniChat/framework/Policies/ObjectLifeTime.cpp
 new file mode 100644
 index 0000000..fd16873
@@ -7166,7 +7166,7 @@ index 0000000..fd16873
 +        external_wrapper((void*)func);
 +    }
 +}
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Policies/ObjectLifeTime.h b/src/server/game/TriniChat/framework/Policies/ObjectLifeTime.h
 new file mode 100644
 index 0000000..2e9dff7
@@ -7225,7 +7225,7 @@ index 0000000..2e9dff7
 +    }
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Policies/Singleton.h b/src/server/game/TriniChat/framework/Policies/Singleton.h
 new file mode 100644
 index 0000000..da89855
@@ -7296,7 +7296,7 @@ index 0000000..da89855
 +    };
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Policies/SingletonImp.h b/src/server/game/TriniChat/framework/Policies/SingletonImp.h
 new file mode 100644
 index 0000000..3e985cd
@@ -7395,7 +7395,7 @@ index 0000000..3e985cd
 +    template<> TYPE* Trinity::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >::si_instance = 0; \
 +    template<> bool Trinity::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >::si_destroyed = false
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Policies/ThreadingModel.h b/src/server/game/TriniChat/framework/Policies/ThreadingModel.h
 new file mode 100644
 index 0000000..49bb172
@@ -7531,7 +7531,7 @@ index 0000000..49bb172
 +#define INSTANTIATE_CLASS_MUTEX(CTYPE,MUTEX) \
 +    template class Trinity::ClassLevelLockable<CTYPE, MUTEX >
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/ByteConverter.h b/src/server/game/TriniChat/framework/Utilities/ByteConverter.h
 new file mode 100644
 index 0000000..f8b6bd7
@@ -7603,7 +7603,7 @@ index 0000000..f8b6bd7
 +inline void EndianConvertReverse( int8&) { }
 +
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/Callback.h b/src/server/game/TriniChat/framework/Utilities/Callback.h
 new file mode 100644
 index 0000000..d2e2c36
@@ -7995,7 +7995,7 @@ index 0000000..d2e2c36
 +}
 +
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/CountedReference/Reference.h b/src/server/game/TriniChat/framework/Utilities/CountedReference/Reference.h
 new file mode 100644
 index 0000000..d3cfe55
@@ -8101,7 +8101,7 @@ index 0000000..d3cfe55
 +        ReferenceeHolder *i_holder;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/CountedReference/ReferenceHolder.h b/src/server/game/TriniChat/framework/Utilities/CountedReference/ReferenceHolder.h
 new file mode 100644
 index 0000000..597e985
@@ -8149,7 +8149,7 @@ index 0000000..597e985
 +    typedef typename THREADING_MODEL::Lock Lock;
 +};
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/CountedReference/ReferenceImpl.h b/src/server/game/TriniChat/framework/Utilities/CountedReference/ReferenceImpl.h
 new file mode 100644
 index 0000000..cde3301
@@ -8288,7 +8288,7 @@ index 0000000..cde3301
 +    ++holder->i_referenceCount;
 +}
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/LinkedList.h b/src/server/game/TriniChat/framework/Utilities/LinkedList.h
 new file mode 100644
 index 0000000..b266877
@@ -8541,7 +8541,7 @@ index 0000000..b266877
 +
 +//============================================
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/LinkedReference/RefManager.h b/src/server/game/TriniChat/framework/Utilities/LinkedReference/RefManager.h
 new file mode 100644
 index 0000000..4a1545f
@@ -8641,7 +8641,7 @@ index 0000000..4a1545f
 +
 +//=====================================================
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/LinkedReference/Reference.h b/src/server/game/TriniChat/framework/Utilities/LinkedReference/Reference.h
 new file mode 100644
 index 0000000..7e294b4
@@ -8705,7 +8705,7 @@ index 0000000..7e294b4
 +
 +//=====================================================
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/TypeList.h b/src/server/game/TriniChat/framework/Utilities/TypeList.h
 new file mode 100644
 index 0000000..02bc080
@@ -8757,7 +8757,7 @@ index 0000000..02bc080
 +#define TYPELIST_4(T1, T2, T3, T4)      TypeList<T1, TYPELIST_3(T2, T3, T4) >
 +#define TYPELIST_5(T1, T2, T3, T4, T5)  TypeList<T1, TYPELIST_4(T2, T3, T4, T5) >
 +#endif
-+
++// end
 diff --git a/src/server/game/TriniChat/framework/Utilities/UnorderedMap.h b/src/server/game/TriniChat/framework/Utilities/UnorderedMap.h
 new file mode 100644
 index 0000000..fce5ec8
@@ -8836,7 +8836,7 @@ index 0000000..fce5ec8
 +using std::hash_map;
 +#endif
 +#endif
-+
++// end
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
 index b643d12..59a6ffc 100644
 --- a/src/server/game/World/World.cpp
@@ -8846,7 +8846,7 @@ index b643d12..59a6ffc 100644
  #include "BattlefieldMgr.h"
  #include "TransportMgr.h"
 +#include "IRCClient.h"
- 
+
  ACE_Atomic_Op<ACE_Thread_Mutex, bool> World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
 @@ -1260,6 +1261,163 @@ void World::LoadConfigSettings(bool reload)
@@ -8976,7 +8976,7 @@ index b643d12..59a6ffc 100644
 +            if (command == "top") sIRC.CTOP = gmlvl;
 +            if (command == "who") sIRC.CWHO = gmlvl;
 +            result->NextRow();
-+        }       
++        }
 +    }
 +    else
 +    {
@@ -9011,20 +9011,20 @@ index b643d12..59a6ffc 100644
 +        sIRC.CWHO      = 3;
 +    }
  }
- 
+
  extern void LoadGameObjectModelList();
 @@ -1278,6 +1436,7 @@ void World::SetInitialWorldSettings()
- 
+
      ///- Initialize config settings
      LoadConfigSettings();
 +    TC_LOG_ERROR("misc" "Loading TrinityCore configuration settings...","");
- 
+
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
 @@ -1731,6 +1890,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
- 
+
 +    static uint32 autoanc = 1;
 +    autoanc = sIRC.autoanc;
 +
@@ -9032,9 +9032,9 @@ index b643d12..59a6ffc 100644
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
 @@ -1744,6 +1906,8 @@ void World::SetInitialWorldSettings()
- 
+
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
- 
+
 +    m_timers[WUPDATE_AUTOANC].SetInterval(autoanc*MINUTE*1000);
 +
      //to set mailtimer to return mails every day between 4 and 5 am
@@ -9043,7 +9043,7 @@ index b643d12..59a6ffc 100644
 @@ -2111,6 +2275,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
- 
+
 +    if (m_timers[WUPDATE_AUTOANC].Passed())
 +    {
 +        m_timers[WUPDATE_AUTOANC].Reset();
@@ -9052,11 +9052,11 @@ index b643d12..59a6ffc 100644
 +
      // update the instance reset times
      sInstanceSaveMgr->Update();
- 
+
 @@ -2726,6 +2896,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
- 
+
 +void World::SendRNDBroadcastIRC()
 +{
 +    std::string msg;
@@ -9064,7 +9064,7 @@ index b643d12..59a6ffc 100644
 +    if (!result)
 +        return;
 +    msg = result->Fetch()[0].GetString();
-+    
++
 +    sWorld->SendWorldText(6612,msg.c_str());
 +    std::string ircchan = "#";
 +    ircchan += sIRC._irc_chan[sIRC.anchn].c_str();
@@ -9117,13 +9117,13 @@ index dd1366a..ca351fe 100644
  #include "Player.h"
  #include "ObjectMgr.h"
 +#include "IRCClient.h"
- 
+
  class message_commandscript : public CommandScript
  {
 @@ -134,6 +135,13 @@ public:
          if (!*args)
              return false;
- 
+
 +        if ((sIRC.BOTMASK & 256) != 0)
 +        {
 +            std::string ircchan = "#";
@@ -9144,7 +9144,7 @@ index dd1366a..ca351fe 100644
 +                ircchan += sIRC._irc_chan[sIRC.anchn].c_str();
 +                sIRC.Send_IRC_Channel(ircchan, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 Global Notify \00304,08\037/!\\\037\017 %s", "%s", args), true);
 +            }
- 
+
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
 diff --git a/src/server/worldserver/CMakeLists.txt b/src/server/worldserver/CMakeLists.txt
@@ -9168,7 +9168,7 @@ index ac46b21..0bed869 100644
  #include "Player.h"
  #include "Util.h"
 +#include "../../game/TriniChat/IRCClient.h"
- 
+
  #if PLATFORM != PLATFORM_WINDOWS
  #include <readline/readline.h>
 @@ -114,6 +115,14 @@ void commandFinished(void*, bool /*success*/)
@@ -9183,7 +9183,7 @@ index ac46b21..0bed869 100644
 +    TC_LOG_ERROR("misc" "TriniChat is reconnecting to IRC Server","");
 +    return true;
 +}
- 
+
  #ifdef linux
  // Non-blocking keypress detector, when return pressed, return 1, else always return 0
 diff --git a/src/server/worldserver/Main.cpp b/src/server/worldserver/Main.cpp
@@ -9191,11 +9191,11 @@ index 75d9ca5..1b8c794 100644
 --- a/src/server/worldserver/Main.cpp
 +++ b/src/server/worldserver/Main.cpp
 @@ -30,6 +30,7 @@
- 
+
  #include "Log.h"
  #include "Master.h"
 +#include "../../game/TriniChat/IRCClient.h"
- 
+
  #ifndef _TRINITY_CORE_CONFIG
  # define _TRINITY_CORE_CONFIG  "worldserver.conf"
 diff --git a/src/server/worldserver/Master.cpp b/src/server/worldserver/Master.cpp
@@ -9210,11 +9210,11 @@ index 6e42146..ac92dea 100644
 +#include "../../game/TriniChat/IRCClient.h"
  #include "BigNumber.h"
  #include "OpenSSLCrypto.h"
- 
+
 @@ -278,6 +278,15 @@ int Master::Run()
          soapThread = new ACE_Based::Thread(runnable);
      }
- 
+
 +  // Start up TriniChat
 +    if (sIRC.Active == 1)
 +    {
@@ -9232,7 +9232,7 @@ index f71b7bb..4d51caf 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2590,6 +2590,251 @@ UI.ShowQuestLevelsInDialogs = 0
- 
+
  #
  ###################################################################################################
 +# TriniChat IRC BOT For Trinity Core Configuration File #
@@ -9480,9 +9480,9 @@ index f71b7bb..4d51caf 100644
 +irc.gm6 = "[Admin]"
 +irc.gm7 = "[Developer]"
 +irc.gm8 = "[Owner]"
- 
+
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
--- 
+--
 1.7.10.4
 
