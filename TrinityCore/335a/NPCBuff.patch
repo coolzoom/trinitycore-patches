@@ -87,9 +87,9 @@ index f1359b7..4745e37 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -44,6 +44,9 @@ void AddSC_holiday_spell_scripts();
- 
+
  void AddSC_SmartScripts();
- 
+
 +//Custom
 +void AddSC_Npc_Buff();
 +
@@ -112,16 +112,16 @@ index 80ebe36..20c2bc9 100644
 @@ -8,11 +8,11 @@
  # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
+
 -# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
 +file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
+
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 -#  ${sources_Custom}
 +  ${sources_Custom}
  )
- 
+
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/npcbuff.cpp b/src/server/scripts/Custom/npcbuff.cpp
 new file mode 100644
@@ -146,7 +146,7 @@ index 0000000..8cd0b62
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+ /* 
++ /*
 +Script Name: npc_buff v1.1
 +Complete: 100%
 +Comment: Database Driven Buff Master
@@ -176,7 +176,7 @@ index 0000000..8cd0b62
 +{
 +public:
 +    npc_buff() : CreatureScript("npc_buff") {}
-+    
++
 +bool OnGossipHello(Player* pPlayer, Creature* pCreature)
 +{
 +    if(sConfigMgr->GetBoolDefault("Npc_Buff.OnlyGMs", false)) // If Npc_Buff.OnlyGMs is enabled in worldserver.conf
@@ -224,7 +224,7 @@ index 0000000..8cd0b62
 +
 +bool showSmallBuff(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
 +{
-+ 
++
 +
 + QueryResult result;
 + result = WorldDatabase.PQuery("SELECT `name`, `cat_number` FROM `npc_buff_spells` WHERE `cat_number` < 2000 ORDER BY `cat_number` ASC");
@@ -238,7 +238,7 @@ index 0000000..8cd0b62
 + Field *fields = result->Fetch();
 + name = fields[0].GetString();
 + catNumber = fields[1].GetInt32();
-+ 
++
 +    pPlayer->ADD_GOSSIP_ITEM(9, name, GOSSIP_SENDER_MAIN, catNumber);
 +}
 + while (result->NextRow());
@@ -256,7 +256,7 @@ index 0000000..8cd0b62
 + }
 + else
 + {
-+ 
++
 + //show Spells from beginning
 + showSmallBuff(pPlayer, pCreature, 0);
 + }
@@ -267,7 +267,7 @@ index 0000000..8cd0b62
 +
 +bool showGreatBuff(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
 +{
-+ 
++
 +
 + QueryResult result;
 + result = WorldDatabase.PQuery("SELECT `name`, `cat_number` FROM `npc_buff_spells` WHERE `cat_number` < 3000 AND `cat_number` > 2000 ORDER BY `cat_number` ASC");
@@ -281,7 +281,7 @@ index 0000000..8cd0b62
 + Field *fields = result->Fetch();
 + name = fields[0].GetString();
 + catNumber = fields[1].GetInt32();
-+ 
++
 +    pPlayer->ADD_GOSSIP_ITEM(9, name, GOSSIP_SENDER_MAIN, catNumber);
 +}
 + while (result->NextRow());
@@ -299,7 +299,7 @@ index 0000000..8cd0b62
 + }
 + else
 + {
-+ 
++
 + //show Spells from beginning
 + showGreatBuff(pPlayer, pCreature, 0);
 + }
@@ -310,7 +310,7 @@ index 0000000..8cd0b62
 +
 +bool showGmBuff(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
 +{
-+ 
++
 +
 + QueryResult result;
 + result = WorldDatabase.PQuery("SELECT `name`, `cat_number` FROM `npc_buff_spells` WHERE `cat_number` < 4000 AND `cat_number` > 3000 ORDER BY `cat_number` ASC");
@@ -324,7 +324,7 @@ index 0000000..8cd0b62
 + Field *fields = result->Fetch();
 + name = fields[0].GetString();
 + catNumber = fields[1].GetInt32();
-+ 
++
 +    pPlayer->ADD_GOSSIP_ITEM(9, name, GOSSIP_SENDER_MAIN, catNumber);
 +}
 + while (result->NextRow());
@@ -342,7 +342,7 @@ index 0000000..8cd0b62
 + }
 + else
 + {
-+ 
++
 + //show Spells from beginning
 + showGmBuff(pPlayer, pCreature, 0);
 + }
@@ -353,7 +353,7 @@ index 0000000..8cd0b62
 +
 +bool showPlayerTools(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
 +{
-+ 
++
 +
 + QueryResult result;
 + result = WorldDatabase.PQuery("SELECT `name`, `cat_number` FROM `npc_buff_spells` WHERE `cat_number` < 5000 AND `cat_number` > 4000 ORDER BY `cat_number` ASC");
@@ -367,7 +367,7 @@ index 0000000..8cd0b62
 + Field *fields = result->Fetch();
 + name = fields[0].GetString();
 + catNumber = fields[1].GetInt32();
-+ 
++
 +    pPlayer->ADD_GOSSIP_ITEM(9, name, GOSSIP_SENDER_MAIN, catNumber);
 +}
 + while (result->NextRow());
@@ -385,7 +385,7 @@ index 0000000..8cd0b62
 + }
 + else
 + {
-+ 
++
 + //show Spells from beginning
 + showPlayerTools(pPlayer, pCreature, 0);
 + }
@@ -431,12 +431,12 @@ index 0000000..8cd0b62
 +        std::string spellName = "";
 +
 +        result = WorldDatabase.PQuery("SELECT `spell_id`, `cat_number`, `cost`, `name` FROM `npc_buff_spells` WHERE `cat_number` = %u LIMIT 1", uiAction);
-+        
++
 +        if (result)
 +        {
-+        
++
 +            do {
-+            
++
 +            Field *fields = result->Fetch();
 +            spellId = fields[0].GetInt32();
 +            catNumber = fields[1].GetInt32();
@@ -448,13 +448,13 @@ index 0000000..8cd0b62
 +                pCreature->MonsterWhisper("You dont have enough money!", pPlayer);
 +                pPlayer->CLOSE_GOSSIP_MENU();
 +                return;
-+            } 
++            }
 +            else if (uiAction < 5000 && uiAction != 1000 && uiAction != 2000 && uiAction != 3000 && uiAction != 4000 && uiAction != 5005)
 +            {
 +    pPlayer->CLOSE_GOSSIP_MENU();
 +    pPlayer->CastSpell(pPlayer,spellId,false);
 +    pPlayer->ModifyMoney(-goldCost);
-+                
++
 +            }
 +
 +            } while (result->NextRow());
@@ -473,8 +473,8 @@ index 0000000..8cd0b62
 +break;
 +
 +case 2000: //Great Buff
-+        
-+        
++
++
 +        showGreatBuff(pPlayer, pCreature, 0);
 +        //pPlayer->ADD_GOSSIP_ITEM( 7, "<- Main Menu"                            , GOSSIP_SENDER_MAIN, 5005);
 +
@@ -563,7 +563,7 @@ index f71b7bb..0f063c4 100644
 @@ -2591,6 +2591,44 @@ UI.ShowQuestLevelsInDialogs = 0
  #
  ###################################################################################################
- 
+
 +# NPC Buff rewritten by LordPsyan
 +#
 +#        GM Only
@@ -605,6 +605,6 @@ index f71b7bb..0f063c4 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
  #
--- 
+--
 1.7.10.4
 
