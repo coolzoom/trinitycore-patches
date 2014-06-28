@@ -28,7 +28,7 @@ index 0000000..aed3ab5
 +++ b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
 @@ -0,0 +1,35 @@
 +/*
-+SQLyog Enterprise - MySQL GUI v8.18 
++SQLyog Enterprise - MySQL GUI v8.18
 +MySQL - 5.5.31-0+wheezy1 : Database - fake_characters
 +*********************************************************************
 +*/
@@ -69,7 +69,7 @@ index 0000000..d5240a5
 +++ b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql
 @@ -0,0 +1,31 @@
 +/*
-+SQLyog Enterprise - MySQL GUI v8.18 
++SQLyog Enterprise - MySQL GUI v8.18
 +MySQL - 5.5.31-0+wheezy1 : Database - fake_characters
 +*********************************************************************
 +*/
@@ -114,11 +114,11 @@ index 0000000..0d7ed99
 +
 +world config file:
 +
-+#    Fake.WHO.List 
-+#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then 
-+#        49 real players online 
-+#        Default: 0 (disabled) 
-+#                 1 (enabled) 
++#    Fake.WHO.List
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
++#        49 real players online
++#        Default: 0 (disabled)
++#                 1 (enabled)
 +
 +Fake.Who.List = 0
 +
@@ -131,8 +131,8 @@ index 0000000..eb1b129
 +++ b/sql/TrinityCore-Patches/fake_players/trinity_string_fake_players.sql
 @@ -0,0 +1,8 @@
 +/*
-+SQLyog Enterprise - MySQL GUI v8.18 
-+MySQL - 5.5.31-0+wheezy1 
++SQLyog Enterprise - MySQL GUI v8.18
++MySQL - 5.5.31-0+wheezy1
 +*********************************************************************
 +*/
 +/*!40101 SET NAMES utf8 */;
@@ -146,9 +146,9 @@ index 8ceb6c0..e9104a5 100644
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
-+            // If Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min) 
-+            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
-+                CharacterDatabase.PExecute("UPDATE characters_fake SET zone = (FLOOR(50 * RAND()) + 1)"); 
++            // If Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min)
++            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
++                CharacterDatabase.PExecute("UPDATE characters_fake SET zone = (FLOOR(50 * RAND()) + 1)");
 +                CharacterDatabase.PExecute("UPDATE characters_fake SET level=level+1 WHERE level < 5");
          }
          else
@@ -161,8 +161,8 @@ index eccf7a6..0ec48d2 100644
              Player* receiver = sObjectAccessor->FindPlayerByName(to);
              if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
              {
-+                // If Fake WHO List system on then show player DND 
-+                if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) 
++                // If Fake WHO List system on then show player DND
++                if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +                {
 +                    ChatHandler(sender->GetSession()).PSendSysMessage(LANG_NOT_WHISPER);
 +                    return;
@@ -180,47 +180,47 @@ index c4ff258..28e422d 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -363,8 +363,40 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
- 
+
          ++displaycount;
      }
 -
 -    data.put(0, displaycount);                            // insert right count, count displayed
-+    
-+    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49) 
-+    { 
++
++    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
++    {
 +        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5
-+        QueryResult result = CharacterDatabase.Query("SELECT name,race,class,level,zone,gender FROM characters_fake WHERE level > 3"); 
-+        if (result) 
-+        { 
-+            do 
-+            { 
-+                Field *fields = result->Fetch(); 
-+ 
-+                std::string pname = fields[0].GetString();    // player name 
-+                std::string gname;                                // guild name 
-+                uint32 lvl = fields[3].GetUInt32();                // player level 
-+                uint32 class_ = fields[2].GetUInt32();            // player class 
-+                uint32 race = fields[1].GetUInt32();            // player race 
-+                uint32 pzoneid = fields[4].GetUInt32();            // player zone id 
-+                uint8 gender = fields[5].GetUInt8();            // player gender 
-+ 
-+                data << pname;                              // player name 
-+                data << gname;                              // guild name 
-+                data << uint32(lvl);                        // player level 
-+                data << uint32(class_);                     // player class 
-+                data << uint32(race);                       // player race 
-+                data << uint8(gender);                      // player gender 
-+                data << uint32(pzoneid);                    // player zone id 
-+ 
-+                if ((++matchcount) == 49) 
-+                    break; 
-+            } while (result->NextRow()); 
-+        } 
-+    } 
-+ 
++        QueryResult result = CharacterDatabase.Query("SELECT name,race,class,level,zone,gender FROM characters_fake WHERE level > 3");
++        if (result)
++        {
++            do
++            {
++                Field *fields = result->Fetch();
++
++                std::string pname = fields[0].GetString();    // player name
++                std::string gname;                                // guild name
++                uint32 lvl = fields[3].GetUInt32();                // player level
++                uint32 class_ = fields[2].GetUInt32();            // player class
++                uint32 race = fields[1].GetUInt32();            // player race
++                uint32 pzoneid = fields[4].GetUInt32();            // player zone id
++                uint8 gender = fields[5].GetUInt8();            // player gender
++
++                data << pname;                              // player name
++                data << gname;                              // guild name
++                data << uint32(lvl);                        // player level
++                data << uint32(class_);                     // player class
++                data << uint32(race);                       // player race
++                data << uint8(gender);                      // player gender
++                data << uint32(pzoneid);                    // player zone id
++
++                if ((++matchcount) == 49)
++                    break;
++            } while (result->NextRow());
++        }
++    }
++
 +    data.put(0, matchcount);                            // insert right count, count displayed
      data.put(4, matchcount);                              // insert right count, count of matches
- 
+
      SendPacket(&data);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 3a680e3..8f58cf7 100644
@@ -228,7 +228,7 @@ index 3a680e3..8f58cf7 100644
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -1225,8 +1225,8 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
- 
+
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
 -    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
 -
@@ -266,9 +266,9 @@ index f71ef5d..d645f42 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -1205,6 +1205,14 @@ AllowTwoSide.Trade = 0
- 
+
  TalentsInspecting = 1
- 
+
 +#    Fake.WHO.List
 +#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
 +#        49 real players online
@@ -279,7 +279,7 @@ index f71ef5d..d645f42 100644
 +
  #
  ###################################################################################################
- 
--- 
+
+--
 1.7.10.4
 

@@ -1,6 +1,6 @@
-From bbbad80c7bd429d3dc2d7ea471fec8bd1a71e7bd Mon Sep 17 00:00:00 2001
+From 20f65f6b02c00e5de88956141409df4f99c697d3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 26 Jun 2014 23:23:58 -0400
+Date: Sat, 28 Jun 2014 06:00:55 -0400
 Subject: [PATCH] CrossFactionBG
 
 ---
@@ -8,7 +8,7 @@ Subject: [PATCH] CrossFactionBG
  sql/custom/AVFix.sql                               |    3 +
  src/server/game/Battlegrounds/Battleground.cpp     |   47 ++-
  src/server/game/Battlegrounds/Battleground.h       |    2 +-
- src/server/game/Battlegrounds/BattlegroundMgr.cpp  |    4 +-
+ src/server/game/Battlegrounds/BattlegroundMgr.cpp  |    2 +-
  .../game/Battlegrounds/BattlegroundQueue.cpp       |   83 +++--
  src/server/game/Battlegrounds/BattlegroundQueue.h  |   11 +-
  .../game/Battlegrounds/Zones/BattlegroundAB.cpp    |    2 +-
@@ -29,7 +29,7 @@ Subject: [PATCH] CrossFactionBG
  src/server/game/World/World.cpp                    |    2 +
  src/server/game/World/World.h                      |    1 +
  src/server/worldserver/worldserver.conf.dist       |   12 +
- 25 files changed, 661 insertions(+), 92 deletions(-)
+ 25 files changed, 660 insertions(+), 91 deletions(-)
  create mode 100644 sql/custom/AVFix.sql
  create mode 100644 src/server/game/Cfbg/Cfbg.cpp
  create mode 100644 src/server/game/Cfbg/Cfbg.h
@@ -57,10 +57,10 @@ index 0000000..a0c7eb9
 +
 +UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index ca48ffb..84b4651 100644
+index fd3e13c..702d147 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
-@@ -306,7 +306,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
+@@ -313,7 +313,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
              if (Player* player = ObjectAccessor::FindPlayer(itr->first))
              {
                  Position pos = player->GetPosition();
@@ -69,7 +69,7 @@ index ca48ffb..84b4651 100644
                  if (pos.GetExactDistSq(x, y, z) > maxDist)
                  {
                      TC_LOG_DEBUG("bg.battleground", "BATTLEGROUND: Sending %s back to start location (map: %u) (possible exploit)", player->GetName().c_str(), GetMapId());
-@@ -512,7 +512,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
+@@ -519,7 +519,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                      WorldPacket status;
                      BattlegroundQueueTypeId bgQueueTypeId = sBattlegroundMgr->BGQueueTypeId(m_TypeID, GetArenaType());
                      uint32 queueSlot = player->GetBattlegroundQueueIndex(bgQueueTypeId);
@@ -78,7 +78,7 @@ index ca48ffb..84b4651 100644
                      player->SendDirectMessage(&status);
  
                      player->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
-@@ -698,12 +698,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
+@@ -705,12 +705,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
              UpdatePlayerScore(player, SCORE_BONUS_HONOR, Honor);
  }
  
@@ -116,7 +116,7 @@ index ca48ffb..84b4651 100644
  }
  
  void Battleground::UpdateWorldState(uint32 Field, uint32 Value)
-@@ -912,7 +932,7 @@ void Battleground::EndBattleground(uint32 winner)
+@@ -920,7 +940,7 @@ void Battleground::EndBattleground(uint32 winner)
          player->SendDirectMessage(&pvpLogData);
  
          WorldPacket data;
@@ -125,7 +125,7 @@ index ca48ffb..84b4651 100644
          player->SendDirectMessage(&data);
          player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
      }
-@@ -1061,6 +1081,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
+@@ -1069,6 +1089,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
  
      if (player)
      {
@@ -133,7 +133,7 @@ index ca48ffb..84b4651 100644
          // Do next only if found in battleground
          player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE);  // We're not in BG.
          // reset destination bg team
-@@ -1127,7 +1148,7 @@ void Battleground::AddPlayer(Player* player)
+@@ -1135,7 +1156,7 @@ void Battleground::AddPlayer(Player* player)
      // score struct must be created in inherited class
  
      uint64 guid = player->GetGUID();
@@ -142,7 +142,7 @@ index ca48ffb..84b4651 100644
  
      BattlegroundPlayer bp;
      bp.OfflineRemoveTime = 0;
-@@ -1193,6 +1214,8 @@ void Battleground::AddPlayer(Player* player)
+@@ -1201,6 +1222,8 @@ void Battleground::AddPlayer(Player* player)
      // setup BG group membership
      PlayerAddedToBGCheckIfBGIsRunning(player);
      AddOrSetPlayerToCorrectBgGroup(player, team);
@@ -151,7 +151,7 @@ index ca48ffb..84b4651 100644
  }
  
  // this method adds player to his team's bg group, or sets his correct group if player is already in bg group
-@@ -1262,8 +1285,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
+@@ -1270,8 +1293,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
  
          // 1 player is logging out, if it is the last, then end arena!
          if (isArena())
@@ -162,8 +162,8 @@ index ca48ffb..84b4651 100644
      }
  }
  
-@@ -1871,7 +1894,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
-     sBattlegroundMgr->BuildPvpLogDataPacket(&data, this);
+@@ -1880,7 +1903,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
+     BuildPvPLogDataPacket(data);
      player->SendDirectMessage(&data);
  
 -    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetBGTeam());
@@ -172,10 +172,10 @@ index ca48ffb..84b4651 100644
  }
  
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index 4256e2f..c25f382 100644
+index 7d1bf55..5061d287 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
-@@ -426,7 +426,7 @@ class Battleground
+@@ -382,7 +382,7 @@ class Battleground
          void CastSpellOnTeam(uint32 SpellID, uint32 TeamID);
          void RemoveAuraOnTeam(uint32 SpellID, uint32 TeamID);
          void RewardHonorToTeam(uint32 Honor, uint32 TeamID);
@@ -185,19 +185,10 @@ index 4256e2f..c25f382 100644
          void UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player* player);
          void EndBattleground(uint32 winner);
 diff --git a/src/server/game/Battlegrounds/BattlegroundMgr.cpp b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-index ab69c95..02a6e9d 100644
+index ef78594..4acf096 100644
 --- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-@@ -284,7 +284,7 @@ void BattlegroundMgr::BuildPvpLogDataPacket(WorldPacket* data, Battleground* bg)
-             Player* player = ObjectAccessor::FindPlayer(itr2->first);
-             uint32 team = bg->GetPlayerTeam(itr2->first);
-             if (!team && player)
--                team = player->GetBGTeam();
-+                team = player->GetTeam();
-             *data << uint8(team == ALLIANCE ? 1 : 0); // green or yellow
-         }
-         *data << uint32(score->DamageDone);              // damage done
-@@ -894,7 +894,7 @@ void BattlegroundMgr::SendToBattleground(Player* player, uint32 instanceId, Batt
+@@ -724,7 +724,7 @@ void BattlegroundMgr::SendToBattleground(Player* player, uint32 instanceId, Batt
      {
          float x, y, z, O;
          uint32 mapid = bg->GetMapId();
@@ -207,14 +198,14 @@ index ab69c95..02a6e9d 100644
              team = player->GetTeam();
  
 diff --git a/src/server/game/Battlegrounds/BattlegroundQueue.cpp b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
-index 547d6e9..12fc58a 100644
+index 547d6e9..9418296 100644
 --- a/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 @@ -154,6 +154,10 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
          index += BG_TEAMS_COUNT;
      if (ginfo->Team == HORDE)
          index++;
-+		
++
 +    if (sWorld->getBoolConfig(BATTLEGROUND_CROSSFACTION_ENABLED) && ArenaType == 0)
 +        index = BG_QUEUE_MIXED;                      // BG_QUEUE_*_* -> BG_QUEUE_MIXED
 +
@@ -295,7 +286,7 @@ index 547d6e9..12fc58a 100644
 +                    {
 +                        sWorld->SendWorldText(LANG_BG_QUEUE_ANNOUNCE_WORLD, bgName, q_min_level, q_max_level,
 +                            qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
-+                    } 
++                    }
                  }
              }
          }
@@ -377,7 +368,7 @@ index af283cb..da808ef 100644
          bool CheckPremadeMatch(BattlegroundBracketId bracket_id, uint32 MinPlayersPerTeam, uint32 MaxPlayersPerTeam);
          bool CheckNormalMatch(Battleground* bg_template, BattlegroundBracketId bracket_id, uint32 minPlayers, uint32 maxPlayers);
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp
-index 38b0e3e..b476534 100644
+index 2622ab9..4438c56 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp
 @@ -141,7 +141,7 @@ void BattlegroundAB::PostUpdateImpl(uint32 diff)
@@ -390,46 +381,46 @@ index 38b0e3e..b476534 100644
                  }
  
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
-index 16576aa..c027123 100644
+index eafb02f..9c374a4 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
-@@ -94,7 +94,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
+@@ -88,7 +88,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
      if (entry == BG_AV_CreatureInfo[AV_NPC_A_BOSS][0])
      {
          CastSpellOnTeam(23658, HORDE); //this is a spell which finishes a quest where a player has to kill the boss
 -        RewardReputationToTeam(729, BG_AV_REP_BOSS, HORDE);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_BOSS, killer->GetTeam() == ALLIANCE ? ALLIANCE : HORDE);
-         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_BOSS), HORDE);
+         RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_BOSS), HORDE);
          EndBattleground(HORDE);
          DelCreature(AV_CPLACE_TRIGGER17);
-@@ -102,7 +102,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
+@@ -96,7 +96,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
      else if (entry == BG_AV_CreatureInfo[AV_NPC_H_BOSS][0])
      {
          CastSpellOnTeam(23658, ALLIANCE); //this is a spell which finishes a quest where a player has to kill the boss
 -        RewardReputationToTeam(730, BG_AV_REP_BOSS, ALLIANCE);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_BOSS, killer->GetTeam() == ALLIANCE ? ALLIANCE : HORDE);
-         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_BOSS), ALLIANCE);
+         RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_BOSS), ALLIANCE);
          EndBattleground(ALLIANCE);
          DelCreature(AV_CPLACE_TRIGGER19);
-@@ -115,7 +115,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
+@@ -109,7 +109,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
              return;
          }
          m_CaptainAlive[0]=false;
 -        RewardReputationToTeam(729, BG_AV_REP_CAPTAIN, HORDE);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_CAPTAIN, killer->GetTeam() == ALLIANCE ? ALLIANCE : HORDE);
-         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_CAPTAIN), HORDE);
+         RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_CAPTAIN), HORDE);
          UpdateScore(ALLIANCE, (-1)*BG_AV_RES_CAPTAIN);
          //spawn destroyed aura
-@@ -134,7 +134,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
+@@ -128,7 +128,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
              return;
          }
          m_CaptainAlive[1]=false;
 -        RewardReputationToTeam(730, BG_AV_REP_CAPTAIN, ALLIANCE);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_CAPTAIN, killer->GetTeam() == ALLIANCE ? ALLIANCE : HORDE);
-         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_CAPTAIN), ALLIANCE);
+         RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_CAPTAIN), ALLIANCE);
          UpdateScore(HORDE, (-1)*BG_AV_RES_CAPTAIN);
          //spawn destroyed aura
-@@ -156,6 +156,7 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
+@@ -150,6 +150,7 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
      if (GetStatus() != STATUS_IN_PROGRESS)
          return;//maybe we should log this, cause this must be a cheater or a big bug
      uint8 team = GetTeamIndexByTeamId(player->GetTeam());
@@ -437,7 +428,7 @@ index 16576aa..c027123 100644
      /// @todo add reputation, events (including quest not available anymore, next quest availabe, go/npc de/spawning)and maybe honor
      TC_LOG_DEBUG("bg.battleground", "BG_AV Quest %i completed", questid);
      switch (questid)
-@@ -180,21 +181,21 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
+@@ -174,21 +175,21 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
          case AV_QUEST_A_COMMANDER1:
          case AV_QUEST_H_COMMANDER1:
              m_Team_QuestStatus[team][1]++;
@@ -462,29 +453,29 @@ index 16576aa..c027123 100644
              if (m_Team_QuestStatus[team][3] == 120)
                  TC_LOG_DEBUG("bg.battleground", "BG_AV Quest %i completed (need to implement some events here", questid);
              break;
-@@ -497,7 +498,7 @@ void BattlegroundAV::EndBattleground(uint32 winner)
+@@ -472,7 +473,7 @@ void BattlegroundAV::EndBattleground(uint32 winner)
              rep[i]   += BG_AV_REP_SURVIVING_CAPTAIN;
          }
          if (rep[i] != 0)
 -            RewardReputationToTeam(i == 0 ? 730 : 729, rep[i], i == 0 ? ALLIANCE : HORDE);
 +            RewardReputationToTeam(729, 730, 10, i == ALLIANCE ? ALLIANCE : HORDE);
          if (kills[i] != 0)
-             RewardHonorToTeam(GetBonusHonor(kills[i]), i == 0 ? ALLIANCE : HORDE);
+             RewardHonorToTeam(GetBonusHonorFromKill(kills[i]), i == 0 ? ALLIANCE : HORDE);
      }
-@@ -616,7 +617,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
+@@ -577,7 +578,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
              SpawnBGObject(BG_AV_OBJECT_BURN_DUNBALDAR_SOUTH + i + (tmp * 10), RESPAWN_IMMEDIATELY);
  
          UpdateScore((owner == ALLIANCE) ? HORDE : ALLIANCE, -1 * BG_AV_RES_TOWER);
 -        RewardReputationToTeam(owner == ALLIANCE ? 730 : 729, BG_AV_REP_TOWER, owner);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_TOWER, owner);
-         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_TOWER), owner);
+         RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_TOWER), owner);
  
          SpawnBGObject(BG_AV_OBJECT_TAURA_A_DUNBALDAR_SOUTH+GetTeamIndexByTeamId(owner)+(2*tmp), RESPAWN_ONE_DAY);
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp
-index fcd55e2..8325e86 100644
+index 1faa336..6dfebca 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp
-@@ -312,7 +312,6 @@ void BattlegroundWS::EventPlayerCapturedFlag(Player* player)
+@@ -309,7 +309,6 @@ void BattlegroundWS::EventPlayerCapturedFlag(Player* player)
          if (GetTeamScore(TEAM_ALLIANCE) < BG_WS_MAX_TEAM_SCORE)
              AddPoint(ALLIANCE, 1);
          PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_ALLIANCE);
@@ -492,7 +483,7 @@ index fcd55e2..8325e86 100644
      }
      else
      {
-@@ -331,8 +330,8 @@ void BattlegroundWS::EventPlayerCapturedFlag(Player* player)
+@@ -328,8 +327,8 @@ void BattlegroundWS::EventPlayerCapturedFlag(Player* player)
          if (GetTeamScore(TEAM_HORDE) < BG_WS_MAX_TEAM_SCORE)
              AddPoint(HORDE, 1);
          PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_HORDE);
@@ -895,10 +886,10 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8d0223d..b17748c 100644
+index 8653106..d884da2 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -650,6 +650,12 @@ void KillRewarder::Reward()
+@@ -651,6 +651,12 @@ void KillRewarder::Reward()
  
  Player::Player(WorldSession* session): Unit(true)
  {
@@ -911,7 +902,7 @@ index 8d0223d..b17748c 100644
      m_speakTime = 0;
      m_speakCount = 0;
  
-@@ -1000,6 +1006,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
+@@ -1001,6 +1007,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
      uint32 RaceClassGender = (createInfo->Race) | (createInfo->Class << 8) | (createInfo->Gender << 16);
  
      SetUInt32Value(UNIT_FIELD_BYTES_0, (RaceClassGender | (powertype << 24)));
@@ -924,7 +915,7 @@ index 8d0223d..b17748c 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -3016,7 +3028,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3017,7 +3029,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -933,7 +924,7 @@ index 8d0223d..b17748c 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3154,7 +3166,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3155,7 +3167,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -942,7 +933,7 @@ index 8d0223d..b17748c 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -5253,7 +5265,7 @@ void Player::CreateCorpse()
+@@ -5254,7 +5266,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -951,7 +942,7 @@ index 8d0223d..b17748c 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -6923,10 +6935,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6924,10 +6936,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -964,7 +955,7 @@ index 8d0223d..b17748c 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -7028,6 +7040,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7029,6 +7041,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -992,7 +983,7 @@ index 8d0223d..b17748c 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7042,23 +7075,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7043,23 +7076,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -1022,7 +1013,7 @@ index 8d0223d..b17748c 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7153,7 +7186,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7154,7 +7187,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -1031,7 +1022,7 @@ index 8d0223d..b17748c 100644
              return false;
  
          return true;
-@@ -7477,7 +7510,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7478,7 +7511,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -1040,7 +1031,7 @@ index 8d0223d..b17748c 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -11986,13 +12019,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11987,13 +12020,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
  
      if (proto)
      {
@@ -1057,7 +1048,7 @@ index 8d0223d..b17748c 100644
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
          if (proto->RequiredSkill != 0)
-@@ -17230,6 +17263,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17231,6 +17264,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -1069,7 +1060,7 @@ index 8d0223d..b17748c 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17276,10 +17314,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17277,10 +17315,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -1080,7 +1071,7 @@ index 8d0223d..b17748c 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -17546,7 +17580,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17547,7 +17581,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
  
      if (!map)
      {
@@ -1089,7 +1080,7 @@ index 8d0223d..b17748c 100644
          mapId = info->mapId;
          Relocate(info->positionX, info->positionY, info->positionZ, 0.0f);
          map = sMapMgr->CreateMap(mapId, this);
-@@ -19196,7 +19230,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19197,7 +19231,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -1098,7 +1089,7 @@ index 8d0223d..b17748c 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19301,7 +19335,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19302,7 +19336,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -1107,7 +1098,7 @@ index 8d0223d..b17748c 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -20540,6 +20574,19 @@ void Player::StopCastingCharm()
+@@ -20541,6 +20575,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -1127,7 +1118,7 @@ index 8d0223d..b17748c 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22325,11 +22372,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22326,11 +22373,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -1139,7 +1130,7 @@ index 8d0223d..b17748c 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22405,7 +22447,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22406,7 +22448,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -1149,7 +1140,7 @@ index 8d0223d..b17748c 100644
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index fdebbde..4b1e5a4 100644
+index fdebbde..dbe11df 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -1070,6 +1070,35 @@ class Player : public Unit, public GridObject<Player>
@@ -1201,7 +1192,7 @@ index fdebbde..4b1e5a4 100644
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
-+		/// Constructs the player Chat data for the specific functions to use
++        /// Constructs the player Chat data for the specific functions to use
 +        void BuildPlayerChat(WorldPacket* data, uint8 msgtype, std::string const& text, uint32 language) const;
  
          /*********************************************************/
@@ -1225,7 +1216,7 @@ index fdebbde..4b1e5a4 100644
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 363738f..bc19151 100644
+index ca4780b..7d8e6fe 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -15995,7 +15995,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
@@ -1276,7 +1267,7 @@ index 535d75a..ca0d601 100644
          uint32 getClassMask() const { return 1 << (getClass()-1); }
          uint8 getGender() const { return GetByteValue(UNIT_FIELD_BYTES_0, 2); }
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
-index 0dfe396..042fd07 100644
+index 7def6b0..caa424e 100644
 --- a/src/server/game/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Handlers/BattleGroundHandler.cpp
 @@ -35,6 +35,8 @@
