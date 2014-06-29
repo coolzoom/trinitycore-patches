@@ -1,6 +1,6 @@
-From ea90b12f20b0b6153ff79d58f8c9f22cc09d3ccd Mon Sep 17 00:00:00 2001
+From 671d7fb3666b090d5fc36e0f5d53ca1686ae74c7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 28 Jun 2014 06:41:16 -0400
+Date: Sun, 29 Jun 2014 01:08:42 -0400
 Subject: [PATCH] Old_NPCBots
 
 ---
@@ -32,8 +32,8 @@ Subject: [PATCH] Old_NPCBots
  src/server/game/Entities/Creature/Creature.h       |   54 +
  .../game/Entities/Creature/TemporarySummon.cpp     |    8 +
  src/server/game/Entities/Object/Object.cpp         |   11 +
- src/server/game/Entities/Player/Player.cpp         | 1020 ++++
- src/server/game/Entities/Player/Player.h           |   62 +
+ src/server/game/Entities/Player/Player.cpp         | 1009 ++++
+ src/server/game/Entities/Player/Player.h           |   63 +
  src/server/game/Entities/Totem/Totem.cpp           |    7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |    5 +
  src/server/game/Entities/Unit/Unit.cpp             |  214 +
@@ -57,7 +57,7 @@ Subject: [PATCH] Old_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |    4 +
  .../shared/Database/Implementation/WorldDatabase.h |    4 +
  src/server/worldserver/worldserver.conf.dist       |  104 +
- 53 files changed, 21260 insertions(+)
+ 53 files changed, 21250 insertions(+)
  create mode 100644 sql/TrinityCore-Patches/NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -19432,7 +19432,7 @@ index 9ce1f9b..33e065c 100644
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -683,6 +683,19 @@ enum RBACPermissions
      RBAC_PERM_COMMAND_MAILBOX                                = 777,
-
+ 
      // custom permissions 1000+
 +
 +    //NpcBot command permissions
@@ -19449,7 +19449,7 @@ index 9ce1f9b..33e065c 100644
 +
      RBAC_PERM_MAX
  };
-
+ 
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
 index 26fd081..d94495a 100644
 --- a/src/server/game/CMakeLists.txt
@@ -19463,13 +19463,13 @@ index 26fd081..d94495a 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 19d32b4..3e2abcc 100644
+index fd8aaff..e61e7e2 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
-
+ 
  #include "Transport.h"
-
+ 
 +// npcbot
 +#include "bot_ai.h"
 +
@@ -19490,7 +19490,7 @@ index 19d32b4..3e2abcc 100644
 +    m_canUpdate = true;
 +    //end bot
  }
-
+ 
  Creature::~Creature()
 @@ -234,6 +246,8 @@ void Creature::RemoveCorpse(bool setSpawnTime)
  {
@@ -19498,11 +19498,11 @@ index 19d32b4..3e2abcc 100644
          return;
 +    if (bot_AI)
 +        return;
-
+ 
      m_corpseRemoveTime = time(NULL);
      setDeathState(DEAD);
 @@ -441,6 +455,11 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/)
-
+ 
  void Creature::Update(uint32 diff)
  {
 +    //npcbot: update helper
@@ -19514,7 +19514,7 @@ index 19d32b4..3e2abcc 100644
      {
          TriggerJustRespawned = false;
 @@ -1285,6 +1304,11 @@ void Creature::SetCanDualWield(bool value)
-
+ 
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
 +    //npcbot: prevent loading equipment for bots
@@ -19526,7 +19526,7 @@ index 19d32b4..3e2abcc 100644
      {
          if (force)
 @@ -2139,6 +2163,9 @@ void Creature::SetInCombatWithZone()
-
+ 
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
 +    if (bot_AI)
@@ -19534,11 +19534,11 @@ index 19d32b4..3e2abcc 100644
 +
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
-
+ 
 @@ -2717,3 +2744,169 @@ void Creature::StartPickPocketRefillTimer()
      _pickpocketLootRestore = time(NULL) + sWorld->getIntConfig(CONFIG_CREATURE_PICKPOCKET_REFILL);
  }
-
+ 
 +uint8 Creature::GetBotClass() const
 +{
 +    switch (m_bot_class)
@@ -19712,7 +19712,7 @@ index ca536e4..c785f0c 100644
 @@ -37,6 +37,11 @@ class Player;
  class SpellInfo;
  class WorldSession;
-
+ 
 +// npcbot
 +class bot_ai;
 +class bot_minion_ai;
@@ -19724,7 +19724,7 @@ index ca536e4..c785f0c 100644
 @@ -679,6 +684,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
-
+ 
 +        //Bot commands
 +        Player* GetBotOwner() const { return m_bot_owner; }
 +        void SetBotOwner(Player* newowner) { m_bot_owner = newowner; }
@@ -19770,7 +19770,7 @@ index ca536e4..c785f0c 100644
          bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
 @@ -731,6 +776,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const;
-
+ 
      private:
 +        //bot system
 +        Player* m_bot_owner;
@@ -19782,7 +19782,7 @@ index ca536e4..c785f0c 100644
 +        //end bot system
 +
          void ForcedDespawn(uint32 timeMSToDespawn = 0);
-
+ 
          //WaypointMovementGenerator vars
 diff --git a/src/server/game/Entities/Creature/TemporarySummon.cpp b/src/server/game/Entities/Creature/TemporarySummon.cpp
 index d31117c..fb8ed9c 100644
@@ -19791,7 +19791,7 @@ index d31117c..fb8ed9c 100644
 @@ -253,6 +253,14 @@ void TempSummon::UnSummon(uint32 msTime)
      if (owner && owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsAIEnabled)
          owner->ToCreature()->AI()->SummonedCreatureDespawn(this);
-
+ 
 +    //npcbot
 +    if (GetIAmABot() || GetIAmABotsPet())
 +    {
@@ -19802,7 +19802,7 @@ index d31117c..fb8ed9c 100644
 +
      AddObjectToRemoveList();
  }
-
+ 
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
 index 4ff0153..9bb43e9 100644
 --- a/src/server/game/Entities/Object/Object.cpp
@@ -19822,7 +19822,7 @@ index 4ff0153..9bb43e9 100644
 @@ -2211,6 +2216,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
      AddToMap(summon->ToCreature());
      summon->InitSummon();
-
+ 
 +    //npcbot: totem emul step 2
 +    if (mask == UNIT_MASK_TOTEM)
 +        if (summoner && summoner->GetTypeId() == TYPEID_UNIT && summoner->ToCreature()->GetIAmABot())
@@ -19830,27 +19830,27 @@ index 4ff0153..9bb43e9 100644
 +    //end npcbot
 +
      //ObjectAccessor::UpdateObjectVisibility(summon);
-
+ 
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8653106..022a1ad 100644
+index 8653106..6f8fad3 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -80,6 +80,10 @@
  #include "WorldSession.h"
  #include "GameObjectAI.h"
-
+ 
 +//Bot
 +#include "Config.h"
 +#include "bothelper.h"
 +
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
-
+ 
  #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
 @@ -530,6 +534,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
-
+ 
 +        //npcbot 4.2.2.1. Apply NpcBot XP reduction
 +        if (player->HaveBot() && player->GetNpcBotsCount() > 1)
 +        {
@@ -19869,7 +19869,7 @@ index 8653106..022a1ad 100644
 @@ -881,6 +897,28 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
-
+ 
 +    ///////////////////// Bot System ////////////////////////
 +    _botHlpr = NULL;
 +    m_botTimer = 500;
@@ -19894,11 +19894,11 @@ index 8653106..022a1ad 100644
 +
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
-
+ 
 @@ -935,6 +973,16 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
-
+ 
 +    if (_botHlpr)
 +    {
 +        delete _botHlpr;
@@ -19911,7 +19911,7 @@ index 8653106..022a1ad 100644
 +
      sWorld->DecreasePlayerCount();
  }
-
+ 
 @@ -1854,6 +1902,17 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
@@ -19928,12 +19928,12 @@ index 8653106..022a1ad 100644
 +    else
 +        RefreshBot(p_time);
  }
-
+ 
  void Player::setDeathState(DeathState s)
 @@ -2225,6 +2284,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
-
+ 
 +        //Npcbot mod: prevent crash on InstanceMap::DestroyInstance()... Unit::RemoveFromWorld()
 +        //if last player being kicked out of instance while having npcbots
 +        //we must remove creature Before it will be removed in Map::UnloadAll()
@@ -19947,7 +19947,7 @@ index 8653106..022a1ad 100644
 @@ -2458,6 +2524,916 @@ void Player::RemoveFromWorld()
      }
  }
-
+ 
 +void Player::RefreshBot(uint32 diff)
 +{
 +    if (m_botTimer > 0)
@@ -20862,22 +20862,21 @@ index 8653106..022a1ad 100644
  {
      //if (m_regenTimer <= 500)
 @@ -2735,6 +3711,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
-
+ 
      // not enemy
      if (creature->IsHostileTo(this))
 +    //npcbot
 +    if (!creature->IsQuestBot())
 +    //end npcbot
          return NULL;
-
+ 
      // not unfriendly
-@@ -2923,7 +3902,41 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2923,8 +3902,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (!group)
          return;
-+    if (group)
-+        {
-+        //npcbot - player is being removed from group - remove bots from that group
++     if (group)
++     {
 +        if (Player* player = ObjectAccessor::FindPlayer(guid))
 +        {
 +            if (player->HaveBot())
@@ -20886,37 +20885,28 @@ index 8653106..022a1ad 100644
 +                Group::MemberSlotList const& members = group->GetMemberSlots();
 +                for (Group::member_citerator itr = members.begin(); itr!= members.end(); ++itr)
 +                {
-+                    if (ObjectAccessor::FindPlayer(itr->guid))
++                    if (Player* pl = ObjectAccessor::FindPlayer(itr->guid))
 +                        ++players;
 +                }
-
-+                //remove npcbots and set up new group if needed
-+                player->GetBotMgr()->RemoveAllBotsFromGroup(players > 1);
+ 
++                //remove npcbots so group will be disbanded if only 1 player
++                for (uint8 i = 0; i != player->GetMaxNpcBots(); ++i)
++                    player->RemoveBot(player->GetBotMap(i)->m_guid, players <= 1);
 +                group = player->GetGroup();
 +                if (!group)
 +                    return; //group has been disbanded
 +            }
 +        }
-+        //npcbot - bot is being removed from group - find master and remove bot through botmap
-+        else if (Creature* bot = ObjectAccessor::GetObjectInOrOutOfWorld(guid, (Creature*)NULL))
-+        {
-+            Player* master = bot->GetBotOwner();
-+            if (master && master->GetTypeId() == TYPEID_PLAYER) //check for free bot just in case
-+            {
-+                master->GetBotMgr()->RemoveBotFromGroup(bot);
-+                group = NULL;
-+                return;
-+            }
-+        }
-+        }
 +        //end npcbot
      group->RemoveMember(guid, method, kicker, reason);
++    }
  }
-
-@@ -4986,6 +5999,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+ 
+ void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
+@@ -4986,6 +5988,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
-
+ 
 +            //npcbot - erase npcbots
 +            stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_NPCBOTS);
 +            stmt->setUInt32(0, guid);
@@ -20928,25 +20918,25 @@ index 8653106..022a1ad 100644
              break;
          }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index fdebbde..5a8f0ca 100644
+index fdebbde..3768460 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,11 @@ class PlayerSocial;
  class SpellCastTargets;
  class UpdateMask;
-
+ 
 +// NpcBot mod
 +struct NpcBotMap;
 +#define MAX_NPCBOTS 39
 +class BotHelper;
 +
  typedef std::deque<Mail*> PlayerMails;
-
+ 
  #define PLAYER_MAX_SKILLS           127
 @@ -2305,6 +2310,39 @@ class Player : public Unit, public GridObject<Player>
-
+ 
          bool IsLoading() const;
-
+ 
 +        /*********************************************************/
 +        /***                     BOT SYSTEM                    ***/
 +        /*********************************************************/
@@ -20983,13 +20973,14 @@ index fdebbde..5a8f0ca 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2568,6 +2606,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2568,6 +2606,31 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
-
+ 
      private:
 +        /*********************************************************/
 +        /***                     BOT SYSTEM                    ***/
 +        /*********************************************************/
++
 +        BotHelper* _botHlpr;
 +        Creature* m_bot;
 +        int8 m_followdist;
@@ -21021,7 +21012,7 @@ index b8f5fd1..8dcf817 100644
 @@ -143,6 +143,13 @@ void Totem::UnSummon(uint32 msTime)
          }
      }
-
+ 
 +    //npcbot: send SummonedCreatureDespawn()
 +    if (IS_CREATURE_GUID(GetCreatorGUID()))
 +        if (Unit* bot = sObjectAccessor->FindUnit(GetCreatorGUID()))
@@ -21031,7 +21022,7 @@ index b8f5fd1..8dcf817 100644
 +
      AddObjectToRemoveList();
  }
-
+ 
 diff --git a/src/server/game/Entities/Unit/StatSystem.cpp b/src/server/game/Entities/Unit/StatSystem.cpp
 index 0413622..3170a37 100644
 --- a/src/server/game/Entities/Unit/StatSystem.cpp
@@ -21041,22 +21032,22 @@ index 0413622..3170a37 100644
  #include "SpellMgr.h"
  #include "World.h"
 +#include "WorldSession.h"
-
+ 
  inline bool _ModifyUInt32(bool apply, uint32& baseValue, int32& amount)
  {
 @@ -217,6 +218,10 @@ bool Player::UpdateAllStats()
      RecalculateRating(CR_ARMOR_PENETRATION);
      UpdateAllResistances();
-
+ 
 +    for (uint8 i = 0; i != GetMaxNpcBots(); ++i)
 +        if (Creature* bot = GetBotMap(i)->_Cre())
 +            bot->SetBotShouldUpdateStats();
 +
      return true;
  }
-
+ 
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index ca4780b..f4b6ed6 100644
+index ca4780b..e5aa3b5 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -338,6 +338,17 @@ void Unit::Update(uint32 p_time)
@@ -21074,13 +21065,13 @@ index ca4780b..f4b6ed6 100644
 +                m_CombatTimer -= p_time;
 +        }
 +    }
-
+ 
      // not implemented before 3.0.2
      if (uint32 base_att = getAttackTimer(BASE_ATTACK))
 @@ -575,6 +586,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
          if (pet && pet->IsAlive())
              pet->AI()->OwnerAttackedBy(this);
-
+ 
 +        // NpcBot mod: also signal owned npcbots
 +        for (ControlList::const_iterator itr = victim->ToPlayer()->m_Controlled.begin(); itr != victim->ToPlayer()->m_Controlled.end(); ++itr)
 +            if (Creature* cre = (*itr)->ToCreature())
@@ -21117,7 +21108,7 @@ index ca4780b..f4b6ed6 100644
 @@ -1167,6 +1194,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
      // Script Hook For CalculateMeleeDamage -- Allow scripts to change the Damage pre class mitigation calculations
      sScriptMgr->ModifyMeleeDamage(damageInfo->target, damageInfo->attacker, damage);
-
+ 
 +    //Npcbot mod: apply bot damage mods
 +    if (Creature* bot = ToCreature())
 +        if (bot->GetIAmABot() || bot->GetIAmABotsPet())
@@ -21132,12 +21123,12 @@ index ca4780b..f4b6ed6 100644
      if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
 +        if (!ToCreature()->GetIAmABot())
          return 0.0f;
-
+ 
      // not critting spell
 @@ -13202,6 +13235,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
-
+ 
 +    if (Player* master = ToPlayer())
 +        for (uint8 i = 0; i != master->GetMaxNpcBots(); ++i)
 +            if (Creature* bot = master->GetBotMap(i)->_Cre())
@@ -21145,7 +21136,7 @@ index ca4780b..f4b6ed6 100644
 +
      return true;
  }
-
+ 
 @@ -16643,6 +16681,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
@@ -21326,7 +21317,7 @@ index ca4780b..f4b6ed6 100644
 +                break;
 +        }
 +    }
-
+ 
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
@@ -21336,7 +21327,7 @@ index 9eb7d5e..7854903 100644
 @@ -7840,6 +7840,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
      }
  }
-
+ 
 +void ObjectMgr::LoadCreatureOutfits()
 +{
 +    uint32 oldMSTime = getMSTime();
@@ -21421,9 +21412,9 @@ index e5e55b8..2c3af91 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -144,6 +144,21 @@ struct GameTele
-
+ 
  typedef std::unordered_map<uint32, GameTele > GameTeleContainer;
-
+ 
 +#define MAX_CREATURE_OUTFIT_DISPLAYS 11
 +struct CreatureOutfit
 +{
@@ -21443,17 +21434,17 @@ index e5e55b8..2c3af91 100644
  {
      SCRIPTS_FIRST = 1,
 @@ -1011,6 +1026,7 @@ class ObjectMgr
-
+ 
          void LoadNPCSpellClickSpells();
-
+ 
 +        void LoadCreatureOutfits();
          void LoadGameTele();
-
+ 
          void LoadGossipMenu();
 @@ -1219,6 +1235,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
-
+ 
 +        CreatureOutfitContainer const& GetCreatureOutfitMap() const { return _creatureOutfitStore; }
 +
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
@@ -21462,7 +21453,7 @@ index e5e55b8..2c3af91 100644
 @@ -1365,6 +1383,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
-
+ 
 +        CreatureOutfitContainer _creatureOutfitStore;
 +
      private:
@@ -21475,17 +21466,17 @@ index 45ecbf0..24415da 100644
 @@ -107,6 +107,9 @@ bool Group::Create(Player* leader)
      if (m_groupType & GROUPTYPE_RAID)
          _initRaidSubGroupsCounter();
-
+ 
 +    if (leader->HaveBot()) //player + npcbot so set to free-for-all on create
 +        m_lootMethod = FREE_FOR_ALL;
 +    else
      if (!isLFGGroup())
          m_lootMethod = GROUP_LOOT;
-
+ 
 @@ -366,6 +369,8 @@ bool Group::AddMember(Player* player)
-
+ 
      SubGroupCounterIncrease(subGroup);
-
+ 
 +    if (IS_PLAYER_GUID(player->GetGUID()))
 +    {
      player->SetGroupInvite(NULL);
@@ -21496,35 +21487,35 @@ index 45ecbf0..24415da 100644
      if (bind && bind->save->GetInstanceId() == player->GetInstanceId())
          player->m_InstanceValid = true;
 +    }
-
+ 
      if (!isRaidGroup())                                      // reset targetIcons for non-raid-groups
      {
 @@ -406,6 +412,8 @@ bool Group::AddMember(Player* player)
      SendUpdate();
      sScriptMgr->OnGroupAddMember(this, player->GetGUID());
-
+ 
 +    if (IS_PLAYER_GUID(player->GetGUID()))
 +    {
      if (!IsLeader(player->GetGUID()) && !isBGGroup() && !isBFGroup())
      {
          // reset the new member's instances, unless he is currently in one of them
 @@ -481,6 +489,7 @@ bool Group::AddMember(Player* player)
-
+ 
      if (m_maxEnchantingLevel < player->GetSkillValue(SKILL_ENCHANTING))
          m_maxEnchantingLevel = player->GetSkillValue(SKILL_ENCHANTING);
 +    }
-
+ 
      return true;
  }
 @@ -604,6 +613,9 @@ bool Group::RemoveMember(uint64 guid, const RemoveMethod& method /*= GROUP_REMOV
          }
-
+ 
          if (m_memberMgr.getSize() < ((isLFGGroup() || isBGGroup()) ? 1u : 2u))
 +        //npcbot
 +        if (GetMembersCount() < ((isBGGroup() || isLFGGroup()) ? 1u : 2u))
 +        //end npcbot
              Disband();
-
+ 
          return true;
 diff --git a/src/server/game/Groups/Group.h b/src/server/game/Groups/Group.h
 index f0061a7..6d28e40 100644
@@ -21533,7 +21524,7 @@ index f0061a7..6d28e40 100644
 @@ -309,6 +309,9 @@ class Group
          // FG: evil hacks
          void BroadcastGroupUpdate(void);
-
+ 
 +        //Bot
 +        uint64 const *GetTargetIcons() const { return m_targetIcons; }
 +
@@ -21546,8 +21537,8 @@ index 9ad382b..c0cb384 100644
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,9 @@
  #include "WorldSession.h"
-
-
+ 
+ 
 +//bot
 +#include "Config.h"
 +
@@ -21557,7 +21548,7 @@ index 9ad382b..c0cb384 100644
 @@ -1040,6 +1043,34 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      // Handle Login-Achievements (should be handled after loading)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
-
+ 
 +    //the only place where we check if it has NPC bots
 +    if (sConfigMgr->GetBoolDefault("Bot.EnableNpcBots", true))
 +    {
@@ -21587,7 +21578,7 @@ index 9ad382b..c0cb384 100644
 +    }
 +
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
-
+ 
      delete holder;
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
 index c4ff258..8e33fc8 100644
@@ -21596,7 +21587,7 @@ index c4ff258..8e33fc8 100644
 @@ -56,6 +56,9 @@
  #include "Battlefield.h"
  #include "BattlefieldMgr.h"
-
+ 
 +//Bot
 +#include "bothelper.h"
 +
@@ -21663,7 +21654,7 @@ index d8a518a..5b9a19c 100644
 @@ -38,6 +38,9 @@
  #include "CreatureAI.h"
  #include "SpellInfo.h"
-
+ 
 +//Bot
 +#include "bothelper.h"
 +
@@ -21673,7 +21664,7 @@ index d8a518a..5b9a19c 100644
 @@ -303,6 +306,36 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recvData)
      uint64 guid;
      recvData >> guid;
-
+ 
 +    //Bot
 +    if (guid == _player->GetGUID())
 +    {
@@ -21714,7 +21705,7 @@ index ba30803..896c522 100644
 @@ -568,6 +568,36 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
      if (!unit)
          return;
-
+ 
 +    //bot
 +    if (unit->ToCreature())
 +    {
@@ -21747,7 +21738,7 @@ index ba30803..896c522 100644
 +
      if (!unit->HasAuraType(SPELL_AURA_CLONE_CASTER))
          return;
-
+ 
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
 index 01e3af1..fef8b2e 100644
 --- a/src/server/game/Maps/Map.cpp
@@ -21762,7 +21753,7 @@ index 01e3af1..fef8b2e 100644
 +        }
      return count;
  }
-
+ 
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
 index 8d0e97d..0a82857 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
@@ -21772,7 +21763,7 @@ index 8d0e97d..0a82857 100644
  #include "ScriptMgr.h"
  #include "Player.h"
 +#include "WorldSession.h"
-
+ 
  namespace Trinity
  {
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
@@ -21780,7 +21771,7 @@ index f1359b7..cc32b73 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -1440,6 +1440,21 @@ void AddBattlegroundScripts()
-
+ 
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
 +//Bots
@@ -21798,9 +21789,9 @@ index f1359b7..cc32b73 100644
 +//advanced
 +void AddSC_BotQuests_chapter1();
 +//end Bots
-
+ 
  #endif
-
+ 
 @@ -1447,6 +1462,21 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
@@ -21820,7 +21811,7 @@ index f1359b7..cc32b73 100644
 +    //advanced
 +    AddSC_BotQuests_chapter1();
 +    //end Bots
-
+ 
  #endif
  }
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
@@ -21856,7 +21847,7 @@ index 9f8b378..66c631b 100644
 +            if (nBotCount == 0 || !_player->GetMap()->Instanceable())
 +            //end bot
              _player->RemoveFromGroup();
-
+ 
          //! Send update to group and reset stored max enchanting level
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
 index c8c81a4..ed652c7 100644
@@ -21865,7 +21856,7 @@ index c8c81a4..ed652c7 100644
 @@ -204,6 +204,31 @@ struct PacketCounter
      uint32 amountCounter;
  };
-
+ 
 +//npcbot
 +struct NpcBotMap
 +{
@@ -21901,25 +21892,25 @@ index 78470d4..8a4ba99 100644
 @@ -1443,6 +1443,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
-
+ 
 +    TC_LOG_INFO("server.loading", "Loading Creature template outfits...");     // must be after LoadCreatureTemplates
 +    sObjectMgr->LoadCreatureOutfits();
 +
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
-
+ 
 diff --git a/src/server/scripts/Spells/spell_priest.cpp b/src/server/scripts/Spells/spell_priest.cpp
 index 76781e0..75b98d7 100644
 --- a/src/server/scripts/Spells/spell_priest.cpp
 +++ b/src/server/scripts/Spells/spell_priest.cpp
 @@ -568,6 +568,7 @@ class spell_pri_penance : public SpellScriptLoader
-
+ 
              bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster()->GetTypeId() == TYPEID_PLAYER;
              }
-
+ 
 @@ -610,6 +611,8 @@ class spell_pri_penance : public SpellScriptLoader
              SpellCastResult CheckCast()
              {
@@ -21930,13 +21921,13 @@ index 76781e0..75b98d7 100644
                      if (!caster->IsFriendlyTo(target) && !caster->IsValidAttackTarget(target))
                          return SPELL_FAILED_BAD_TARGETS;
 @@ -751,6 +754,7 @@ class spell_pri_renew : public SpellScriptLoader
-
+ 
              bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster() && GetCaster()->GetTypeId() == TYPEID_PLAYER;
              }
-
+ 
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 index 24e61e7..8641889 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
@@ -21967,7 +21958,7 @@ index 98d7fe2..315bfc7 100644
 @@ -534,6 +534,16 @@ enum CharacterDatabaseStatements
      CHAR_DEL_ITEMCONTAINER_MONEY,
      CHAR_INS_ITEMCONTAINER_MONEY,
-
+ 
 +    // Bot
 +    CHAR_SEL_NPCBOTS,
 +    CHAR_DEL_NPCBOTS,
@@ -21980,7 +21971,7 @@ index 98d7fe2..315bfc7 100644
 +
      MAX_CHARACTERDATABASE_STATEMENTS
  };
-
+ 
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
 index d0e9c46..0531136 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
@@ -22001,20 +21992,20 @@ index a815373..ac74483 100644
 @@ -112,6 +112,10 @@ enum WorldDatabaseStatements
      WORLD_DEL_DISABLES,
      WORLD_SEL_REQ_XP,
-
+ 
 +    // Bot
 +    WORLD_SEL_NPCBOT_TEMPLATE,
 +    WORLD_SEL_NPCBOT_PET_LEVELSTATS,
 +
      MAX_WORLDDATABASE_STATEMENTS
  };
-
+ 
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
 index 90f330b..4b7d2d4 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2786,3 +2786,107 @@ PacketSpoof.BanDuration = 86400
-
+ 
  #
  ###################################################################################################
 +
@@ -22121,6 +22112,6 @@ index 90f330b..4b7d2d4 100644
 +
 +#
 +###################################################################################################
---
+-- 
 1.7.10.4
 
