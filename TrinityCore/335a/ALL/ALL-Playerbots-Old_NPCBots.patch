@@ -1,7 +1,7 @@
-﻿From ed5de5d2ad430cb379f4ef205698adf4a190c8d7 Mon Sep 17 00:00:00 2001
+From 842dec478dbb07070d3536c792df7b5879281934 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 29 Jun 2014 17:39:03 -0400
-Subject: [PATCH] ALL-Playerbots-Old_NPCBots
+Date: Wed, 2 Jul 2014 17:08:01 -0400
+Subject: [PATCH] ALL-Playerbots-OLD_NPCBots
 
 ---
  HowTo-Congrats-On-Level.txt                        |   38 +
@@ -9,17 +9,20 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  cmake/compiler/msvc/settings.cmake                 |    2 +-
  doc/AuctionHouseBot.txt                            |  235 +
  npc-entry-list.txt                                 |    4 +
+ sql/TrinityCore-Patches/AHBot/character.ahbot.sql  |   72 +
  sql/TrinityCore-Patches/All-In-One/auth_AIO.sql    |   11 +
  .../All-In-One/characters_AIO.sql                  |    1 +
  sql/TrinityCore-Patches/All-In-One/world_AIO.sql   |   31 +
- sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql  |   59 +
- sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql       |  502 +
+ .../AntiCheat/characters.anticheat.sql             |   30 +
+ .../ArenaGambler/CharactersDB.sql                  |   59 +
+ sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql   |  502 +
+ .../CrossFactionBG/world.CrossFactionBG-AVFix.sql  |    3 +
  .../GuildLevelSystem/auth_guild_level_system.sql   |    7 +
  .../characters_guild_level_system.sql              |   55 +
  .../GuildLevelSystem/world_guild_level_system.sql  |    6 +
  .../auth_individuale_xp_raten.sql                  |    5 +
  .../world_individuale_xp_raten.sql                 |    8 +
- .../Playerbot_NPCBots/auth_rbac.sql                |   30 +
+ .../Playerbot_NPCBots/auth_rbac.sql                |   31 +
  .../Playerbot_NPCBots/character_NPC_bots.sql       |   28 +
  ...world_bot_helper_locales_gossip_menu_option.sql |   92 +
  .../Playerbot_NPCBots/world_bots.sql               |  562 +
@@ -27,6 +30,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  .../Reforging/char_db_reforges.sql                 |   11 +
  sql/TrinityCore-Patches/Reforging/reforger_npc.sql |    1 +
  .../SummonNPC/world.summonnpc-item.sql             |    3 +
+ .../TeleNPC2/world.npc_teleport.sql                |  119 +
  .../Transmogrification/characters.sql              |   23 +
  .../Transmogrification/updates/_README.txt         |    1 +
  .../updates/characters_update_2_1_to_2_2.sql       |   12 +
@@ -47,10 +51,6 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  .../guildhouses/world_guildhouses.sql              |   67 +
  .../npc_buff/world_npc_buff.sql                    |   62 +
  .../profession_npc/world_professionnpc.sql         |    4 +
- sql/TrinityCore-Patches/world.npc_teleport.sql     |  119 +
- sql/anticheat.sql                                  |   30 +
- sql/custom/AVFix.sql                               |    3 +
- sql/tools/setup_ahbot.sql                          |   72 +
  src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp    |  121 +
  src/server/game/AI/NpcBots/bot_GridNotifiers.h     |  594 +
  src/server/game/AI/NpcBots/bot_ai.cpp              | 5027 +++++++++
@@ -93,7 +93,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  src/server/game/AI/PlayerBots/PlayerbotWarriorAI.h |  103 +
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  380 +
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 +
- src/server/game/Accounts/RBAC.h                    |   21 +
+ src/server/game/Accounts/RBAC.h                    |   19 +
  src/server/game/Anticheat/AnticheatData.cpp        |  118 +
  src/server/game/Anticheat/AnticheatData.h          |   63 +
  src/server/game/Anticheat/AnticheatMgr.cpp         |  434 +
@@ -134,7 +134,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  .../game/Entities/Creature/TemporarySummon.cpp     |    8 +
  src/server/game/Entities/Item/ItemPrototype.h      |    9 +-
  src/server/game/Entities/Object/Object.cpp         |   11 +
- src/server/game/Entities/Player/Player.cpp         | 1307 ++-
+ src/server/game/Entities/Player/Player.cpp         | 1305 ++-
  src/server/game/Entities/Player/Player.h           |  144 +-
  src/server/game/Entities/Totem/Totem.cpp           |    7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |    5 +
@@ -164,7 +164,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  src/server/game/Miscellaneous/Formulas.h           |   16 +-
  src/server/game/Miscellaneous/Language.h           |   27 +-
  src/server/game/Reputation/ReputationMgr.cpp       |   10 +
- src/server/game/Scripting/ScriptLoader.cpp         |   67 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |  100 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
  src/server/game/Server/WorldSession.cpp            |  105 +-
  src/server/game/Server/WorldSession.h              |   41 +
@@ -249,17 +249,20 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
- src/server/worldserver/worldserver.conf.dist       | 1122 ++
- 246 files changed, 69105 insertions(+), 140 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       | 1124 ++
+ 246 files changed, 69138 insertions(+), 139 deletions(-)
  create mode 100644 HowTo-Congrats-On-Level.txt
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 npc-entry-list.txt
+ create mode 100644 sql/TrinityCore-Patches/AHBot/character.ahbot.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/auth_AIO.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/characters_AIO.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/world_AIO.sql
+ create mode 100644 sql/TrinityCore-Patches/AntiCheat/characters.anticheat.sql
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
+ create mode 100644 sql/TrinityCore-Patches/CrossFactionBG/world.CrossFactionBG-AVFix.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
@@ -273,6 +276,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  create mode 100644 sql/TrinityCore-Patches/Reforging/char_db_reforges.sql
  create mode 100644 sql/TrinityCore-Patches/Reforging/reforger_npc.sql
  create mode 100644 sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
+ create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
@@ -293,10 +297,6 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  create mode 100644 sql/TrinityCore-Patches/guildhouses/world_guildhouses.sql
  create mode 100644 sql/TrinityCore-Patches/npc_buff/world_npc_buff.sql
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
- create mode 100644 sql/TrinityCore-Patches/world.npc_teleport.sql
- create mode 100644 sql/anticheat.sql
- create mode 100644 sql/custom/AVFix.sql
- create mode 100644 sql/tools/setup_ahbot.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
  create mode 100644 src/server/game/AI/NpcBots/bot_GridNotifiers.h
  create mode 100644 src/server/game/AI/NpcBots/bot_ai.cpp
@@ -485,10 +485,10 @@ index 3194967..6aa603a 100644
 @@ -1,7 +1,7 @@
  # set up output paths for executable binaries (.exe-files, and .dll-files on DLL-capable platforms)
  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
- 
+
 -set(MSVC_EXPECTED_VERSION 18.0)
 +set(MSVC_EXPECTED_VERSION 16.0)
- 
+
  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS MSVC_EXPECTED_VERSION)
    message(FATAL_ERROR "MSVC: TrinityCore requires version ${MSVC_EXPECTED_VERSION} (MSVC 2013) to build but found ${CMAKE_CXX_COMPILER_VERSION}")
 diff --git a/doc/AuctionHouseBot.txt b/doc/AuctionHouseBot.txt
@@ -743,6 +743,84 @@ index 0000000..249da26
 +Enchant:
 +100067 - Young Woman
 \ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/AHBot/character.ahbot.sql b/sql/TrinityCore-Patches/AHBot/character.ahbot.sql
+new file mode 100644
+index 0000000..767a01e
+--- /dev/null
++++ b/sql/TrinityCore-Patches/AHBot/character.ahbot.sql
+@@ -0,0 +1,72 @@
++CREATE TABLE `auctionhousebot` (
++    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
++    `name` CHAR(25) NULL DEFAULT NULL COMMENT 'Text name of the auctionhouse.',
++    `minitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the minimum number of items you want to keep in the auction house. a 0 here will make it the same as the maximum.',
++    `maxitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the number of items you want to keep in the auction house.',
++    `percentgreytradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Grey Trade Goods auction items',
++    `percentwhitetradegoods` INT(11) NULL DEFAULT '27' COMMENT 'Sets the percentage of the White Trade Goods auction items',
++    `percentgreentradegoods` INT(11) NULL DEFAULT '12' COMMENT 'Sets the percentage of the Green Trade Goods auction items',
++    `percentbluetradegoods` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the Blue Trade Goods auction items',
++    `percentpurpletradegoods` INT(11) NULL DEFAULT '1' COMMENT 'Sets the percentage of the Purple Trade Goods auction items',
++    `percentorangetradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Orange Trade Goods auction items',
++    `percentyellowtradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Yellow Trade Goods auction items',
++    `percentgreyitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Grey auction items',
++    `percentwhiteitems` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the non trade White auction items',
++    `percentgreenitems` INT(11) NULL DEFAULT '30' COMMENT 'Sets the percentage of the non trade Green auction items',
++    `percentblueitems` INT(11) NULL DEFAULT '8' COMMENT 'Sets the percentage of the non trade Blue auction items',
++    `percentpurpleitems` INT(11) NULL DEFAULT '2' COMMENT 'Sets the percentage of the non trade Purple auction items',
++    `percentorangeitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Orange auction items',
++    `percentyellowitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Yellow auction items',
++    `minpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Minimum price of Grey items (percentage).',
++    `maxpricegrey` INT(11) NULL DEFAULT '150' COMMENT 'Maximum price of Grey items (percentage).',
++    `minpricewhite` INT(11) NULL DEFAULT '150' COMMENT 'Minimum price of White items (percentage).',
++    `maxpricewhite` INT(11) NULL DEFAULT '250' COMMENT 'Maximum price of White items (percentage).',
++    `minpricegreen` INT(11) NULL DEFAULT '800' COMMENT 'Minimum price of Green items (percentage).',
++    `maxpricegreen` INT(11) NULL DEFAULT '1400' COMMENT 'Maximum price of Green items (percentage).',
++    `minpriceblue` INT(11) NULL DEFAULT '1250' COMMENT 'Minimum price of Blue items (percentage).',
++    `maxpriceblue` INT(11) NULL DEFAULT '1750' COMMENT 'Maximum price of Blue items (percentage).',
++    `minpricepurple` INT(11) NULL DEFAULT '2250' COMMENT 'Minimum price of Purple items (percentage).',
++    `maxpricepurple` INT(11) NULL DEFAULT '4550' COMMENT 'Maximum price of Purple items (percentage).',
++    `minpriceorange` INT(11) NULL DEFAULT '3250' COMMENT 'Minimum price of Orange items (percentage).',
++    `maxpriceorange` INT(11) NULL DEFAULT '5550' COMMENT 'Maximum price of Orange items (percentage).',
++    `minpriceyellow` INT(11) NULL DEFAULT '5250' COMMENT 'Minimum price of Yellow items (percentage).',
++    `maxpriceyellow` INT(11) NULL DEFAULT '6550' COMMENT 'Maximum price of Yellow items (percentage).',
++    `minbidpricegrey` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 70',
++    `maxbidpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricewhite` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 70',
++    `maxbidpricewhite` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricegreen` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpricegreen` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceblue` INT(11) NULL DEFAULT '75' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 75',
++    `maxbidpriceblue` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricepurple` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpricepurple` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceorange` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpriceorange` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceyellow` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpriceyellow` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 100',
++    `maxstackgrey` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackwhite` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackgreen` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackblue` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackpurple` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackorange` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackyellow` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `buyerpricegrey` INT(11) NULL DEFAULT '1' COMMENT 'Multiplier to vendorprice when buying grey items from auctionhouse',
++    `buyerpricewhite` INT(11) NULL DEFAULT '3' COMMENT 'Multiplier to vendorprice when buying white items from auctionhouse',
++    `buyerpricegreen` INT(11) NULL DEFAULT '5' COMMENT 'Multiplier to vendorprice when buying green items from auctionhouse',
++    `buyerpriceblue` INT(11) NULL DEFAULT '12' COMMENT 'Multiplier to vendorprice when buying blue items from auctionhouse',
++    `buyerpricepurple` INT(11) NULL DEFAULT '15' COMMENT 'Multiplier to vendorprice when buying purple items from auctionhouse',
++    `buyerpriceorange` INT(11) NULL DEFAULT '20' COMMENT 'Multiplier to vendorprice when buying orange items from auctionhouse',
++    `buyerpriceyellow` INT(11) NULL DEFAULT '22' COMMENT 'Multiplier to vendorprice when buying yellow items from auctionhouse',
++    `buyerbiddinginterval` INT(11) NULL DEFAULT '1' COMMENT 'Interval how frequently AHB bids on each AH. Time in minutes',
++    `buyerbidsperinterval` INT(11) NULL DEFAULT '1' COMMENT 'number of bids to put in per bidding interval',
++    PRIMARY KEY (`auctionhouse`)
++)
++ENGINE=InnoDB
++ROW_FORMAT=DEFAULT;
++
++insert  into `auctionhousebot`(`auctionhouse`,`name`,`minitems`,`maxitems`,`percentgreytradegoods`,`percentwhitetradegoods`,`percentgreentradegoods`,`percentbluetradegoods`,`percentpurpletradegoods`,`percentorangetradegoods`,`percentyellowtradegoods`,`percentgreyitems`,`percentwhiteitems`,`percentgreenitems`,`percentblueitems`,`percentpurpleitems`,`percentorangeitems`,`percentyellowitems`,`minpricegrey`,`maxpricegrey`,`minpricewhite`,`maxpricewhite`,`minpricegreen`,`maxpricegreen`,`minpriceblue`,`maxpriceblue`,`minpricepurple`,`maxpricepurple`,`minpriceorange`,`maxpriceorange`,`minpriceyellow`,`maxpriceyellow`,`minbidpricegrey`,`maxbidpricegrey`,`minbidpricewhite`,`maxbidpricewhite`,`minbidpricegreen`,`maxbidpricegreen`,`minbidpriceblue`,`maxbidpriceblue`,`minbidpricepurple`,`maxbidpricepurple`,`minbidpriceorange`,`maxbidpriceorange`,`minbidpriceyellow`,`maxbidpriceyellow`,`maxstackgrey`,`maxstackwhite`,`maxstackgreen`,`maxstackblue`,`maxstackpurple`,`maxstackorange`,`maxstackyellow`,`buyerpricegrey`,`buyerpricewhite`,`buyerpricegreen`,`buyerpriceblue`,`buyerpricepurple`,`buyerpriceorange`,`buyerpriceyellow`,`buyerbiddinginterval`,`buyerbidsperinterval`) values
++(2,'Alliance',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
++(6,'Horde',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
++(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/sql/TrinityCore-Patches/All-In-One/auth_AIO.sql b/sql/TrinityCore-Patches/All-In-One/auth_AIO.sql
 new file mode 100644
 index 0000000..ed0d7ea
@@ -805,6 +883,43 @@ index 0000000..7b65a66
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('80000','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','1755','1755','0','1504','1','1500','0','1','0','2048','0','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_all','0');
 +-- end
+diff --git a/sql/TrinityCore-Patches/AntiCheat/characters.anticheat.sql b/sql/TrinityCore-Patches/AntiCheat/characters.anticheat.sql
+new file mode 100644
+index 0000000..3504594
+--- /dev/null
++++ b/sql/TrinityCore-Patches/AntiCheat/characters.anticheat.sql
+@@ -0,0 +1,30 @@
++DROP TABLE IF EXISTS `players_reports_status`;
++
++CREATE TABLE `players_reports_status` (
++  `guid` int(10) unsigned NOT NULL DEFAULT '0',
++  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
++  `average` float NOT NULL DEFAULT '0',
++  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  PRIMARY KEY (`guid`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
++
++DROP TABLE IF EXISTS `daily_players_reports`;
++CREATE TABLE `daily_players_reports` (
++  `guid` int(10) unsigned NOT NULL DEFAULT '0',
++  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
++  `average` float NOT NULL DEFAULT '0',
++  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  PRIMARY KEY (`guid`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
+\ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
 new file mode 100644
 index 0000000..ac486b2
@@ -1378,6 +1493,15 @@ index 0000000..952985e
 +(72037, 194608, 571, 1, 1, 8368.94, 708.93, 553.772, 2.93164, 0, 0, 0.994495, 0.104784, 30, 0, 1),
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
+diff --git a/sql/TrinityCore-Patches/CrossFactionBG/world.CrossFactionBG-AVFix.sql b/sql/TrinityCore-Patches/CrossFactionBG/world.CrossFactionBG-AVFix.sql
+new file mode 100644
+index 0000000..a0c7eb9
+--- /dev/null
++++ b/sql/TrinityCore-Patches/CrossFactionBG/world.CrossFactionBG-AVFix.sql
+@@ -0,0 +1,3 @@
++UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
++
++UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
 diff --git a/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql b/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
 new file mode 100644
 index 0000000..598b496
@@ -1472,11 +1596,11 @@ index 0000000..145342c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Individuale_XP-Raten/auth_individuale_xp_raten.sql
 @@ -0,0 +1,5 @@
-+INSERT INTO `rbac_permissions` VALUES ('1015', 'Command: modify xpkill');
-+INSERT INTO `rbac_permissions` VALUES ('1016', 'Command: modify xpquest');
++INSERT INTO `rbac_permissions` VALUES ('1010', 'Command: modify xpkill');
++INSERT INTO `rbac_permissions` VALUES ('1011', 'Command: modify xpquest');
 +
-+INSERT INTO `rbac_linked_permissions` VALUES ('195', '1015');
-+INSERT INTO `rbac_linked_permissions` VALUES ('195', '1016');
++INSERT INTO `rbac_linked_permissions` VALUES ('195', '1010');
++INSERT INTO `rbac_linked_permissions` VALUES ('195', '1011');
 diff --git a/sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql b/sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql
 new file mode 100644
 index 0000000..f310d3d
@@ -1494,38 +1618,41 @@ index 0000000..f310d3d
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
 new file mode 100644
-index 0000000..ac47f4b
+index 0000000..230f077
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,31 @@
++SET @NPCB_PERM := '1100';
 +
++DELETE FROM `rbac_permissions` WHERE `id` BETWEEN @NPCB_PERM AND @NPCB_PERM+11;
 +INSERT INTO `rbac_permissions` (`id`,`name`) VALUES
-+(1017+0,'npcbot'),
-+(1017+1,'npcbot add'),
-+(1017+2,'npcbot remove'),
-+(1017+3,'npcbot reset'),
-+(1017+4,'npcbot command'),
-+(1017+5,'npcbot distance'),
-+(1017+6,'npcbot info'),
-+(1017+9,'npcbot helper'),
-+(1017+10,'npcbot revive'),
-+(1017+11,'bot'),
-+(1017+12,'bot add'),
-+(1017+13,'bot remove');
++(@NPCB_PERM+0,'npcbot'),
++(@NPCB_PERM+1,'npcbot add'),
++(@NPCB_PERM+2,'npcbot remove'),
++(@NPCB_PERM+3,'npcbot reset'),
++(@NPCB_PERM+4,'npcbot command'),
++(@NPCB_PERM+5,'npcbot distance'),
++(@NPCB_PERM+6,'npcbot info'),
++(@NPCB_PERM+7,'npcbot helper'),
++(@NPCB_PERM+8,'npcbot revive'),
++(@NPCB_PERM+9,'bot'),
++(@NPCB_PERM+10,'bot add'),
++(@NPCB_PERM+11,'bot remove');
 +
++DELETE FROM `rbac_linked_permissions` WHERE `linkedId` BETWEEN @NPCB_PERM AND @NPCB_PERM+11;
 +INSERT INTO `rbac_linked_permissions` (`id`,`linkedId`) VALUES
-+('199',1017+0), -- player command .npcbot
-+('199',1017+1), -- player command .npcbot add
-+('199',1017+2), -- player command .npcbot remove
-+('199',1017+3), -- player command .npcbot reset
-+('199',1017+4), -- player command .npcbot command
-+('199',1017+5), -- player command .npcbot distance
-+('199',1017+6), -- player command .npcbot info
-+('199',1017+9), -- player command .npcbot helper
-+('198',1017+10), -- moderator command .npcbot revive
-+('199',1017+11), -- player command .bot
-+('199',1017+12), -- player command .bot add
-+('199',1017+13); -- player command .bot remove
++('199',@NPCB_PERM+0), -- player command .npcbot
++('199',@NPCB_PERM+1), -- player command .npcbot add
++('199',@NPCB_PERM+2), -- player command .npcbot remove
++('199',@NPCB_PERM+3), -- player command .npcbot reset
++('199',@NPCB_PERM+4), -- player command .npcbot command
++('199',@NPCB_PERM+5), -- player command .npcbot distance
++('199',@NPCB_PERM+6), -- player command .npcbot info
++('199',@NPCB_PERM+7), -- player command .npcbot helper
++('198',@NPCB_PERM+8), -- moderator command .npcbot revive
++('199',@NPCB_PERM+9), -- player command .bot
++('199',@NPCB_PERM+10), -- player command .bot add
++('199',@NPCB_PERM+11); -- player command .bot remove
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql b/sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
 new file mode 100644
@@ -2294,11 +2421,11 @@ index 0000000..0a7673f
 +ROW_FORMAT=COMPACT;
 diff --git a/sql/TrinityCore-Patches/Reforging/reforger_npc.sql b/sql/TrinityCore-Patches/Reforging/reforger_npc.sql
 new file mode 100644
-index 0000000..64b2636
+index 0000000..2c3a89b
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Reforging/reforger_npc.sql
 @@ -0,0 +1 @@
-+INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES (190011, 20988, 0, 0, 0, 'Thaumaturge Vashreen', 'Arcane Reforger', NULL, 0, 80, 80, 2, 35, 1, 1, 1.14286, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC', 0);
++INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES (190011, 20988, 0, 0, 0, 'Thaumaturge Vashreen', 'Arcane Reforger', NULL, 0, 80, 80, 2, 35, 1, 1, 1.14286, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC', 0);
 diff --git a/sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql b/sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
 new file mode 100644
 index 0000000..885c104
@@ -2308,6 +2435,131 @@ index 0000000..885c104
 +-- Example item:
 +insert into `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `StatsCount`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `flagsCustom`, `VerifiedBuild`) values
 +('100000','15','0','-1','Icerune','46787','4','72','0','1','0','0','0','-1','-1','1','1','0','0','0','0','0','0','6','1','1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','18282','0','0','0','8000','0','-1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','1','|cff00FF00Use: Summons Lithathrad Teleporter.|r','0','0','0','0','0','3','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','-1','0','0','0','0','summon','0','0','0','0','0','-4');
+diff --git a/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
+new file mode 100644
+index 0000000..52372d0
+--- /dev/null
++++ b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
+@@ -0,0 +1,119 @@
++DROP TABLE IF EXISTS `custom_npc_tele_category`;
++CREATE TABLE `custom_npc_tele_category` (
++  `id` int(6) unsigned NOT NULL default '0',
++  `name` varchar(255) NOT NULL default '',
++  `flag` tinyint(3) unsigned NOT NULL default '0',
++  `data0` bigint(20) unsigned NOT NULL default '0',
++  `data1` int(6) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM DEFAULT CHARSET=utf8;
++
++DROP TABLE IF EXISTS `custom_npc_tele_destination`;
++CREATE TABLE `custom_npc_tele_destination` (
++  `id` int(6) unsigned NOT NULL auto_increment,
++  `name` char(100) NOT NULL default '',
++  `pos_X` float NOT NULL default '0',
++  `pos_Y` float NOT NULL default '0',
++  `pos_Z` float NOT NULL default '0',
++  `map` smallint(5) unsigned NOT NULL default '0',
++  `orientation` float NOT NULL default '0',
++  `level` tinyint(3) unsigned NOT NULL default '0',
++  `cost` int(10) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
++
++DROP TABLE IF EXISTS `custom_npc_tele_association`;
++CREATE TABLE `custom_npc_tele_association` (
++  `cat_id` int(6) unsigned NOT NULL default '0',
++  `dest_id` int(6) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`cat_id`, `dest_id`)
++) ENGINE=MyISAM DEFAULT CHARSET=utf8;
++
++TRUNCATE `custom_npc_tele_category`;
++INSERT INTO `custom_npc_tele_category`
++   (`id`, `name`, `flag`, `data0`, `data1`)
++VALUES
++   (1, 'Cities', 0, 1, 0),
++   (2, 'Cities', 0, 2, 0),
++   (3, 'Battlegrounds', 0, 1, 0),
++   (4, 'Battlegrounds', 0, 2, 0),
++   (5, 'Arenas', 0, 0, 0),
++   (6, '[Instances Lvl 1-60]', 0, 0, 0),
++   (7, '[Instances Lvl 60+]', 5, 60, 0),
++   (8, '[Instances Lvl 70+]', 5, 70, 0),
++   (9, 'Destinations MJ', 3, 0, 0);
++
++TRUNCATE `custom_npc_tele_destination`;
++INSERT INTO `custom_npc_tele_destination`
++   (`id`, `name`, `pos_X`, `pos_Y`, `pos_Z`, `map`, `orientation`, `level`, `cost`)
++VALUES
++   (1, 'Alterac Valley', 883.187, -489.375, 96.7618, 30, 3.06932, 0, 0),
++   (2, 'Alterac Valley', -818.155, -623.043, 54.0884, 30, 2.1, 0, 0),
++   (3, 'Arathi Basin', 686.053, 683.165, -12.9149, 529, 0.18, 0, 0),
++   (4, 'Arathi Basin', 1308.68, 1306.03, -9.0107, 529, 3.91285, 0, 0),
++   (5, 'Black Temple', -3610.72, 324.988, 37.4, 530, 3.28298, 0, 0),
++   (6, 'Blackfathom Deeps', 4254.58, 664.74, -29.04, 1, 1.97, 0, 0),
++   (7, 'Blackrock Depths', -7301.03, -913.19, 165.37, 0, 0.08, 0, 0),
++   (8, 'Blackrock Spire', -7535.43, -1212.04, 285.45, 0, 5.29, 0, 0),
++   (9, 'Blackwing Lair', -7665.55, -1102.49, 400.679, 469, 0, 0, 0),
++   (10, 'Caverns of Time', -8173.66, -4746.36, 33.8423, 1, 4.93989, 0, 0),
++   (11, 'Circle of Blood', 2839.44, 5930.17, 11.1002, 530, 3.16284, 0, 0),
++   (12, 'Coilfang Reservoir', 517.288, 6976.28, 32.0072, 530, 0, 0, 0),
++   (13, 'Darnassus', 9947.52, 2482.73, 1316.21, 1, 0, 0, 0),
++   (14, 'Dire Maul', -3982.47, 1127.79, 161.02, 1, 0.05, 0, 0),
++   (15, 'Exodar', -4073.03, -12020.4, -1.47, 530, 0, 0, 0),
++   (16, 'Eye of the Storm', 2487.72, 1609.12, 1224.64, 566, 3.35671, 0, 0),
++   (17, 'Eye of the Storm', 1843.73, 1529.77, 1224.43, 566, 0.297579, 0, 0),
++   (18, 'Goldshire', -9464, 62, 56, 0, 0, 0, 0),
++   (19, 'Gruul\'s Lair', 3539.01, 5082.36, 1.69107, 530, 0, 0, 0),
++   (20, 'Gurubashi', -13261.3, 168.294, 35.0792, 0, 1.00688, 0, 0),
++   (21, 'Hellfire Citadel', -305.816, 3056.4, -2.47318, 530, 2.01, 0, 0),
++   (22, 'Ironforge', -4924.07, -951.95, 501.55, 0, 5.4, 0, 0),
++   (23, 'Isle Of Quel\'Danas', 12947.4, -6893.31, 5.68398, 530, 3.09154, 0, 0),
++   (24, 'Karazhan', -11118.8, -2010.84, 47.0807, 0, 0, 0, 0),
++   (25, 'Maraudon', -1433.33, 2955.34, 96.21, 1, 4.82, 0, 0),
++   (26, 'Molten Core', 1121.45, -454.317, -101.33, 230, 3.5, 0, 0),
++   (27, 'Naxxramas', 3125.18, -3748.02, 136.049, 0, 0, 0, 0),
++   (28, 'Onyxia\'s Lair', -4707.44, -3726.82, 54.6723, 1, 3.8, 0, 0),
++   (29, 'Orgrimmar', 1552.5, -4420.66, 8.94802, 1, 0, 0, 0),
++   (30, 'Razor Hill', 315.721, -4743.4, 10.4867, 1, 0, 0, 0),
++   (31, 'Razorfen Downs', -4645.08, -2470.85, 85.53, 1, 4.39, 0, 0),
++   (32, 'Razorfen Kraul', -4484.04, -1739.4, 86.47, 1, 1.23, 0, 0),
++   (33, 'Ring of Trials', -1999.94, 6581.71, 11.32, 530, 2.3, 0, 0),
++   (34, 'Ruins of Ahn\'Qiraj', -8409.03, 1498.83, 27.3615, 1, 2.49757, 0, 0),
++   (35, 'Scholomance', 1219.01, -2604.66, 85.61, 0, 0.5, 0, 0),
++   (36, 'Shadowfang Keep', -254.47, 1524.68, 76.89, 0, 1.56, 0, 0),
++   (37, 'Shattrath City', -1850.21, 5435.82, -10.9614, 530, 3.40391, 0, 0),
++   (38, 'Silvermoon', 9338.74, -7277.27, 13.7895, 530, 0, 0, 0),
++   (39, 'Stormwind', -8960.14, 516.266, 96.3568, 0, 0, 0, 0),
++   (40, 'Stratholme', 3263.54, -3379.46, 143.59, 0, 0, 0, 0),
++   (41, 'Tempest Keep', 3089.58, 1399.05, 187.653, 530, 4.79407, 0, 0),
++   (42, 'Temple of Ahn\'Qiraj', -8245.84, 1983.74, 129.072, 1, 0.936195, 0, 0),
++   (43, 'The Deadmines', -11212, 1658.58, 25.67, 0, 1.45, 0, 0),
++   (44, 'The Maul', -3761.49, 1133.43, 132.083, 1, 4.57259, 0, 0),
++   (45, 'The Scarlet Monastery', 2843.89, -693.74, 139.32, 0, 5.11, 0, 0),
++   (46, 'The Sunken Temple', -10346.9, -3851.9, -43.41, 0, 6.09, 0, 0),
++   (47, 'The Wailing Caverns', -722.53, -2226.3, 16.94, 1, 2.71, 0, 0),
++   (48, 'Thunder Bluff', -1290, 147.034, 129.682, 1, 4.919, 0, 0),
++   (49, 'Uldaman', -6119.7, -2957.3, 204.11, 0, 0.03, 0, 0),
++   (50, 'Undercity', 1819.71, 238.79, 60.5321, 0, 0, 0, 0),
++   (51, 'Warsong Gulch', 930.851, 1431.57, 345.537, 489, 0.015704, 0, 0),
++   (52, 'Warsong Gulch', 1525.95, 1481.66, 352.001, 489, 3.20756, 0, 0),
++   (53, 'Zul\'Aman', 6846.95, -7954.5, 170.028, 530, 4.61501, 0, 0),
++   (54, 'Zul\'Farrak', -6839.39, -2911.03, 8.87, 1, 0.41, 0, 0),
++   (55, 'Zul\'Gurub', -11916.7, -1212.82, 92.2868, 0, 4.6095, 0, 0),
++   (56, 'Ile des MJ', 16254, 16276.9, 14.5082, 1, 1.70269, 0, 0);
++
++TRUNCATE `custom_npc_tele_association`;
++INSERT INTO `custom_npc_tele_association`
++  (`cat_id`, `dest_id`)
++VALUES
++  (1, 13), (1, 15), (1, 18), (1, 22), (1, 23), (1, 37), (1, 39), (2, 23), (2, 29), (2, 30), (2, 37), (2, 38), (2, 48), (2, 50), (3, 1), (3, 4), (3, 16), (3, 52), (4, 2), (4, 3), (4, 17), (4, 51), (5, 11), (5, 20), (5, 33), (5, 44), (6, 6), (6, 7), (6, 8), (6, 14), (6, 25), (6, 31), (6, 32), (6, 35), (6, 36), (6, 40), (6, 43), (6, 45), (6, 46), (6, 47), (6, 49), (6, 54), (7, 9), (7, 26), (7, 27), (7, 28), (7, 34), (7, 42), (7, 55), (8, 5), (8, 10), (8, 12), (8, 19), (8, 21), (8, 24), (8, 41), (8, 53), (9, 56);
++
++-- `npc_text`
++REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
++   (100000, 'Choose your Category.'),
++   (100001, 'Choose your Destination.');
++
++-- `creature_template`
++INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 2048, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 'npc_teleport', 1);
 diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.sql b/sql/TrinityCore-Patches/Transmogrification/characters.sql
 new file mode 100644
 index 0000000..815c4d3
@@ -2767,7 +3019,7 @@ index 0000000..6a4927d
 +insert into `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) values('12001','Player wishes to not be disturbed and cannot receive whisper messages.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 diff --git a/sql/TrinityCore-Patches/guildhouses/world_guildhouses.sql b/sql/TrinityCore-Patches/guildhouses/world_guildhouses.sql
 new file mode 100644
-index 0000000..71fe6f9
+index 0000000..13a034d
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/guildhouses/world_guildhouses.sql
 @@ -0,0 +1,67 @@
@@ -2791,7 +3043,7 @@ index 0000000..71fe6f9
 +-- ----------------------------
 +-- Records
 +-- ----------------------------
-+INSERT INTO `guildhouses` VALUES 
++INSERT INTO `guildhouses` VALUES
 +('1', '0', '16222', '16266', '14.2', '1', 'GM Island'),
 +('2', '0', '-10711', '2483', '8', '1', 'Tauren village at Veiled Sea (Silithus)'),
 +('3', '0', '-8323', '-343', '146', '0', 'Fishing outside an Northshire Abbey (Elwynn Forest'),
@@ -2917,255 +3169,6 @@ index 0000000..e8d0cf5
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('60001', '0', '0', '0', '0', '0', '18', '0', '18', '0', 'Cyon', 'Profession master', '', '0', '59', '61', '0', '35', '1', '1.48', '1.14286', '0.0', '0', '655.0', '663.0', '0', '158', '1.0', '1500', '1900', '1', '0', '0', '0', '0', '0', '0', '0', '0.0', '0.0', '100', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1.0', '1.0', '1.0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'professionnpc', '1');
 +-- end
-diff --git a/sql/TrinityCore-Patches/world.npc_teleport.sql b/sql/TrinityCore-Patches/world.npc_teleport.sql
-new file mode 100644
-index 0000000..52372d0
---- /dev/null
-+++ b/sql/TrinityCore-Patches/world.npc_teleport.sql
-@@ -0,0 +1,119 @@
-+DROP TABLE IF EXISTS `custom_npc_tele_category`;
-+CREATE TABLE `custom_npc_tele_category` (
-+  `id` int(6) unsigned NOT NULL default '0',
-+  `name` varchar(255) NOT NULL default '',
-+  `flag` tinyint(3) unsigned NOT NULL default '0',
-+  `data0` bigint(20) unsigned NOT NULL default '0',
-+  `data1` int(6) unsigned NOT NULL default '0',
-+  PRIMARY KEY  (`id`)
-+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-+
-+DROP TABLE IF EXISTS `custom_npc_tele_destination`;
-+CREATE TABLE `custom_npc_tele_destination` (
-+  `id` int(6) unsigned NOT NULL auto_increment,
-+  `name` char(100) NOT NULL default '',
-+  `pos_X` float NOT NULL default '0',
-+  `pos_Y` float NOT NULL default '0',
-+  `pos_Z` float NOT NULL default '0',
-+  `map` smallint(5) unsigned NOT NULL default '0',
-+  `orientation` float NOT NULL default '0',
-+  `level` tinyint(3) unsigned NOT NULL default '0',
-+  `cost` int(10) unsigned NOT NULL default '0',
-+  PRIMARY KEY  (`id`)
-+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-+
-+DROP TABLE IF EXISTS `custom_npc_tele_association`;
-+CREATE TABLE `custom_npc_tele_association` (
-+  `cat_id` int(6) unsigned NOT NULL default '0',
-+  `dest_id` int(6) unsigned NOT NULL default '0',
-+  PRIMARY KEY  (`cat_id`, `dest_id`)
-+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-+
-+TRUNCATE `custom_npc_tele_category`;
-+INSERT INTO `custom_npc_tele_category`
-+   (`id`, `name`, `flag`, `data0`, `data1`)
-+VALUES
-+   (1, 'Cities', 0, 1, 0),
-+   (2, 'Cities', 0, 2, 0),
-+   (3, 'Battlegrounds', 0, 1, 0),
-+   (4, 'Battlegrounds', 0, 2, 0),
-+   (5, 'Arenas', 0, 0, 0),
-+   (6, '[Instances Lvl 1-60]', 0, 0, 0),
-+   (7, '[Instances Lvl 60+]', 5, 60, 0),
-+   (8, '[Instances Lvl 70+]', 5, 70, 0),
-+   (9, 'Destinations MJ', 3, 0, 0);
-+
-+TRUNCATE `custom_npc_tele_destination`;
-+INSERT INTO `custom_npc_tele_destination`
-+   (`id`, `name`, `pos_X`, `pos_Y`, `pos_Z`, `map`, `orientation`, `level`, `cost`)
-+VALUES
-+   (1, 'Alterac Valley', 883.187, -489.375, 96.7618, 30, 3.06932, 0, 0),
-+   (2, 'Alterac Valley', -818.155, -623.043, 54.0884, 30, 2.1, 0, 0),
-+   (3, 'Arathi Basin', 686.053, 683.165, -12.9149, 529, 0.18, 0, 0),
-+   (4, 'Arathi Basin', 1308.68, 1306.03, -9.0107, 529, 3.91285, 0, 0),
-+   (5, 'Black Temple', -3610.72, 324.988, 37.4, 530, 3.28298, 0, 0),
-+   (6, 'Blackfathom Deeps', 4254.58, 664.74, -29.04, 1, 1.97, 0, 0),
-+   (7, 'Blackrock Depths', -7301.03, -913.19, 165.37, 0, 0.08, 0, 0),
-+   (8, 'Blackrock Spire', -7535.43, -1212.04, 285.45, 0, 5.29, 0, 0),
-+   (9, 'Blackwing Lair', -7665.55, -1102.49, 400.679, 469, 0, 0, 0),
-+   (10, 'Caverns of Time', -8173.66, -4746.36, 33.8423, 1, 4.93989, 0, 0),
-+   (11, 'Circle of Blood', 2839.44, 5930.17, 11.1002, 530, 3.16284, 0, 0),
-+   (12, 'Coilfang Reservoir', 517.288, 6976.28, 32.0072, 530, 0, 0, 0),
-+   (13, 'Darnassus', 9947.52, 2482.73, 1316.21, 1, 0, 0, 0),
-+   (14, 'Dire Maul', -3982.47, 1127.79, 161.02, 1, 0.05, 0, 0),
-+   (15, 'Exodar', -4073.03, -12020.4, -1.47, 530, 0, 0, 0),
-+   (16, 'Eye of the Storm', 2487.72, 1609.12, 1224.64, 566, 3.35671, 0, 0),
-+   (17, 'Eye of the Storm', 1843.73, 1529.77, 1224.43, 566, 0.297579, 0, 0),
-+   (18, 'Goldshire', -9464, 62, 56, 0, 0, 0, 0),
-+   (19, 'Gruul\'s Lair', 3539.01, 5082.36, 1.69107, 530, 0, 0, 0),
-+   (20, 'Gurubashi', -13261.3, 168.294, 35.0792, 0, 1.00688, 0, 0),
-+   (21, 'Hellfire Citadel', -305.816, 3056.4, -2.47318, 530, 2.01, 0, 0),
-+   (22, 'Ironforge', -4924.07, -951.95, 501.55, 0, 5.4, 0, 0),
-+   (23, 'Isle Of Quel\'Danas', 12947.4, -6893.31, 5.68398, 530, 3.09154, 0, 0),
-+   (24, 'Karazhan', -11118.8, -2010.84, 47.0807, 0, 0, 0, 0),
-+   (25, 'Maraudon', -1433.33, 2955.34, 96.21, 1, 4.82, 0, 0),
-+   (26, 'Molten Core', 1121.45, -454.317, -101.33, 230, 3.5, 0, 0),
-+   (27, 'Naxxramas', 3125.18, -3748.02, 136.049, 0, 0, 0, 0),
-+   (28, 'Onyxia\'s Lair', -4707.44, -3726.82, 54.6723, 1, 3.8, 0, 0),
-+   (29, 'Orgrimmar', 1552.5, -4420.66, 8.94802, 1, 0, 0, 0),
-+   (30, 'Razor Hill', 315.721, -4743.4, 10.4867, 1, 0, 0, 0),
-+   (31, 'Razorfen Downs', -4645.08, -2470.85, 85.53, 1, 4.39, 0, 0),
-+   (32, 'Razorfen Kraul', -4484.04, -1739.4, 86.47, 1, 1.23, 0, 0),
-+   (33, 'Ring of Trials', -1999.94, 6581.71, 11.32, 530, 2.3, 0, 0),
-+   (34, 'Ruins of Ahn\'Qiraj', -8409.03, 1498.83, 27.3615, 1, 2.49757, 0, 0),
-+   (35, 'Scholomance', 1219.01, -2604.66, 85.61, 0, 0.5, 0, 0),
-+   (36, 'Shadowfang Keep', -254.47, 1524.68, 76.89, 0, 1.56, 0, 0),
-+   (37, 'Shattrath City', -1850.21, 5435.82, -10.9614, 530, 3.40391, 0, 0),
-+   (38, 'Silvermoon', 9338.74, -7277.27, 13.7895, 530, 0, 0, 0),
-+   (39, 'Stormwind', -8960.14, 516.266, 96.3568, 0, 0, 0, 0),
-+   (40, 'Stratholme', 3263.54, -3379.46, 143.59, 0, 0, 0, 0),
-+   (41, 'Tempest Keep', 3089.58, 1399.05, 187.653, 530, 4.79407, 0, 0),
-+   (42, 'Temple of Ahn\'Qiraj', -8245.84, 1983.74, 129.072, 1, 0.936195, 0, 0),
-+   (43, 'The Deadmines', -11212, 1658.58, 25.67, 0, 1.45, 0, 0),
-+   (44, 'The Maul', -3761.49, 1133.43, 132.083, 1, 4.57259, 0, 0),
-+   (45, 'The Scarlet Monastery', 2843.89, -693.74, 139.32, 0, 5.11, 0, 0),
-+   (46, 'The Sunken Temple', -10346.9, -3851.9, -43.41, 0, 6.09, 0, 0),
-+   (47, 'The Wailing Caverns', -722.53, -2226.3, 16.94, 1, 2.71, 0, 0),
-+   (48, 'Thunder Bluff', -1290, 147.034, 129.682, 1, 4.919, 0, 0),
-+   (49, 'Uldaman', -6119.7, -2957.3, 204.11, 0, 0.03, 0, 0),
-+   (50, 'Undercity', 1819.71, 238.79, 60.5321, 0, 0, 0, 0),
-+   (51, 'Warsong Gulch', 930.851, 1431.57, 345.537, 489, 0.015704, 0, 0),
-+   (52, 'Warsong Gulch', 1525.95, 1481.66, 352.001, 489, 3.20756, 0, 0),
-+   (53, 'Zul\'Aman', 6846.95, -7954.5, 170.028, 530, 4.61501, 0, 0),
-+   (54, 'Zul\'Farrak', -6839.39, -2911.03, 8.87, 1, 0.41, 0, 0),
-+   (55, 'Zul\'Gurub', -11916.7, -1212.82, 92.2868, 0, 4.6095, 0, 0),
-+   (56, 'Ile des MJ', 16254, 16276.9, 14.5082, 1, 1.70269, 0, 0);
-+
-+TRUNCATE `custom_npc_tele_association`;
-+INSERT INTO `custom_npc_tele_association`
-+  (`cat_id`, `dest_id`)
-+VALUES
-+  (1, 13), (1, 15), (1, 18), (1, 22), (1, 23), (1, 37), (1, 39), (2, 23), (2, 29), (2, 30), (2, 37), (2, 38), (2, 48), (2, 50), (3, 1), (3, 4), (3, 16), (3, 52), (4, 2), (4, 3), (4, 17), (4, 51), (5, 11), (5, 20), (5, 33), (5, 44), (6, 6), (6, 7), (6, 8), (6, 14), (6, 25), (6, 31), (6, 32), (6, 35), (6, 36), (6, 40), (6, 43), (6, 45), (6, 46), (6, 47), (6, 49), (6, 54), (7, 9), (7, 26), (7, 27), (7, 28), (7, 34), (7, 42), (7, 55), (8, 5), (8, 10), (8, 12), (8, 19), (8, 21), (8, 24), (8, 41), (8, 53), (9, 56);
-+
-+-- `npc_text`
-+REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
-+   (100000, 'Choose your Category.'),
-+   (100001, 'Choose your Destination.');
-+
-+-- `creature_template`
-+INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 2048, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 'npc_teleport', 1);
-diff --git a/sql/anticheat.sql b/sql/anticheat.sql
-new file mode 100644
-index 0000000..3504594
---- /dev/null
-+++ b/sql/anticheat.sql
-@@ -0,0 +1,30 @@
-+DROP TABLE IF EXISTS `players_reports_status`;
-+
-+CREATE TABLE `players_reports_status` (
-+  `guid` int(10) unsigned NOT NULL DEFAULT '0',
-+  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
-+  `average` float NOT NULL DEFAULT '0',
-+  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
-+
-+DROP TABLE IF EXISTS `daily_players_reports`;
-+CREATE TABLE `daily_players_reports` (
-+  `guid` int(10) unsigned NOT NULL DEFAULT '0',
-+  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
-+  `average` float NOT NULL DEFAULT '0',
-+  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
-\ No newline at end of file
-diff --git a/sql/custom/AVFix.sql b/sql/custom/AVFix.sql
-new file mode 100644
-index 0000000..a0c7eb9
---- /dev/null
-+++ b/sql/custom/AVFix.sql
-@@ -0,0 +1,3 @@
-+UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
-+
-+UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
-diff --git a/sql/tools/setup_ahbot.sql b/sql/tools/setup_ahbot.sql
-new file mode 100644
-index 0000000..767a01e
---- /dev/null
-+++ b/sql/tools/setup_ahbot.sql
-@@ -0,0 +1,72 @@
-+CREATE TABLE `auctionhousebot` (
-+    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
-+    `name` CHAR(25) NULL DEFAULT NULL COMMENT 'Text name of the auctionhouse.',
-+    `minitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the minimum number of items you want to keep in the auction house. a 0 here will make it the same as the maximum.',
-+    `maxitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the number of items you want to keep in the auction house.',
-+    `percentgreytradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Grey Trade Goods auction items',
-+    `percentwhitetradegoods` INT(11) NULL DEFAULT '27' COMMENT 'Sets the percentage of the White Trade Goods auction items',
-+    `percentgreentradegoods` INT(11) NULL DEFAULT '12' COMMENT 'Sets the percentage of the Green Trade Goods auction items',
-+    `percentbluetradegoods` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the Blue Trade Goods auction items',
-+    `percentpurpletradegoods` INT(11) NULL DEFAULT '1' COMMENT 'Sets the percentage of the Purple Trade Goods auction items',
-+    `percentorangetradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Orange Trade Goods auction items',
-+    `percentyellowtradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Yellow Trade Goods auction items',
-+    `percentgreyitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Grey auction items',
-+    `percentwhiteitems` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the non trade White auction items',
-+    `percentgreenitems` INT(11) NULL DEFAULT '30' COMMENT 'Sets the percentage of the non trade Green auction items',
-+    `percentblueitems` INT(11) NULL DEFAULT '8' COMMENT 'Sets the percentage of the non trade Blue auction items',
-+    `percentpurpleitems` INT(11) NULL DEFAULT '2' COMMENT 'Sets the percentage of the non trade Purple auction items',
-+    `percentorangeitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Orange auction items',
-+    `percentyellowitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Yellow auction items',
-+    `minpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Minimum price of Grey items (percentage).',
-+    `maxpricegrey` INT(11) NULL DEFAULT '150' COMMENT 'Maximum price of Grey items (percentage).',
-+    `minpricewhite` INT(11) NULL DEFAULT '150' COMMENT 'Minimum price of White items (percentage).',
-+    `maxpricewhite` INT(11) NULL DEFAULT '250' COMMENT 'Maximum price of White items (percentage).',
-+    `minpricegreen` INT(11) NULL DEFAULT '800' COMMENT 'Minimum price of Green items (percentage).',
-+    `maxpricegreen` INT(11) NULL DEFAULT '1400' COMMENT 'Maximum price of Green items (percentage).',
-+    `minpriceblue` INT(11) NULL DEFAULT '1250' COMMENT 'Minimum price of Blue items (percentage).',
-+    `maxpriceblue` INT(11) NULL DEFAULT '1750' COMMENT 'Maximum price of Blue items (percentage).',
-+    `minpricepurple` INT(11) NULL DEFAULT '2250' COMMENT 'Minimum price of Purple items (percentage).',
-+    `maxpricepurple` INT(11) NULL DEFAULT '4550' COMMENT 'Maximum price of Purple items (percentage).',
-+    `minpriceorange` INT(11) NULL DEFAULT '3250' COMMENT 'Minimum price of Orange items (percentage).',
-+    `maxpriceorange` INT(11) NULL DEFAULT '5550' COMMENT 'Maximum price of Orange items (percentage).',
-+    `minpriceyellow` INT(11) NULL DEFAULT '5250' COMMENT 'Minimum price of Yellow items (percentage).',
-+    `maxpriceyellow` INT(11) NULL DEFAULT '6550' COMMENT 'Maximum price of Yellow items (percentage).',
-+    `minbidpricegrey` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 70',
-+    `maxbidpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricewhite` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 70',
-+    `maxbidpricewhite` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricegreen` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpricegreen` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceblue` INT(11) NULL DEFAULT '75' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 75',
-+    `maxbidpriceblue` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricepurple` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpricepurple` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceorange` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpriceorange` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceyellow` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpriceyellow` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `maxstackgrey` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackwhite` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackgreen` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackblue` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackpurple` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackorange` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackyellow` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `buyerpricegrey` INT(11) NULL DEFAULT '1' COMMENT 'Multiplier to vendorprice when buying grey items from auctionhouse',
-+    `buyerpricewhite` INT(11) NULL DEFAULT '3' COMMENT 'Multiplier to vendorprice when buying white items from auctionhouse',
-+    `buyerpricegreen` INT(11) NULL DEFAULT '5' COMMENT 'Multiplier to vendorprice when buying green items from auctionhouse',
-+    `buyerpriceblue` INT(11) NULL DEFAULT '12' COMMENT 'Multiplier to vendorprice when buying blue items from auctionhouse',
-+    `buyerpricepurple` INT(11) NULL DEFAULT '15' COMMENT 'Multiplier to vendorprice when buying purple items from auctionhouse',
-+    `buyerpriceorange` INT(11) NULL DEFAULT '20' COMMENT 'Multiplier to vendorprice when buying orange items from auctionhouse',
-+    `buyerpriceyellow` INT(11) NULL DEFAULT '22' COMMENT 'Multiplier to vendorprice when buying yellow items from auctionhouse',
-+    `buyerbiddinginterval` INT(11) NULL DEFAULT '1' COMMENT 'Interval how frequently AHB bids on each AH. Time in minutes',
-+    `buyerbidsperinterval` INT(11) NULL DEFAULT '1' COMMENT 'number of bids to put in per bidding interval',
-+    PRIMARY KEY (`auctionhouse`)
-+)
-+ENGINE=InnoDB
-+ROW_FORMAT=DEFAULT;
-+
-+insert  into `auctionhousebot`(`auctionhouse`,`name`,`minitems`,`maxitems`,`percentgreytradegoods`,`percentwhitetradegoods`,`percentgreentradegoods`,`percentbluetradegoods`,`percentpurpletradegoods`,`percentorangetradegoods`,`percentyellowtradegoods`,`percentgreyitems`,`percentwhiteitems`,`percentgreenitems`,`percentblueitems`,`percentpurpleitems`,`percentorangeitems`,`percentyellowitems`,`minpricegrey`,`maxpricegrey`,`minpricewhite`,`maxpricewhite`,`minpricegreen`,`maxpricegreen`,`minpriceblue`,`maxpriceblue`,`minpricepurple`,`maxpricepurple`,`minpriceorange`,`maxpriceorange`,`minpriceyellow`,`maxpriceyellow`,`minbidpricegrey`,`maxbidpricegrey`,`minbidpricewhite`,`maxbidpricewhite`,`minbidpricegreen`,`maxbidpricegreen`,`minbidpriceblue`,`maxbidpriceblue`,`minbidpricepurple`,`maxbidpricepurple`,`minbidpriceorange`,`maxbidpriceorange`,`minbidpriceyellow`,`maxbidpriceyellow`,`maxstackgrey`,`maxstackwhite`,`maxstackgreen`,`maxstackblue`,`maxstackpurple`,`maxstackorange`,`maxstackyellow`,`buyerpricegrey`,`buyerpricewhite`,`buyerpricegreen`,`buyerpriceblue`,`buyerpricepurple`,`buyerpriceorange`,`buyerpriceyellow`,`buyerbiddinginterval`,`buyerbidsperinterval`) values
-+(2,'Alliance',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
-+(6,'Horde',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
-+(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp b/src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
 new file mode 100644
 index 0000000..28ca48c
@@ -22273,7 +22276,7 @@ index 0000000..1310b4d
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 new file mode 100644
-index 0000000..3cffd3e
+index 0000000..ee7d552
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 @@ -0,0 +1,11894 @@
@@ -32572,7 +32575,7 @@ index 0000000..3cffd3e
 +                        continue;
 +
 +                    // has skill
-+                    if (skillLine->skillId == *it && skillLine->learnOnGetSkill == 0)
++                    if (skillLine->skillId == *it && skillLine->AutolearnType == 0)
 +                    {
 +                        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
 +                        if (!spellInfo)
@@ -43484,37 +43487,35 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 9ce1f9b..d2fcedb 100644
+index 9ce1f9b..b380267 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -683,6 +683,27 @@ enum RBACPermissions
+@@ -683,6 +683,25 @@ enum RBACPermissions
      RBAC_PERM_COMMAND_MAILBOX                                = 777,
- 
+
      // custom permissions 1000+
 +
 +    RBAC_PERM_COMMAND_GUILD_INFO                             = 1000,
 +    RBAC_PERM_COMMAND_GUILD_SET_LEVEL                        = 1001,
 +    RBAC_PERM_COMMAND_GUILD_GIVE_XP                          = 1002,
-+
-+    //NpcBot command permissions
-+    RBAC_PERM_COMMAND_NPCBOT                                 = 1003,
-+    RBAC_PERM_COMMAND_NPCBOT_ADD                             = 1004,
-+    RBAC_PERM_COMMAND_NPCBOT_REMOVE                          = 1005,
-+    RBAC_PERM_COMMAND_NPCBOT_RESET                           = 1006,
-+    RBAC_PERM_COMMAND_NPCBOT_CMD                             = 1007,
-+    RBAC_PERM_COMMAND_NPCBOT_DIST                            = 1008,
-+    RBAC_PERM_COMMAND_NPCBOT_INFO                            = 1009,
-+    //end NpcBot
-+
 +    RBAC_PERM_COMMAND_MODIFY_XP_KILL                         = 1010,
 +    RBAC_PERM_COMMAND_MODIFY_XP_QUEST                        = 1011,
-+    // More Old NPCBots
-+    RBAC_PERM_COMMAND_NPCBOT_HELPER                          = 1012,
-+    RBAC_PERM_COMMAND_NPCBOT_REVIVE                          = 1013,
-+    // end NPCBots
++
++    //NpcBot command permissions
++    RBAC_PERM_COMMAND_NPCBOT                                 = 1100,
++    RBAC_PERM_COMMAND_NPCBOT_ADD                             = 1101,
++    RBAC_PERM_COMMAND_NPCBOT_REMOVE                          = 1102,
++    RBAC_PERM_COMMAND_NPCBOT_RESET                           = 1103,
++    RBAC_PERM_COMMAND_NPCBOT_CMD                             = 1104,
++    RBAC_PERM_COMMAND_NPCBOT_DIST                            = 1105,
++    RBAC_PERM_COMMAND_NPCBOT_INFO                            = 1106,
++    RBAC_PERM_COMMAND_NPCBOT_HELPER                          = 1107,
++    RBAC_PERM_COMMAND_NPCBOT_REVIVE                          = 1108,
++    //end NpcBot
++
      RBAC_PERM_MAX
  };
- 
+
 diff --git a/src/server/game/Anticheat/AnticheatData.cpp b/src/server/game/Anticheat/AnticheatData.cpp
 new file mode 100644
 index 0000000..8c69972
@@ -47459,7 +47460,7 @@ index f4699f0..4dda7ec 100644
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 @@ -171,7 +171,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
          uint32 profit = auction->bid + auction->deposit - auction->GetAuctionCut();
- 
+
          //FIXME: what do if owner offline
 -        if (owner)
 +        if (owner && owner->GetGUIDLow() != auctionbot.GetAHBplayerGUID())
@@ -47473,7 +47474,7 @@ index f4699f0..4dda7ec 100644
 -        if (owner)
 +        if (owner && owner->GetGUIDLow() != auctionbot.GetAHBplayerGUID())
              owner->GetSession()->SendAuctionOwnerNotification(auction);
- 
+
          MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(0, 0, auction->buyout, auction->deposit, 0))
 @@ -221,6 +221,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
      // old bidder exist
@@ -47484,20 +47485,20 @@ index f4699f0..4dda7ec 100644
 +
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
- 
+
 @@ -412,10 +415,12 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
- 
+
      AuctionsMap[auction->Id] = auction;
      sScriptMgr->OnAuctionAdd(this, auction);
 +    auctionbot.IncrementItemCounts(auction);
  }
- 
+
 -bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 /*itemEntry*/)
 +bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 itemEntry)
  {
 +    auctionbot.DecrementItemCounts(auction, itemEntry);
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
- 
+
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
 index f45fc41..88cd0b5 100644
@@ -47506,7 +47507,7 @@ index f45fc41..88cd0b5 100644
 @@ -25,6 +25,8 @@
  #include "DatabaseEnv.h"
  #include "DBCStructure.h"
- 
+
 +#include "AuctionHouseBot/AuctionHouseBot.h"
 +
  class Item;
@@ -47532,12 +47533,12 @@ index 4e07797..a22d62c 100644
 -                    sBattlegroundMgr->BuildBattlegroundStatusPacket(&status, this, queueSlot, STATUS_IN_PROGRESS, 0, GetStartTime(), GetArenaType(), player->GetBGTeam());
 +                    sBattlegroundMgr->BuildBattlegroundStatusPacket(&status, this, queueSlot, STATUS_IN_PROGRESS, 0, GetStartTime(), GetArenaType(), player->GetTeam());
                      player->SendDirectMessage(&status);
- 
+
                      player->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
 @@ -697,12 +697,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
              UpdatePlayerScore(player, SCORE_BONUS_HONOR, Honor);
  }
- 
+
 -void Battleground::RewardReputationToTeam(uint32 faction_id, uint32 Reputation, uint32 TeamID)
 +void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 teamId)
  {
@@ -47570,11 +47571,11 @@ index 4e07797..a22d62c 100644
 +            plr->GetReputationMgr().ModifyReputation(plr->GetOTeam() == ALLIANCE ? a_factionEntry : h_factionEntry, Reputation);
 +    }
  }
- 
+
  void Battleground::UpdateWorldState(uint32 Field, uint32 Value)
 @@ -914,7 +934,7 @@ void Battleground::EndBattleground(uint32 winner)
          player->SendDirectMessage(&pvpLogData);
- 
+
          WorldPacket data;
 -        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), player->GetBGTeam());
 +        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), player->GetTeam());
@@ -47582,7 +47583,7 @@ index 4e07797..a22d62c 100644
          player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
      }
 @@ -1063,6 +1083,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
- 
+
      if (player)
      {
 +        player->FitPlayerInTeam(false, this);
@@ -47591,11 +47592,11 @@ index 4e07797..a22d62c 100644
          // reset destination bg team
 @@ -1132,7 +1153,7 @@ void Battleground::AddPlayer(Player* player)
      // score struct must be created in inherited class
- 
+
      uint64 guid = player->GetGUID();
 -    uint32 team = player->GetBGTeam();
 +    uint32 team = player->GetTeam();
- 
+
      BattlegroundPlayer bp;
      bp.OfflineRemoveTime = 0;
 @@ -1198,6 +1219,8 @@ void Battleground::AddPlayer(Player* player)
@@ -47605,10 +47606,10 @@ index 4e07797..a22d62c 100644
 +
 +    player->FitPlayerInTeam(true, this);
  }
- 
+
  // this method adds player to his team's bg group, or sets his correct group if player is already in bg group
 @@ -1267,8 +1290,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
- 
+
          // 1 player is logging out, if it is the last, then end arena!
          if (isArena())
 -            if (GetAlivePlayersCountByTeam(player->GetBGTeam()) <= 1 && GetPlayersCountByTeam(GetOtherTeam(player->GetBGTeam())))
@@ -47617,16 +47618,16 @@ index 4e07797..a22d62c 100644
 +                EndBattleground(GetOtherTeam(player->GetTeam()));
      }
  }
- 
+
 @@ -1876,7 +1899,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
      BuildPvPLogDataPacket(data);
      player->SendDirectMessage(&data);
- 
+
 -    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetBGTeam());
 +    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetTeam());
      player->SendDirectMessage(&data);
  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
 index 2904ec1..bd98084 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
@@ -47652,7 +47653,7 @@ index ef78594..4acf096 100644
 +        uint32 team = player->GetTeam();
          if (team == 0)
              team = player->GetTeam();
- 
+
 diff --git a/src/server/game/Battlegrounds/BattlegroundQueue.cpp b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 index 547d6e9..9418296 100644
 --- a/src/server/game/Battlegrounds/BattlegroundQueue.cpp
@@ -47666,7 +47667,7 @@ index 547d6e9..9418296 100644
 +        index = BG_QUEUE_MIXED;                      // BG_QUEUE_*_* -> BG_QUEUE_MIXED
 +
      TC_LOG_DEBUG("bg.battleground", "Adding Group to BattlegroundQueue bgTypeId : %u, bracket_id : %u, index : %u", BgTypeId, bracketId, index);
- 
+
      uint32 lastOnlineTime = getMSTime();
 @@ -199,31 +203,56 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
          {
@@ -47758,7 +47759,7 @@ index 547d6e9..9418296 100644
 @@ -499,6 +528,10 @@ void BattlegroundQueue::FillPlayersToBG(Battleground* bg, BattlegroundBracketId
      int32 hordeFree = bg->GetFreeSlotsForTeam(HORDE);
      int32 aliFree   = bg->GetFreeSlotsForTeam(ALLIANCE);
- 
+
 +    if (!bg->isArena())
 +        if (FillXPlayersToBG(bracket_id, bg, false))
 +            return;
@@ -47774,7 +47775,7 @@ index 547d6e9..9418296 100644
 +        m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_HORDE].empty() &&
 +        m_QueuedGroups[bracket_id][BG_QUEUE_MIXED].empty())
          return;
- 
+
      // battleground with free slot for player should be always in the beggining of the queue
 @@ -838,7 +872,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(uint32 /*diff*/, BattlegroundTyp
      {
@@ -47808,13 +47809,13 @@ index af283cb..da808ef 100644
  };
 -#define BG_QUEUE_GROUP_TYPES_COUNT 4
 +#define BG_QUEUE_GROUP_TYPES_COUNT 5
- 
+
  class Battleground;
  class BattlegroundQueue
 @@ -74,6 +76,11 @@ class BattlegroundQueue
          void BattlegroundQueueUpdate(uint32 diff, BattlegroundTypeId bgTypeId, BattlegroundBracketId bracket_id, uint8 arenaType = 0, bool isRated = false, uint32 minRating = 0);
          void UpdateEvents(uint32 diff);
- 
+
 +        bool FillXPlayersToBG(BattlegroundBracketId bracket_id, Battleground* bg, bool start = false);
 +        typedef std::multimap<int32, GroupQueueInfo*> QueuedGroupMap;
 +        int32 PreAddPlayers(QueuedGroupMap m_PreGroupMap, int32 MaxAdd, uint32 MaxInTeam);
@@ -47828,14 +47829,14 @@ index 2622ab9..4438c56 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundAB.cpp
 @@ -141,7 +141,7 @@ void BattlegroundAB::PostUpdateImpl(uint32 diff)
- 
+
                  if (m_ReputationScoreTics[team] >= m_ReputationTics)
                  {
 -                    (team == TEAM_ALLIANCE) ? RewardReputationToTeam(509, 10, ALLIANCE) : RewardReputationToTeam(510, 10, HORDE);
 +                    RewardReputationToTeam(509, 510, 10, team == ALLIANCE ? ALLIANCE : HORDE);
                      m_ReputationScoreTics[team] -= m_ReputationTics;
                  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
 index eafb02f..9c374a4 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
@@ -47920,12 +47921,12 @@ index eafb02f..9c374a4 100644
      }
 @@ -577,7 +578,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
              SpawnBGObject(BG_AV_OBJECT_BURN_DUNBALDAR_SOUTH + i + (tmp * 10), RESPAWN_IMMEDIATELY);
- 
+
          UpdateScore((owner == ALLIANCE) ? HORDE : ALLIANCE, -1 * BG_AV_RES_TOWER);
 -        RewardReputationToTeam(owner == ALLIANCE ? 730 : 729, BG_AV_REP_TOWER, owner);
 +        RewardReputationToTeam(729, 730, BG_AV_REP_TOWER, owner);
          RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_TOWER), owner);
- 
+
          SpawnBGObject(BG_AV_OBJECT_TAURA_A_DUNBALDAR_SOUTH+GetTeamIndexByTeamId(owner)+(2*tmp), RESPAWN_ONE_DAY);
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundBE.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundBE.cpp
 index 548e0bf..0b1f7fd 100644
@@ -47939,7 +47940,7 @@ index 548e0bf..0b1f7fd 100644
 +    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetTeam());
      UpdateArenaWorldState();
  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundDS.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundDS.cpp
 index 1d6970f..f670918 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundDS.cpp
@@ -47952,7 +47953,7 @@ index 1d6970f..f670918 100644
 +    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetTeam());
      UpdateArenaWorldState();
  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundNA.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundNA.cpp
 index 82fcb2f..25d8916 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundNA.cpp
@@ -47965,7 +47966,7 @@ index 82fcb2f..25d8916 100644
 +    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetTeam());
      UpdateArenaWorldState();
  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundRL.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundRL.cpp
 index 712d9a6..2bba821 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundRL.cpp
@@ -47978,7 +47979,7 @@ index 712d9a6..2bba821 100644
 +    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetTeam());
      UpdateArenaWorldState();
  }
- 
+
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundRV.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundRV.cpp
 index 1059124..c583d2d 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundRV.cpp
@@ -47989,7 +47990,7 @@ index 1059124..c583d2d 100644
      Battleground::AddPlayer(player);
 -    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetBGTeam());
 +    PlayerScores[player->GetGUIDLow()] = new ArenaScore(player->GetGUID(), player->GetTeam());
- 
+
      UpdateWorldState(BG_RV_WORLD_STATE_A, GetAlivePlayersCountByTeam(ALLIANCE));
      UpdateWorldState(BG_RV_WORLD_STATE_H, GetAlivePlayersCountByTeam(HORDE));
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundWS.cpp
@@ -48013,14 +48014,14 @@ index 1faa336..6dfebca 100644
 +    RewardReputationToTeam(890, 889, m_ReputationCapture, player->GetTeam());
      //for flag capture is reward 2 honorable kills
      RewardHonorToTeam(GetBonusHonorFromKill(2), player->GetTeam());
- 
+
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
 index 26fd081..ae14b25 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -9,10 +9,12 @@
  # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
+
  file(GLOB_RECURSE sources_Accounts Accounts/*.cpp Accounts/*.h)
 +file(GLOB_RECURSE sources_Anticheat Anticheat/*.cpp Anticheat/*.h)
  file(GLOB_RECURSE sources_Achievements Achievements/*.cpp Achievements/*.h)
@@ -48042,9 +48043,9 @@ index 26fd081..ae14b25 100644
  file(GLOB_RECURSE sources_Weather Weather/*.cpp Weather/*.h)
  file(GLOB_RECURSE sources_World World/*.cpp World/*.h)
 +file(GLOB_RECURSE sources_Cfbg Cfbg/*.cpp Cfbg/*.h)
- 
+
  # Create game-libary
- 
+
 @@ -59,10 +63,12 @@ endif ()
  set(game_STAT_SRCS
    ${game_STAT_SRCS}
@@ -48070,7 +48071,7 @@ index 26fd081..ae14b25 100644
    ${sources_World}
 +  ${sources_Cfbg}
  )
- 
+
  include_directories(
 @@ -128,13 +136,17 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/shared/Utilities
@@ -48479,13 +48480,13 @@ index 3f6a40d..525d9fde 100644
  #include "AccountMgr.h"
  #include "Player.h"
 +#include "IRCClient.h"
- 
+
  Channel::Channel(std::string const& name, uint32 channelId, uint32 team):
      _announce(true),
 @@ -209,6 +210,8 @@ void Channel::JoinChannel(Player* player, std::string const& pass)
- 
+
      JoinNotify(guid);
- 
+
 +    sIRC.Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_JOIN);
 +
      // Custom channel handling
@@ -48494,10 +48495,10 @@ index 3f6a40d..525d9fde 100644
 @@ -259,6 +262,7 @@ void Channel::LeaveChannel(Player* player, bool send)
          SendToAll(&data);
      }
- 
+
 +    sIRC.Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_LEAVE);
      LeaveNotify(guid);
- 
+
      if (!IsConstant())
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
 index d77ee5b..726b329 100644
@@ -48522,7 +48523,7 @@ index d77ee5b..726b329 100644
 @@ -912,6 +921,38 @@ char* ChatHandler::extractKeyFromLink(char* text, char const* const* linkTypes,
      return NULL;
  }
- 
+
 +char const *fmtstring(char const *format, ...)
 +{
 +    va_list        argptr;
@@ -48567,13 +48568,13 @@ index a56b790..c66e9cb 100644
  #include "WorldSession.h"
  #include "RBAC.h"
 +#include "../TriniChat/IRCClient.h"
- 
+
  #include <vector>
- 
+
 @@ -161,4 +162,6 @@ class CliHandler : public ChatHandler
          Print* m_print;
  };
- 
+
 +char const *fmtstring(char const *format, ...);
 +
  #endif
@@ -48586,7 +48587,7 @@ index bb1a722..0579804 100644
  #include "SpellMgr.h"
  #include "Spell.h"
 +#include "Guild.h"
- 
+
  // Checks if object meets the condition
  // Can have CONDITION_SOURCE_TYPE_NONE && !mReferenceId if called from a special event (ie: eventAI)
 @@ -323,6 +324,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
@@ -48643,10 +48644,10 @@ index 876b922..9fc8c99 100644
 +    CONDITION_GUILD_LEVEL           = 39,                   // Gildenlevel      Level          Vergleichstyp
 +    CONDITION_MAX                   = 40                    // MAX
  };
- 
+
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index 92d00b2..f635a29 100644
+index e960422..33493dd 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -116,7 +116,7 @@ DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
@@ -48659,7 +48660,7 @@ index 92d00b2..f635a29 100644
  DBCStorage <ItemLimitCategoryEntry> sItemLimitCategoryStore(ItemLimitCategoryEntryfmt);
  DBCStorage <ItemRandomPropertiesEntry> sItemRandomPropertiesStore(ItemRandomPropertiesfmt);
 @@ -369,7 +369,7 @@ void LoadDBCStores(const std::string& dataPath)
- 
+
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemStore,                   dbcPath, "Item.dbc");
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemBagFamilyStore,          dbcPath, "ItemBagFamily.dbc");
 -    //LoadDBC(dbcCount, availableDbcLocales, bad_dbc_files, sItemDisplayInfoStore,        dbcPath, "ItemDisplayInfo.dbc");     -- not used currently
@@ -48681,7 +48682,7 @@ index 8b89a86..55746af 100644
  extern DBCStorage <ItemLimitCategoryEntry>       sItemLimitCategoryStore;
  extern DBCStorage <ItemRandomPropertiesEntry>    sItemRandomPropertiesStore;
 diff --git a/src/server/game/DataStores/DBCStructure.h b/src/server/game/DataStores/DBCStructure.h
-index 2da166f..5a69f56 100644
+index 946cbc4..3868ce7 100644
 --- a/src/server/game/DataStores/DBCStructure.h
 +++ b/src/server/game/DataStores/DBCStructure.h
 @@ -1151,7 +1151,7 @@ struct ItemDisplayInfoEntry
@@ -48711,9 +48712,9 @@ index fd8aaff..e61e7e2 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
- 
+
  #include "Transport.h"
- 
+
 +// npcbot
 +#include "bot_ai.h"
 +
@@ -48734,7 +48735,7 @@ index fd8aaff..e61e7e2 100644
 +    m_canUpdate = true;
 +    //end bot
  }
- 
+
  Creature::~Creature()
 @@ -234,6 +246,8 @@ void Creature::RemoveCorpse(bool setSpawnTime)
  {
@@ -48742,11 +48743,11 @@ index fd8aaff..e61e7e2 100644
          return;
 +    if (bot_AI)
 +        return;
- 
+
      m_corpseRemoveTime = time(NULL);
      setDeathState(DEAD);
 @@ -441,6 +455,11 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/)
- 
+
  void Creature::Update(uint32 diff)
  {
 +    //npcbot: update helper
@@ -48758,7 +48759,7 @@ index fd8aaff..e61e7e2 100644
      {
          TriggerJustRespawned = false;
 @@ -1285,6 +1304,11 @@ void Creature::SetCanDualWield(bool value)
- 
+
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
 +    //npcbot: prevent loading equipment for bots
@@ -48770,7 +48771,7 @@ index fd8aaff..e61e7e2 100644
      {
          if (force)
 @@ -2139,6 +2163,9 @@ void Creature::SetInCombatWithZone()
- 
+
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
 +    if (bot_AI)
@@ -48778,11 +48779,11 @@ index fd8aaff..e61e7e2 100644
 +
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
- 
+
 @@ -2717,3 +2744,169 @@ void Creature::StartPickPocketRefillTimer()
      _pickpocketLootRestore = time(NULL) + sWorld->getIntConfig(CONFIG_CREATURE_PICKPOCKET_REFILL);
  }
- 
+
 +uint8 Creature::GetBotClass() const
 +{
 +    switch (m_bot_class)
@@ -48956,7 +48957,7 @@ index ca536e4..c785f0c 100644
 @@ -37,6 +37,11 @@ class Player;
  class SpellInfo;
  class WorldSession;
- 
+
 +// npcbot
 +class bot_ai;
 +class bot_minion_ai;
@@ -48968,7 +48969,7 @@ index ca536e4..c785f0c 100644
 @@ -679,6 +684,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
- 
+
 +        //Bot commands
 +        Player* GetBotOwner() const { return m_bot_owner; }
 +        void SetBotOwner(Player* newowner) { m_bot_owner = newowner; }
@@ -49014,7 +49015,7 @@ index ca536e4..c785f0c 100644
          bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
 @@ -731,6 +776,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const;
- 
+
      private:
 +        //bot system
 +        Player* m_bot_owner;
@@ -49026,7 +49027,7 @@ index ca536e4..c785f0c 100644
 +        //end bot system
 +
          void ForcedDespawn(uint32 timeMSToDespawn = 0);
- 
+
          //WaypointMovementGenerator vars
 diff --git a/src/server/game/Entities/Creature/TemporarySummon.cpp b/src/server/game/Entities/Creature/TemporarySummon.cpp
 index d31117c..fb8ed9c 100644
@@ -49035,7 +49036,7 @@ index d31117c..fb8ed9c 100644
 @@ -253,6 +253,14 @@ void TempSummon::UnSummon(uint32 msTime)
      if (owner && owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsAIEnabled)
          owner->ToCreature()->AI()->SummonedCreatureDespawn(this);
- 
+
 +    //npcbot
 +    if (GetIAmABot() || GetIAmABotsPet())
 +    {
@@ -49046,13 +49047,13 @@ index d31117c..fb8ed9c 100644
 +
      AddObjectToRemoveList();
  }
- 
+
 diff --git a/src/server/game/Entities/Item/ItemPrototype.h b/src/server/game/Entities/Item/ItemPrototype.h
 index bdf956f..c10b378 100644
 --- a/src/server/game/Entities/Item/ItemPrototype.h
 +++ b/src/server/game/Entities/Item/ItemPrototype.h
 @@ -745,7 +745,14 @@ struct ItemTemplate
- 
+
  // Benchmarked: Faster than std::map (insert/find)
  typedef std::unordered_map<uint32, ItemTemplate> ItemTemplateContainer;
 -
@@ -49086,7 +49087,7 @@ index 4ff0153..9bb43e9 100644
 @@ -2211,6 +2216,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
      AddToMap(summon->ToCreature());
      summon->InitSummon();
- 
+
 +    //npcbot: totem emul step 2
 +    if (mask == UNIT_MASK_TOTEM)
 +        if (summoner && summoner->GetTypeId() == TYPEID_UNIT && summoner->ToCreature()->GetIAmABot())
@@ -49094,10 +49095,10 @@ index 4ff0153..9bb43e9 100644
 +    //end npcbot
 +
      //ObjectAccessor::UpdateObjectVisibility(summon);
- 
+
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8653106..4cb8fb2 100644
+index b32ef34..65f99dc 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -32,6 +32,7 @@
@@ -49108,28 +49109,26 @@ index 8653106..4cb8fb2 100644
  #include "Common.h"
  #include "ConditionMgr.h"
  #include "CreatureAI.h"
-@@ -79,7 +80,16 @@
+@@ -79,6 +80,15 @@
  #include "WorldPacket.h"
  #include "WorldSession.h"
  #include "GameObjectAI.h"
--
 +#include "Config.h"
 +#include "AnticheatMgr.h"
 +#include "../../../scripts/Custom/Transmogrification.h"
++
 +// Playerbot mod
 +#include "PlayerbotAI.h"
-+#include "Config.h"
-+// End Playerbot
++
 +// NPCBot
 +#include "bothelper.h"
-+// End NPCBot
+
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
- 
- #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
+
 @@ -530,6 +540,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
- 
+
 +        //npcbot 4.2.2.1. Apply NpcBot XP reduction
 +        if (player->HaveBot() && player->GetNpcBotsCount() > 1)
 +        {
@@ -49146,7 +49145,7 @@ index 8653106..4cb8fb2 100644
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
 @@ -651,6 +673,12 @@ void KillRewarder::Reward()
- 
+
  Player::Player(WorldSession* session): Unit(true)
  {
 +    m_FakeRace = 0;
@@ -49157,11 +49156,11 @@ index 8653106..4cb8fb2 100644
 +
      m_speakTime = 0;
      m_speakCount = 0;
- 
+
 @@ -881,6 +909,31 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
- 
+
 +    ///////////////////// Bot System ////////////////////////
 +    //Playerbot mod
 +    m_playerbotAI = NULL;
@@ -49189,7 +49188,7 @@ index 8653106..4cb8fb2 100644
 +
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
- 
+
 @@ -897,6 +950,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
@@ -49199,12 +49198,12 @@ index 8653106..4cb8fb2 100644
 +    _individual_kill = 0.0f;
 +    _individual_quest = 0.0f;
  }
- 
+
  Player::~Player()
 @@ -935,6 +992,23 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
- 
+
 +    //Playerbot mod: remove AI if exists
 +    if (m_playerbotAI != NULL)
 +    {
@@ -49224,10 +49223,10 @@ index 8653106..4cb8fb2 100644
 +
      sWorld->DecreasePlayerCount();
  }
- 
+
 @@ -1001,6 +1075,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
      uint32 RaceClassGender = (createInfo->Race) | (createInfo->Class << 8) | (createInfo->Gender << 16);
- 
+
      SetUInt32Value(UNIT_FIELD_BYTES_0, (RaceClassGender | (powertype << 24)));
 +
 +    SetORace();
@@ -49238,7 +49237,7 @@ index 8653106..4cb8fb2 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -1333,8 +1413,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
+@@ -1334,8 +1414,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
  {
      switch (timer)
      {
@@ -49250,9 +49249,9 @@ index 8653106..4cb8fb2 100644
          case BREATH_TIMER:
          {
              if (!IsAlive() || HasAuraType(SPELL_AURA_WATER_BREATHING) || GetSession()->GetSecurity() >= AccountTypes(sWorld->getIntConfig(CONFIG_DISABLE_BREATHING)))
-@@ -1417,6 +1500,9 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1418,6 +1501,9 @@ void Player::HandleDrowning(uint32 time_diff)
      }
- 
+
      // In dark water
 +if(sConfigMgr->GetBoolDefault("fatigue.enabled", true)) // If "fatigue.enabled" is enabled
 +{
@@ -49260,7 +49259,7 @@ index 8653106..4cb8fb2 100644
      if (m_MirrorTimerFlags & UNDERWARER_INDARKWATER)
      {
          // Fatigue timer not activated - activate it
-@@ -1453,7 +1539,7 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1454,7 +1540,7 @@ void Player::HandleDrowning(uint32 time_diff)
          else if (m_MirrorTimerFlagsLast & UNDERWARER_INDARKWATER)
              SendMirrorTimer(FATIGUE_TIMER, DarkWaterTime, m_MirrorTimer[FATIGUE_TIMER], 10);
      }
@@ -49269,16 +49268,16 @@ index 8653106..4cb8fb2 100644
      if (m_MirrorTimerFlags & (UNDERWATER_INLAVA /*| UNDERWATER_INSLIME*/) && !(_lastLiquid && _lastLiquid->SpellId))
      {
          // Breath timer not activated - activate it
-@@ -1551,6 +1637,8 @@ void Player::Update(uint32 p_time)
+@@ -1552,6 +1638,8 @@ void Player::Update(uint32 p_time)
      if (!IsInWorld())
          return;
- 
+
 +    //sAnticheatMgr->HandleHackDetectionTimer(this, p_time);
 +
      // undelivered mail
      if (m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
      {
-@@ -1778,6 +1866,10 @@ void Player::Update(uint32 p_time)
+@@ -1779,6 +1867,10 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -49289,7 +49288,7 @@ index 8653106..4cb8fb2 100644
          }
          else
              m_nextSave -= p_time;
-@@ -1854,6 +1946,21 @@ void Player::Update(uint32 p_time)
+@@ -1855,6 +1947,21 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -49309,10 +49308,10 @@ index 8653106..4cb8fb2 100644
 +    else
 +        RefreshBot(p_time);
  }
- 
+
  void Player::setDeathState(DeathState s)
-@@ -2103,6 +2210,8 @@ void Player::SendTeleportAckPacket()
- 
+@@ -2104,6 +2211,8 @@ void Player::SendTeleportAckPacket()
+
  bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
  {
 +    //sAnticheatMgr->DisableAnticheatDetection(this,true);
@@ -49320,10 +49319,10 @@ index 8653106..4cb8fb2 100644
      if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
      {
          TC_LOG_ERROR("maps", "TeleportTo: invalid map (%d) or invalid coordinates (X: %f, Y: %f, Z: %f, O: %f) given when teleporting player (GUID: %u, name: %s, map: %d, X: %f, Y: %f, Z: %f, O: %f).",
-@@ -2117,6 +2226,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2118,6 +2227,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
- 
+
 +    // Playerbot mod: if this user has bots, tell them to stop following master
 +    // so they don't try to follow the master after the master teleports
 +    for (PlayerBotMap::const_iterator itr = GetSession()->GetPlayerBotsBegin(); itr != GetSession()->GetPlayerBotsEnd(); ++itr)
@@ -49332,11 +49331,11 @@ index 8653106..4cb8fb2 100644
 +
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
- 
-@@ -2225,6 +2340,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+
+@@ -2226,6 +2341,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
- 
+
 +        //Npcbot mod: prevent crash on InstanceMap::DestroyInstance()... Unit::RemoveFromWorld()
 +        //if last player being kicked out of instance while having npcbots
 +        //we must remove creature Before it will be removed in Map::UnloadAll()
@@ -49347,7 +49346,7 @@ index 8653106..4cb8fb2 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2456,6 +2578,944 @@ void Player::RemoveFromWorld()
+@@ -2457,6 +2579,944 @@ void Player::RemoveFromWorld()
              SetViewpoint(viewpoint, false);
          }
      }
@@ -50022,7 +50021,7 @@ index 8653106..4cb8fb2 100644
 +    stmt->setString(index++, classStr.str());
 +    stmt->setUInt8(index++, bot_class);
 +
-+    //maybe we should remove this check? ;ï¿½
++    //maybe we should remove this check? ;�
 +    switch (getRace())
 +    {
 +        case RACE_NONE:
@@ -50290,19 +50289,19 @@ index 8653106..4cb8fb2 100644
 +        }
 +    }
  }
- 
+
  void Player::RegenerateAll()
-@@ -2735,6 +3795,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
- 
+@@ -2736,6 +3796,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+
      // not enemy
      if (creature->IsHostileTo(this))
 +    //npcbot
 +    if (!creature->IsQuestBot())
 +    //end npcbot
          return NULL;
- 
+
      // not unfriendly
-@@ -2923,8 +3986,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2924,8 +3987,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (!group)
          return;
@@ -50321,7 +50320,7 @@ index 8653106..4cb8fb2 100644
 +                    if (Player* pl = ObjectAccessor::FindPlayer(itr->guid))
 +                        ++players;
 +                }
-+ 
++
 +                //remove npcbots so group will be disbanded if only 1 player
 +                for (uint8 i = 0; i != player->GetMaxNpcBots(); ++i)
 +                    player->RemoveBot(player->GetBotMap(i)->m_guid, players <= 1);
@@ -50334,21 +50333,21 @@ index 8653106..4cb8fb2 100644
 +     group->RemoveMember(guid, method, kicker, reason);
 +    }
  }
- 
+
  void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
-@@ -3017,7 +4103,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3018,7 +4104,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
- 
+
      PlayerLevelInfo info;
 -    sObjectMgr->GetPlayerLevelInfo(getRace(), getClass(), level, &info);
 +    sObjectMgr->GetPlayerLevelInfo(getORace(), getClass(), level, &info);
- 
+
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3062,6 +4148,17 @@ void Player::GiveLevel(uint8 level)
+@@ -3063,6 +4149,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
- 
+
 +  if ((sIRC.BOTMASK & 64) != 0)
 +    {
 +        char  temp [5];
@@ -50361,31 +50360,31 @@ index 8653106..4cb8fb2 100644
 +    }
 +
      UpdateAllStats();
- 
+
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
-@@ -3104,6 +4201,9 @@ void Player::GiveLevel(uint8 level)
+@@ -3105,6 +4202,9 @@ void Player::GiveLevel(uint8 level)
              }
- 
+
      sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
 +
 +    if (m_playerbotAI)
 +        m_playerbotAI->GiveLevel(level);
  }
- 
+
  void Player::InitTalentForLevel()
-@@ -3155,7 +4255,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3156,7 +4256,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
- 
+
      PlayerLevelInfo info;
 -    sObjectMgr->GetPlayerLevelInfo(getRace(), getClass(), getLevel(), &info);
 +    sObjectMgr->GetPlayerLevelInfo(getORace(), getClass(), getLevel(), &info);
- 
+
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -4986,6 +6086,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4961,6 +6061,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
- 
+
 +            //npcbot - erase npcbots
 +            stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_NPCBOTS);
 +            stmt->setUInt32(0, guid);
@@ -50396,10 +50395,10 @@ index 8653106..4cb8fb2 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -5107,6 +6214,12 @@ void Player::BuildPlayerRepop()
+@@ -5082,6 +6189,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
- 
+
 +    //Guild-Level-System (Bonus: Faster spirit)
 +    if (!GetMap()->IsBattlegroundOrArena())
 +        if (Guild* guild = GetGuild())
@@ -50409,29 +50408,29 @@ index 8653106..4cb8fb2 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5154,6 +6267,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5129,6 +6242,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
- 
+
 +    //Guild-Level-System (Bonus: Faster spirit)
 +    SetSpeed(MOVE_RUN, 1.0f, true);
 +
      m_deathTimer = 0;
- 
+
      // set health/powers (0- will be set in caller)
-@@ -5254,7 +6370,7 @@ void Player::CreateCorpse()
+@@ -5229,7 +6345,7 @@ void Player::CreateCorpse()
          return;
      }
- 
+
 -    _uf = GetUInt32Value(UNIT_FIELD_BYTES_0);
 +    _uf = getORace();
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
- 
-@@ -5479,6 +6595,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
- 
+
+@@ -5454,6 +6570,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
- 
+
 +            //Guild-Level-System (Bonus: Guenstige Reperatur)
 +            if (Guild* guild = GetGuild())
 +            {
@@ -50443,24 +50442,24 @@ index 8653106..4cb8fb2 100644
 +
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
- 
-@@ -6924,10 +8049,10 @@ uint32 Player::TeamForRace(uint8 race)
- 
+
+@@ -6913,10 +8038,10 @@ uint32 Player::TeamForRace(uint8 race)
+
  void Player::setFactionForRace(uint8 race)
  {
 -    m_team = TeamForRace(race);
 +    SetBGTeam(TeamForRace(race));
- 
+
      ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
 -    setFaction(rEntry ? rEntry->FactionID : 0);
 +    setFaction(rEntry ? rEntry->FactionID : getFaction());
  }
- 
+
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -7029,6 +8154,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7018,6 +8143,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
- 
+
 +    uint32 repfaction1 = Rep->RepFaction1;
 +    uint32 repfaction2 = Rep->RepFaction2;
 +
@@ -50483,50 +50482,50 @@ index 8653106..4cb8fb2 100644
 +    }
 +
      uint32 ChampioningFaction = 0;
- 
+
      if (GetChampioningFaction())
-@@ -7043,23 +8189,23 @@ void Player::RewardReputation(Unit* victim, float rate)
- 
+@@ -7032,23 +8178,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+
      uint32 team = GetTeam();
- 
+
 -    if (Rep->RepFaction1 && (!Rep->TeamDependent || team == ALLIANCE))
 +    if (repfaction1 && (!Rep->TeamDependent || team == ALLIANCE))
      {
 -        int32 donerep1 = CalculateReputationGain(REPUTATION_SOURCE_KILL, victim->getLevel(), Rep->RepValue1, ChampioningFaction ? ChampioningFaction : Rep->RepFaction1);
 +        int32 donerep1 = CalculateReputationGain(REPUTATION_SOURCE_KILL, victim->getLevel(), Rep->RepValue1, ChampioningFaction ? ChampioningFaction : repfaction1);
          donerep1 = int32(donerep1 * rate);
- 
+
 -        FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(ChampioningFaction ? ChampioningFaction : Rep->RepFaction1);
 +        FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(ChampioningFaction ? ChampioningFaction : repfaction1);
          uint32 current_reputation_rank1 = GetReputationMgr().GetRank(factionEntry1);
          if (factionEntry1 && current_reputation_rank1 <= Rep->ReputationMaxCap1)
              GetReputationMgr().ModifyReputation(factionEntry1, donerep1);
      }
- 
+
 -    if (Rep->RepFaction2 && (!Rep->TeamDependent || team == HORDE))
 +    if (repfaction2 && (!Rep->TeamDependent || team == HORDE))
      {
 -        int32 donerep2 = CalculateReputationGain(REPUTATION_SOURCE_KILL, victim->getLevel(), Rep->RepValue2, ChampioningFaction ? ChampioningFaction : Rep->RepFaction2);
 +        int32 donerep2 = CalculateReputationGain(REPUTATION_SOURCE_KILL, victim->getLevel(), Rep->RepValue2, ChampioningFaction ? ChampioningFaction : repfaction2);
          donerep2 = int32(donerep2 * rate);
- 
+
 -        FactionEntry const* factionEntry2 = sFactionStore.LookupEntry(ChampioningFaction ? ChampioningFaction : Rep->RepFaction2);
 +        FactionEntry const* factionEntry2 = sFactionStore.LookupEntry(ChampioningFaction ? ChampioningFaction : repfaction2);
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7154,7 +8300,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7143,7 +8289,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
- 
+
 -        if (GetBGTeam() == victim->ToPlayer()->GetBGTeam())
 +        if (GetTeam() == victim->ToPlayer()->GetTeam())
              return false;
- 
+
          return true;
-@@ -7249,6 +8395,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7238,6 +8384,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
- 
+
      honor_f *= sWorld->getRate(RATE_HONOR);
 +
 +    //Guild-Level-System (Bonus: Ehre)
@@ -50541,8 +50540,8 @@ index 8653106..4cb8fb2 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7478,7 +8634,7 @@ void Player::UpdateArea(uint32 newArea)
- 
+@@ -7467,7 +8623,7 @@ void Player::UpdateArea(uint32 newArea)
+
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
 -    if (area && area->IsSanctuary())    // in sanctuary
@@ -50550,10 +50549,10 @@ index 8653106..4cb8fb2 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7819,6 +8975,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7808,6 +8964,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
- 
+
 +    uint32 statcount = proto->StatsCount;
 +    uint32 lowGUID = 0;
 +    bool decreased = false;
@@ -50571,7 +50570,7 @@ index 8653106..4cb8fb2 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7833,10 +9003,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7822,10 +8992,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -50595,26 +50594,26 @@ index 8653106..4cb8fb2 100644
 +                }
 +            }
          }
- 
+
          if (val == 0)
-@@ -11987,13 +13171,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
- 
+@@ -11976,13 +13160,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+
      if (proto)
      {
 -        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetTeam() != HORDE)
 +        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetOTeam() != HORDE)
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
- 
+
 -        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetTeam() != ALLIANCE)
 +        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetOTeam() != ALLIANCE)
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
- 
+
 -        if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getRaceMask()) == 0)
 +        if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getORaceMask()) == 0)
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
- 
+
          if (proto->RequiredSkill != 0)
-@@ -12481,7 +13665,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12470,7 +13654,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -50626,7 +50625,7 @@ index 8653106..4cb8fb2 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12607,6 +13794,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12596,6 +13783,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -50634,18 +50633,18 @@ index 8653106..4cb8fb2 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15329,13 +16517,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15318,13 +16506,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
- 
+
      // Not give XP in case already completed once repeatable quest
 -    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
 +    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*(_individual_quest > 0 ? _individual_quest : sWorld->getRate(RATE_XP_QUEST)));
- 
+
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
- 
+
 +    //Guild-Level-System (Bonus: QuestXP)
 +    if (Guild* guild = GetGuild())
 +    {
@@ -50662,10 +50661,10 @@ index 8653106..4cb8fb2 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17231,6 +18432,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17220,6 +18421,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
- 
+
 +    SetORace();
 +    m_team = TeamForRace(getORace());
 +    SetFakeRaceAndMorph(); // m_team must be set before this can be used.
@@ -50673,11 +50672,11 @@ index 8653106..4cb8fb2 100644
 +
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
- 
-@@ -17277,10 +18483,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+
+@@ -17266,10 +18472,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
- 
+
 -    //Need to call it to initialize m_team (m_team can be calculated from race)
 -    //Other way is to saves m_team into characters table.
 -    setFactionForRace(getRace());
@@ -50685,8 +50684,8 @@ index 8653106..4cb8fb2 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -17547,7 +18749,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
- 
+@@ -17536,7 +18738,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+
      if (!map)
      {
 -        PlayerInfo const* info = sObjectMgr->GetPlayerInfo(getRace(), getClass());
@@ -50694,7 +50693,7 @@ index 8653106..4cb8fb2 100644
          mapId = info->mapId;
          Relocate(info->positionX, info->positionY, info->positionZ, 0.0f);
          map = sMapMgr->CreateMap(mapId, this);
-@@ -19197,7 +20399,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19187,7 +20389,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -50703,7 +50702,7 @@ index 8653106..4cb8fb2 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19302,7 +20504,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19292,7 +20494,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -50712,10 +50711,10 @@ index 8653106..4cb8fb2 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19456,6 +20658,12 @@ void Player::SaveToDB(bool create /*=false*/)
- 
+@@ -19446,6 +20648,12 @@ void Player::SaveToDB(bool create /*=false*/)
+
      CharacterDatabase.CommitTransaction(trans);
- 
+
 +    // we save the data here to prevent spamming
 +    sAnticheatMgr->SavePlayerData(this);
 +
@@ -50725,10 +50724,10 @@ index 8653106..4cb8fb2 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20541,6 +21749,19 @@ void Player::StopCastingCharm()
+@@ -20531,6 +21739,19 @@ void Player::StopCastingCharm()
      }
  }
- 
+
 +void Player::BuildPlayerChat(WorldPacket* data, uint8 msgtype, const std::string& text, uint32 language) const
 +{
 +    *data << uint8(msgtype);
@@ -50745,10 +50744,10 @@ index 8653106..4cb8fb2 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22326,11 +23547,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22316,11 +23537,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
- 
+
 -uint32 Player::GetBGTeam() const
 -{
 -    return m_bgData.bgTeam ? m_bgData.bgTeam : GetTeam();
@@ -50757,8 +50756,8 @@ index 8653106..4cb8fb2 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22406,7 +23622,7 @@ void Player::ReportedAfkBy(Player* reporter)
- 
+@@ -22396,7 +23612,7 @@ void Player::ReportedAfkBy(Player* reporter)
+
  WorldLocation Player::GetStartPosition() const
  {
 -    PlayerInfo const* info = sObjectMgr->GetPlayerInfo(getRace(), getClass());
@@ -50766,7 +50765,7 @@ index 8653106..4cb8fb2 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26763,3 +27979,22 @@ bool Player::IsLoading() const
+@@ -26804,3 +28020,22 @@ bool Player::IsLoading() const
  {
      return GetSession()->PlayerLoading();
  }
@@ -50790,13 +50789,13 @@ index 8653106..4cb8fb2 100644
 +    }
 +}
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index fdebbde..d87d0b7 100644
+index 5f500b7..055a182 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,14 @@ class PlayerSocial;
  class SpellCastTargets;
  class UpdateMask;
- 
+
 +// Playerbot mod
 +class PlayerbotAI;
 +
@@ -50806,12 +50805,12 @@ index fdebbde..d87d0b7 100644
 +class BotHelper;
 +
  typedef std::deque<Mail*> PlayerMails;
- 
+
  #define PLAYER_MAX_SKILLS           127
-@@ -900,6 +908,13 @@ enum PlayerCommandStates
+@@ -909,6 +917,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
- 
+
 +//Individuale_XP-Raten
 +enum IndividualXpRate
 +{
@@ -50822,7 +50821,7 @@ index fdebbde..d87d0b7 100644
  class PlayerTaxi
  {
      public:
-@@ -1070,6 +1085,37 @@ class Player : public Unit, public GridObject<Player>
+@@ -1079,6 +1094,37 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -50857,49 +50856,49 @@ index fdebbde..d87d0b7 100644
 +        FakePlayers m_FakePlayers;
 +
 +        //AnticheatData anticheatData;
- 
+
          void CleanupsBeforeDelete(bool finalCleanup = true);
- 
-@@ -1123,7 +1169,7 @@ class Player : public Unit, public GridObject<Player>
+
+@@ -1132,7 +1178,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
- 
+
          PlayerTaxi m_taxi;
 -        void InitTaxiNodesForLevel() { m_taxi.InitTaxiNodesForLevel(getRace(), getClass(), getLevel()); }
 +        void InitTaxiNodesForLevel() { m_taxi.InitTaxiNodesForLevel(getORace(), getClass(), getLevel()); }
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1191,6 +1237,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1200,6 +1246,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
 +        /// Constructs the player Chat data for the specific functions to use
 +        void BuildPlayerChat(WorldPacket* data, uint8 msgtype, std::string const& text, uint32 language) const;
- 
+
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1891,8 +1939,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1902,8 +1950,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
- 
+
          static uint32 TeamForRace(uint8 race);
 -        uint32 GetTeam() const { return m_team; }
 -        TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
 +        TeamId GetTeamId() const { return GetTeam() == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
          void setFactionForRace(uint8 race);
- 
+
          void InitDisplayIds();
-@@ -2036,7 +2083,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -2047,7 +2094,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
- 
+
          void SetBGTeam(uint32 team);
 -        uint32 GetBGTeam() const;
- 
+
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
-@@ -2305,6 +2351,63 @@ class Player : public Unit, public GridObject<Player>
- 
+@@ -2316,6 +2362,63 @@ class Player : public Unit, public GridObject<Player>
+
          bool IsLoading() const;
- 
+
 +        //Individuale_XP-Raten
 +        void SetIndividualRate(IndividualXpRate rate, float value);
 +        float GetIndividualXpKillRate() { return _individual_kill; };
@@ -50960,9 +50959,9 @@ index fdebbde..d87d0b7 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2568,6 +2671,33 @@ class Player : public Unit, public GridObject<Player>
+@@ -2579,6 +2682,33 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
- 
+
      private:
 +        /*********************************************************/
 +        /***                     BOT SYSTEM                    ***/
@@ -50994,9 +50993,9 @@ index fdebbde..d87d0b7 100644
          // internal common parts for CanStore/StoreItem functions
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
-@@ -2633,6 +2763,12 @@ class Player : public Unit, public GridObject<Player>
+@@ -2644,6 +2774,12 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
- 
+
          uint32 _activeCheats;
 +
 +        //Individual_XP-Rate
@@ -51005,7 +51004,7 @@ index fdebbde..d87d0b7 100644
 +    public :
 +        QuestStatusSaveMap m_RewardedQuestsSave2;
  };
- 
+
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Entities/Totem/Totem.cpp b/src/server/game/Entities/Totem/Totem.cpp
 index b8f5fd1..8dcf817 100644
@@ -51014,7 +51013,7 @@ index b8f5fd1..8dcf817 100644
 @@ -143,6 +143,13 @@ void Totem::UnSummon(uint32 msTime)
          }
      }
- 
+
 +    //npcbot: send SummonedCreatureDespawn()
 +    if (IS_CREATURE_GUID(GetCreatorGUID()))
 +        if (Unit* bot = sObjectAccessor->FindUnit(GetCreatorGUID()))
@@ -51024,7 +51023,7 @@ index b8f5fd1..8dcf817 100644
 +
      AddObjectToRemoveList();
  }
- 
+
 diff --git a/src/server/game/Entities/Unit/StatSystem.cpp b/src/server/game/Entities/Unit/StatSystem.cpp
 index 0413622..3170a37 100644
 --- a/src/server/game/Entities/Unit/StatSystem.cpp
@@ -51034,28 +51033,28 @@ index 0413622..3170a37 100644
  #include "SpellMgr.h"
  #include "World.h"
 +#include "WorldSession.h"
- 
+
  inline bool _ModifyUInt32(bool apply, uint32& baseValue, int32& amount)
  {
 @@ -217,6 +218,10 @@ bool Player::UpdateAllStats()
      RecalculateRating(CR_ARMOR_PENETRATION);
      UpdateAllResistances();
- 
+
 +    for (uint8 i = 0; i != GetMaxNpcBots(); ++i)
 +        if (Creature* bot = GetBotMap(i)->_Cre())
 +            bot->SetBotShouldUpdateStats();
 +
      return true;
  }
- 
+
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index ca4780b..59701d3 100644
+index 72c1a07..4aa7fe7 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -16,6 +16,7 @@
   * with this program. If not, see <http://www.gnu.org/licenses/>.
   */
- 
+
 +#include "AnticheatMgr.h"
  #include "Unit.h"
  #include "Common.h"
@@ -51065,9 +51064,9 @@ index ca4780b..59701d3 100644
  #include "WorldPacket.h"
  #include "WorldSession.h"
 +#include "Guild.h"
- 
+
  #include <math.h>
- 
+
 @@ -338,6 +340,17 @@ void Unit::Update(uint32 p_time)
                  m_CombatTimer -= p_time;
          }
@@ -51083,13 +51082,13 @@ index ca4780b..59701d3 100644
 +                m_CombatTimer -= p_time;
 +        }
 +    }
- 
+
      // not implemented before 3.0.2
      if (uint32 base_att = getAttackTimer(BASE_ATTACK))
 @@ -575,6 +588,12 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
          if (pet && pet->IsAlive())
              pet->AI()->OwnerAttackedBy(this);
- 
+
 +        // NpcBot mod: also signal owned npcbots
 +        for (ControlList::const_iterator itr = victim->ToPlayer()->m_Controlled.begin(); itr != victim->ToPlayer()->m_Controlled.end(); ++itr)
 +            if (Creature* cre = (*itr)->ToCreature())
@@ -51126,7 +51125,7 @@ index ca4780b..59701d3 100644
 @@ -1167,6 +1196,11 @@ void Unit::CalculateMeleeDamage(Unit* victim, uint32 damage, CalcDamageInfo* dam
      // Script Hook For CalculateMeleeDamage -- Allow scripts to change the Damage pre class mitigation calculations
      sScriptMgr->ModifyMeleeDamage(damageInfo->target, damageInfo->attacker, damage);
- 
+
 +    //Npcbot mod: apply bot damage mods
 +    if (Creature* bot = ToCreature())
 +        if (bot->GetIAmABot() || bot->GetIAmABotsPet())
@@ -51135,16 +51134,16 @@ index ca4780b..59701d3 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10454,6 +10488,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
+@@ -10453,6 +10487,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
 +        if (!ToCreature()->GetIAmABot())
          return 0.0f;
- 
+
      // not critting spell
-@@ -12191,10 +12226,30 @@ void Unit::SetVisible(bool x)
- 
+@@ -12190,10 +12225,30 @@ void Unit::SetVisible(bool x)
+
  void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
  {
 +    //if (this->ToPlayer())
@@ -51153,7 +51152,7 @@ index ca4780b..59701d3 100644
      int32 main_speed_mod  = 0;
      float stack_bonus     = 1.0f;
      float non_stack_bonus = 1.0f;
- 
+
 +    //Guild-Level-System (Bonus: Reittempo)
 +    uint8 bonusSpeed = 0;
 +    if (GetTypeId() == TYPEID_PLAYER)
@@ -51174,7 +51173,7 @@ index ca4780b..59701d3 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12208,7 +12263,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12207,7 +12262,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -51183,7 +51182,7 @@ index ca4780b..59701d3 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12242,7 +12297,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12241,7 +12296,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -51192,10 +51191,10 @@ index ca4780b..59701d3 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
-@@ -13202,6 +13257,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13201,6 +13256,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
- 
+
 +    if (Player* master = ToPlayer())
 +        for (uint8 i = 0; i != master->GetMaxNpcBots(); ++i)
 +            if (Creature* bot = master->GetBotMap(i)->_Cre())
@@ -51203,8 +51202,8 @@ index ca4780b..59701d3 100644
 +
      return true;
  }
- 
-@@ -15995,7 +16055,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+
+@@ -15994,7 +16054,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -51213,7 +51212,7 @@ index ca4780b..59701d3 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16643,6 +16703,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16642,6 +16702,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -51393,10 +51392,10 @@ index ca4780b..59701d3 100644
 +                break;
 +        }
 +    }
- 
+
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
-@@ -16746,6 +16982,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16745,6 +16981,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -51443,7 +51442,7 @@ index e452253..158e96d 100644
  #include "UnitAI.h"
  #include "GameObjectAI.h"
 +#include "IRCClient.h"
- 
+
  bool GameEventMgr::CheckOneGameEvent(uint16 entry) const
  {
 @@ -1088,7 +1089,12 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id)
@@ -51458,16 +51457,16 @@ index e452253..158e96d 100644
 +                 sIRC.Send_IRC_Channel(ircchan, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 Game Event \00304,08\037/!\\\037\017 %s", "%s", mGameEvent[event_id].description.c_str()), true);
 +             }
      TC_LOG_INFO("gameevent", "GameEvent %u \"%s\" started.", event_id, mGameEvent[event_id].description.c_str());
- 
+
      //! Run SAI scripts with SMART_EVENT_GAME_EVENT_END
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 9eb7d5e..7854903 100644
+index 278460e..00f69b9 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7840,6 +7840,82 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
-     }
+@@ -7905,6 +7905,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+     return SKILL_RANGE_LEVEL;
  }
- 
+
 +void ObjectMgr::LoadCreatureOutfits()
 +{
 +    uint32 oldMSTime = getMSTime();
@@ -51548,13 +51547,13 @@ index 9eb7d5e..7854903 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index e5e55b8..db4577a 100644
+index 3f8013b..448afa7 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -144,6 +144,21 @@ struct GameTele
- 
+
  typedef std::unordered_map<uint32, GameTele > GameTeleContainer;
- 
+
 +#define MAX_CREATURE_OUTFIT_DISPLAYS 11
 +struct CreatureOutfit
 +{
@@ -51574,26 +51573,26 @@ index e5e55b8..db4577a 100644
  {
      SCRIPTS_FIRST = 1,
 @@ -1011,6 +1026,7 @@ class ObjectMgr
- 
+
          void LoadNPCSpellClickSpells();
- 
+
 +        void LoadCreatureOutfits();
          void LoadGameTele();
- 
+
          void LoadGossipMenu();
 @@ -1219,6 +1235,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
- 
+
 +        CreatureOutfitContainer const& GetCreatureOutfitMap() const { return _creatureOutfitStore; }
 +
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
 @@ -1295,6 +1313,8 @@ class ObjectMgr
- 
+
          bool IsTransportMap(uint32 mapId) const { return _transportMaps.count(mapId); }
- 
+
 +        ItemFakeStatContainer _itemFakeStatStore; // custom
 +
      private:
@@ -51602,7 +51601,7 @@ index e5e55b8..db4577a 100644
 @@ -1365,6 +1385,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
- 
+
 +        CreatureOutfitContainer _creatureOutfitStore;
 +
      private:
@@ -51615,13 +51614,13 @@ index 45ecbf0..4227340 100644
 @@ -107,6 +107,9 @@ bool Group::Create(Player* leader)
      if (m_groupType & GROUPTYPE_RAID)
          _initRaidSubGroupsCounter();
- 
+
 +    if (leader->HaveBot()) //player + npcbot so set to free-for-all on create
 +        m_lootMethod = FREE_FOR_ALL;
 +    else
      if (!isLFGGroup())
          m_lootMethod = GROUP_LOOT;
- 
+
 @@ -301,6 +304,7 @@ bool Group::AddLeaderInvite(Player* player)
  void Group::RemoveInvite(Player* player)
  {
@@ -51631,9 +51630,9 @@ index 45ecbf0..4227340 100644
          m_invitees.erase(player);
          player->SetGroupInvite(NULL);
 @@ -366,6 +370,8 @@ bool Group::AddMember(Player* player)
- 
+
      SubGroupCounterIncrease(subGroup);
- 
+
 +    if (IS_PLAYER_GUID(player->GetGUID()))
 +    {
      player->SetGroupInvite(NULL);
@@ -51644,13 +51643,13 @@ index 45ecbf0..4227340 100644
      if (bind && bind->save->GetInstanceId() == player->GetInstanceId())
          player->m_InstanceValid = true;
 +    }
- 
+
      if (!isRaidGroup())                                      // reset targetIcons for non-raid-groups
      {
 @@ -406,6 +413,10 @@ bool Group::AddMember(Player* player)
      SendUpdate();
      sScriptMgr->OnGroupAddMember(this, player->GetGUID());
- 
+
 +    if (IS_PLAYER_GUID(player->GetGUID()))
 +    {
 +    if (IS_PLAYER_GUID(player->GetGUID()))
@@ -51665,24 +51664,24 @@ index 45ecbf0..4227340 100644
 +    }
      player->SetGroupUpdateFlag(GROUP_UPDATE_FULL);
      UpdatePlayerOutOfRange(player);
- 
+
 @@ -481,6 +493,7 @@ bool Group::AddMember(Player* player)
- 
+
      if (m_maxEnchantingLevel < player->GetSkillValue(SKILL_ENCHANTING))
          m_maxEnchantingLevel = player->GetSkillValue(SKILL_ENCHANTING);
 +    }
- 
+
      return true;
  }
 @@ -604,6 +617,9 @@ bool Group::RemoveMember(uint64 guid, const RemoveMethod& method /*= GROUP_REMOV
          }
- 
+
          if (m_memberMgr.getSize() < ((isLFGGroup() || isBGGroup()) ? 1u : 2u))
 +        //npcbot
 +        if (GetMembersCount() < ((isBGGroup() || isLFGGroup()) ? 1u : 2u))
 +        //end npcbot
              Disband();
- 
+
          return true;
 diff --git a/src/server/game/Groups/Group.h b/src/server/game/Groups/Group.h
 index f0061a7..6d28e40 100644
@@ -51691,7 +51690,7 @@ index f0061a7..6d28e40 100644
 @@ -309,6 +309,9 @@ class Group
          // FG: evil hacks
          void BroadcastGroupUpdate(void);
- 
+
 +        //Bot
 +        uint64 const *GetTargetIcons() const { return m_targetIcons; }
 +
@@ -51705,16 +51704,16 @@ index db0a196..6cdc164 100644
 @@ -1206,6 +1206,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
      if (ret)
          sScriptMgr->OnGuildCreate(this, pLeader, name);
- 
+
 +    //Guild-Level-System
 +    LoadLevelInfo();
 +
      return ret;
  }
- 
+
 @@ -1957,6 +1960,10 @@ bool Guild::LoadFromDB(Field* fields)
          m_bankTabs[i] = new BankTab(m_id, i);
- 
+
      _CreateLogHolders();
 +
 +    //Guild-Level-System
@@ -51722,9 +51721,9 @@ index db0a196..6cdc164 100644
 +
      return true;
  }
- 
+
 @@ -2924,3 +2931,140 @@ void Guild::ResetTimes()
- 
+
      _BroadcastEvent(GE_BANK_TAB_AND_MONEY_UPDATED, 0);
  }
 +
@@ -51871,7 +51870,7 @@ index ea0b2e4..d5f3d77 100644
 @@ -222,6 +222,29 @@ enum GuildMemberFlags
      GUILDMEMBER_STATUS_MOBILE           = 0x0008, // remote chat from mobile app
  };
- 
+
 +//Guild-Level-System [Start]
 +enum GuildBonus
 +{
@@ -51899,9 +51898,9 @@ index ea0b2e4..d5f3d77 100644
  class EmblemInfo
  {
 @@ -740,6 +763,15 @@ public:
- 
+
      void ResetTimes();
- 
+
 +    //Guild-Level-System
 +    void LoadLevelInfo();
 +    bool HasLevelForBonus(uint8 guildBonus);
@@ -51917,7 +51916,7 @@ index ea0b2e4..d5f3d77 100644
 @@ -760,6 +792,11 @@ protected:
      LogHolder* m_eventLog;
      LogHolder* m_bankEventLog[GUILD_BANK_MAX_TABS + 1];
- 
+
 +    //Guild-Level-System
 +    uint8 m_guild_level;
 +    uint32 m_current_guildXp;
@@ -51933,7 +51932,7 @@ index 86fa042..6346691 100644
 @@ -22,6 +22,7 @@
  #include "WorldPacket.h"
  #include "WorldSession.h"
- 
+
 +#include "AuctionHouseBot.h"
  #include "AuctionHouseMgr.h"
  #include "Log.h"
@@ -51943,12 +51942,12 @@ index 86fa042..6346691 100644
  #include "Util.h"
  #include "AccountMgr.h"
 +#include "IRCClient.h"
- 
+
  //void called when player click on auctioneer npc
  void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recvData)
 @@ -574,10 +576,16 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
      SendAuctionCommandResult(auction->Id, AUCTION_CANCEL, ERR_AUCTION_OK);
- 
+
      // Now remove the auction
 -
 +    uint32 item;
@@ -51961,7 +51960,7 @@ index 86fa042..6346691 100644
 +  ItemTemplate const *pProto = sObjectMgr->GetItemTemplate(item);
 +    sIRC.AHFunc(auction->itemEntry, pProto->Name1, player->GetName(), auction->GetHouseId());
 +  }
- 
+
      uint32 itemEntry = auction->itemEntry;
      sAuctionMgr->RemoveAItem(auction->itemGUIDLow);
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
@@ -51971,7 +51970,7 @@ index 7def6b0..caa424e 100644
 @@ -35,6 +35,8 @@
  #include "DisableMgr.h"
  #include "Group.h"
- 
+
 +#include "Cfbg/Cfbg.h"
 +
  void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recvData)
@@ -51992,8 +51991,8 @@ index 9ad382b..1976498 100644
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
  #include "WorldSession.h"
- 
- 
+
+
 +//bot
 +#include "Config.h"
 +#include "PlayerbotAI.h"
@@ -52002,7 +52001,7 @@ index 9ad382b..1976498 100644
  {
      private:
 @@ -1039,10 +1043,107 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
- 
+
      // Handle Login-Achievements (should be handled after loading)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
 +    //the only place where we check if it has NPC bots
@@ -52032,9 +52031,9 @@ index 9ad382b..1976498 100644
 +            } while (result->NextRow());
 +        }
 +    }
- 
+
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
- 
+
      delete holder;
 +
 +    if (pCurrChar->GetTeam() != pCurrChar->GetOTeam())
@@ -52107,12 +52106,12 @@ index 9ad382b..1976498 100644
 +
 +    botSession->m_master = masterSession->GetPlayer();
  }
- 
+
  void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
 @@ -1065,6 +1166,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
- 
+
 +//Playerbot mod - add new player bot for this master. This definition must
 +//appear in this file because it utilizes the CharacterHandler class
 +//which isn't accessible outside this file
@@ -52178,13 +52177,13 @@ index eccf7a6..959f2ca 100644
 +#include "IRCClient.h"
 +//Playerbot mod
 +#include "PlayerbotAI.h"
- 
+
  void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  {
 @@ -48,6 +51,18 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
      recvData >> type;
      recvData >> lang;
- 
+
 +    if (sWorld->getBoolConfig(BATTLEGROUND_CROSSFACTION_ENABLED) && lang != LANG_ADDON)
 +    {
 +        switch (type)
@@ -52203,7 +52202,7 @@ index eccf7a6..959f2ca 100644
 @@ -55,7 +70,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
          return;
      }
- 
+
 -    if (lang == LANG_UNIVERSAL && type != CHAT_MSG_AFK && type != CHAT_MSG_DND)
 +    if (lang == CHAT_MSG_AFK && type != CHAT_MSG_DND)
      {
@@ -52212,7 +52211,7 @@ index eccf7a6..959f2ca 100644
 @@ -253,6 +268,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                  return;
              }
- 
+
 +            if (!GetPlayer()->IsGameMaster())
 +                if (GetPlayer()->SendBattleGroundChat(type, msg))
 +                    return;
@@ -52222,7 +52221,7 @@ index eccf7a6..959f2ca 100644
              else if (type == CHAT_MSG_EMOTE)
 @@ -269,10 +288,19 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
              }
- 
+
              Player* receiver = sObjectAccessor->FindPlayerByName(to);
 -            if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
 +            if (!receiver)
@@ -52244,7 +52243,7 @@ index eccf7a6..959f2ca 100644
 @@ -298,6 +326,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                  (HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !sender->isAcceptWhispers() && !sender->IsInWhisperWhiteList(receiver->GetGUID())))
                  sender->AddWhisperWhiteList(receiver->GetGUID());
- 
+
 +            //Playerbot mod: handle whispered command to bot
 +            if (receiver->GetPlayerbotAI())
 +            {
@@ -52260,9 +52259,9 @@ index eccf7a6..959f2ca 100644
          } break;
          case CHAT_MSG_PARTY:
 @@ -317,6 +356,23 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
- 
+
              sScriptMgr->OnPlayerChat(GetPlayer(), type, lang, msg, group);
- 
+
 +            //Playerbot mod: broadcast message to bot members
 +            for (GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
 +            {
@@ -52284,7 +52283,7 @@ index eccf7a6..959f2ca 100644
              ChatHandler::BuildChatPacket(data, ChatMsg(type), Language(lang), sender, NULL, msg);
              group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetGUID()));
 @@ -431,6 +487,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
- 
+
              if (ChannelMgr* cMgr = ChannelMgr::forTeam(sender->GetTeam()))
              {
 +                sIRC.Send_WoW_IRC(sender, channel, msg);
@@ -52296,7 +52295,7 @@ index 97867e2..3dba783 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
 @@ -307,6 +307,13 @@ void WorldSession::HandleGroupUninviteGuidOpcode(WorldPacket& recvData)
- 
+
      if (grp->IsMember(guid))
      {
 +        Player* player = sObjectAccessor->FindPlayer(guid);
@@ -52310,7 +52309,7 @@ index 97867e2..3dba783 100644
          return;
      }
 @@ -352,6 +359,13 @@ void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recvData)
- 
+
      if (uint64 guid = grp->GetMemberGUID(membername))
      {
 +        Player* player = sObjectAccessor->FindPlayer(guid);
@@ -52332,13 +52331,13 @@ index b9c6f34..8bc8798 100644
  #include "WorldPacket.h"
  #include "WorldSession.h"
 +#include "Guild.h"
- 
+
  void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recvData)
  {
 @@ -203,6 +204,16 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
              SendPacket(&data);
          }
- 
+
 +        //Guild-Level-System (Bonus: Gold)
 +        if (Guild* guild = player->GetGuild())
 +        {
@@ -52350,7 +52349,7 @@ index b9c6f34..8bc8798 100644
 +        }
 +
          loot->gold = 0;
- 
+
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
 index c4ff258..16a2a1f 100644
@@ -52359,7 +52358,7 @@ index c4ff258..16a2a1f 100644
 @@ -56,6 +56,9 @@
  #include "Battlefield.h"
  #include "BattlefieldMgr.h"
- 
+
 +//Bot
 +#include "bothelper.h"
 +
@@ -52422,7 +52421,7 @@ index c4ff258..16a2a1f 100644
 @@ -364,7 +399,39 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
          ++displaycount;
      }
- 
+
 -    data.put(0, displaycount);                            // insert right count, count displayed
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
 +    {
@@ -52458,10 +52457,10 @@ index c4ff258..16a2a1f 100644
 +
 +    data.put(0, matchcount);                            // insert right count, count displayed
      data.put(4, matchcount);                              // insert right count, count of matches
- 
+
      SendPacket(&data);
 @@ -1431,6 +1498,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
- 
+
  void WorldSession::HandleTimeSyncResp(WorldPacket& recvData)
  {
 +    Battleground* bg = _player->GetBattleground();
@@ -52480,7 +52479,7 @@ index c4ff258..16a2a1f 100644
 +    }
 +
      TC_LOG_DEBUG("network", "CMSG_TIME_SYNC_RESP");
- 
+
      uint32 counter, clientTicks;
 diff --git a/src/server/game/Handlers/MovementHandler.cpp b/src/server/game/Handlers/MovementHandler.cpp
 index 6fedc48..66a1fa6 100644
@@ -52489,7 +52488,7 @@ index 6fedc48..66a1fa6 100644
 @@ -16,6 +16,7 @@
   * with this program. If not, see <http://www.gnu.org/licenses/>.
   */
- 
+
 +#include "AnticheatMgr.h"
  #include "Common.h"
  #include "WorldPacket.h"
@@ -52497,7 +52496,7 @@ index 6fedc48..66a1fa6 100644
 @@ -343,6 +344,9 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
          plrMover->SetInWater(!plrMover->IsInWater() || plrMover->GetBaseMap()->IsUnderWater(movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ()));
      }
- 
+
 +    if (plrMover)
 +        sAnticheatMgr->StartHackDetection(plrMover, movementInfo, opcode);
 +
@@ -52511,7 +52510,7 @@ index d8a518a..5b9a19c 100644
 @@ -38,6 +38,9 @@
  #include "CreatureAI.h"
  #include "SpellInfo.h"
- 
+
 +//Bot
 +#include "bothelper.h"
 +
@@ -52521,7 +52520,7 @@ index d8a518a..5b9a19c 100644
 @@ -303,6 +306,36 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recvData)
      uint64 guid;
      recvData >> guid;
- 
+
 +    //Bot
 +    if (guid == _player->GetGUID())
 +    {
@@ -52567,7 +52566,7 @@ index dbcfb1c..f3ff127 100644
 +    data << uint8(player ? player->getRace() : nameData->m_race);
      data << uint8(nameData->m_gender);
      data << uint8(nameData->m_class);
- 
+
 diff --git a/src/server/game/Handlers/QuestHandler.cpp b/src/server/game/Handlers/QuestHandler.cpp
 index d4dc7a9..06d94fa 100644
 --- a/src/server/game/Handlers/QuestHandler.cpp
@@ -52578,7 +52577,7 @@ index d4dc7a9..06d94fa 100644
  #include "GameObjectAI.h"
 +// Playerbot mod:
 +#include "PlayerbotAI.h"
- 
+
  void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recvData)
  {
 @@ -567,8 +569,13 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
@@ -52604,13 +52603,13 @@ index ba30803..378b2a3 100644
  #include "SpellAuraEffects.h"
  #include "Player.h"
 +#include "../../scripts/Custom/Transmogrification.h"
- 
+
  void WorldSession::HandleClientCastFlags(WorldPacket& recvPacket, uint8 castFlags, SpellCastTargets& targets)
  {
 @@ -568,6 +569,36 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
      if (!unit)
          return;
- 
+
 +    //bot
 +    if (unit->ToCreature())
 +    {
@@ -52643,7 +52642,7 @@ index ba30803..378b2a3 100644
 +
      if (!unit->HasAuraType(SPELL_AURA_CLONE_CASTER))
          return;
- 
+
 @@ -617,7 +648,12 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
              else if (*itr == EQUIPMENT_SLOT_BACK && player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
                  data << uint32(0);
@@ -52667,13 +52666,13 @@ index 2c65e36..283efa7 100644
  #include "AuctionHouseMgr.h"
  #include "CalendarMgr.h"
 +#include "AuctionHouseBot.h"
- 
+
  MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery(stationery)
  {
 @@ -180,6 +181,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
- 
+
      uint32 mailId = sObjectMgr->GenerateMailID();
- 
+
 +    if (receiver.GetPlayerGUIDLow() == auctionbot.GetAHBplayerGUID())
 +    {
 +        if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
@@ -52682,7 +52681,7 @@ index 2c65e36..283efa7 100644
 +    }
 +
      time_t deliver_time = time(NULL) + deliver_delay;
- 
+
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
 index 01e3af1..fef8b2e 100644
@@ -52698,7 +52697,7 @@ index 01e3af1..fef8b2e 100644
 +        }
      return count;
  }
- 
+
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
 index 8d0e97d..34ffffe 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
@@ -52708,13 +52707,13 @@ index 8d0e97d..34ffffe 100644
  #include "ScriptMgr.h"
  #include "Player.h"
 +#include "Guild.h"
- 
+
  namespace Trinity
  {
 @@ -180,7 +181,20 @@ namespace Trinity
                          gain *= 2;
                  }
- 
+
 -                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL));
 +                //Individuale_XP-Rate
 +                float individualXpKill = player->GetIndividualXpKillRate();
@@ -52731,7 +52730,7 @@ index 8d0e97d..34ffffe 100644
 +                        gain += uint32(gain*0.1f);
 +                }
              }
- 
+
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 3a680e3..f0eb40b 100644
@@ -52759,7 +52758,7 @@ index 3a680e3..f0eb40b 100644
      LANG_PINFO_GM_ACTIVE                = 548,
 @@ -1225,8 +1236,18 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
- 
+
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
 -    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
 -
@@ -52787,13 +52786,13 @@ index 46b73e7..08d18a0 100644
  #include "ScriptMgr.h"
  #include "WorldSession.h"
 +#include "Guild.h"
- 
+
  const int32 ReputationMgr::PointsInRank[MAX_REPUTATION_RANK] = {36000, 3000, 3000, 3000, 6000, 12000, 21000, 1000};
- 
+
 @@ -367,6 +368,15 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
              standing += itr->second.Standing + BaseRep;
          }
- 
+
 +        //Guild-Level-System (Bonus: Ruf)
 +        if (Guild* guild = _player->GetGuild())
 +        {
@@ -52807,20 +52806,20 @@ index 46b73e7..08d18a0 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index f1359b7..abb9cc0 100644
+index f1359b7..35698c3 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
- 
+
  #include "ScriptLoader.h"
  #include "World.h"
 +#include "AnticheatMgr.h"
- 
+
  //examples
  void AddSC_example_creature();
 @@ -45,9 +46,11 @@ void AddSC_holiday_spell_scripts();
  void AddSC_SmartScripts();
- 
+
  //Commands
 +void AddSC_anticheat_commandscript();
  void AddSC_account_commandscript();
@@ -52836,7 +52835,7 @@ index f1359b7..abb9cc0 100644
  void AddSC_action_ip_logger();
 -
  #endif
- 
+
  void AddScripts()
 @@ -707,6 +709,7 @@ void AddScripts()
      AddSpellScripts();
@@ -52847,7 +52846,7 @@ index f1359b7..abb9cc0 100644
      AddWorldScripts();
      AddEasternKingdomsScripts();
 @@ -751,9 +754,11 @@ void AddSpellScripts()
- 
+
  void AddCommandScripts()
  {
 +    AddSC_anticheat_commandscript();
@@ -52858,8 +52857,8 @@ index f1359b7..abb9cc0 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1440,13 +1445,69 @@ void AddBattlegroundScripts()
- 
+@@ -1440,13 +1445,102 @@ void AddBattlegroundScripts()
+
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
 -
@@ -52892,8 +52891,25 @@ index f1359b7..abb9cc0 100644
 +// Transmogrification
 +void AddSC_PWS_Transmogrification();
 +void AddSC_CS_Transmogrification();
++//Bots
++void AddSC_death_knight_bot();
++void AddSC_druid_bot();
++void AddSC_hunter_bot();
++void AddSC_mage_bot();
++void AddSC_paladin_bot();
++void AddSC_priest_bot();
++void AddSC_rogue_bot();
++void AddSC_shaman_bot();
++void AddSC_warlock_bot();
++void AddSC_warrior_bot();
++void AddSC_script_bot_commands();
++void AddSC_script_bot_giver();
++
++//advanced
++void AddSC_BotQuests_chapter1();
++//end Bots
  #endif
- 
+
  void AddCustomScripts()
  {
  #ifdef SCRIPTS
@@ -52928,6 +52944,22 @@ index f1359b7..abb9cc0 100644
 +    // Transmogrification
 +    AddSC_PWS_Transmogrification();
 +    AddSC_CS_Transmogrification();
++    //Bots
++    AddSC_death_knight_bot();
++    AddSC_druid_bot();
++    AddSC_hunter_bot();
++    AddSC_mage_bot();
++    AddSC_paladin_bot();
++    AddSC_priest_bot();
++    AddSC_rogue_bot();
++    AddSC_shaman_bot();
++    AddSC_warlock_bot();
++    AddSC_warrior_bot();
++    AddSC_script_bot_commands();
++    AddSC_script_bot_giver();
++    //advanced
++    AddSC_BotQuests_chapter1();
++    //end Bots
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
@@ -52944,13 +52976,13 @@ index 83f401d..cac467b 100644
  #include "Vehicle.h"
 @@ -185,6 +186,8 @@ void ScriptMgr::Initialize()
      uint32 oldMSTime = getMSTime();
- 
+
      LoadDatabase();
 +       // Load TeleNPC2 - maybe not the best place to load it ...
 +       LoadNpcTele();
- 
+
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
- 
+
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
 index 9f8b378..ba3e3a3 100644
 --- a/src/server/game/Server/WorldSession.cpp
@@ -52961,9 +52993,9 @@ index 9f8b378..ba3e3a3 100644
  #include "MoveSpline.h"
 +//Playerbot mod
 +#include "PlayerbotAI.h"
- 
+
  namespace {
- 
+
 @@ -190,6 +192,10 @@ uint32 WorldSession::GetGuidLow() const
  /// Send a packet to the client
  void WorldSession::SendPacket(WorldPacket const* packet)
@@ -52974,9 +53006,9 @@ index 9f8b378..ba3e3a3 100644
 +
      if (!m_Socket)
          return;
- 
+
 @@ -263,9 +269,10 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
- 
+
      ///- Before we process anything:
      /// If necessary, kick the player from the character select screen
 +/*
@@ -53008,7 +53040,7 @@ index 9f8b378..ba3e3a3 100644
 @@ -419,6 +437,28 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
          if (m_Socket && GetPlayer() && _warden)
              _warden->Update();
- 
+
 +        // Playerbot mod - Process player bot packets
 +        // The PlayerbotAI class adds to the packet queue to simulate a real player
 +        // since Playerbots are known to the World obj only by its master's WorldSession object
@@ -53073,12 +53105,12 @@ index 9f8b378..ba3e3a3 100644
 +            if (nBotCount == 0 || !_player->GetMap()->Instanceable())
 +            //end bot
              _player->RemoveFromGroup();
- 
+
          //! Send update to group and reset stored max enchanting level
 @@ -677,6 +744,33 @@ void WorldSession::LoadGlobalAccountData()
      LoadAccountData(CharacterDatabase.Query(stmt), GLOBAL_CACHE_MASK);
  }
- 
+
 +//Playerbot mod: logs out a Playerbot.
 +void WorldSession::LogoutPlayerBot(uint64 guid)
 +{
@@ -53112,7 +53144,7 @@ index 9f8b378..ba3e3a3 100644
 @@ -1128,6 +1222,15 @@ void WorldSession::ProcessQueryCallbacks()
          _charLoginCallback.cancel();
      }
- 
+
 +    //! HandlePlayerBotLogin
 +    if (_charBotLoginCallback.ready())
 +    {
@@ -53132,7 +53164,7 @@ index c8c81a4..2a08fb1 100644
 @@ -204,6 +204,34 @@ struct PacketCounter
      uint32 amountCounter;
  };
- 
+
 +//Playerbot mod
 +typedef std::unordered_map<uint64, Player*> PlayerBotMap;
 +
@@ -53167,7 +53199,7 @@ index c8c81a4..2a08fb1 100644
 @@ -211,6 +239,16 @@ class WorldSession
          WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
          ~WorldSession();
- 
+
 +        //Playerbot mod
 +        void AddPlayerBot(uint64 guid);
 +        void LogoutPlayerBot(uint64 guid);
@@ -53187,7 +53219,7 @@ index c8c81a4..2a08fb1 100644
          void HandlePlayerLogin(LoginQueryHolder * holder);
 +        void HandlePlayerBotLogin(SQLQueryHolder * holder);
          void HandleCharFactionOrRaceChange(WorldPacket& recvData);
- 
+
          // played time
 @@ -912,6 +951,8 @@ class WorldSession
          void HandleEnterPlayerVehicle(WorldPacket& data);
@@ -53195,7 +53227,7 @@ index c8c81a4..2a08fb1 100644
          void HandleUpdateMissileTrajectory(WorldPacket& recvPacket);
 +        // Playerbot
 +        QueryResultHolderFuture _charBotLoginCallback;
- 
+
      private:
          void InitializeQueryCallbackParameters();
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
@@ -53205,7 +53237,7 @@ index 606851b..9d3b128 100644
 @@ -16,6 +16,7 @@
   * with this program. If not, see <http://www.gnu.org/licenses/>.
   */
- 
+
 +#include "AnticheatMgr.h"
  #include "Common.h"
  #include "DatabaseEnv.h"
@@ -57526,7 +57558,7 @@ index 0000000..ad91dfe
 +                {
 +                    if (CHAT.find("\001VERSION\001") < CHAT.size())
 +                    {
-+                        Send_IRC_Channel(szUser, MakeMsg("\001VERSION TriniChat %s ï¿½2008-2009 |Death|, Cybrax, Machiavelli\001", "%s" , sIRC._Mver.c_str()), true, "PRIVMSG");
++                        Send_IRC_Channel(szUser, MakeMsg("\001VERSION TriniChat %s �2008-2009 |Death|, Cybrax, Machiavelli\001", "%s" , sIRC._Mver.c_str()), true, "PRIVMSG");
 +                    }
 +                    // a pm is required for certain commands
 +                    // such as login. to validate the command
@@ -61597,7 +61629,7 @@ index 78470d4..74eaafa 100644
  #include "BattlefieldMgr.h"
  #include "TransportMgr.h"
 +#include "IRCClient.h"
- 
+
  ACE_Atomic_Op<ACE_Thread_Mutex, bool> World::m_stopEvent = false;
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
 @@ -669,6 +672,7 @@ void World::LoadConfigSettings(bool reload)
@@ -61609,9 +61641,9 @@ index 78470d4..74eaafa 100644
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
 @@ -1046,6 +1050,8 @@ void World::LoadConfigSettings(bool reload)
- 
+
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
- 
+
 +    m_bool_configs[BATTLEGROUND_CROSSFACTION_ENABLED]                = sConfigMgr->GetBoolDefault("CrossfactionBG.enable", true);
 +
      if (int32 clientCacheId = sConfigMgr->GetIntDefault("ClientCacheVersion", 0))
@@ -61620,7 +61652,7 @@ index 78470d4..74eaafa 100644
 @@ -1229,6 +1235,11 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
      m_bool_configs[CONFIG_UI_QUESTLEVELS_IN_DIALOGS] = sConfigMgr->GetBoolDefault("UI.ShowQuestLevelsInDialogs", false);
- 
+
 +    m_bool_configs[CONFIG_ANTICHEAT_ENABLE] = sConfigMgr->GetBoolDefault("Anticheat.Enable", true);
 +    m_int_configs[CONFIG_ANTICHEAT_REPORTS_INGAME_NOTIFICATION] = sConfigMgr->GetIntDefault("Anticheat.ReportsForIngameWarnings", 70);
 +    m_int_configs[CONFIG_ANTICHEAT_DETECTIONS_ENABLED] = sConfigMgr->GetIntDefault("Anticheat.DetectionsEnabled",31);
@@ -61630,9 +61662,9 @@ index 78470d4..74eaafa 100644
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
 @@ -1259,9 +1270,169 @@ void World::LoadConfigSettings(bool reload)
- 
+
      m_bool_configs[CONFIG_IP_BASED_LOGIN_LOGGING] = sConfigMgr->GetBoolDefault("Wrong.Password.Login.Logging", false);
- 
+
 +    //Guild-Level-System
 +    LoadGuildBonusInfo();
 +
@@ -61797,30 +61829,30 @@ index 78470d4..74eaafa 100644
 +        sIRC.CWHO      = 3;
 +    }
  }
- 
+
  extern void LoadGameObjectModelList();
 @@ -1280,6 +1451,7 @@ void World::SetInitialWorldSettings()
- 
+
      ///- Initialize config settings
      LoadConfigSettings();
 +    TC_LOG_ERROR("misc" "Loading TrinityCore configuration settings...","");
- 
+
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
 @@ -1443,6 +1615,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
- 
+
 +    TC_LOG_INFO("server.loading", "Loading Creature template outfits...");     // must be after LoadCreatureTemplates
 +    sObjectMgr->LoadCreatureOutfits();
 +
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
- 
+
 @@ -1605,6 +1780,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
- 
+
 +    // Initialize AHBot settings before deleting expired auctions due to AHBot hooks
 +    auctionbot.InitializeConfiguration();
 +
@@ -61830,7 +61862,7 @@ index 78470d4..74eaafa 100644
 @@ -1733,6 +1911,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
- 
+
 +    static uint32 autoanc = 1;
 +    autoanc = sIRC.autoanc;
 +
@@ -61838,23 +61870,23 @@ index 78470d4..74eaafa 100644
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
 @@ -1746,6 +1927,8 @@ void World::SetInitialWorldSettings()
- 
+
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
- 
+
 +    m_timers[WUPDATE_AUTOANC].SetInterval(autoanc*MINUTE*1000);
 +
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
 @@ -1822,6 +2005,9 @@ void World::SetInitialWorldSettings()
- 
+
      LoadCharacterNameData();
- 
+
 +    TC_LOG_INFO("server.loading", "Initialize AuctionHouseBot...");
 +    auctionbot.Initialize();
 +
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
- 
+
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
 @@ -1989,6 +2175,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
@@ -61862,12 +61894,12 @@ index 78470d4..74eaafa 100644
      {
 +        auctionbot.Update();
          m_timers[WUPDATE_AUCTIONS].Reset();
- 
+
          ///- Update mails (return old mails with item, or delete them)
 @@ -2113,6 +2300,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
- 
+
 +    if (m_timers[WUPDATE_AUTOANC].Passed())
 +    {
 +        m_timers[WUPDATE_AUTOANC].Reset();
@@ -61876,11 +61908,11 @@ index 78470d4..74eaafa 100644
 +
      // update the instance reset times
      sInstanceSaveMgr->Update();
- 
+
 @@ -2728,6 +2921,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
- 
+
 +void World::SendRNDBroadcastIRC()
 +{
 +    std::string msg;
@@ -61899,13 +61931,13 @@ index 78470d4..74eaafa 100644
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 @@ -2875,6 +3082,8 @@ void World::ResetDailyQuests()
- 
+
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
 +
 +    sAnticheatMgr->ResetDailyReportStates();
  }
- 
+
  void World::LoadDBAllowedSecurityLevel()
 @@ -3206,3 +3415,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
@@ -62053,9 +62085,9 @@ index 61acdc3..217e26a 100644
          void UpdateMaxSessionCounters();
          const SessionMap& GetAllSessions() const { return m_sessions; }
 @@ -742,6 +752,11 @@ class World
- 
+
          void ReloadRBAC();
- 
+
 +        //Guild-Level-System
 +        void LoadGuildBonusInfo();
 +        uint8 GetReqGuildLevelForBonus(uint8 guildBonus);
@@ -62065,7 +62097,7 @@ index 61acdc3..217e26a 100644
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
 @@ -841,6 +856,21 @@ class World
- 
+
          void ProcessQueryCallbacks();
          ACE_Future_Set<PreparedQueryResult> m_realmCharCallbacks;
 +
@@ -62084,14 +62116,14 @@ index 61acdc3..217e26a 100644
 +        uint8 m_req_guildLevel_honor_1;
 +        uint8 m_req_guildLevel_honor_2;
  };
- 
+
  extern uint32 realmID;
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index 9385202..2c84839 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
 @@ -24,6 +24,9 @@ include(Examples/CMakeLists.txt)
- 
+
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 +  Custom/npc_teleport.cpp
@@ -63029,7 +63061,7 @@ index 4627f6b..deaf21f 100644
 +        return true;
 +    }
  };
- 
+
  void AddSC_guild_commandscript()
 diff --git a/src/server/scripts/Commands/cs_message.cpp b/src/server/scripts/Commands/cs_message.cpp
 index dd1366a..ca351fe 100644
@@ -63040,13 +63072,13 @@ index dd1366a..ca351fe 100644
  #include "Player.h"
  #include "ObjectMgr.h"
 +#include "IRCClient.h"
- 
+
  class message_commandscript : public CommandScript
  {
 @@ -134,6 +135,13 @@ public:
          if (!*args)
              return false;
- 
+
 +        if ((sIRC.BOTMASK & 256) != 0)
 +        {
 +            std::string ircchan = "#";
@@ -63067,7 +63099,7 @@ index dd1366a..ca351fe 100644
 +                ircchan += sIRC._irc_chan[sIRC.anchn].c_str();
 +                sIRC.Send_IRC_Channel(ircchan, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 Global Notify \00304,08\037/!\\\037\017 %s", "%s", args), true);
 +            }
- 
+
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
 diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
@@ -63084,7 +63116,7 @@ index 5dbe95b..e2c592b 100644
          };
          static ChatCommand commandTable[] =
 @@ -1393,6 +1395,68 @@ public:
- 
+
          return true;
      }
 +
@@ -63150,7 +63182,7 @@ index 5dbe95b..e2c592b 100644
 +        return true;
 +    }
  };
- 
+
  void AddSC_modify_commandscript()
 diff --git a/src/server/scripts/Custom/ArenaGambler.cpp b/src/server/scripts/Custom/ArenaGambler.cpp
 new file mode 100644
@@ -64654,16 +64686,16 @@ index 80ebe36..20c2bc9 100644
 @@ -8,11 +8,11 @@
  # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
+
 -# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
 +file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
+
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 -#  ${sources_Custom}
 +  ${sources_Custom}
  )
- 
+
  message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/Congrats_on_Level.cpp b/src/server/scripts/Custom/Congrats_on_Level.cpp
 new file mode 100644
@@ -67032,7 +67064,7 @@ index 0000000..227487f
 +
 +    case 110: // VIP Functions, from another script(by me :D)
 +        player->ADD_GOSSIP_ITEM(0, "Repair", GOSSIP_SENDER_MAIN, 1500);
-+        player->ADD_GOSSIP_ITEM(0, "Nyugit szeretnék", GOSSIP_SENDER_MAIN, 1501);
++        player->ADD_GOSSIP_ITEM(0, "Nyugit szeretn�k", GOSSIP_SENDER_MAIN, 1501);
 +        player->ADD_GOSSIP_ITEM(0, "Surgery", GOSSIP_SENDER_MAIN, 1502);
 +        player->ADD_GOSSIP_ITEM(0, "Faction change", GOSSIP_SENDER_MAIN, 1503);
 +        player->ADD_GOSSIP_ITEM(0, "Race Change", GOSSIP_SENDER_MAIN, 1504);
@@ -68019,7 +68051,7 @@ index 0000000..227487f
 +        player->SendTalentWipeConfirm(_Creature->GetGUID());
 +        break;
 +
-+        case 120: //Sickness leszedése
++        case 120: //Sickness leszed�se
 +        if(!player->HasAura(SPELL_ID_PASSIVE_RESURRECTION_SICKNESS,0))
 +        {
 +            _Creature->MonsterWhisper(nosickness, player);
@@ -71854,7 +71886,7 @@ index 4c72d79..a91693b 100644
  #include "SpellAuraEffects.h"
  #include "Vehicle.h"
 +#include "../Custom/Transmogrification.h"
- 
+
  class spell_gen_absorb0_hitlimit1 : public SpellScriptLoader
  {
 @@ -811,7 +812,12 @@ class spell_gen_clone_weapon_aura : public SpellScriptLoader
@@ -71900,13 +71932,13 @@ index 76781e0..75b98d7 100644
 --- a/src/server/scripts/Spells/spell_priest.cpp
 +++ b/src/server/scripts/Spells/spell_priest.cpp
 @@ -568,6 +568,7 @@ class spell_pri_penance : public SpellScriptLoader
- 
+
              bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster()->GetTypeId() == TYPEID_PLAYER;
              }
- 
+
 @@ -610,6 +611,8 @@ class spell_pri_penance : public SpellScriptLoader
              SpellCastResult CheckCast()
              {
@@ -71917,15 +71949,15 @@ index 76781e0..75b98d7 100644
                      if (!caster->IsFriendlyTo(target) && !caster->IsValidAttackTarget(target))
                          return SPELL_FAILED_BAD_TARGETS;
 @@ -751,6 +754,7 @@ class spell_pri_renew : public SpellScriptLoader
- 
+
              bool Load() override
              {
 +                if (GetCaster() && GetCaster()->GetTypeId() == TYPEID_UNIT && GetCaster()->ToCreature()->GetIAmABot()) return true;
                  return GetCaster() && GetCaster()->GetTypeId() == TYPEID_PLAYER;
              }
- 
+
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 24e61e7..6d74f13 100644
+index 24e61e7..2d8859b 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 @@ -600,4 +600,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
@@ -71943,7 +71975,7 @@ index 24e61e7..6d74f13 100644
 +    PrepareStatement(CHAR_UPD_GUILD_LEVEL, "UPDATE guild SET level = ? WHERE guildid = ?", CONNECTION_ASYNC);
 +    PrepareStatement(CHAR_UPD_GUILD_XP, "UPDATE guild SET xp = (xp + ?) WHERE guildid = ?", CONNECTION_ASYNC);
 +
-+    // Old NPCBots
++    // Bot
 +    PrepareStatement(CHAR_SEL_NPCBOTS, "SELECT entry, race, class, roles, equipMhEx, equipOhEx, equipRhEx, "
 +        "equipHead, equipShoulders, equipChest, equipWaist, equipLegs, equipFeet, equipWrist, equipHands, equipBack, equipBody, equipFinger1, equipFinger2, equipTrinket1, equipTrinket2, equipNeck FROM character_npcbot WHERE owner = ? AND active = 1", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_DEL_NPCBOTS, "DELETE FROM character_npcbot WHERE owner = ?", CONNECTION_ASYNC);
@@ -71964,7 +71996,7 @@ index 98d7fe2..cc1d888 100644
 @@ -534,6 +534,23 @@ enum CharacterDatabaseStatements
      CHAR_DEL_ITEMCONTAINER_MONEY,
      CHAR_INS_ITEMCONTAINER_MONEY,
- 
+
 +    //Guild-Level-System
 +    CHAR_SEL_GUILD_BONUS_INFO,
 +    CHAR_SEL_GUILD_LEVEL_INFO,
@@ -71984,7 +72016,7 @@ index 98d7fe2..cc1d888 100644
 +
      MAX_CHARACTERDATABASE_STATEMENTS
  };
- 
+
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
 index d0e9c46..0531136 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
@@ -72005,14 +72037,14 @@ index a815373..ac74483 100644
 @@ -112,6 +112,10 @@ enum WorldDatabaseStatements
      WORLD_DEL_DISABLES,
      WORLD_SEL_REQ_XP,
- 
+
 +    // Bot
 +    WORLD_SEL_NPCBOT_TEMPLATE,
 +    WORLD_SEL_NPCBOT_PET_LEVELSTATS,
 +
      MAX_WORLDDATABASE_STATEMENTS
  };
- 
+
 diff --git a/src/server/worldserver/CMakeLists.txt b/src/server/worldserver/CMakeLists.txt
 index 78a29db..ae5c342 100644
 --- a/src/server/worldserver/CMakeLists.txt
@@ -72034,7 +72066,7 @@ index ac46b21..0bed869 100644
  #include "Player.h"
  #include "Util.h"
 +#include "../../game/TriniChat/IRCClient.h"
- 
+
  #if PLATFORM != PLATFORM_WINDOWS
  #include <readline/readline.h>
 @@ -114,6 +115,14 @@ void commandFinished(void*, bool /*success*/)
@@ -72049,7 +72081,7 @@ index ac46b21..0bed869 100644
 +    TC_LOG_ERROR("misc" "TriniChat is reconnecting to IRC Server","");
 +    return true;
 +}
- 
+
  #ifdef linux
  // Non-blocking keypress detector, when return pressed, return 1, else always return 0
 diff --git a/src/server/worldserver/Main.cpp b/src/server/worldserver/Main.cpp
@@ -72057,11 +72089,11 @@ index 75d9ca5..1b8c794 100644
 --- a/src/server/worldserver/Main.cpp
 +++ b/src/server/worldserver/Main.cpp
 @@ -30,6 +30,7 @@
- 
+
  #include "Log.h"
  #include "Master.h"
 +#include "../../game/TriniChat/IRCClient.h"
- 
+
  #ifndef _TRINITY_CORE_CONFIG
  # define _TRINITY_CORE_CONFIG  "worldserver.conf"
 diff --git a/src/server/worldserver/Master.cpp b/src/server/worldserver/Master.cpp
@@ -72076,11 +72108,11 @@ index 6e42146..ac92dea 100644
 +#include "../../game/TriniChat/IRCClient.h"
  #include "BigNumber.h"
  #include "OpenSSLCrypto.h"
- 
+
 @@ -278,6 +278,15 @@ int Master::Run()
          soapThread = new ACE_Based::Thread(runnable);
      }
- 
+
 +  // Start up TriniChat
 +    if (sIRC.Active == 1)
 +    {
@@ -72094,12 +72126,12 @@ index 6e42146..ac92dea 100644
      if (uint32 freezeDelay = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
      {
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 90f330b..ea14f8d 100644
+index 90f330b..93a0f83 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -757,6 +757,13 @@ RecruitAFriend.MaxDifference = 4
  DisableWaterBreath = 4
- 
+
  #
 +#    Enable or Disable "Fatigue" timer
 +#           default = 1 (enabled)
@@ -72112,9 +72144,9 @@ index 90f330b..ea14f8d 100644
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
 @@ -1205,6 +1212,14 @@ AllowTwoSide.Trade = 0
- 
+
  TalentsInspecting = 1
- 
+
 +#    Fake.WHO.List
 +#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
 +#        49 real players online
@@ -72125,11 +72157,11 @@ index 90f330b..ea14f8d 100644
 +
  #
  ###################################################################################################
- 
+
 @@ -2296,6 +2311,271 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
- 
+
 +###############################################################################
 +# AUCTION HOUSE BOT SETTINGS
 +#
@@ -72399,7 +72431,7 @@ index 90f330b..ea14f8d 100644
  # CONSOLE AND REMOTE ACCESS
  #
 @@ -2359,6 +2639,48 @@ SOAP.Port = 7878
- 
+
  #
  ###################################################################################################
 +#
@@ -72444,11 +72476,11 @@ index 90f330b..ea14f8d 100644
 +#                 = n (n = entry number of item)
 +
 +ProfessionNPC.ItemEntryNum = 99999
- 
+
  ###################################################################################################
  # CHARACTER DELETE OPTIONS
 @@ -2397,6 +2719,251 @@ CharDelete.KeepDays = 30
- 
+
  #
  ###################################################################################################
 +# TriniChat IRC BOT For Trinity Core Configuration File #
@@ -72696,12 +72728,12 @@ index 90f330b..ea14f8d 100644
 +irc.gm6 = "[Admin]"
 +irc.gm7 = "[Developer]"
 +irc.gm8 = "[Owner]"
- 
+
  ###################################################################################################
  # CUSTOM SERVER OPTIONS
 @@ -2575,6 +3142,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
- 
+
  #
 +#     Anticheat.Enable
 +#        Description: Enables or disables the Anticheat System functionality
@@ -72743,7 +72775,7 @@ index 90f330b..ea14f8d 100644
 @@ -2599,6 +3200,44 @@ UI.ShowQuestLevelsInDialogs = 0
  #
  ###################################################################################################
- 
+
 +# NPC Buff rewritten by LordPsyan
 +#
 +#        GM Only
@@ -72785,8 +72817,8 @@ index 90f330b..ea14f8d 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
  #
-@@ -2786,3 +3425,486 @@ PacketSpoof.BanDuration = 86400
- 
+@@ -2786,3 +3425,488 @@ PacketSpoof.BanDuration = 86400
+
  #
  ###################################################################################################
 +
@@ -73066,7 +73098,9 @@ index 90f330b..ea14f8d 100644
 +
 +#
 +###################################################################################################
-+####################################### BOTS CONFIGURATION ########################################
++
++###################################################################################################
++################################### BOTS CONFIGURATION ############################################
 +###################################################################################################
 +# PLAYERBOT CONFIGURATION
 +#
@@ -73224,7 +73258,7 @@ index 90f330b..ea14f8d 100644
 +#        32 - Square
 +#        64 - Cross
 +#        128 - Skull
-+#        Example: to check Star, Triangle and Square we need 1832 = 41
++#        Example: to check Star, Triangle and Square we need 1+8+32 = 41
 +#        Note that many creatures cannot accept heal
 +#        Min: 0 (Disable)
 +#        Max: 255 (Any Icon)
@@ -73273,6 +73307,6 @@ index 90f330b..ea14f8d 100644
 +#
 +###################################################################################################
 \ No newline at end of file
--- 
+--
 1.7.10.4
 
