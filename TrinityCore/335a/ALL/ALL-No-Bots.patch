@@ -1,6 +1,6 @@
-From f3eae01ef4031c108af90483f8081b7cb99c6900 Mon Sep 17 00:00:00 2001
+From 23b6cf2f9b0709a924c57927a732133ab0e1fc26 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 4 Jul 2014 01:27:55 -0400
+Date: Wed, 9 Jul 2014 03:21:31 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -85,8 +85,8 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/DataStores/DBCStructure.h          |    2 +-
  src/server/game/DataStores/DBCfmt.h                |    2 +-
  src/server/game/Entities/Item/ItemPrototype.h      |    9 +-
- src/server/game/Entities/Player/Player.cpp         |  248 ++-
- src/server/game/Entities/Player/Player.h           |   57 +-
+ src/server/game/Entities/Player/Player.cpp         |  329 ++-
+ src/server/game/Entities/Player/Player.h           |   79 +-
  src/server/game/Entities/Unit/Unit.cpp             |   43 +-
  src/server/game/Entities/Unit/Unit.h               |    4 +-
  src/server/game/Events/GameEventMgr.cpp            |    8 +-
@@ -152,8 +152,8 @@ Subject: [PATCH] ALL-No-Bots
  .../Utilities/LinkedReference/Reference.h          |   58 +
  .../game/TriniChat/framework/Utilities/TypeList.h  |   46 +
  .../TriniChat/framework/Utilities/UnorderedMap.h   |   73 +
- src/server/game/World/World.cpp                    |  290 +++
- src/server/game/World/World.h                      |   30 +
+ src/server/game/World/World.cpp                    |  302 +++
+ src/server/game/World/World.h                      |   53 +
  src/server/scripts/CMakeLists.txt                  |    6 +
  src/server/scripts/Commands/cs_ah_bot.cpp          |  482 ++++
  src/server/scripts/Commands/cs_anticheat.cpp       |  262 +++
@@ -187,7 +187,7 @@ Subject: [PATCH] ALL-No-Bots
  src/server/worldserver/Main.cpp                    |    1 +
  src/server/worldserver/Master.cpp                  |   11 +-
  src/server/worldserver/worldserver.conf.dist       |  916 ++++++++
- 183 files changed, 26358 insertions(+), 135 deletions(-)
+ 183 files changed, 26487 insertions(+), 144 deletions(-)
  create mode 100644 HowTo-Congrats-On-Level.txt
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
@@ -8045,7 +8045,7 @@ index bdf956f..c10b378 100644
  {
      StringVector Name;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index b32ef34..565c27f 100644
+index 5c96e60..0f61101 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -32,6 +32,7 @@
@@ -8343,7 +8343,87 @@ index b32ef34..565c27f 100644
              return false;
  
          return true;
-@@ -7238,6 +7331,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7155,6 +7248,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+ 
+     uint64 victim_guid = 0;
+     uint32 victim_rank = 0;
++    uint32 rank_diff = 0;
+ 
+     // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
+     UpdateHonorFields();
+@@ -7197,17 +7291,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+             //  title[1..14]  -> rank[5..18]
+             //  title[15..28] -> rank[5..18]
+             //  title[other]  -> 0
+-            if (victim_title == 0)
+-                victim_guid = 0;                        // Don't show HK: <rank> message, only log.
+-            else if (victim_title < 15)
+-                victim_rank = victim_title + 4;
+-            else if (victim_title < 29)
+-                victim_rank = victim_title - 14 + 4;
+-            else
+-                victim_guid = 0;                        // Don't show HK: <rank> message, only log.
++                // PLAYER__FIELD_KNOWN_TITLES describe which titles player can use,
++                // so we must find biggest pvp title , even for killer to find extra honor value
++                uint32 vtitle = victim->GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES);
++                //uint32 victim_title = 0;
++                uint32 ktitle = GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES);
++                uint32 killer_title = 0;
++                if (PLAYER_TITLE_MASK_ALL_PVP & ktitle)
++                {
++                    for (int i = ((GetTeam() == ALLIANCE) ? 1:HKRANKMAX);i!=((GetTeam() == ALLIANCE) ? HKRANKMAX : (2*HKRANKMAX-1));i++)
++                    {
++                        if (ktitle & (1<<i))
++                            killer_title = i;
++                    }
++                }
++                if (PLAYER_TITLE_MASK_ALL_PVP & vtitle)
++                {
++                    for (int i = ((plrVictim->GetTeam() == ALLIANCE) ? 1:HKRANKMAX);i!=((plrVictim->GetTeam() == ALLIANCE) ? HKRANKMAX : (2*HKRANKMAX-1));i++)
++                    {
++                        if (vtitle & (1<<i))
++                            victim_title = i;
++                    }
++                }
+ 
+-            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
++                // Get Killer titles, CharTitlesEntry::bit_index
++                // Ranks:
++                //  title[1..14]  -> rank[5..18]
++                //  title[15..28] -> rank[5..18]
++                //  title[other]  -> 0
++                if (victim_title == 0)
++                    victim_guid = 0;                        // Don't show HK: <rank> message, only log.
++                else if (victim_title < HKRANKMAX)
++                    victim_rank = victim_title + 4;
++                else if (victim_title < (2*HKRANKMAX-1))
++                    victim_rank = victim_title - (HKRANKMAX-1) + 4;
++                else
++                    victim_guid = 0;                        // Don't show HK: <rank> message, only log.
+ 
++                // now find rank difference
++                if (killer_title == 0 && victim_rank>4)
++                    rank_diff = victim_rank - 4;
++                else if (killer_title < HKRANKMAX)
++                    rank_diff = (victim_rank>(killer_title + 4))? (victim_rank - (killer_title + 4)) : 0;
++                else if (killer_title < (2*HKRANKMAX-1))
++                    rank_diff = (victim_rank>(killer_title - (HKRANKMAX-1) +4))? (victim_rank - (killer_title - (HKRANKMAX-1) + 4)) : 0;
++
++
++            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
++            honor *= 1 + sWorld->getRate(RATE_PVP_RANK_EXTRA_HONOR)*(((float)rank_diff) / 10.0f);
+             // count the number of playerkills in one day
+             ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
+             // and those in a lifetime
+@@ -7215,6 +7346,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
++            UpdateKnownTitles();
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
+         }
+@@ -7238,6 +7370,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -8360,7 +8440,38 @@ index b32ef34..565c27f 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7467,7 +7570,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7308,6 +7450,30 @@ void Player::SetArenaPoints(uint32 value)
+         AddKnownCurrency(ITEM_ARENA_POINTS_ID);
+ }
+ 
++void Player::UpdateKnownTitles()
++{
++    uint32 new_title = 0;
++    uint32 honor_kills = GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS);
++    uint32 old_title = GetUInt32Value(PLAYER_CHOSEN_TITLE);
++    RemoveFlag64(PLAYER__FIELD_KNOWN_TITLES,PLAYER_TITLE_MASK_ALL_PVP);
++    // if (honor_kills < 0)
++    //    return;
++    bool max_rank = ((honor_kills >= sWorld->pvp_ranks[HKRANKMAX-1]) ? true : false);
++    for (int i = HKRANK01; i != HKRANKMAX; ++i)
++    {
++        if (honor_kills < sWorld->pvp_ranks[i] || (max_rank))
++        {
++            new_title = ((max_rank) ? (HKRANKMAX-1) : (i-1));
++            if (new_title > 0)
++                new_title += ((GetTeam() == ALLIANCE) ? 0 : (HKRANKMAX-1));
++            break;
++        }
++    }
++    SetFlag64(PLAYER__FIELD_KNOWN_TITLES,uint64(1) << new_title);
++    if (old_title > 0 && old_title < (2*HKRANKMAX-1) && new_title > old_title)
++        SetUInt32Value(PLAYER_CHOSEN_TITLE,new_title);
++}
++
+ void Player::ModifyHonorPoints(int32 value, SQLTransaction* trans /*=NULL*/)
+ {
+     int32 newValue = int32(GetHonorPoints()) + value;
+@@ -7467,7 +7633,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -8369,7 +8480,7 @@ index b32ef34..565c27f 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7808,6 +7911,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7808,6 +7974,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -8390,7 +8501,7 @@ index b32ef34..565c27f 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7822,10 +7939,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7822,10 +8002,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -8416,7 +8527,7 @@ index b32ef34..565c27f 100644
          }
  
          if (val == 0)
-@@ -11976,13 +12107,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11976,13 +12170,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
  
      if (proto)
      {
@@ -8433,7 +8544,7 @@ index b32ef34..565c27f 100644
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
          if (proto->RequiredSkill != 0)
-@@ -12470,7 +12601,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12470,7 +12664,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -8445,7 +8556,7 @@ index b32ef34..565c27f 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12596,6 +12730,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12596,6 +12793,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -8453,7 +8564,7 @@ index b32ef34..565c27f 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15318,13 +15453,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15318,13 +15516,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -8481,7 +8592,7 @@ index b32ef34..565c27f 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17220,6 +17368,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17220,6 +17431,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -8493,7 +8604,7 @@ index b32ef34..565c27f 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17266,10 +17419,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17266,10 +17482,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -8504,7 +8615,7 @@ index b32ef34..565c27f 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -17536,7 +17685,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17536,7 +17748,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
  
      if (!map)
      {
@@ -8513,7 +8624,7 @@ index b32ef34..565c27f 100644
          mapId = info->mapId;
          Relocate(info->positionX, info->positionY, info->positionZ, 0.0f);
          map = sMapMgr->CreateMap(mapId, this);
-@@ -19187,7 +19336,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19187,7 +19399,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -8522,7 +8633,7 @@ index b32ef34..565c27f 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19292,7 +19441,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19292,7 +19504,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -8531,7 +8642,7 @@ index b32ef34..565c27f 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19446,6 +19595,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19446,6 +19658,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -8544,7 +8655,7 @@ index b32ef34..565c27f 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20531,6 +20686,19 @@ void Player::StopCastingCharm()
+@@ -20531,6 +20749,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -8564,7 +8675,7 @@ index b32ef34..565c27f 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22316,11 +22484,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22337,11 +22568,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -8576,7 +8687,7 @@ index b32ef34..565c27f 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22396,7 +22559,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22417,7 +22643,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -8585,7 +8696,7 @@ index b32ef34..565c27f 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26804,3 +26967,22 @@ bool Player::IsLoading() const
+@@ -26830,3 +27056,22 @@ bool Player::IsLoading() const
  {
      return GetSession()->PlayerLoading();
  }
@@ -8609,10 +8720,38 @@ index b32ef34..565c27f 100644
 +    }
 +}
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 5f500b7..34153d1 100644
+index a146b5d..d4c08a5 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -909,6 +909,13 @@ enum PlayerCommandStates
+@@ -419,6 +419,27 @@ enum PlayerFlags
+     PLAYER_FLAGS_UNK31             = 0x80000000
+ };
+ 
++#define PLAYER_TITLE_MASK_ALLIANCE_PVP             \
++    (PLAYER_TITLE_PRIVATE | PLAYER_TITLE_CORPORAL |  \
++      PLAYER_TITLE_SERGEANT_A | PLAYER_TITLE_MASTER_SERGEANT | \
++      PLAYER_TITLE_SERGEANT_MAJOR | PLAYER_TITLE_KNIGHT | \
++      PLAYER_TITLE_KNIGHT_LIEUTENANT | PLAYER_TITLE_KNIGHT_CAPTAIN | \
++      PLAYER_TITLE_KNIGHT_CHAMPION | PLAYER_TITLE_LIEUTENANT_COMMANDER | \
++      PLAYER_TITLE_COMMANDER | PLAYER_TITLE_MARSHAL | \
++      PLAYER_TITLE_FIELD_MARSHAL | PLAYER_TITLE_GRAND_MARSHAL)
++
++#define PLAYER_TITLE_MASK_HORDE_PVP                           \
++    (PLAYER_TITLE_SCOUT | PLAYER_TITLE_GRUNT |  \
++      PLAYER_TITLE_SERGEANT_H | PLAYER_TITLE_SENIOR_SERGEANT | \
++      PLAYER_TITLE_FIRST_SERGEANT | PLAYER_TITLE_STONE_GUARD | \
++      PLAYER_TITLE_BLOOD_GUARD | PLAYER_TITLE_LEGIONNAIRE | \
++      PLAYER_TITLE_CENTURION | PLAYER_TITLE_CHAMPION | \
++      PLAYER_TITLE_LIEUTENANT_GENERAL | PLAYER_TITLE_GENERAL | \
++      PLAYER_TITLE_WARLORD | PLAYER_TITLE_HIGH_WARLORD)
++
++#define PLAYER_TITLE_MASK_ALL_PVP  \
++    (PLAYER_TITLE_MASK_ALLIANCE_PVP | PLAYER_TITLE_MASK_HORDE_PVP)
++
+ // used for PLAYER__FIELD_KNOWN_TITLES field (uint64), (1<<bit_index) without (-1)
+ // can't use enum for uint64 values
+ #define PLAYER_TITLE_DISABLED              UI64LIT(0x0000000000000000)
+@@ -909,6 +930,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
  
@@ -8626,7 +8765,7 @@ index 5f500b7..34153d1 100644
  class PlayerTaxi
  {
      public:
-@@ -1079,6 +1086,37 @@ class Player : public Unit, public GridObject<Player>
+@@ -1079,6 +1107,37 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -8664,7 +8803,7 @@ index 5f500b7..34153d1 100644
  
          void CleanupsBeforeDelete(bool finalCleanup = true);
  
-@@ -1132,7 +1170,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1132,7 +1191,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
  
          PlayerTaxi m_taxi;
@@ -8673,7 +8812,7 @@ index 5f500b7..34153d1 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1200,6 +1238,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1200,6 +1259,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
@@ -8682,7 +8821,7 @@ index 5f500b7..34153d1 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1902,8 +1942,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1903,8 +1964,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -8692,7 +8831,15 @@ index 5f500b7..34153d1 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -2047,7 +2086,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -1941,6 +2001,7 @@ class Player : public Unit, public GridObject<Player>
+         void ModifyHonorPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, honor save query will be added to trans
+         void ModifyArenaPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, arena point save query will be added to trans
+         uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
++        void UpdateKnownTitles();
+         void SetHonorPoints(uint32 value);
+         void SetArenaPoints(uint32 value);
+ 
+@@ -2048,7 +2109,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -8700,7 +8847,7 @@ index 5f500b7..34153d1 100644
  
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
-@@ -2316,6 +2354,11 @@ class Player : public Unit, public GridObject<Player>
+@@ -2317,6 +2377,11 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsLoading() const;
  
@@ -8712,7 +8859,7 @@ index 5f500b7..34153d1 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2644,6 +2687,12 @@ class Player : public Unit, public GridObject<Player>
+@@ -2645,6 +2710,12 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -8726,7 +8873,7 @@ index 5f500b7..34153d1 100644
  
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 72c1a07..07cd074 100644
+index d647955..682282d 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -16,6 +16,7 @@
@@ -8745,7 +8892,7 @@ index 72c1a07..07cd074 100644
  
  #include <math.h>
  
-@@ -12190,10 +12192,30 @@ void Unit::SetVisible(bool x)
+@@ -12168,10 +12170,30 @@ void Unit::SetVisible(bool x)
  
  void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
  {
@@ -8776,7 +8923,7 @@ index 72c1a07..07cd074 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12207,7 +12229,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12185,7 +12207,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -8785,7 +8932,7 @@ index 72c1a07..07cd074 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12241,7 +12263,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12219,7 +12241,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -8794,7 +8941,7 @@ index 72c1a07..07cd074 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
-@@ -15994,7 +16016,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+@@ -15972,7 +15994,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -8803,7 +8950,7 @@ index 72c1a07..07cd074 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16745,6 +16767,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16723,6 +16745,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -9695,7 +9842,7 @@ index 83f401d..cac467b 100644
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 0a5d265..df8bc68 100644
+index c3ca109..ae0a84a 100644
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -16,6 +16,7 @@
@@ -18075,7 +18222,7 @@ index 0000000..2171e4d
 +#endif
 +// end
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 78470d4..d5d88b4 100644
+index 78470d4..951f477 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -72,14 +72,17 @@
@@ -18104,7 +18251,26 @@ index 78470d4..d5d88b4 100644
      m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfigMgr->GetIntDefault ("StrictPlayerNames",  0);
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
-@@ -1046,6 +1050,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -853,6 +857,18 @@ void World::LoadConfigSettings(bool reload)
+         TC_LOG_ERROR("server.loading", "MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
+         m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
+     }
++    rate_values[RATE_PVP_RANK_EXTRA_HONOR] = sConfigMgr->GetFloatDefault("PvPRank.Rate.ExtraHonor", 1);
++    std::string s_pvp_ranks = sConfigMgr->GetStringDefault("PvPRank.HKPerRank", "10,50,100,200,450,750,1300,2000,3500,6000,9500,15000,21000,30000");
++    char *c_pvp_ranks = const_cast<char*>(s_pvp_ranks.c_str());
++    for (int i = 0; i !=HKRANKMAX; i++)
++    {
++        if (i==0)
++            pvp_ranks[0] = 0;
++        else if (i==1)
++            pvp_ranks[1] = atoi(strtok (c_pvp_ranks, ","));
++        else
++            pvp_ranks[i] = atoi(strtok (NULL, ","));
++    }
+ 
+     m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfigMgr->GetIntDefault("GM.LoginState", 2);
+     m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfigMgr->GetIntDefault("GM.Visible", 2);
+@@ -1046,6 +1062,8 @@ void World::LoadConfigSettings(bool reload)
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
  
@@ -18113,7 +18279,7 @@ index 78470d4..d5d88b4 100644
      if (int32 clientCacheId = sConfigMgr->GetIntDefault("ClientCacheVersion", 0))
      {
          // overwrite DB/old value
-@@ -1229,6 +1235,11 @@ void World::LoadConfigSettings(bool reload)
+@@ -1229,6 +1247,11 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
      m_bool_configs[CONFIG_UI_QUESTLEVELS_IN_DIALOGS] = sConfigMgr->GetBoolDefault("UI.ShowQuestLevelsInDialogs", false);
  
@@ -18125,7 +18291,7 @@ index 78470d4..d5d88b4 100644
      // Wintergrasp battlefield
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
-@@ -1259,9 +1270,169 @@ void World::LoadConfigSettings(bool reload)
+@@ -1259,9 +1282,169 @@ void World::LoadConfigSettings(bool reload)
  
      m_bool_configs[CONFIG_IP_BASED_LOGIN_LOGGING] = sConfigMgr->GetBoolDefault("Wrong.Password.Login.Logging", false);
  
@@ -18295,7 +18461,7 @@ index 78470d4..d5d88b4 100644
  }
  
  extern void LoadGameObjectModelList();
-@@ -1280,6 +1451,7 @@ void World::SetInitialWorldSettings()
+@@ -1280,6 +1463,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -18303,7 +18469,7 @@ index 78470d4..d5d88b4 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1605,6 +1777,9 @@ void World::SetInitialWorldSettings()
+@@ -1605,6 +1789,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
@@ -18313,7 +18479,7 @@ index 78470d4..d5d88b4 100644
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1733,6 +1908,9 @@ void World::SetInitialWorldSettings()
+@@ -1733,6 +1920,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
  
@@ -18323,7 +18489,7 @@ index 78470d4..d5d88b4 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1746,6 +1924,8 @@ void World::SetInitialWorldSettings()
+@@ -1746,6 +1936,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -18332,7 +18498,7 @@ index 78470d4..d5d88b4 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -1822,6 +2002,9 @@ void World::SetInitialWorldSettings()
+@@ -1822,6 +2014,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -18342,7 +18508,7 @@ index 78470d4..d5d88b4 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1989,6 +2172,7 @@ void World::Update(uint32 diff)
+@@ -1989,6 +2184,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -18350,7 +18516,7 @@ index 78470d4..d5d88b4 100644
          m_timers[WUPDATE_AUCTIONS].Reset();
  
          ///- Update mails (return old mails with item, or delete them)
-@@ -2113,6 +2297,12 @@ void World::Update(uint32 diff)
+@@ -2113,6 +2309,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -18363,7 +18529,7 @@ index 78470d4..d5d88b4 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2728,6 +2918,20 @@ void World::SendAutoBroadcast()
+@@ -2728,6 +2930,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -18384,7 +18550,7 @@ index 78470d4..d5d88b4 100644
  void World::UpdateRealmCharCount(uint32 accountId)
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
-@@ -2875,6 +3079,8 @@ void World::ResetDailyQuests()
+@@ -2875,6 +3091,8 @@ void World::ResetDailyQuests()
  
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
@@ -18393,7 +18559,7 @@ index 78470d4..d5d88b4 100644
  }
  
  void World::LoadDBAllowedSecurityLevel()
-@@ -3206,3 +3412,87 @@ void World::ReloadRBAC()
+@@ -3206,3 +3424,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -18482,7 +18648,7 @@ index 78470d4..d5d88b4 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 61acdc3..217e26a 100644
+index 61acdc3..aad3681 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -18528,7 +18694,39 @@ index 61acdc3..217e26a 100644
      CONFIG_WARDEN_CLIENT_RESPONSE_DELAY,
      CONFIG_WARDEN_CLIENT_CHECK_HOLDOFF,
      CONFIG_WARDEN_CLIENT_FAIL_ACTION,
-@@ -529,6 +536,9 @@ class World
+@@ -400,10 +407,31 @@ enum Rates
+     RATE_DURABILITY_LOSS_PARRY,
+     RATE_DURABILITY_LOSS_ABSORB,
+     RATE_DURABILITY_LOSS_BLOCK,
++    RATE_PVP_RANK_EXTRA_HONOR,
+     RATE_MOVESPEED,
+     MAX_RATES
+ };
+ 
++enum HonorKillPvPRank
++{
++    HKRANK00,
++    HKRANK01,
++    HKRANK02,
++    HKRANK03,
++    HKRANK04,
++    HKRANK05,
++    HKRANK06,
++    HKRANK07,
++    HKRANK08,
++    HKRANK09,
++    HKRANK10,
++    HKRANK11,
++    HKRANK12,
++    HKRANK13,
++    HKRANK14,
++    HKRANKMAX
++};
++
+ /// Can be used in SMSG_AUTH_RESPONSE packet
+ enum BillingPlanFlags
+ {
+@@ -529,6 +557,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -18538,7 +18736,16 @@ index 61acdc3..217e26a 100644
          /// Get the number of current active sessions
          void UpdateMaxSessionCounters();
          const SessionMap& GetAllSessions() const { return m_sessions; }
-@@ -742,6 +752,11 @@ class World
+@@ -628,6 +659,8 @@ class World
+         void SendZoneText(uint32 zone, const char *text, WorldSession* self = 0, uint32 team = 0);
+         void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
+ 
++        uint32 pvp_ranks[HKRANKMAX];
++
+         /// Are we in the middle of a shutdown?
+         bool IsShuttingDown() const { return m_ShutdownTimer > 0; }
+         uint32 GetShutDownTimeLeft() const { return m_ShutdownTimer; }
+@@ -742,6 +775,11 @@ class World
  
          void ReloadRBAC();
  
@@ -18550,7 +18757,7 @@ index 61acdc3..217e26a 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -841,6 +856,21 @@ class World
+@@ -841,6 +879,21 @@ class World
  
          void ProcessQueryCallbacks();
          ACE_Future_Set<PreparedQueryResult> m_realmCharCallbacks;
