@@ -1,103 +1,73 @@
-/* Copyright (C) 2010 SAMCC Studios <http://www.samccstudios.com/>
- * Written by LordPsyan
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
- /*
-Script Name: npc_bots v1.1
-Complete: 100%
-Comment: Database Driven Bots Master
-*/
+//Written by LordPsyan
 
 #include "ScriptPCH.h"
 #include "Config.h"
 #include "SystemConfig.h"
 
 #define GOSSIP_SENDER_MAIN      1000
-#define GOSSIP_BOTS             2000
-#define GOSSIP_GMBOTS           4000
-#define GOSSIP_PLAYERTOOLS      5000
-
-#define SPELL_RESURRECTION_SICKNESS_15007  15007
-
-#define NB_BOTS_PAGE            10
-#define MSG_TYPE                100002
-#define MSG_BOTS                100003
-
-#define NEXT_PAGE               "-> [Next Page]"
-#define PREV_PAGE               "<- [Previous Page]"
+#define MSG_TYPE                100004
+#define MSG_BOT                 100005
 #define MAIN_MENU               "<= [Main Menu]"
 
-npcClass npc_bots : public CreatureScript
+class Npc_Botmaster : public CreatureScript
 {
 public:
-    npc_bots() : CreatureScript("npc_bots") {}
+        Npc_Botmaster() : CreatureScript("Npc_Botmaster") { }
 
-bool OnGossipHello(Player* pPlayer, Creature* pCreature)
+void CreateBot(Player *player, Creature * m_creature, uint32 entry) {
+
+    Creature *creatureTarget = m_creature->SummonCreature(entry, player->GetPositionX(), player->GetPositionY()+2, player->GetPositionZ(), player->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 50000);
+    if(!creatureTarget) return;
+        player->CLOSE_GOSSIP_MENU();
+        m_creature->MonsterWhisper("Your bot has Arrived. I suggest talking to it before it decides to leave.", player);
+        return;
+    }
+
+bool OnGossipHello(Player* player, Creature* m_creature)
 {
-    if(sConfigMgr->GetBoolDefault("Npc_Bots.OnlyGMs", false)) // If Npc_Bots.OnlyGMs is enabled in worldserver.conf
-        if (pPlayer->GetSession()->GetSecurity() == SEC_PLAYER)
+    // Check to see if Only GM is enabled
+    if(sConfigMgr->GetBoolDefault("BotMaster.OnlyGMs", false)) // If Npc_Bots.OnlyGMs is enabled in worldserver.conf
+        if (player->GetSession()->GetSecurity() == SEC_PLAYER)
         {
-            pCreature->MonsterWhisper("Sorry, I can only Provide Bots to Platinum Members.", pPlayer);
+            m_creature->MonsterWhisper("Sorry, I can only Provide Bots to Platinum Members.", player);
             return true;
         }
-
-    bool EnableBots = sConfigMgr->GetBoolDefault("Npc_Bots.EnableBots", true);
-    bool EnableGMBots = sConfigMgr->GetBoolDefault("Npc_Bots.EnableGMBots", true);
+    bool EnableBots = sConfigMgr->GetBoolDefault("BotMaster.EnableBots", true);
 
     // Main Menu
 
-    // Check config if "  Bots " is enabled or not
+    // Check config if "Bots" is enabled or not
     if(EnableBots)
-        pPlayer->ADD_GOSSIP_ITEM( 7, "Bots ->"              , GOSSIP_SENDER_MAIN, 1000);
-    // Check config if "GM Bots" is enabled or not
-    if(EnableGMBots)
-    {
-    if (pPlayer->GetSession()->GetSecurity() > SEC_PLAYER)
         {
-        pPlayer->ADD_GOSSIP_ITEM( 7, "Platinum Members Bots ->"                 , GOSSIP_SENDER_MAIN, 3000);
+        player->ADD_GOSSIP_ITEM( 7, "NPC Bots ->"              , GOSSIP_SENDER_MAIN, 1000);
+        player->ADD_GOSSIP_ITEM(6, "Special Items for Sale."   , GOSSIP_SENDER_MAIN, 6007);
         }
-    }
-
-    pPlayer->SEND_GOSSIP_MENU(MSG_TYPE, pCreature->GetGUID());
-
+    player->SEND_GOSSIP_MENU(MSG_TYPE, m_creature->GetGUID());
 return true;
 }
 
-bool showBots(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
+bool showBots(Player *player, Creature *m_creature, uint32 showFromId = 0)
 {
-
-
  QueryResult result;
- result = WorldDatabase.PQuery("SELECT `npcClass`, `level` FROM `npc_bots` WHERE `entry` BETWEEN 70001 AND 70248 ORDER BY `entry` ASC");
+ result = WorldDatabase.PQuery("SELECT `entry`, `npcClass` FROM `npc_bots`" /*WHERE `cat_number` = 0 ORDER BY `entry` ASC"*/);
 
  if (result)
  {
- std::string name = "";
- uint32 catNumber = 0;
+ uint32 entryNum = 0;
+ std::string npcClass = "";
+ uint32 price = 0;
+
   do
  {
  Field *fields = result->Fetch();
- npcClass = fields[0].GetString();
- entry = fields[1].GetInt32();
+ entryNum = fields[0].GetInt32();
+ npcClass = fields[1].GetString();
 
-    pPlayer->ADD_GOSSIP_ITEM(9, npcClass, GOSSIP_SENDER_MAIN, entry);
+    player->ADD_GOSSIP_ITEM(9, npcClass, GOSSIP_SENDER_MAIN, entryNum);
 }
  while (result->NextRow());
 
-    pPlayer->SEND_GOSSIP_MENU(MSG_BOTS, pCreature->GetGUID());
+    player->SEND_GOSSIP_MENU(MSG_BOT, m_creature->GetGUID());
  return true;
  }
  else
@@ -105,175 +75,120 @@ bool showBots(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
  if (showFromId = 0)
  {
  //you are too poor
- pCreature->MonsterWhisper("You don't have enough money.", pPlayer);
- pPlayer->CLOSE_GOSSIP_MENU();
+ m_creature->MonsterWhisper("You don't have enough money.", player);
+ player->CLOSE_GOSSIP_MENU();
  }
  else
  {
 
  //show Spells from beginning
- showBots(pPlayer, pCreature, 0);
+ showBots(player, m_creature, 0);
  }
  }
 
  return false;
 }
 
-bool showGmBots(Player *pPlayer, Creature *pCreature, uint32 showFromId = 0)
-{
-
-
- QueryResult result;
- result = WorldDatabase.PQuery("SELECT `npcClass`, `level` FROM `npc_bots` WHERE `entry` BETWEEN 70001 AND 70248 ORDER BY `entry` ASC");
-
- if (result)
- {
- std::string name = "";
- uint32 catNumber = 0;
-  do
- {
- Field *fields = result->Fetch();
- npcClass = fields[0].GetString();
- entry = fields[1].GetInt32();
-
-    pPlayer->ADD_GOSSIP_ITEM(9, npcClass, GOSSIP_SENDER_MAIN, entry);
-}
- while (result->NextRow());
-
-    pPlayer->SEND_GOSSIP_MENU(MSG_BOTS, pCreature->GetGUID());
- return true;
- }
- else
- {
- if (showFromId = 0)
- {
- //you are too poor
- pCreature->MonsterWhisper("You don't have enough money.", pPlayer);
- pPlayer->CLOSE_GOSSIP_MENU();
- }
- else
- {
-
- //show Spells from beginning
- showGmBots(pPlayer, pCreature, 0);
- }
- }
-
- return false;
-}
-
-void SendDefaultMenu(Player* pPlayer, Creature* pCreature, uint32 uiAction)
+void SendDefaultMenu(Player* player, Creature* m_creature, uint32 uiAction)
 {
 
 // Not allow in combat
-if (pPlayer->IsInCombat())
+if (player->IsInCombat())
 {
-    pPlayer->CLOSE_GOSSIP_MENU();
-    pCreature->MonsterSay("You are in combat!", LANG_UNIVERSAL, NULL);
+    player->CLOSE_GOSSIP_MENU();
+    m_creature->MonsterSay("You are in combat!", LANG_UNIVERSAL, NULL);
     return;
 }
 
-    bool EnableBots = sConfigMgr->GetBoolDefault("Npc_Bots.EnableBots", true);
-    bool EnableGMBots = sConfigMgr->GetBoolDefault("Npc_Bots.EnableGMBots", true);
-
-//Money Check
-if (pPlayer->GetMoney() < (sConfigMgr->GetFloatDefault("BotsGoldCost",0)))
-{
-    pPlayer->CLOSE_GOSSIP_MENU();
-    pCreature->MonsterWhisper("You don't have enough money.", pPlayer);
-    return;
-}
-
+    bool EnableBots = sConfigMgr->GetBoolDefault("BotMaster.EnableBots", true);
+    bool OnlyGMs = sConfigMgr->GetBoolDefault("BotMaster.OnlyGMs", true);
 
   // send name as gossip item
-
        QueryResult result;
-        uint32 spellId = 0;
-        uint32 catNumber = 0;
-        uint32 goldCost = 0;
-        std::string spellName = "";
+        uint32 entry = 0;
+        uint32 cost = 0;
+        std::string npcClass = "";
 
-        result = WorldDatabase.PQuery("SELECT `npcClass`, `entry`FROM `npc_bots` WHERE `level` = %u LIMIT 1", uiAction);
+        result = WorldDatabase.PQuery("SELECT * FROM `npc_bots` WHERE `entry` = %u LIMIT 1", uiAction);
 
-        if (result)
-        {
+if (result)
+{
+    do {
+        Field *fields = result->Fetch();
+        entry = fields[0].GetInt32();
+        npcClass = fields[1].GetString();
+        cost = fields[3].GetInt32();
 
-            do {
-
-            Field *fields = result->Fetch();
-            npcClass = fields[0].GetInt32();
-            entry = fields[1].GetInt32();
-            goldCost = fields[2].GetInt32();
-
-            if (pPlayer->GetMoney() < goldCost)
+    if (uiAction != 1000)
             {
-                pCreature->MonsterWhisper("You dont have enough money!", pPlayer);
-                pPlayer->CLOSE_GOSSIP_MENU();
+    player->CLOSE_GOSSIP_MENU();
+    m_creature->MonsterWhisper("Let me get that bot for you.", player);
+    CreateBot(player, m_creature, entry);
+            } else {
+            if (player->GetMoney() < cost)
+            {
+                m_creature->MonsterWhisper("You dont have enough money!", player);
+                player->CLOSE_GOSSIP_MENU();
                 return;
             }
-            else if (uiAction < 5000 && uiAction != 1000 && uiAction != 2000 && uiAction != 3000 && uiAction != 4000 && uiAction != 5005)
-            {
-    pPlayer->CLOSE_GOSSIP_MENU();
-    pPlayer->CastSpell(pPlayer,spellId,false);
-    pPlayer->ModifyMoney(-goldCost);
-
-            }
-
-            } while (result->NextRow());
-        } else {
-            //pPlayer->ADD_GOSSIP_ITEM( 7, MAIN_MENU, GOSSIP_SENDER_MAIN, 5005);
+        else if (uiAction != 1000)
+        {
+    player->CLOSE_GOSSIP_MENU();
+    CreateBot(player, m_creature, entry);
+    player->ModifyMoney(-int(cost));
         }
+    }
+} while (result->NextRow());
+} else {
+//player->ADD_GOSSIP_ITEM( 7, MAIN_MENU, GOSSIP_SENDER_MAIN, 5005);
+}
 
  switch(uiAction)
 {
 
-case 1000: //  Bots
-         showBots(pPlayer, pCreature, 0);
-        //pPlayer->ADD_GOSSIP_ITEM( 7, "<- Main Menu"                            , GOSSIP_SENDER_MAIN, 5005);
+case 1000: // Show Bots
+        showBots(player, m_creature, 0);
+        player->ADD_GOSSIP_ITEM( 7, "<- Main Menu"                            , GOSSIP_SENDER_MAIN, 5005);
 
-    pPlayer->SEND_GOSSIP_MENU(MSG_BOTS, pCreature->GetGUID());
-break;
-
-case 3000: //GM  Bots
-
-        showGmBots(pPlayer, pCreature, 0);
-        //pPlayer->ADD_GOSSIP_ITEM( 7, "<- Main Menu"                            , GOSSIP_SENDER_MAIN, 5005);
-
-    pPlayer->SEND_GOSSIP_MENU(MSG_BOTS,pCreature->GetGUID());
+    player->SEND_GOSSIP_MENU(MSG_BOT, m_creature->GetGUID());
 break;
 
 case 5005: //Back To Main Menu
-    // Main Menu
-    // Check config if "  Bots " is enabled or not
-    if(EnableBots)
-        pPlayer->ADD_GOSSIP_ITEM( 7, " Bots ->"              , GOSSIP_BOTS, 1000);
-    // Check config if "GM Bots" is enabled or not
-    if(EnableGMBots)
-    {
-    if (pPlayer->GetSession()->GetSecurity() > SEC_PLAYER)
+    // Check to see if Only GM is enabled
+    if(sConfigMgr->GetBoolDefault("BotMaster.OnlyGMs", false)) // If Npc_Bots.OnlyGMs is enabled in worldserver.conf
+        if (player->GetSession()->GetSecurity() == SEC_PLAYER)
         {
-        pPlayer->ADD_GOSSIP_ITEM( 7, "Platinum Members Bots ->"                 , GOSSIP_SENDER_MAIN, 3000);
+            m_creature->MonsterWhisper("Sorry, I can only Provide Bots to Platinum Members.", player);
         }
-    }
-    pPlayer->SEND_GOSSIP_MENU(MSG_TYPE, pCreature->GetGUID());
+    // Main Menu
+    // Check config if "Bots" is enabled or not
+    player->ADD_GOSSIP_ITEM( 7, "NPC Bots ->"              , GOSSIP_SENDER_MAIN, 1000);
+    player->ADD_GOSSIP_ITEM(6, "Special Items for Sale"    , GOSSIP_SENDER_MAIN, 6007);
+    player->SEND_GOSSIP_MENU(MSG_TYPE, m_creature->GetGUID());
 break;
 
- pPlayer->CLOSE_GOSSIP_MENU();
+case 6007:
+    player->GetSession()->SendListInventory(m_creature->GetGUID());
+    player->CLOSE_GOSSIP_MENU();
+    break;
+
+ player->CLOSE_GOSSIP_MENU();
  }
 
 } //end of function
 
-bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
+bool OnGossipSelect(Player* player, Creature* m_creature, uint32 uiSender, uint32 uiAction)
 {
     // Main menu
-    pPlayer->PlayerTalkClass->ClearMenus();
+    player->PlayerTalkClass->ClearMenus();
     if (uiSender == GOSSIP_SENDER_MAIN)
-    SendDefaultMenu(pPlayer, pCreature, uiAction);
+    SendDefaultMenu(player, m_creature, uiAction);
 
 return true;
 }
 };
-void AddSC_Npc_Bots()
+
+void AddSC_Npc_Botmaster()
 {
-    new npc_bots();
+    new Npc_Botmaster();
 }
