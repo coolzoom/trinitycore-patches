@@ -1,6 +1,6 @@
-From cc2c7f7cf57df8cc9e87073a766ee24210a9586c Mon Sep 17 00:00:00 2001
+From f07455541c85e0d54476ab23c77bce672ad855f0 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 29 Jun 2014 09:50:50 -0400
+Date: Fri, 11 Jul 2014 09:05:37 -0400
 Subject: [PATCH] Transmogrification
 
 ---
@@ -21,13 +21,13 @@ Subject: [PATCH] Transmogrification
  src/server/game/Entities/Player/Player.cpp         |    7 +-
  src/server/game/Handlers/SpellHandler.cpp          |    8 +-
  src/server/game/Scripting/ScriptLoader.cpp         |    4 +
- src/server/scripts/Custom/CMakeLists.txt           |    3 +
+ src/server/scripts/Custom/CMakeLists.txt           |    4 +-
  src/server/scripts/Custom/Transmogrification.cpp   |  868 ++++++++++++++++++++
  src/server/scripts/Custom/Transmogrification.h     |  170 ++++
  src/server/scripts/Custom/Transmogrifier.cpp       |  414 ++++++++++
  src/server/scripts/Spells/spell_generic.cpp        |   18 +-
  src/server/worldserver/worldserver.conf.dist       |  206 +++++
- 23 files changed, 1810 insertions(+), 10 deletions(-)
+ 23 files changed, 1809 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
@@ -216,7 +216,7 @@ index 0000000..e0bdf56
 +(@STRING_ENTRY+9, 'There are no transmogrifications'),
 +(@STRING_ENTRY+10, 'Invalid name inserted');
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index 92d00b2..f635a29 100644
+index e960422..33493dd 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -116,7 +116,7 @@ DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
@@ -251,7 +251,7 @@ index 8b89a86..55746af 100644
  extern DBCStorage <ItemLimitCategoryEntry>       sItemLimitCategoryStore;
  extern DBCStorage <ItemRandomPropertiesEntry>    sItemRandomPropertiesStore;
 diff --git a/src/server/game/DataStores/DBCStructure.h b/src/server/game/DataStores/DBCStructure.h
-index 2da166f..5a69f56 100644
+index 946cbc4..3868ce7 100644
 --- a/src/server/game/DataStores/DBCStructure.h
 +++ b/src/server/game/DataStores/DBCStructure.h
 @@ -1151,7 +1151,7 @@ struct ItemDisplayInfoEntry
@@ -277,7 +277,7 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8653106..98504a9 100644
+index 5c96e60..3b05817 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,7 @@
@@ -288,7 +288,7 @@ index 8653106..98504a9 100644
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12481,7 +12482,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12470,7 +12471,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -300,7 +300,7 @@ index 8653106..98504a9 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12607,6 +12611,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12596,6 +12600,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -335,10 +335,10 @@ index ba30803..c6cac31 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index f1359b7..e259e98 100644
+index ce01273..64ac667 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1441,6 +1441,8 @@ void AddBattlegroundScripts()
+@@ -1439,6 +1439,8 @@ void AddBattlegroundScripts()
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
  
@@ -347,7 +347,7 @@ index f1359b7..e259e98 100644
  #endif
  
  void AddCustomScripts()
-@@ -1448,5 +1450,7 @@ void AddCustomScripts()
+@@ -1446,5 +1448,7 @@ void AddCustomScripts()
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
  
@@ -356,16 +356,20 @@ index f1359b7..e259e98 100644
  #endif
  }
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..a1a67d1 100644
+index 80ebe36..20c2bc9 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
 +++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -13,6 +13,9 @@
+@@ -8,11 +8,11 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ 
+-# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
++file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
+ 
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
- #  ${sources_Custom}
-+    Custom/Transmogrification.h
-+    Custom/Transmogrification.cpp
-+    Custom/Transmogrifier.cpp
+-#  ${sources_Custom}
++  ${sources_Custom}
  )
  
  message("  -> Prepared: Custom")
