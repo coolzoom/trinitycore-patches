@@ -1,6 +1,6 @@
-From 20f65f6b02c00e5de88956141409df4f99c697d3 Mon Sep 17 00:00:00 2001
+From 35871249b790bfeb11ffe8029704cf8109b5bdee Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 28 Jun 2014 06:00:55 -0400
+Date: Fri, 11 Jul 2014 10:40:35 -0400
 Subject: [PATCH] CrossFactionBG
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH] CrossFactionBG
  src/server/game/Battlegrounds/Battleground.cpp     |   47 ++-
  src/server/game/Battlegrounds/Battleground.h       |    2 +-
  src/server/game/Battlegrounds/BattlegroundMgr.cpp  |    2 +-
- .../game/Battlegrounds/BattlegroundQueue.cpp       |   83 +++--
+ .../game/Battlegrounds/BattlegroundQueue.cpp       |   85 +++--
  src/server/game/Battlegrounds/BattlegroundQueue.h  |   11 +-
  .../game/Battlegrounds/Zones/BattlegroundAB.cpp    |    2 +-
  .../game/Battlegrounds/Zones/BattlegroundAV.cpp    |   19 +-
@@ -29,7 +29,7 @@ Subject: [PATCH] CrossFactionBG
  src/server/game/World/World.cpp                    |    2 +
  src/server/game/World/World.h                      |    1 +
  src/server/worldserver/worldserver.conf.dist       |   12 +
- 25 files changed, 660 insertions(+), 91 deletions(-)
+ 25 files changed, 661 insertions(+), 92 deletions(-)
  create mode 100644 sql/custom/AVFix.sql
  create mode 100644 src/server/game/Cfbg/Cfbg.cpp
  create mode 100644 src/server/game/Cfbg/Cfbg.h
@@ -57,19 +57,19 @@ index 0000000..a0c7eb9
 +
 +UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index fd3e13c..702d147 100644
+index a0d35d4..1b16734 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
-@@ -313,7 +313,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
+@@ -292,7 +292,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
              if (Player* player = ObjectAccessor::FindPlayer(itr->first))
              {
                  Position pos = player->GetPosition();
--                GetTeamStartLoc(player->GetBGTeam(), x, y, z, o);
-+                GetTeamStartLoc(player->GetTeam(), x, y, z, o);
-                 if (pos.GetExactDistSq(x, y, z) > maxDist)
+-                Position const* startPos = GetTeamStartPosition(Battleground::GetTeamIndexByTeamId(player->GetBGTeam()));
++                Position const* startPos = GetTeamStartPosition(Battleground::GetTeamIndexByTeamId(player->GetTeam()));
+                 if (pos.GetExactDistSq(startPos) > maxDist)
                  {
                      TC_LOG_DEBUG("bg.battleground", "BATTLEGROUND: Sending %s back to start location (map: %u) (possible exploit)", player->GetName().c_str(), GetMapId());
-@@ -519,7 +519,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
+@@ -498,7 +498,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                      WorldPacket status;
                      BattlegroundQueueTypeId bgQueueTypeId = sBattlegroundMgr->BGQueueTypeId(m_TypeID, GetArenaType());
                      uint32 queueSlot = player->GetBattlegroundQueueIndex(bgQueueTypeId);
@@ -78,7 +78,7 @@ index fd3e13c..702d147 100644
                      player->SendDirectMessage(&status);
  
                      player->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
-@@ -705,12 +705,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
+@@ -687,12 +687,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
              UpdatePlayerScore(player, SCORE_BONUS_HONOR, Honor);
  }
  
@@ -116,7 +116,7 @@ index fd3e13c..702d147 100644
  }
  
  void Battleground::UpdateWorldState(uint32 Field, uint32 Value)
-@@ -920,7 +940,7 @@ void Battleground::EndBattleground(uint32 winner)
+@@ -904,7 +924,7 @@ void Battleground::EndBattleground(uint32 winner)
          player->SendDirectMessage(&pvpLogData);
  
          WorldPacket data;
@@ -125,7 +125,7 @@ index fd3e13c..702d147 100644
          player->SendDirectMessage(&data);
          player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
      }
-@@ -1069,6 +1089,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
+@@ -1053,6 +1073,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
  
      if (player)
      {
@@ -133,7 +133,7 @@ index fd3e13c..702d147 100644
          // Do next only if found in battleground
          player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE);  // We're not in BG.
          // reset destination bg team
-@@ -1135,7 +1156,7 @@ void Battleground::AddPlayer(Player* player)
+@@ -1122,7 +1143,7 @@ void Battleground::AddPlayer(Player* player)
      // score struct must be created in inherited class
  
      uint64 guid = player->GetGUID();
@@ -142,7 +142,7 @@ index fd3e13c..702d147 100644
  
      BattlegroundPlayer bp;
      bp.OfflineRemoveTime = 0;
-@@ -1201,6 +1222,8 @@ void Battleground::AddPlayer(Player* player)
+@@ -1188,6 +1209,8 @@ void Battleground::AddPlayer(Player* player)
      // setup BG group membership
      PlayerAddedToBGCheckIfBGIsRunning(player);
      AddOrSetPlayerToCorrectBgGroup(player, team);
@@ -151,7 +151,7 @@ index fd3e13c..702d147 100644
  }
  
  // this method adds player to his team's bg group, or sets his correct group if player is already in bg group
-@@ -1270,8 +1293,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
+@@ -1257,8 +1280,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
  
          // 1 player is logging out, if it is the last, then end arena!
          if (isArena())
@@ -162,7 +162,7 @@ index fd3e13c..702d147 100644
      }
  }
  
-@@ -1880,7 +1903,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
+@@ -1866,7 +1889,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
      BuildPvPLogDataPacket(data);
      player->SendDirectMessage(&data);
  
@@ -172,10 +172,10 @@ index fd3e13c..702d147 100644
  }
  
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index 7d1bf55..5061d287 100644
+index 468b73c..b9d7312 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
-@@ -382,7 +382,7 @@ class Battleground
+@@ -375,7 +375,7 @@ class Battleground
          void CastSpellOnTeam(uint32 SpellID, uint32 TeamID);
          void RemoveAuraOnTeam(uint32 SpellID, uint32 TeamID);
          void RewardHonorToTeam(uint32 Honor, uint32 TeamID);
@@ -185,12 +185,12 @@ index 7d1bf55..5061d287 100644
          void UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player* player);
          void EndBattleground(uint32 winner);
 diff --git a/src/server/game/Battlegrounds/BattlegroundMgr.cpp b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-index ef78594..4acf096 100644
+index 615bbc1..25874a4 100644
 --- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-@@ -724,7 +724,7 @@ void BattlegroundMgr::SendToBattleground(Player* player, uint32 instanceId, Batt
+@@ -695,7 +695,7 @@ void BattlegroundMgr::SendToBattleground(Player* player, uint32 instanceId, Batt
+     if (Battleground* bg = GetBattleground(instanceId, bgTypeId))
      {
-         float x, y, z, O;
          uint32 mapid = bg->GetMapId();
 -        uint32 team = player->GetBGTeam();
 +        uint32 team = player->GetTeam();
@@ -198,7 +198,7 @@ index ef78594..4acf096 100644
              team = player->GetTeam();
  
 diff --git a/src/server/game/Battlegrounds/BattlegroundQueue.cpp b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
-index 547d6e9..9418296 100644
+index e29969d..d759cff 100644
 --- a/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 @@ -154,6 +154,10 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
@@ -212,11 +212,10 @@ index 547d6e9..9418296 100644
      TC_LOG_DEBUG("bg.battleground", "Adding Group to BattlegroundQueue bgTypeId : %u, bracket_id : %u, index : %u", BgTypeId, bracketId, index);
  
      uint32 lastOnlineTime = getMSTime();
-@@ -199,31 +203,56 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
+@@ -199,33 +203,58 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
          {
              if (Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(ginfo->BgTypeId))
              {
--                char const* bgName = bg->GetName();
 -                uint32 MinPlayers = bg->GetMinPlayersPerTeam();
 -                uint32 qHorde = 0;
 -                uint32 qAlliance = 0;
@@ -234,9 +233,9 @@ index 547d6e9..9418296 100644
 -                if (sWorld->getBoolConfig(CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_PLAYERONLY))
 +                if (sWorld->getBoolConfig(BATTLEGROUND_CROSSFACTION_ENABLED))
                  {
--                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_SELF, bgName, q_min_level, q_max_level,
+-                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_SELF, bg->GetName().c_str(), q_min_level, q_max_level,
 -                        qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
-+                    char const* bgName = bg->GetName();
++                    char const* bgName = bg->GetName().c_str();
 +                    uint32 MinPlayers = bg->GetMinPlayersPerTeam()*2;
 +                    uint32 qPlayers = 0;
 +                    uint32 q_min_level = bracketEntry->minLevel;
@@ -259,9 +258,9 @@ index 547d6e9..9418296 100644
 -                // System message
                  else
                  {
--                    sWorld->SendWorldText(LANG_BG_QUEUE_ANNOUNCE_WORLD, bgName, q_min_level, q_max_level,
+-                    sWorld->SendWorldText(LANG_BG_QUEUE_ANNOUNCE_WORLD, bg->GetName().c_str(), q_min_level, q_max_level,
 -                        qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
-+                    char const* bgName = bg->GetName();
++                    std::string bgName = bg->GetName().c_str();
 +                    uint32 MinPlayers = bg->GetMinPlayersPerTeam();
 +                    uint32 qHorde = 0;
 +                    uint32 qAlliance = 0;
@@ -288,9 +287,13 @@ index 547d6e9..9418296 100644
 +                            qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
 +                    }
                  }
-             }
-         }
-@@ -310,7 +339,7 @@ void BattlegroundQueue::RemovePlayer(uint64 guid, bool decreaseInvitedCount)
+-            }
+-        }
++            }        }
+         //release mutex
+     }
+ 
+@@ -309,7 +338,7 @@ void BattlegroundQueue::RemovePlayer(uint64 guid, bool decreaseInvitedCount)
      {
          //we must check premade and normal team's queue - because when players from premade are joining bg,
          //they leave groupinfo so we can't use its players size to find out index
@@ -299,7 +302,7 @@ index 547d6e9..9418296 100644
          {
              GroupsQueueType::iterator k = m_QueuedGroups[bracket_id_tmp][j].begin();
              for (; k != m_QueuedGroups[bracket_id_tmp][j].end(); ++k)
-@@ -499,6 +528,10 @@ void BattlegroundQueue::FillPlayersToBG(Battleground* bg, BattlegroundBracketId
+@@ -498,6 +527,10 @@ void BattlegroundQueue::FillPlayersToBG(Battleground* bg, BattlegroundBracketId
      int32 hordeFree = bg->GetFreeSlotsForTeam(HORDE);
      int32 aliFree   = bg->GetFreeSlotsForTeam(ALLIANCE);
  
@@ -310,7 +313,7 @@ index 547d6e9..9418296 100644
      //iterator for iterating through bg queue
      GroupsQueueType::const_iterator Ali_itr = m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].begin();
      //count of groups in queue - used to stop cycles
-@@ -747,7 +780,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(uint32 /*diff*/, BattlegroundTyp
+@@ -746,7 +779,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(uint32 /*diff*/, BattlegroundTyp
      if (m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].empty() &&
          m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].empty() &&
          m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].empty() &&
@@ -320,7 +323,7 @@ index 547d6e9..9418296 100644
          return;
  
      // battleground with free slot for player should be always in the beggining of the queue
-@@ -838,7 +872,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(uint32 /*diff*/, BattlegroundTyp
+@@ -837,7 +871,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(uint32 /*diff*/, BattlegroundTyp
      {
          // if there are enough players in pools, start new battleground or non rated arena
          if (CheckNormalMatch(bg_template, bracket_id, MinPlayersPerTeam, MaxPlayersPerTeam)
@@ -515,7 +518,7 @@ index 26fd081..d0d5a49 100644
  include_directories(
 diff --git a/src/server/game/Cfbg/Cfbg.cpp b/src/server/game/Cfbg/Cfbg.cpp
 new file mode 100644
-index 0000000..d0c9d3b
+index 0000000..2ea38c0
 --- /dev/null
 +++ b/src/server/game/Cfbg/Cfbg.cpp
 @@ -0,0 +1,325 @@
@@ -662,7 +665,7 @@ index 0000000..d0c9d3b
 +    MorphFit(action);
 +
 +    if (pBattleGround && action)
-+        SendChatMessage("%sYou are playing for the %s%s in this %s", MSG_COLOR_WHITE, GetTeam() == ALLIANCE ? MSG_COLOR_DARKBLUE"alliance" : MSG_COLOR_RED"horde", MSG_COLOR_WHITE, pBattleGround->GetName());
++        SendChatMessage("%sYou are playing for the %s%s in this %s", MSG_COLOR_WHITE, GetTeam() == ALLIANCE ? MSG_COLOR_DARKBLUE"alliance" : MSG_COLOR_RED"horde", MSG_COLOR_WHITE, pBattleGround->GetName().c_str());
 +}
 +
 +void Player::DoForgetPlayersInList()
@@ -886,7 +889,7 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8653106..d884da2 100644
+index 5c96e60..0dcbab5 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -651,6 +651,12 @@ void KillRewarder::Reward()
@@ -915,7 +918,7 @@ index 8653106..d884da2 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -3017,7 +3029,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3018,7 +3030,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -924,7 +927,7 @@ index 8653106..d884da2 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3155,7 +3167,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3156,7 +3168,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -933,7 +936,7 @@ index 8653106..d884da2 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -5254,7 +5266,7 @@ void Player::CreateCorpse()
+@@ -5229,7 +5241,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -942,7 +945,7 @@ index 8653106..d884da2 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -6924,10 +6936,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6913,10 +6925,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -955,7 +958,7 @@ index 8653106..d884da2 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -7029,6 +7041,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7018,6 +7030,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -983,7 +986,7 @@ index 8653106..d884da2 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7043,23 +7076,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7032,23 +7065,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -1013,7 +1016,7 @@ index 8653106..d884da2 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7154,7 +7187,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7143,7 +7176,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -1022,7 +1025,7 @@ index 8653106..d884da2 100644
              return false;
  
          return true;
-@@ -7478,7 +7511,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7467,7 +7500,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -1031,7 +1034,7 @@ index 8653106..d884da2 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -11987,13 +12020,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11976,13 +12009,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
  
      if (proto)
      {
@@ -1048,7 +1051,7 @@ index 8653106..d884da2 100644
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
          if (proto->RequiredSkill != 0)
-@@ -17231,6 +17264,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17220,6 +17253,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -1060,7 +1063,7 @@ index 8653106..d884da2 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17277,10 +17315,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17266,10 +17304,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -1071,7 +1074,7 @@ index 8653106..d884da2 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -17547,7 +17581,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17536,7 +17570,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
  
      if (!map)
      {
@@ -1080,7 +1083,7 @@ index 8653106..d884da2 100644
          mapId = info->mapId;
          Relocate(info->positionX, info->positionY, info->positionZ, 0.0f);
          map = sMapMgr->CreateMap(mapId, this);
-@@ -19197,7 +19231,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19187,7 +19221,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -1089,7 +1092,7 @@ index 8653106..d884da2 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19302,7 +19336,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19292,7 +19326,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -1098,7 +1101,7 @@ index 8653106..d884da2 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -20541,6 +20575,19 @@ void Player::StopCastingCharm()
+@@ -20531,6 +20565,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -1118,7 +1121,7 @@ index 8653106..d884da2 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22326,11 +22373,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22337,11 +22384,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -1130,7 +1133,7 @@ index 8653106..d884da2 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22406,7 +22448,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22417,7 +22459,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -1140,10 +1143,10 @@ index 8653106..d884da2 100644
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index fdebbde..dbe11df 100644
+index a146b5d..707b25b 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -1070,6 +1070,35 @@ class Player : public Unit, public GridObject<Player>
+@@ -1079,6 +1079,35 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -1179,7 +1182,7 @@ index fdebbde..dbe11df 100644
  
          void CleanupsBeforeDelete(bool finalCleanup = true);
  
-@@ -1123,7 +1152,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1132,7 +1161,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
  
          PlayerTaxi m_taxi;
@@ -1188,7 +1191,7 @@ index fdebbde..dbe11df 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1191,6 +1220,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1200,6 +1229,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
@@ -1197,7 +1200,7 @@ index fdebbde..dbe11df 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1891,8 +1922,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1903,8 +1934,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -1207,7 +1210,7 @@ index fdebbde..dbe11df 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -2036,7 +2066,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -2048,7 +2078,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -1216,10 +1219,10 @@ index fdebbde..dbe11df 100644
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index ca4780b..7d8e6fe 100644
+index d647955..edfc483 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -15995,7 +15995,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+@@ -15972,7 +15972,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -1228,7 +1231,7 @@ index ca4780b..7d8e6fe 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16746,6 +16746,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16723,6 +16723,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -1385,7 +1388,7 @@ index dbcfb1c..f3ff127 100644
      data << uint8(nameData->m_class);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 78470d4..b442a7c 100644
+index 6023ad8..c760a10 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1046,6 +1046,8 @@ void World::LoadConfigSettings(bool reload)
