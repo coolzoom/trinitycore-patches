@@ -1,13 +1,13 @@
-From 3b28a6718ab81362051f3a122054275b3e5c660c Mon Sep 17 00:00:00 2001
+From 9ee9ea6021d364d1847033f8618a845568b64f9a Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 24 Jun 2014 06:47:23 -0400
-Subject: [PATCH] AHBot-No-VIP-Glyphs
+Date: Thu, 17 Jul 2014 01:03:56 -0400
+Subject: [PATCH] AHBot
 
 ---
  doc/AuctionHouseBot.txt                            |  235 +++
  sql/tools/setup_ahbot.sql                          |   72 +
  .../AuctionHouseBot/AuctionHouseBot.cpp            | 1897 ++++++++++++++++++++
- .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1249 +++++++++++++
+ .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1253 +++++++++++++
  src/server/game/AuctionHouse/AuctionHouseMgr.cpp   |   11 +-
  src/server/game/AuctionHouse/AuctionHouseMgr.h     |    2 +
  src/server/game/CMakeLists.txt                     |    3 +
@@ -18,7 +18,7 @@ Subject: [PATCH] AHBot-No-VIP-Glyphs
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_ah_bot.cpp          |  482 +++++
  src/server/worldserver/worldserver.conf.dist       |  265 +++
- 14 files changed, 4233 insertions(+), 3 deletions(-)
+ 14 files changed, 4237 insertions(+), 3 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/tools/setup_ahbot.sql
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
@@ -2249,10 +2249,10 @@ index 0000000..fb20d2f
 +}
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
 new file mode 100644
-index 0000000..1a207e6
+index 0000000..97dc2e3
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
-@@ -0,0 +1,1249 @@
+@@ -0,0 +1,1253 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -2278,7 +2278,7 @@ index 0000000..1a207e6
 +#include "World.h"
 +#include "Config.h"
 +#include "ItemPrototype.h"
-+
++#include "AuctionHouseMgr.h"
 +#define AHB_GREY        0
 +#define AHB_WHITE       1
 +#define AHB_GREEN       2
@@ -3484,10 +3484,14 @@ index 0000000..1a207e6
 +    void addNewAuctions(Player *AHBplayer, AHBConfig *config);
 +    void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
 +
-+    friend class ACE_Singleton<AuctionHouseBot, ACE_Null_Mutex>;
 +    AuctionHouseBot();
 +
 +public:
++    static AuctionHouseBot* instance()
++    {
++        static AuctionHouseBot* instance = new AuctionHouseBot();
++        return instance;
++    }
 +    ~AuctionHouseBot();
 +    void Update();
 +    void Initialize();
@@ -3499,11 +3503,11 @@ index 0000000..1a207e6
 +    uint32 GetAHBplayerGUID() { return AHBplayerGUID; };
 +};
 +
-+#define auctionbot (*ACE_Singleton<AuctionHouseBot, ACE_Null_Mutex>::instance())
++#define auctionbot AuctionHouseBot::instance()
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index f4699f0..4dda7ec 100644
+index f4699f0..2eb5d21 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 @@ -171,7 +171,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
@@ -3511,7 +3515,7 @@ index f4699f0..4dda7ec 100644
  
          //FIXME: what do if owner offline
 -        if (owner)
-+        if (owner && owner->GetGUIDLow() != auctionbot.GetAHBplayerGUID())
++        if (owner && owner->GetGUIDLow() != auctionbot->GetAHBplayerGUID())
          {
              owner->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GOLD_EARNED_BY_AUCTIONS, profit);
              owner->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_SOLD, auction->bid);
@@ -3520,7 +3524,7 @@ index f4699f0..4dda7ec 100644
      if (owner || owner_accId)
      {
 -        if (owner)
-+        if (owner && owner->GetGUIDLow() != auctionbot.GetAHBplayerGUID())
++        if (owner && owner->GetGUIDLow() != auctionbot->GetAHBplayerGUID())
              owner->GetSession()->SendAuctionOwnerNotification(auction);
  
          MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(0, 0, auction->buyout, auction->deposit, 0))
@@ -3529,7 +3533,7 @@ index f4699f0..4dda7ec 100644
      if (oldBidder || oldBidder_accId)
      {
 +        if (oldBidder && !newBidder)
-+            oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, auctionbot.GetAHBplayerGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
++            oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, auctionbot->GetAHBplayerGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
 +
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
@@ -3538,21 +3542,21 @@ index f4699f0..4dda7ec 100644
  
      AuctionsMap[auction->Id] = auction;
      sScriptMgr->OnAuctionAdd(this, auction);
-+    auctionbot.IncrementItemCounts(auction);
++    auctionbot->IncrementItemCounts(auction);
  }
  
 -bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 /*itemEntry*/)
 +bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 itemEntry)
  {
-+    auctionbot.DecrementItemCounts(auction, itemEntry);
++    auctionbot->DecrementItemCounts(auction, itemEntry);
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
  
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-index f45fc41..88cd0b5 100644
+index 0f42a58..ac29761 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.h
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-@@ -25,6 +25,8 @@
+@@ -23,6 +23,8 @@
  #include "DatabaseEnv.h"
  #include "DBCStructure.h"
  
@@ -3562,7 +3566,7 @@ index f45fc41..88cd0b5 100644
  class Player;
  class WorldPacket;
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 26fd081..fc82767 100644
+index 84d6f87..3eb72bf 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -13,6 +13,7 @@ file(GLOB_RECURSE sources_Achievements Achievements/*.cpp Achievements/*.h)
@@ -3602,7 +3606,7 @@ index 86fa042..6806a54 100644
  #include "Log.h"
  #include "Language.h"
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 2c65e36..283efa7 100644
+index 2c65e36..6fd033d 100644
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -27,6 +27,7 @@
@@ -3617,7 +3621,7 @@ index 2c65e36..283efa7 100644
  
      uint32 mailId = sObjectMgr->GenerateMailID();
  
-+    if (receiver.GetPlayerGUIDLow() == auctionbot.GetAHBplayerGUID())
++    if (receiver.GetPlayerGUIDLow() == auctionbot->GetAHBplayerGUID())
 +    {
 +        if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
 +            deleteIncludedItems(trans, true);
@@ -3628,7 +3632,7 @@ index 2c65e36..283efa7 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index f1359b7..9d32565 100644
+index ce01273..c16e857 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -48,6 +48,7 @@ void AddSC_SmartScripts();
@@ -3639,7 +3643,7 @@ index f1359b7..9d32565 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -754,6 +755,7 @@ void AddCommandScripts()
+@@ -753,6 +754,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -3648,10 +3652,10 @@ index f1359b7..9d32565 100644
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index b643d12..8609d68 100644
+index 631c4e6..5b9b499 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -72,6 +72,7 @@
+@@ -73,6 +73,7 @@
  #include "CharacterDatabaseCleaner.h"
  #include "ScriptMgr.h"
  #include "WeatherMgr.h"
@@ -3659,36 +3663,36 @@ index b643d12..8609d68 100644
  #include "CreatureTextMgr.h"
  #include "SmartAI.h"
  #include "Channel.h"
-@@ -1603,6 +1604,9 @@ void World::SetInitialWorldSettings()
+@@ -1605,6 +1606,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
 +    // Initialize AHBot settings before deleting expired auctions due to AHBot hooks
-+    auctionbot.InitializeConfiguration();
++    auctionbot->InitializeConfiguration();
 +
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1820,6 +1824,9 @@ void World::SetInitialWorldSettings()
+@@ -1822,6 +1826,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
 +    TC_LOG_INFO("server.loading", "Initialize AuctionHouseBot...");
-+    auctionbot.Initialize();
++    auctionbot->Initialize();
 +
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1987,6 +1994,7 @@ void World::Update(uint32 diff)
+@@ -1989,6 +1996,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
-+        auctionbot.Update();
++        auctionbot->Update();
          m_timers[WUPDATE_AUCTIONS].Reset();
  
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index 9385202..53e5ef2 100644
+index ba2709f..501b2b3 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
 @@ -78,6 +78,7 @@ include_directories(
@@ -3701,7 +3705,7 @@ index 9385202..53e5ef2 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/Battlegrounds
 diff --git a/src/server/scripts/Commands/cs_ah_bot.cpp b/src/server/scripts/Commands/cs_ah_bot.cpp
 new file mode 100644
-index 0000000..2a96cb0
+index 0000000..0f02d66
 --- /dev/null
 +++ b/src/server/scripts/Commands/cs_ah_bot.cpp
 @@ -0,0 +1,482 @@
@@ -3805,7 +3809,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(0, ahMapID, NULL, NULL);
++            auctionbot->Commands(0, ahMapID, NULL, NULL);
 +        }
 +        else if (strncmp(opt, "minitems", l) == 0)
 +        {
@@ -3816,7 +3820,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(1, ahMapID, NULL, param1);
++            auctionbot->Commands(1, ahMapID, NULL, param1);
 +        }
 +        else if (strncmp(opt, "maxitems", l) == 0)
 +        {
@@ -3827,7 +3831,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(2, ahMapID, NULL, param1);
++            auctionbot->Commands(2, ahMapID, NULL, param1);
 +        }
 +        else if (strncmp(opt, "mintime", l) == 0)
 +        {
@@ -3841,7 +3845,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(3, ahMapID, NULL, param1);
++            auctionbot->Commands(3, ahMapID, NULL, param1);
 +            */
 +        }
 +        else if (strncmp(opt, "maxtime", l) == 0)
@@ -3856,7 +3860,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(4, ahMapID, NULL, param1);
++            auctionbot->Commands(4, ahMapID, NULL, param1);
 +            */
 +        }
 +        else if (strncmp(opt, "percentages", l) == 0)
@@ -3941,7 +3945,7 @@ index 0000000..2a96cb0
 +            strcat(param, param13);
 +            strcat(param, " ");
 +            strcat(param, param14);
-+            auctionbot.Commands(5, ahMapID, NULL, param);
++            auctionbot->Commands(5, ahMapID, NULL, param);
 +        }
 +        else if (strncmp(opt, "minprice", l) == 0)
 +        {
@@ -3955,19 +3959,19 @@ index 0000000..2a96cb0
 +            }
 +
 +            if (strncmp(param1, "grey", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(6, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(6, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(6, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(6, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(6, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, "orange", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(6, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(6, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(6, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions minprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
@@ -3984,19 +3988,19 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +            if (strncmp(param1, "grey", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(7, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(7, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(7, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(7, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(7, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, "orange",l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(7, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(7, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(7, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions maxprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
@@ -4022,19 +4026,19 @@ index 0000000..2a96cb0
 +            }
 +
 +            if (strncmp(param1, "grey", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(8, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(8, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(8, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(8, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(8, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, "orange", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(8, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(8, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(8, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions minbidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
@@ -4060,19 +4064,19 @@ index 0000000..2a96cb0
 +            }
 +
 +            if (strncmp(param1, "grey", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(9, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(9, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(9, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(9, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(9, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, " orange", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(9, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(9, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(9, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions max bidprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $price");
@@ -4098,19 +4102,19 @@ index 0000000..2a96cb0
 +            // }
 +
 +            if (strncmp(param1, "grey",l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(10, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(10, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(10, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(10, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(10, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, "orange", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(10, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(10, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(10, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions maxstack $ahMapID (2, 6 or 7) $color (grey, white, green, blue, purple, orange or yellow) $value");
@@ -4129,19 +4133,19 @@ index 0000000..2a96cb0
 +            }
 +
 +            if (strncmp(param1, "grey", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_GREY, param2);
++                auctionbot->Commands(11, ahMapID, AHB_GREY, param2);
 +            else if (strncmp(param1, "white", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_WHITE, param2);
++                auctionbot->Commands(11, ahMapID, AHB_WHITE, param2);
 +            else if (strncmp(param1, "green", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_GREEN, param2);
++                auctionbot->Commands(11, ahMapID, AHB_GREEN, param2);
 +            else if (strncmp(param1, "blue", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_BLUE, param2);
++                auctionbot->Commands(11, ahMapID, AHB_BLUE, param2);
 +            else if (strncmp(param1, "purple", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_PURPLE, param2);
++                auctionbot->Commands(11, ahMapID, AHB_PURPLE, param2);
 +            else if (strncmp(param1, "orange", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_ORANGE, param2);
++                auctionbot->Commands(11, ahMapID, AHB_ORANGE, param2);
 +            else if (strncmp(param1, "yellow", l) == 0)
-+                auctionbot.Commands(11, ahMapID, AHB_YELLOW, param2);
++                auctionbot->Commands(11, ahMapID, AHB_YELLOW, param2);
 +            else
 +            {
 +                handler->PSendSysMessage("Syntax is: ahbotoptions buyerprice $ahMapID (2, 6 or 7) $color (grey, white, green, blue or purple) $price");
@@ -4158,7 +4162,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(12, ahMapID, NULL, param1);
++            auctionbot->Commands(12, ahMapID, NULL, param1);
 +        }
 +        else if (strncmp(opt, "bidsperinterval", l) == 0)
 +        {
@@ -4170,7 +4174,7 @@ index 0000000..2a96cb0
 +                return false;
 +            }
 +
-+            auctionbot.Commands(13, ahMapID, NULL, param1);
++            auctionbot->Commands(13, ahMapID, NULL, param1);
 +        }
 +        else
 +        {
@@ -4188,10 +4192,10 @@ index 0000000..2a96cb0
 +    new ah_bot_commandscript();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71b7bb..09fd7c6 100644
+index c4e3ad8..bf5d555 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2288,6 +2288,271 @@ Network.TcpNodelay = 1
+@@ -2306,6 +2306,271 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  

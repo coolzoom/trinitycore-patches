@@ -1,28 +1,39 @@
-From 3cfb19f3d38b33ba8f3ed2eddec182833bc8eb46 Mon Sep 17 00:00:00 2001
+From a0d2090e11a1450863e08ca31364d4e40fe79381 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 24 Jun 2014 07:12:31 -0400
+Date: Thu, 17 Jul 2014 01:50:10 -0400
 Subject: [PATCH] ArenaGambler
 
 ---
- .../ArenaGambler/CharactersDB SQL.sql              |   59 ++
- .../ArenaGambler/WorldDB SQL.sql                   |  502 ++++++++++++++
- src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
- src/server/scripts/Custom/ArenaGambler.cpp         |  308 +++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 ++++++++++++++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.h    |  443 ++++++++++++
- src/server/scripts/Custom/CMakeLists.txt           |    4 +-
- 7 files changed, 2042 insertions(+), 3 deletions(-)
- create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB SQL.sql
- create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql
+ npc-entry-list.txt                                |    2 +
+ sql/TrinityCore-Patches/ArenaGambler/CharactersDB |   59 ++
+ sql/TrinityCore-Patches/ArenaGambler/WorldDB      |  502 ++++++++++++++
+ src/server/game/Scripting/ScriptLoader.cpp        |    6 +-
+ src/server/scripts/Custom/ArenaGambler.cpp        |  308 +++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.cpp |  723 +++++++++++++++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.h   |  458 +++++++++++++
+ src/server/scripts/Custom/CMakeLists.txt          |    4 +-
+ 8 files changed, 2059 insertions(+), 3 deletions(-)
+ create mode 100644 npc-entry-list.txt
+ create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB
+ create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB
  create mode 100644 src/server/scripts/Custom/ArenaGambler.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.h
 
-diff --git a/sql/TrinityCore-Patches/ArenaGambler/CharactersDB SQL.sql b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB SQL.sql
+diff --git a/npc-entry-list.txt b/npc-entry-list.txt
 new file mode 100644
-index 0000000..046bab6
+index 0000000..c0e1a47
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB SQL.sql
++++ b/npc-entry-list.txt
+@@ -0,0 +1,2 @@
++Arena Gambler
++908001 - The Lich King
+\ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/ArenaGambler/CharactersDB b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB
+new file mode 100644
+index 0000000..ac486b2
+--- /dev/null
++++ b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB
 @@ -0,0 +1,59 @@
 +/*
 + * Author: Xees
@@ -83,11 +94,11 @@ index 0000000..046bab6
 +    `matchDate` timestamp ,
 +    `matchWinner` int (11)
 +);
-diff --git a/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql b/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql
+diff --git a/sql/TrinityCore-Patches/ArenaGambler/WorldDB b/sql/TrinityCore-Patches/ArenaGambler/WorldDB
 new file mode 100644
 index 0000000..952985e
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/ArenaGambler/WorldDB SQL.sql
++++ b/sql/TrinityCore-Patches/ArenaGambler/WorldDB
 @@ -0,0 +1,502 @@
 +
 +DELETE FROM `creature_template` WHERE (`entry`=908001);
@@ -592,20 +603,20 @@ index 0000000..952985e
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index f1359b7..5f7ed5e 100644
+index ce01273..5e2d5ba 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -44,6 +44,9 @@ void AddSC_holiday_spell_scripts();
-
+ 
  void AddSC_SmartScripts();
-
+ 
 +//Custom
 +void AddSC_ArenaGambler();
 +
  //Commands
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
-@@ -1447,6 +1450,7 @@ void AddCustomScripts()
+@@ -1445,6 +1448,7 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -616,7 +627,7 @@ index f1359b7..5f7ed5e 100644
  }
 diff --git a/src/server/scripts/Custom/ArenaGambler.cpp b/src/server/scripts/Custom/ArenaGambler.cpp
 new file mode 100644
-index 0000000..c4d8cb4
+index 0000000..376d946
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGambler.cpp
 @@ -0,0 +1,308 @@
@@ -661,7 +672,7 @@ index 0000000..c4d8cb4
 +            {
 +                case ARENA_GAMBLER_MENU_MAIN:
 +                {
-+                    if(GamblerMatchData *matchData = sGamblingSystem.GetMatchDataBy(pPlayer))
++                    if(GamblerMatchData *matchData = sGamblingSystem->GetMatchDataBy(pPlayer))
 +                    {
 +                            if(matchData->MatchStarted())
 +                                return true;
@@ -703,7 +714,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_1:
 +                    {
-+                        if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 1) == false)
++                        if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 1) == false)
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                        else
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -711,7 +722,7 @@ index 0000000..c4d8cb4
 +                    }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_10:
 +                    {
-+                        if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 10) == false)
++                        if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 10) == false)
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                        else
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -719,7 +730,7 @@ index 0000000..c4d8cb4
 +                    }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_20:
 +                    {
-+                        if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 20) == false)
++                        if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 20) == false)
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                        else
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -727,7 +738,7 @@ index 0000000..c4d8cb4
 +                    }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_30:
 +                    {
-+                        if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 30) == false)
++                        if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 30) == false)
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                        else
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -735,7 +746,7 @@ index 0000000..c4d8cb4
 +                    }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_40:
 +                    {
-+                        if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 40) == false)
++                        if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 40) == false)
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                        else
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -743,7 +754,7 @@ index 0000000..c4d8cb4
 +                    }break;
 +                    case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_50:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 50) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 50) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -751,7 +762,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_100:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 100) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 100) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -759,7 +770,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_200:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 200) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 200) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -767,7 +778,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_300:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 300) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 300) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -775,7 +786,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_500:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 500) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 500) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -783,7 +794,7 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT_1000:
 +                {
-+                    if(sGamblingSystem.AddItemAmountForMatch(pPlayer, 1000) == false)
++                    if(sGamblingSystem->AddItemAmountForMatch(pPlayer, 1000) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_BET_AMOUNT_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_AMOUNT_SUCCESS);
@@ -791,13 +802,13 @@ index 0000000..c4d8cb4
 +                }break;
 +                case ARENA_GAMBLER_MENU_ACCEPT_CHALLENGE:
 +                    {
-+                        sGamblingSystem.AcceptChallenge(pPlayer);
++                        sGamblingSystem->AcceptChallenge(pPlayer);
 +                        pPlayer->CLOSE_GOSSIP_MENU();
 +                    }break;
 +                case ARENA_GAMBLER_MENU_CANCEL_CHALLENGE:
 +                case ARENA_GAMBLER_MENU_DECLINE_CHALLENGE:
 +                    {
-+                    sGamblingSystem.CancelChallenge(pPlayer);
++                    sGamblingSystem->CancelChallenge(pPlayer);
 +                    pPlayer->CLOSE_GOSSIP_MENU();
 +                    }break;
 +                case ARENA_GAMBLER_MENU_EXIT:{
@@ -816,7 +827,7 @@ index 0000000..c4d8cb4
 +                {
 +                    if(Player* pDefender = sObjectAccessor->FindPlayerByName(pCode))
 +                    {
-+                        if(sGamblingSystem.CanHaveMatch(pPlayer, pDefender) == false)
++                        if(sGamblingSystem->CanHaveMatch(pPlayer, pDefender) == false)
 +                        {
 +                            // General Error Message: Match not possible because:
 +                            ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_MATCH_NOT_POSSIBLE);
@@ -855,7 +866,7 @@ index 0000000..c4d8cb4
 +                            }
 +                            return true;
 +                        }
-+                        sGamblingSystem.SetupMatch(pPlayer, pDefender);
++                        sGamblingSystem->SetupMatch(pPlayer, pDefender);
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGE_ISSUED, pDefender);
 +                        ChatHandler(pDefender->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGED, pPlayer);
 +                        OnGossipSelect(pPlayer, pCreature, ARENA_GAMBLER_MENU_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
@@ -866,7 +877,7 @@ index 0000000..c4d8cb4
 +
 +                case ARENA_GAMBLER_MENU_BET_ITEM:
 +                {
-+                    if(sGamblingSystem.AddItemForMatch(pPlayer, pCode) == false)
++                    if(sGamblingSystem->AddItemForMatch(pPlayer, pCode) == false)
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_ADD_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_ADD_SUCCESS);
@@ -924,14 +935,14 @@ index 0000000..c4d8cb4
 +
 +void AddSC_ArenaGambler()
 +{
-+    sGamblingSystem.Initalize();
++    sGamblingSystem->Initalize();
 +    new ArenaGambler();
 +    new ArenaRecords();
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.cpp b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 new file mode 100644
-index 0000000..351079d
+index 0000000..114e1f0
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 @@ -0,0 +1,723 @@
@@ -1593,8 +1604,8 @@ index 0000000..351079d
 +        TC_LOG_ERROR("Arena", "GamblerDuelScript: OnDuelEnd pDefender or pChallenger is NULL!");
 +        return;}
 +
-+    GamblerMatchData *ChallengerMatchData = sGamblingSystem.GetMatchDataBy(pChallenger);
-+    GamblerMatchData *DefenderMatchData = sGamblingSystem.GetMatchDataBy(pDefender);
++    GamblerMatchData *ChallengerMatchData = sGamblingSystem->GetMatchDataBy(pChallenger);
++    GamblerMatchData *DefenderMatchData = sGamblingSystem->GetMatchDataBy(pDefender);
 +
 +    // if challenger or defender has no existing match data, return.
 +    if(ChallengerMatchData == NULL || DefenderMatchData == NULL){
@@ -1605,22 +1616,22 @@ index 0000000..351079d
 +        // then challenger has requested duel from someone else with match data.
 +        if(ChallengerMatchData->GetMatchId() != DefenderMatchData->GetMatchId()){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NOT_SAME_PLAYER);
-+            sGamblingSystem.CancelChallenge(pChallenger);
++            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +        // if the challenger has not set ready, or the defender has not set ready!
 +        if(ChallengerMatchData->HasSetReady(pChallenger) == false || ChallengerMatchData->HasSetReady(pDefender) == false){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NOT_READY);
-+            sGamblingSystem.CancelChallenge(pChallenger);
++            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +        // if challenger has no item id set, or defender has no item id set!
 +        if(ChallengerMatchData->GetChallengerItemId() == NULL || ChallengerMatchData->GetDefenderItemId() == NULL){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NO_ITEM);
-+            sGamblingSystem.CancelChallenge(pChallenger);
++            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +        // if challenger has not set item count yet, or defender has not set item count yet!
 +        if(ChallengerMatchData->GetChallengerItemCount() == NULL || ChallengerMatchData->GetDefenderItemCount() == NULL){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NO_AMOUNT);
-+            sGamblingSystem.CancelChallenge(pChallenger);
++            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +
 +    }
@@ -1634,13 +1645,13 @@ index 0000000..351079d
 +        TC_LOG_ERROR("Arena", "GamblerDuelScript: OnDuelEnd pWinner or pLoser is NULL!");
 +        return;}
 +
-+    GamblerMatchData *WinnerData = sGamblingSystem.GetMatchDataBy(pWinner);
-+    GamblerMatchData *LoserData = sGamblingSystem.GetMatchDataBy(pLoser);
++    GamblerMatchData *WinnerData = sGamblingSystem->GetMatchDataBy(pWinner);
++    GamblerMatchData *LoserData = sGamblingSystem->GetMatchDataBy(pLoser);
 +
 +    if(WinnerData == NULL || LoserData == NULL){
 +        return;}
 +    else if(WinnerData->GetMatchId() == LoserData->GetMatchId()){
-+    sGamblingSystem.HandleMatchComplete(pWinner, pLoser, WinnerData, type);
++    sGamblingSystem->HandleMatchComplete(pWinner, pLoser, WinnerData, type);
 +    }
 +}
 +
@@ -1652,7 +1663,7 @@ index 0000000..351079d
 +        TC_LOG_ERROR("Arena", "GamblerDuelScript: OnLogout pPlayer is NULL!");
 +        return;}
 +
-+    GamblerMatchData *matchData = sGamblingSystem.GetMatchDataBy(pPlayer);
++    GamblerMatchData *matchData = sGamblingSystem->GetMatchDataBy(pPlayer);
 +    if(matchData == NULL){
 +        return;}
 +    else if(matchData->MatchStarted() && (matchData->GetChallengerGUID() == pPlayer->GetGUIDLow() || matchData->GetDefenderGUID() == pPlayer->GetGUIDLow()))
@@ -1661,10 +1672,10 @@ index 0000000..351079d
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.h b/src/server/scripts/Custom/ArenaGamblingSystem.h
 new file mode 100644
-index 0000000..928cdea
+index 0000000..e6f23bf
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.h
-@@ -0,0 +1,443 @@
+@@ -0,0 +1,458 @@
 +/*
 + * Author: Xees
 + * FileName: ArenaGamblingSystem.h
@@ -2017,6 +2028,11 @@ index 0000000..928cdea
 +class GamblingSystem : public WorldScript
 +{
 +    public:
++    static GamblingSystem* instance()
++    {
++        static GamblingSystem* instance = new GamblingSystem();
++        return instance;
++    }
 +        GamblingSystem();
 +        ~GamblingSystem();
 +
@@ -2062,9 +2078,14 @@ index 0000000..928cdea
 +        void _createItemAndMailToPlayer(Player *pPlayer, uint32 playerGUID, uint32 itemId, uint32 amount, std::string mailMessage);
 +
 +        // Mutex Wrappers
-+        void AcquireMatchLock() { m_matchLock.acquire(); }
-+        void ReleaseMatchLock() { m_matchLock.release(); }
-+
++        void AcquireMatchLock()
++        { 
++            std::lock_guard<std::mutex> lock(_matchLock);
++        }
++        void ReleaseMatchLock()
++        { 
++            std::lock_guard<std::mutex> unlock(_matchLock);
++        }
 +        // Match Data
 +        bool _checkItemValidity(Item *pItem);
 +        bool _checkItemValidity(uint32 itemId);
@@ -2075,7 +2096,7 @@ index 0000000..928cdea
 +    protected:
 +
 +        // Matches
-+        ACE_Thread_Mutex m_matchLock;
++        std::mutex _matchLock;
 +        GamblerMatchMap m_matchStorage;
 +        IntervalTimer m_checkMatches;
 +
@@ -2096,6 +2117,11 @@ index 0000000..928cdea
 +class GamblerDuelScript : PlayerScript
 +{
 +    public:
++    static GamblingSystem* instance()
++    {
++        static GamblingSystem* instance = new GamblingSystem();
++        return instance;
++    }
 +    GamblerDuelScript() : PlayerScript(GAMBLER_SYSTEM_DUEL_SCRIPT_NAME) {}
 +
 +     // Called when a duel is requested
@@ -2106,8 +2132,8 @@ index 0000000..928cdea
 +    void OnLogout(Player *pPlayer);
 +};
 +
-+#define sGamblingSystem (*ACE_Singleton<GamblingSystem, ACE_Null_Mutex>::instance())
-+#endif // ArenaGambler_H
++#define sGamblingSystem GamblingSystem::instance()
++#endif
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
 index 80ebe36..20c2bc9 100644
@@ -2116,17 +2142,17 @@ index 80ebe36..20c2bc9 100644
 @@ -8,11 +8,11 @@
  # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+ 
 -# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
 +file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-
+ 
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 -#  ${sources_Custom}
 +  ${sources_Custom}
  )
-
+ 
  message("  -> Prepared: Custom")
---
+-- 
 1.7.10.4
 

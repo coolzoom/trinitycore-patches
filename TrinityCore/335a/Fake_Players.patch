@@ -1,21 +1,21 @@
-From df220e90f4a6cb2a9f615aae166a26443fadfdb0 Mon Sep 17 00:00:00 2001
+From 7c2fa8542629d56289f1d0bfc9706582a331dee1 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Jun 2014 18:11:41 -0400
+Date: Wed, 16 Jul 2014 23:45:14 -0400
 Subject: [PATCH] Fake_Players
 
 ---
- .../characters-characters_fake-full.sql            |   35 +++++++++++++++++++
+ .../characters-characters_fake-full.sql            |   35 ++++++++++++++++++++
  .../characters-characters_fake-structure.sql       |   31 +++++++++++++++++
  .../fake_players/characters_fake_readme.txt        |   18 ++++++++++
  .../fake_players/trinity_string_fake_players.sql   |    8 +++++
  src/server/game/Entities/Player/Player.cpp         |    4 +++
  src/server/game/Handlers/ChatHandler.cpp           |    9 +++++
- src/server/game/Handlers/MiscHandler.cpp           |   36 ++++++++++++++++++--
+ src/server/game/Handlers/MiscHandler.cpp           |   34 ++++++++++++++++++-
  src/server/game/Miscellaneous/Language.h           |    4 +--
  src/server/game/World/World.cpp                    |    1 +
  src/server/game/World/World.h                      |    1 +
  src/server/worldserver/worldserver.conf.dist       |    8 +++++
- 11 files changed, 151 insertions(+), 4 deletions(-)
+ 11 files changed, 150 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters_fake_readme.txt
@@ -23,7 +23,7 @@ Subject: [PATCH] Fake_Players
 
 diff --git a/sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
 new file mode 100644
-index 0000000..aed3ab5
+index 0000000..9069f54
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
 @@ -0,0 +1,35 @@
@@ -64,7 +64,7 @@ index 0000000..aed3ab5
 +/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 diff --git a/sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql
 new file mode 100644
-index 0000000..d5240a5
+index 0000000..2cffde1
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql
 @@ -0,0 +1,31 @@
@@ -101,7 +101,7 @@ index 0000000..d5240a5
 +/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 diff --git a/sql/TrinityCore-Patches/fake_players/characters_fake_readme.txt b/sql/TrinityCore-Patches/fake_players/characters_fake_readme.txt
 new file mode 100644
-index 0000000..0d7ed99
+index 0000000..c0d7d60
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/fake_players/characters_fake_readme.txt
 @@ -0,0 +1,18 @@
@@ -126,7 +126,7 @@ index 0000000..0d7ed99
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/fake_players/trinity_string_fake_players.sql b/sql/TrinityCore-Patches/fake_players/trinity_string_fake_players.sql
 new file mode 100644
-index 0000000..eb1b129
+index 0000000..6a4927d
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/fake_players/trinity_string_fake_players.sql
 @@ -0,0 +1,8 @@
@@ -139,10 +139,10 @@ index 0000000..eb1b129
 +
 +insert into `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) values('12001','Player wishes to not be disturbed and cannot receive whisper messages.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 8ceb6c0..e9104a5 100644
+index 7894d6c..631adf7 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1777,6 +1777,10 @@ void Player::Update(uint32 p_time)
+@@ -1779,6 +1779,10 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -154,7 +154,7 @@ index 8ceb6c0..e9104a5 100644
          else
              m_nextSave -= p_time;
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index eccf7a6..0ec48d2 100644
+index eccf7a6..0f67cf4 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -271,8 +271,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
@@ -176,16 +176,14 @@ index eccf7a6..0ec48d2 100644
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
              {
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index c4ff258..28e422d 100644
+index baa20f7..ca9c552 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
-@@ -363,8 +363,40 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
-
+@@ -365,7 +365,39 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
          ++displaycount;
      }
--
+ 
 -    data.put(0, displaycount);                            // insert right count, count displayed
-+
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
 +    {
 +        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5
@@ -220,7 +218,7 @@ index c4ff258..28e422d 100644
 +
 +    data.put(0, matchcount);                            // insert right count, count displayed
      data.put(4, matchcount);                              // insert right count, count of matches
-
+ 
      SendPacket(&data);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 3a680e3..8f58cf7 100644
@@ -228,32 +226,32 @@ index 3a680e3..8f58cf7 100644
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -1225,8 +1225,8 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
-
+ 
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
 -    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
 -
 +    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
-+    LANG_NOT_WHISPER                              = 12001
++    LANG_NOT_WHISPER                              = 12001,
      // NOT RESERVED IDS                   12000-1999999999
      // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
      // For other tables maybe             2000010000-2147483647 (max index)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e40e2f7..b9d355c 100644
+index 631c4e6..4996536 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -669,6 +669,7 @@ void World::LoadConfigSettings(bool reload)
+@@ -671,6 +671,7 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD]   = sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Guild", false);
      m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION] = sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Auction", false);
-     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_TRADE]               = sConfigMgr->GetBoolDefault("AllowTwoSide.trade", false);
+     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_TRADE]               = sConfigMgr->GetBoolDefault("AllowTwoSide.Trade", false);
 +    m_bool_configs[CONFIG_FAKE_WHO_LIST]                      = sConfigMgr->GetBoolDefault("Fake.WHO.List", false);
      m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfigMgr->GetIntDefault ("StrictPlayerNames",  0);
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9bac303..41fd190 100644
+index 22dece5..b2534dd 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -96,6 +96,7 @@ enum WorldBoolConfigs
+@@ -95,6 +95,7 @@ enum WorldBoolConfigs
      CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD,
      CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION,
      CONFIG_ALLOW_TWO_SIDE_TRADE,
@@ -262,13 +260,13 @@ index 9bac303..41fd190 100644
      CONFIG_INSTANT_TAXI,
      CONFIG_INSTANCE_IGNORE_LEVEL,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index f71ef5d..d645f42 100644
+index c4e3ad8..3054d51 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -1205,6 +1205,14 @@ AllowTwoSide.Trade = 0
-
+@@ -1215,6 +1215,14 @@ AllowTwoSide.Trade = 0
+ 
  TalentsInspecting = 1
-
+ 
 +#    Fake.WHO.List
 +#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
 +#        49 real players online
@@ -279,7 +277,7 @@ index f71ef5d..d645f42 100644
 +
  #
  ###################################################################################################
-
---
+ 
+-- 
 1.7.10.4
 

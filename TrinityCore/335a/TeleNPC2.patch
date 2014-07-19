@@ -1,20 +1,22 @@
-From 77c9091e1fa5115bb845163605984a78265cc0c1 Mon Sep 17 00:00:00 2001
+From 0ec5e986521c05855cafabb50147be862ad7d80e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 24 Jun 2014 08:12:04 -0400
+Date: Thu, 17 Jul 2014 04:13:25 -0400
 Subject: [PATCH] TeleNPC2
 
 ---
- README.NPCTELEPORT                                |   14 +
- sql/TrinityCore-Patches/world.npc_teleport.sql    |  119 +++++++
- src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp |  380 +++++++++++++++++++++
- src/server/game/AI/ScriptedAI/sc_npc_teleport.h   |  151 ++++++++
- src/server/game/Scripting/ScriptLoader.cpp        |    6 +-
- src/server/game/Scripting/ScriptMgr.cpp           |    3 +
- src/server/scripts/CMakeLists.txt                 |    3 +
- src/server/scripts/Custom/npc_teleport.cpp        |  222 ++++++++++++
- 8 files changed, 897 insertions(+), 1 deletion(-)
+ README.NPCTELEPORT                                 |   14 +
+ npc-entry-list.txt                                 |    2 +
+ .../TeleNPC2/world.npc_teleport.sql                |  119 ++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  380 ++++++++++++++++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
+ src/server/game/Scripting/ScriptMgr.cpp            |    3 +
+ src/server/scripts/CMakeLists.txt                  |    3 +
+ src/server/scripts/Custom/npc_teleport.cpp         |  222 ++++++++++++
+ 9 files changed, 899 insertions(+), 1 deletion(-)
  create mode 100644 README.NPCTELEPORT
- create mode 100644 sql/TrinityCore-Patches/world.npc_teleport.sql
+ create mode 100644 npc-entry-list.txt
+ create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/scripts/Custom/npc_teleport.cpp
@@ -39,11 +41,20 @@ index 0000000..015c9c2
 +
 +Run the query setup_npc_teleport.sql located in the trinity sql directory on
 +your world DB. This will setup the DB and you can customize from there.
-diff --git a/sql/TrinityCore-Patches/world.npc_teleport.sql b/sql/TrinityCore-Patches/world.npc_teleport.sql
+diff --git a/npc-entry-list.txt b/npc-entry-list.txt
+new file mode 100644
+index 0000000..3f9a9b0
+--- /dev/null
++++ b/npc-entry-list.txt
+@@ -0,0 +1,2 @@
++TeleNPC
++100000 - Abyssal Vortex
+\ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 new file mode 100644
 index 0000000..52372d0
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/world.npc_teleport.sql
++++ b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 @@ -0,0 +1,119 @@
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
@@ -708,7 +719,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index f1359b7..c78d513 100644
+index ce01273..ca91bca 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -25,6 +25,9 @@ void AddSC_example_gossip_codebox();
@@ -721,7 +732,7 @@ index f1359b7..c78d513 100644
  // spells
  void AddSC_deathknight_spell_scripts();
  void AddSC_druid_spell_scripts();
-@@ -1447,6 +1450,7 @@ void AddCustomScripts()
+@@ -1445,6 +1448,7 @@ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
@@ -731,7 +742,7 @@ index f1359b7..c78d513 100644
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 83f401d..cac467b 100644
+index 1b91ed1..772f80b 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
@@ -742,7 +753,7 @@ index 83f401d..cac467b 100644
  #include "ScriptSystem.h"
  #include "Transport.h"
  #include "Vehicle.h"
-@@ -185,6 +186,8 @@ void ScriptMgr::Initialize()
+@@ -187,6 +188,8 @@ void ScriptMgr::Initialize()
      uint32 oldMSTime = getMSTime();
  
      LoadDatabase();
@@ -752,7 +763,7 @@ index 83f401d..cac467b 100644
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index 9385202..89740d6 100644
+index ba2709f..c71e13a 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
 @@ -24,6 +24,9 @@ include(Examples/CMakeLists.txt)

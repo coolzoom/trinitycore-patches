@@ -1,11 +1,11 @@
-From 2a368e3010f524f726d91f197842672a89790ed1 Mon Sep 17 00:00:00 2001
+From 80bd28e1e6f00f41d052539eb8abfb9ac395b87e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 24 Jun 2014 08:30:06 -0400
+Date: Thu, 17 Jul 2014 12:43:52 -0400
 Subject: [PATCH] Individual-XP-Rate
 
 ---
- .../auth_individuale_xp_raten.sql                  |    5 ++
- .../world_individuale_xp_raten.sql                 |    8 +++
+ .../auth_individuale_xp_Rate.sql                   |    5 ++
+ .../world_individuale_xp_Rate.sql                  |    8 +++
  src/server/game/Accounts/RBAC.h                    |    2 +
  src/server/game/Entities/Player/Player.cpp         |   25 +++++++-
  src/server/game/Entities/Player/Player.h           |   16 +++++
@@ -13,25 +13,25 @@ Subject: [PATCH] Individual-XP-Rate
  src/server/game/Miscellaneous/Language.h           |    9 ++-
  src/server/scripts/Commands/cs_modify.cpp          |   64 ++++++++++++++++++++
  8 files changed, 131 insertions(+), 3 deletions(-)
- create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Raten/auth_individuale_xp_raten.sql
- create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql
+ create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
+ create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 
-diff --git a/sql/TrinityCore-Patches/Individuale_XP-Raten/auth_individuale_xp_raten.sql b/sql/TrinityCore-Patches/Individuale_XP-Raten/auth_individuale_xp_raten.sql
+diff --git a/sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql b/sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
 new file mode 100644
 index 0000000..145342c
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Individuale_XP-Raten/auth_individuale_xp_raten.sql
++++ b/sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
 @@ -0,0 +1,5 @@
 +INSERT INTO `rbac_permissions` VALUES ('1010', 'Command: modify xpkill');
 +INSERT INTO `rbac_permissions` VALUES ('1011', 'Command: modify xpquest');
 +
 +INSERT INTO `rbac_linked_permissions` VALUES ('195', '1010');
 +INSERT INTO `rbac_linked_permissions` VALUES ('195', '1011');
-diff --git a/sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql b/sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql
+diff --git a/sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql b/sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 new file mode 100644
 index 0000000..f310d3d
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Individuale_XP-Raten/world_individuale_xp_raten.sql
++++ b/sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 @@ -0,0 +1,8 @@
 +INSERT INTO `trinity_string` VALUES ('15004', 'Current XpKill Rate: %f.$BCurrent XpQuest Rate: %f.', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('15003', 'The specified value is too low, it should be between 1 and 8.', null, null, null, null, null, null, null, null);
@@ -43,48 +43,47 @@ index 0000000..f310d3d
 +INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 9ce1f9b..b1af8ea 100644
+index f2637a5..07cb54b 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -683,6 +683,8 @@ enum RBACPermissions
      RBAC_PERM_COMMAND_MAILBOX                                = 777,
-
+ 
      // custom permissions 1000+
 +    RBAC_PERM_COMMAND_MODIFY_XP_KILL                         = 1010,
 +    RBAC_PERM_COMMAND_MODIFY_XP_QUEST                        = 1011,
      RBAC_PERM_MAX
  };
-
+ 
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9733c0f..e6b0e84 100644
+index 33469a4..4fdda8d 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -896,6 +896,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -897,6 +897,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
 +
-+    //Individuale_XP-Raten
++    //Individuale_XP-Rate
 +    _individual_kill = 0.0f;
 +    _individual_quest = 0.0f;
  }
-
+ 
  Player::~Player()
-@@ -15326,7 +15330,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15300,7 +15304,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
-
+ 
      // Not give XP in case already completed once repeatable quest
 -    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
 +    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*(_individual_quest > 0 ? _individual_quest : sWorld->getRate(RATE_XP_QUEST)));
-
+ 
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
-@@ -26757,3 +26761,22 @@ bool Player::IsLoading() const
- {
+@@ -26814,6 +26818,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
-+
-+//Individuale_XP-Raten
+ 
++//Individuale_XP-Rate
 +void Player::SetIndividualRate(IndividualXpRate rate, float value)
 +{
 +    if (value < 1 || value > 8)
@@ -102,15 +101,19 @@ index 9733c0f..e6b0e84 100644
 +            break;
 +    }
 +}
++
+ void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
+ {
+     WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index fdebbde..e5a4527 100644
+index 23a0f56..60bd0c4 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -900,6 +900,13 @@ enum PlayerCommandStates
+@@ -909,6 +909,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
-
-+//Individuale_XP-Raten
+ 
++//Individuale_XP-Rate
 +enum IndividualXpRate
 +{
 +    INDIVIDUAL_XP_KILL  = 1,
@@ -120,11 +123,11 @@ index fdebbde..e5a4527 100644
  class PlayerTaxi
  {
      public:
-@@ -2305,6 +2312,11 @@ class Player : public Unit, public GridObject<Player>
-
+@@ -2318,6 +2325,11 @@ class Player : public Unit, public GridObject<Player>
+ 
          bool IsLoading() const;
-
-+        //Individuale_XP-Raten
+ 
++        //Individuale_XP-Rate
 +        void SetIndividualRate(IndividualXpRate rate, float value);
 +        float GetIndividualXpKillRate() { return _individual_kill; };
 +        float GetIndividualXpQuestRate() { return _individual_quest; };
@@ -132,55 +135,55 @@ index fdebbde..e5a4527 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2633,6 +2645,10 @@ class Player : public Unit, public GridObject<Player>
+@@ -2646,6 +2658,10 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
-
+ 
          uint32 _activeCheats;
 +
-+        //Individuale_XP-Raten
++        //Individuale_XP-Rate
 +        float _individual_kill;
 +        float _individual_quest;
  };
-
+ 
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 8d0e97d..d8ccde2 100644
+index 8d0e97d..5049dd1 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -180,7 +180,10 @@ namespace Trinity
                          gain *= 2;
                  }
-
+ 
 -                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL));
-+                //Individuale_XP-Raten
++                //Individuale_XP-Rate
 +                float individualXpKill = player->GetIndividualXpKillRate();
 +
 +                gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
              }
-
+ 
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3a680e3..e346d78 100644
+index 3a680e3..b4fa554 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -1225,7 +1225,14 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
-
+ 
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
 -    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
 +    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
 +
-+    //Individuale_XP-Raten
-+    LANG_INDIVIDUAL_KILLRATE_SET  = 15000,
-+    LANG_INDIVIDUAL_QUESTRATE_SET = 15001,
-+    LANG_INDIVIDUAL_RATE_TO_HIGH  = 15002,
-+    LANG_INDIVIDUAL_RATE_TO_LOW   = 15003,
-+    LANG_INDIVIDUAL_RATES_INFO    = 15004,
-
++    //Individuale_XP-Rate
++    LANG_INDIVIDUAL_KILLRATE_SET                  = 15000,
++    LANG_INDIVIDUAL_QUESTRATE_SET                 = 15001,
++    LANG_INDIVIDUAL_RATE_TO_HIGH                  = 15002,
++    LANG_INDIVIDUAL_RATE_TO_LOW                   = 15003,
++    LANG_INDIVIDUAL_RATES_INFO                    = 15004,
+ 
      // NOT RESERVED IDS                   12000-1999999999
      // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
 diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
-index 5dbe95b..218f85c 100644
+index 5dbe95b..e2c592b 100644
 --- a/src/server/scripts/Commands/cs_modify.cpp
 +++ b/src/server/scripts/Commands/cs_modify.cpp
 @@ -70,6 +70,8 @@ public:
@@ -193,7 +196,7 @@ index 5dbe95b..218f85c 100644
          };
          static ChatCommand commandTable[] =
 @@ -1393,6 +1395,68 @@ public:
-
+ 
          return true;
      }
 +
@@ -259,8 +262,8 @@ index 5dbe95b..218f85c 100644
 +        return true;
 +    }
  };
-
+ 
  void AddSC_modify_commandscript()
---
+-- 
 1.7.10.4
 

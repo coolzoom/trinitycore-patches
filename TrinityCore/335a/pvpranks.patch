@@ -1,6 +1,6 @@
-From 673230548171f364554c0c2314135fac0a8e8dae Mon Sep 17 00:00:00 2001
+From f2b295f294cdd5cc57830c000f20ed57cf25ec30 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 9 Jul 2014 01:21:04 -0400
+Date: Sat, 19 Jul 2014 14:12:04 -0400
 Subject: [PATCH] pvpranks
 
 ---
@@ -11,10 +11,10 @@ Subject: [PATCH] pvpranks
  4 files changed, 129 insertions(+), 9 deletions(-)
 
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 5c96e60..ec225f1 100644
+index a694b45..f278d41 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -7155,6 +7155,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7137,6 +7137,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -22,7 +22,7 @@ index 5c96e60..ec225f1 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7197,17 +7198,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7179,17 +7180,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -86,7 +86,7 @@ index 5c96e60..ec225f1 100644
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
              // and those in a lifetime
-@@ -7215,6 +7253,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7197,6 +7235,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
@@ -94,7 +94,7 @@ index 5c96e60..ec225f1 100644
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
          }
-@@ -7308,6 +7347,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7290,6 +7329,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -122,11 +122,11 @@ index 5c96e60..ec225f1 100644
 +        SetUInt32Value(PLAYER_CHOSEN_TITLE,new_title);
 +}
 +
- void Player::ModifyHonorPoints(int32 value, SQLTransaction* trans /*=NULL*/)
+ void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index a146b5d..7c37c5e 100644
+index 851afec..461efad 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -419,6 +419,27 @@ enum PlayerFlags
@@ -157,19 +157,19 @@ index a146b5d..7c37c5e 100644
  // used for PLAYER__FIELD_KNOWN_TITLES field (uint64), (1<<bit_index) without (-1)
  // can't use enum for uint64 values
  #define PLAYER_TITLE_DISABLED              UI64LIT(0x0000000000000000)
-@@ -1941,6 +1962,7 @@ class Player : public Unit, public GridObject<Player>
-         void ModifyHonorPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, honor save query will be added to trans
-         void ModifyArenaPoints(int32 value, SQLTransaction* trans = NULL);      //! If trans is specified, arena point save query will be added to trans
+@@ -1942,6 +1963,7 @@ class Player : public Unit, public GridObject<Player>
+         void ModifyHonorPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, honor save query will be added to trans
+         void ModifyArenaPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, arena point save query will be added to trans
          uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
 +        void UpdateKnownTitles();
          void SetHonorPoints(uint32 value);
          void SetArenaPoints(uint32 value);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 78470d4..224069b 100644
+index 807e168..c5e6d22 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -853,6 +853,18 @@ void World::LoadConfigSettings(bool reload)
+@@ -855,6 +855,18 @@ void World::LoadConfigSettings(bool reload)
          TC_LOG_ERROR("server.loading", "MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
          m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
      }
@@ -189,10 +189,10 @@ index 78470d4..224069b 100644
      m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfigMgr->GetIntDefault("GM.LoginState", 2);
      m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfigMgr->GetIntDefault("GM.Visible", 2);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 61acdc3..1d3d4da 100644
+index 22dece5..9a8999f 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -400,10 +400,31 @@ enum Rates
+@@ -398,10 +398,31 @@ enum Rates
      RATE_DURABILITY_LOSS_PARRY,
      RATE_DURABILITY_LOSS_ABSORB,
      RATE_DURABILITY_LOSS_BLOCK,
@@ -224,7 +224,7 @@ index 61acdc3..1d3d4da 100644
  /// Can be used in SMSG_AUTH_RESPONSE packet
  enum BillingPlanFlags
  {
-@@ -628,6 +649,8 @@ class World
+@@ -629,6 +650,8 @@ class World
          void SendZoneText(uint32 zone, const char *text, WorldSession* self = 0, uint32 team = 0);
          void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
  
