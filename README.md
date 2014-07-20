@@ -1,7 +1,10 @@
-Decided to do a readme file. I will be editing this over time and it will have info for all patches, in Alphabetical Order...
+TrinityCore-Patches now has a website (under construction. Using tikiwiki and I am unfamiliar with it, so be patient) The url is:
 
-Kinda...
+http://www.realmsofwarcraft.us
 
+Instead of posting an "issue" with suggestions of questions, try using the wiki. I will have a forums in there, where I will check often to answer questions.
+
+Now for the patches...
 I will start with ALL patches. Currently there are 4 ALL Patches.
 
 * ALL without any bots.
@@ -42,20 +45,39 @@ Here is a list of the patches, and a detailed description of each. (Not finished
 
 * **GuildLevelSystem.patch** - 
 * **Individual-XP-Rate.patch** - 
+  Allows setting of different XP rates. I have not tested, so not sure how to set them.
 * **KillStreak.patch** - 
+  Rewards for pvp based on number of successful wins in a row... I think.
 * **LevelNPC.patch** - 
   NPC that offers level using gold or tokens. Config option (forgot to put those in, will get right on that)
 * **New_NPCBots**.patch - 
+  Server controlled "players" that run in your party. Must be prespawned, and factions set (a,h,m - Alliance, Horde, Monster) NPCBots tend to be a bit over powered, but great for low population servers
+
 * **NPCBuff.patch** - 
+  NPC that casts buffs on players. Buffs and cost in DB.
+
 * **npc-enchant.patch** - 
 * **Old_NPCBots.patch** - 
+  Same as New NPCBots exept that you can use commands to add them to your party, or you can spawn an NPC Giver guy that will spawn them for you.
+
 * **Passive_Anticheat.patch** - 
+  Best anti cheat out there. checks for speed hacks, flying, etc.
+
 * **Playerbot-NPCBots.patch** - 
+  Old NPCBots patch plus a playerbot patch that allows you to "log in" another character on your account, controlled by the server. Buggy at best, but fun to play with.
+
 * **ProfessionNPC.patch** - 
+  NPC that will give you +10 to any profession... for a price. Price can be token or gold, set in config file.
+
 * **Reforging.patch** - 
-* **Summon_NPC.patch** - 
+* **Summon_NPC.patch** -
+  This is an item, that when right-clicked, will spawn an npc (default entry number 100000). I use it to summon my TeleNPC2 NPC, so players can teleport anywhere any time. The NPC will automatically vanish after a few minutes.
+ 
 * **TeleNPC2.patch** - 
+  The best of the best teleport scripts. an NPC with well organized coordinates for teleporting. You can add catagories, and locations, and restrict those locations in many way, such as by cost, specific guild, level required, etc.
+
 * **Transmogrification.patch** - 
 * **TriniIRC.patch** - 
+  Allows players to join a channel (set in config) and chat to people in an IRC channel. Configs are a bit confusing, but once working, you can admin the realm via IRC (so you can connect to IRC on your smartphone, and kick\ban players, chat, and do other commands).
 
-I will start with the details soon.
+Added some details, but check the website for more information on the patches.
