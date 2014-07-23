@@ -1,23 +1,14 @@
-From 7edd03c0c309cbcba51fb6154d5c4ed168de8335 Mon Sep 17 00:00:00 2001
+From 7b861c069f388a9682efc6e558942dc2cd7ab0c2 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 20 Jul 2014 12:54:26 -0400
-Subject: [PATCH] ALL-New_NPCBots
+Date: Wed, 23 Jul 2014 14:22:06 -0400
+Subject: [PATCH] ALL-NEW_NPCBots
 
 ---
  README.NPCTELEPORT                                 |   14 +
  cmake/compiler/msvc/settings.cmake                 |    2 +-
  doc/AuctionHouseBot.txt                            |  235 +
  npc-entry-list.txt                                 |   16 +
- sql/Transmogrification/characters.sql              |   23 +
- sql/Transmogrification/updates/_README.txt         |    1 +
- .../updates/characters_update_2_1_to_2_2.sql       |   12 +
- .../updates/characters_update_2_2_to_3_0.sql       |    2 +
- .../updates/characters_update_4_x_to_5_0.sql       |   16 +
- .../updates/world_update_3_5_to_3_6.sql            |    1 +
- .../updates/world_update_4_x_to_5_0.sql            |   27 +
- .../updates/world_update_5_0_to_5_1.sql            |    6 +
- sql/Transmogrification/world_NPC.sql               |    6 +
- sql/Transmogrification/world_texts.sql             |   18 +
+ sql/TrinityCore-Patches/AHBot/characters.ahbot.sql |   72 +
  sql/TrinityCore-Patches/All-In-One/auth_AIO.sql    |   11 +
  .../All-In-One/characters_AIO.sql                  |    1 +
  sql/TrinityCore-Patches/All-In-One/world_AIO.sql   |   31 +
@@ -25,6 +16,7 @@ Subject: [PATCH] ALL-New_NPCBots
  sql/TrinityCore-Patches/ArenaGambler/WorldDB       |  502 ++
  sql/TrinityCore-Patches/Bots/character_bots.sql    |   26 +
  sql/TrinityCore-Patches/Bots/world_bots.sql        |  400 +
+ .../CrossFactionBG/world.AVFix.sql                 |    3 +
  .../GuildLevelSystem/auth_guild_level_system.sql   |    7 +
  .../characters_guild_level_system.sql              |   55 +
  .../GuildLevelSystem/world_guild_level_system.sql  |    6 +
@@ -33,6 +25,17 @@ Subject: [PATCH] ALL-New_NPCBots
  .../world_individuale_xp_Rate.sql                  |    8 +
  .../SummonNPC/world.summonnpc-item.sql             |    3 +
  .../TeleNPC2/world.npc_teleport.sql                |  119 +
+ .../Transmogrification/characters.sql              |   23 +
+ .../Transmogrification/updates/_README.txt         |    1 +
+ .../updates/characters_update_2_1_to_2_2.sql       |   12 +
+ .../updates/characters_update_2_2_to_3_0.sql       |    2 +
+ .../updates/characters_update_4_x_to_5_0.sql       |   16 +
+ .../updates/world_update_3_5_to_3_6.sql            |    1 +
+ .../updates/world_update_4_x_to_5_0.sql            |   27 +
+ .../updates/world_update_5_0_to_5_1.sql            |    6 +
+ .../Transmogrification/world_NPC.sql               |    6 +
+ .../Transmogrification/world_texts.sql             |   18 +
+ .../anticheat/world.anticheat.sql                  |   30 +
  .../beastmaster/2014_04_12-world-beastmaster.sql   |   64 +
  sql/TrinityCore-Patches/enchant/world.enchant.sql  |    4 +
  .../characters-characters_fake-full.sql            |   35 +
@@ -41,9 +44,6 @@ Subject: [PATCH] ALL-New_NPCBots
  .../fake_players/trinity_string_fake_players.sql   |    8 +
  .../npc_buff/world_npc_buff.sql                    |   62 +
  .../profession_npc/world_professionnpc.sql         |    4 +
- sql/anticheat.sql                                  |   30 +
- sql/custom/AVFix.sql                               |    3 +
- sql/tools/setup_ahbot.sql                          |   72 +
  src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp    |  121 +
  src/server/game/AI/NpcBots/bot_Events.h            |  133 +
  src/server/game/AI/NpcBots/bot_GridNotifiers.h     |  724 ++
@@ -171,16 +171,7 @@ Subject: [PATCH] ALL-New_NPCBots
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 npc-entry-list.txt
- create mode 100644 sql/Transmogrification/characters.sql
- create mode 100644 sql/Transmogrification/updates/_README.txt
- create mode 100644 sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
- create mode 100644 sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
- create mode 100644 sql/Transmogrification/updates/characters_update_4_x_to_5_0.sql
- create mode 100644 sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
- create mode 100644 sql/Transmogrification/updates/world_update_4_x_to_5_0.sql
- create mode 100644 sql/Transmogrification/updates/world_update_5_0_to_5_1.sql
- create mode 100644 sql/Transmogrification/world_NPC.sql
- create mode 100644 sql/Transmogrification/world_texts.sql
+ create mode 100644 sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/auth_AIO.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/characters_AIO.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/world_AIO.sql
@@ -188,6 +179,7 @@ Subject: [PATCH] ALL-New_NPCBots
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB
  create mode 100644 sql/TrinityCore-Patches/Bots/character_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_bots.sql
+ create mode 100644 sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
@@ -196,6 +188,17 @@ Subject: [PATCH] ALL-New_NPCBots
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
  create mode 100644 sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_texts.sql
+ create mode 100644 sql/TrinityCore-Patches/anticheat/world.anticheat.sql
  create mode 100644 sql/TrinityCore-Patches/beastmaster/2014_04_12-world-beastmaster.sql
  create mode 100644 sql/TrinityCore-Patches/enchant/world.enchant.sql
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
@@ -204,9 +207,6 @@ Subject: [PATCH] ALL-New_NPCBots
  create mode 100644 sql/TrinityCore-Patches/fake_players/trinity_string_fake_players.sql
  create mode 100644 sql/TrinityCore-Patches/npc_buff/world_npc_buff.sql
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
- create mode 100644 sql/anticheat.sql
- create mode 100644 sql/custom/AVFix.sql
- create mode 100644 sql/tools/setup_ahbot.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
  create mode 100644 src/server/game/AI/NpcBots/bot_Events.h
  create mode 100644 src/server/game/AI/NpcBots/bot_GridNotifiers.h
@@ -554,179 +554,84 @@ index 0000000..78ee002
 +Profession NPC
 +60001 - Cyon
 \ No newline at end of file
-diff --git a/sql/Transmogrification/characters.sql b/sql/Transmogrification/characters.sql
+diff --git a/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql b/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
 new file mode 100644
-index 0000000..815c4d3
+index 0000000..767a01e
 --- /dev/null
-+++ b/sql/Transmogrification/characters.sql
-@@ -0,0 +1,23 @@
-+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-+/*!40101 SET NAMES utf8 */;
-+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-+
-+CREATE TABLE `custom_transmogrification` (
-+  `GUID` int(10) unsigned NOT NULL COMMENT 'Item guidLow',
-+  `FakeEntry` int(10) unsigned NOT NULL COMMENT 'Item entry',
-+  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidLow',
-+  PRIMARY KEY (`GUID`)
-+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-+
-+CREATE TABLE `custom_transmogrification_sets` (
-+  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidlow',
-+  `PresetID` tinyint(3) unsigned NOT NULL COMMENT 'Preset identifier',
-+  `SetName` text COMMENT 'SetName',
-+  `SetData` text COMMENT 'Slot1 Entry1 Slot2 Entry2',
-+  PRIMARY KEY (`Owner`,`PresetID`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-+
-+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
-+/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
-+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-diff --git a/sql/Transmogrification/updates/_README.txt b/sql/Transmogrification/updates/_README.txt
-new file mode 100644
-index 0000000..2359ef8
---- /dev/null
-+++ b/sql/Transmogrification/updates/_README.txt
-@@ -0,0 +1 @@
-+DO NOT RUN THE UPDATES WHEN MAKING A CLEAN INSTALL
-\ No newline at end of file
-diff --git a/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql b/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
-new file mode 100644
-index 0000000..ee57844
---- /dev/null
-+++ b/sql/Transmogrification/updates/characters_update_2_1_to_2_2.sql
-@@ -0,0 +1,12 @@
-+CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
-+	`GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
++++ b/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
+@@ -0,0 +1,72 @@
++CREATE TABLE `auctionhousebot` (
++    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
++    `name` CHAR(25) NULL DEFAULT NULL COMMENT 'Text name of the auctionhouse.',
++    `minitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the minimum number of items you want to keep in the auction house. a 0 here will make it the same as the maximum.',
++    `maxitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the number of items you want to keep in the auction house.',
++    `percentgreytradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Grey Trade Goods auction items',
++    `percentwhitetradegoods` INT(11) NULL DEFAULT '27' COMMENT 'Sets the percentage of the White Trade Goods auction items',
++    `percentgreentradegoods` INT(11) NULL DEFAULT '12' COMMENT 'Sets the percentage of the Green Trade Goods auction items',
++    `percentbluetradegoods` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the Blue Trade Goods auction items',
++    `percentpurpletradegoods` INT(11) NULL DEFAULT '1' COMMENT 'Sets the percentage of the Purple Trade Goods auction items',
++    `percentorangetradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Orange Trade Goods auction items',
++    `percentyellowtradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Yellow Trade Goods auction items',
++    `percentgreyitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Grey auction items',
++    `percentwhiteitems` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the non trade White auction items',
++    `percentgreenitems` INT(11) NULL DEFAULT '30' COMMENT 'Sets the percentage of the non trade Green auction items',
++    `percentblueitems` INT(11) NULL DEFAULT '8' COMMENT 'Sets the percentage of the non trade Blue auction items',
++    `percentpurpleitems` INT(11) NULL DEFAULT '2' COMMENT 'Sets the percentage of the non trade Purple auction items',
++    `percentorangeitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Orange auction items',
++    `percentyellowitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Yellow auction items',
++    `minpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Minimum price of Grey items (percentage).',
++    `maxpricegrey` INT(11) NULL DEFAULT '150' COMMENT 'Maximum price of Grey items (percentage).',
++    `minpricewhite` INT(11) NULL DEFAULT '150' COMMENT 'Minimum price of White items (percentage).',
++    `maxpricewhite` INT(11) NULL DEFAULT '250' COMMENT 'Maximum price of White items (percentage).',
++    `minpricegreen` INT(11) NULL DEFAULT '800' COMMENT 'Minimum price of Green items (percentage).',
++    `maxpricegreen` INT(11) NULL DEFAULT '1400' COMMENT 'Maximum price of Green items (percentage).',
++    `minpriceblue` INT(11) NULL DEFAULT '1250' COMMENT 'Minimum price of Blue items (percentage).',
++    `maxpriceblue` INT(11) NULL DEFAULT '1750' COMMENT 'Maximum price of Blue items (percentage).',
++    `minpricepurple` INT(11) NULL DEFAULT '2250' COMMENT 'Minimum price of Purple items (percentage).',
++    `maxpricepurple` INT(11) NULL DEFAULT '4550' COMMENT 'Maximum price of Purple items (percentage).',
++    `minpriceorange` INT(11) NULL DEFAULT '3250' COMMENT 'Minimum price of Orange items (percentage).',
++    `maxpriceorange` INT(11) NULL DEFAULT '5550' COMMENT 'Maximum price of Orange items (percentage).',
++    `minpriceyellow` INT(11) NULL DEFAULT '5250' COMMENT 'Minimum price of Yellow items (percentage).',
++    `maxpriceyellow` INT(11) NULL DEFAULT '6550' COMMENT 'Maximum price of Yellow items (percentage).',
++    `minbidpricegrey` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 70',
++    `maxbidpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricewhite` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 70',
++    `maxbidpricewhite` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricegreen` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpricegreen` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceblue` INT(11) NULL DEFAULT '75' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 75',
++    `maxbidpriceblue` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpricepurple` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpricepurple` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceorange` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpriceorange` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 100',
++    `minbidpriceyellow` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 80',
++    `maxbidpriceyellow` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 100',
++    `maxstackgrey` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackwhite` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackgreen` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackblue` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackpurple` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackorange` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `maxstackyellow` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
++    `buyerpricegrey` INT(11) NULL DEFAULT '1' COMMENT 'Multiplier to vendorprice when buying grey items from auctionhouse',
++    `buyerpricewhite` INT(11) NULL DEFAULT '3' COMMENT 'Multiplier to vendorprice when buying white items from auctionhouse',
++    `buyerpricegreen` INT(11) NULL DEFAULT '5' COMMENT 'Multiplier to vendorprice when buying green items from auctionhouse',
++    `buyerpriceblue` INT(11) NULL DEFAULT '12' COMMENT 'Multiplier to vendorprice when buying blue items from auctionhouse',
++    `buyerpricepurple` INT(11) NULL DEFAULT '15' COMMENT 'Multiplier to vendorprice when buying purple items from auctionhouse',
++    `buyerpriceorange` INT(11) NULL DEFAULT '20' COMMENT 'Multiplier to vendorprice when buying orange items from auctionhouse',
++    `buyerpriceyellow` INT(11) NULL DEFAULT '22' COMMENT 'Multiplier to vendorprice when buying yellow items from auctionhouse',
++    `buyerbiddinginterval` INT(11) NULL DEFAULT '1' COMMENT 'Interval how frequently AHB bids on each AH. Time in minutes',
++    `buyerbidsperinterval` INT(11) NULL DEFAULT '1' COMMENT 'number of bids to put in per bidding interval',
++    PRIMARY KEY (`auctionhouse`)
 +)
-+COLLATE='latin1_swedish_ci'
-+ENGINE=InnoDB;
++ENGINE=InnoDB
++ROW_FORMAT=DEFAULT;
 +
-+REPLACE INTO custom_transmogrification (GUID, FakeOwner, FakeEntry) SELECT guid, FakeOwner, FakeEntry FROM item_instance WHERE FakeOwner != 0 AND FakeEntry != 0;
-+ALTER TABLE `item_instance`
-+	DROP COLUMN `FakeEntry`,
-+	DROP COLUMN `FakeOwner`;
-diff --git a/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql b/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
-new file mode 100644
-index 0000000..63059ee
---- /dev/null
-+++ b/sql/Transmogrification/updates/characters_update_2_2_to_3_0.sql
-@@ -0,0 +1,2 @@
-+ALTER TABLE `custom_transmogrification`
-+	DROP COLUMN `FakeOwner`;
-diff --git a/sql/Transmogrification/updates/characters_update_4_x_to_5_0.sql b/sql/Transmogrification/updates/characters_update_4_x_to_5_0.sql
-new file mode 100644
-index 0000000..89c91ac
---- /dev/null
-+++ b/sql/Transmogrification/updates/characters_update_4_x_to_5_0.sql
-@@ -0,0 +1,16 @@
-+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-+/*!40101 SET NAMES utf8 */;
-+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-+
-+CREATE TABLE `custom_transmogrification_sets` (
-+  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidlow',
-+  `PresetID` tinyint(3) unsigned NOT NULL COMMENT 'Preset identifier',
-+  `SetName` text COMMENT 'SetName',
-+  `SetData` text COMMENT 'Slot1 Entry1 Slot2 Entry2',
-+  PRIMARY KEY (`Owner`,`PresetID`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-+
-+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
-+/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
-+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-diff --git a/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql b/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
-new file mode 100644
-index 0000000..03cc6d2
---- /dev/null
-+++ b/sql/Transmogrification/updates/world_update_3_5_to_3_6.sql
-@@ -0,0 +1 @@
-+REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11129, 'You don\'t have enough %ss', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-diff --git a/sql/Transmogrification/updates/world_update_4_x_to_5_0.sql b/sql/Transmogrification/updates/world_update_4_x_to_5_0.sql
-new file mode 100644
-index 0000000..8723683
---- /dev/null
-+++ b/sql/Transmogrification/updates/world_update_4_x_to_5_0.sql
-@@ -0,0 +1,27 @@
-+DELETE FROM `trinity_string` WHERE `entry` BETWEEN 11100 AND 11129;
-+
-+SET @TEXT_ID := 50000;
-+INSERT INTO `npc_text` (`ID`, `text0_0`, `WDBVerified`) VALUES
-+(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.', 1),
-+(@TEXT_ID+1, 'You can save your own transmogrification sets.\r\n\r\nTo save, first you must transmogrify your equipped items.\r\nThen when you go to the set management menu and go to save set menu,\r\nall items you have transmogrified are displayed so you see what you are saving.\r\nIf you think the set is fine, you can click to save the set and name it as you wish.\r\n\r\nTo use a set you can click the saved set in the set management menu and then select use set.\r\nIf the set has a transmogrification for an item that is already transmogrified, the old transmogrification is lost.\r\nNote that same transmogrification restrictions apply when trying to use a set as in normal transmogrification.\r\n\r\nTo delete a set you can go to the set\'s menu and select delete set.', 1);
-+
-+SET @STRING_ENTRY := 11100;
-+INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES
-+(@STRING_ENTRY+0, 'Item transmogrified'),
-+(@STRING_ENTRY+1, 'Equipment slot is empty'),
-+(@STRING_ENTRY+2, 'Invalid source item selected'),
-+(@STRING_ENTRY+3, 'Source item does not exist'),
-+(@STRING_ENTRY+4, 'Destination item does not exist'),
-+(@STRING_ENTRY+5, 'Selected items are invalid'),
-+(@STRING_ENTRY+6, 'Not enough money'),
-+(@STRING_ENTRY+7, 'You don\'t have enough tokens'),
-+(@STRING_ENTRY+8, 'Transmogrifications removed'),
-+(@STRING_ENTRY+9, 'There are no transmogrifications'),
-+(@STRING_ENTRY+10, 'Invalid name inserted');
-+
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+
-+REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
-diff --git a/sql/Transmogrification/updates/world_update_5_0_to_5_1.sql b/sql/Transmogrification/updates/world_update_5_0_to_5_1.sql
-new file mode 100644
-index 0000000..2a5e854
---- /dev/null
-+++ b/sql/Transmogrification/updates/world_update_5_0_to_5_1.sql
-@@ -0,0 +1,6 @@
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+
-+REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
-diff --git a/sql/Transmogrification/world_NPC.sql b/sql/Transmogrification/world_NPC.sql
-new file mode 100644
-index 0000000..1cd32f6
---- /dev/null
-+++ b/sql/Transmogrification/world_NPC.sql
-@@ -0,0 +1,6 @@
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+
-+INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify');
-diff --git a/sql/Transmogrification/world_texts.sql b/sql/Transmogrification/world_texts.sql
-new file mode 100644
-index 0000000..e0bdf56
---- /dev/null
-+++ b/sql/Transmogrification/world_texts.sql
-@@ -0,0 +1,18 @@
-+SET @TEXT_ID := 50000;
-+INSERT INTO `npc_text` (`ID`, `text0_0`) VALUES
-+(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
-+(@TEXT_ID+1, 'You can save your own transmogrification sets.\r\n\r\nTo save, first you must transmogrify your equipped items.\r\nThen when you go to the set management menu and go to save set menu,\r\nall items you have transmogrified are displayed so you see what you are saving.\r\nIf you think the set is fine, you can click to save the set and name it as you wish.\r\n\r\nTo use a set you can click the saved set in the set management menu and then select use set.\r\nIf the set has a transmogrification for an item that is already transmogrified, the old transmogrification is lost.\r\nNote that same transmogrification restrictions apply when trying to use a set as in normal transmogrification.\r\n\r\nTo delete a set you can go to the set\'s menu and select delete set.');
-+
-+SET @STRING_ENTRY := 11100;
-+INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES
-+(@STRING_ENTRY+0, 'Item transmogrified'),
-+(@STRING_ENTRY+1, 'Equipment slot is empty'),
-+(@STRING_ENTRY+2, 'Invalid source item selected'),
-+(@STRING_ENTRY+3, 'Source item does not exist'),
-+(@STRING_ENTRY+4, 'Destination item does not exist'),
-+(@STRING_ENTRY+5, 'Selected items are invalid'),
-+(@STRING_ENTRY+6, 'Not enough money'),
-+(@STRING_ENTRY+7, 'You don\'t have enough tokens'),
-+(@STRING_ENTRY+8, 'Transmogrifications removed'),
-+(@STRING_ENTRY+9, 'There are no transmogrifications'),
-+(@STRING_ENTRY+10, 'Invalid name inserted');
++insert  into `auctionhousebot`(`auctionhouse`,`name`,`minitems`,`maxitems`,`percentgreytradegoods`,`percentwhitetradegoods`,`percentgreentradegoods`,`percentbluetradegoods`,`percentpurpletradegoods`,`percentorangetradegoods`,`percentyellowtradegoods`,`percentgreyitems`,`percentwhiteitems`,`percentgreenitems`,`percentblueitems`,`percentpurpleitems`,`percentorangeitems`,`percentyellowitems`,`minpricegrey`,`maxpricegrey`,`minpricewhite`,`maxpricewhite`,`minpricegreen`,`maxpricegreen`,`minpriceblue`,`maxpriceblue`,`minpricepurple`,`maxpricepurple`,`minpriceorange`,`maxpriceorange`,`minpriceyellow`,`maxpriceyellow`,`minbidpricegrey`,`maxbidpricegrey`,`minbidpricewhite`,`maxbidpricewhite`,`minbidpricegreen`,`maxbidpricegreen`,`minbidpriceblue`,`maxbidpriceblue`,`minbidpricepurple`,`maxbidpricepurple`,`minbidpriceorange`,`maxbidpriceorange`,`minbidpriceyellow`,`maxbidpriceyellow`,`maxstackgrey`,`maxstackwhite`,`maxstackgreen`,`maxstackblue`,`maxstackpurple`,`maxstackorange`,`maxstackyellow`,`buyerpricegrey`,`buyerpricewhite`,`buyerpricegreen`,`buyerpriceblue`,`buyerpricepurple`,`buyerpriceorange`,`buyerpriceyellow`,`buyerbiddinginterval`,`buyerbidsperinterval`) values
++(2,'Alliance',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
++(6,'Horde',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
++(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/sql/TrinityCore-Patches/All-In-One/auth_AIO.sql b/sql/TrinityCore-Patches/All-In-One/auth_AIO.sql
 new file mode 100644
 index 0000000..ed0d7ea
@@ -1801,6 +1706,15 @@ index 0000000..222b893
 +
 +--end
 \ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql b/sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
+new file mode 100644
+index 0000000..a0c7eb9
+--- /dev/null
++++ b/sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
+@@ -0,0 +1,3 @@
++UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
++
++UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
 diff --git a/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql b/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
 new file mode 100644
 index 0000000..598b496
@@ -1891,7 +1805,7 @@ index 0000000..2c72414
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 new file mode 100644
-index 0000000..71fe6f9
+index 0000000..13a034d
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 @@ -0,0 +1,67 @@
@@ -2122,6 +2036,216 @@ index 0000000..52372d0
 +
 +-- `creature_template`
 +INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 2048, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 'npc_teleport', 1);
+diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.sql b/sql/TrinityCore-Patches/Transmogrification/characters.sql
+new file mode 100644
+index 0000000..815c4d3
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/characters.sql
+@@ -0,0 +1,23 @@
++/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
++/*!40101 SET NAMES utf8 */;
++/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
++/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
++
++CREATE TABLE `custom_transmogrification` (
++  `GUID` int(10) unsigned NOT NULL COMMENT 'Item guidLow',
++  `FakeEntry` int(10) unsigned NOT NULL COMMENT 'Item entry',
++  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidLow',
++  PRIMARY KEY (`GUID`)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1;
++
++CREATE TABLE `custom_transmogrification_sets` (
++  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidlow',
++  `PresetID` tinyint(3) unsigned NOT NULL COMMENT 'Preset identifier',
++  `SetName` text COMMENT 'SetName',
++  `SetData` text COMMENT 'Slot1 Entry1 Slot2 Entry2',
++  PRIMARY KEY (`Owner`,`PresetID`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8;
++
++/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
++/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
++/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/_README.txt b/sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
+new file mode 100644
+index 0000000..2359ef8
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/_README.txt
+@@ -0,0 +1 @@
++DO NOT RUN THE UPDATES WHEN MAKING A CLEAN INSTALL
+\ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+new file mode 100644
+index 0000000..ee57844
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
+@@ -0,0 +1,12 @@
++CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
++	`GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++	`FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++	`FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
++)
++COLLATE='latin1_swedish_ci'
++ENGINE=InnoDB;
++
++REPLACE INTO custom_transmogrification (GUID, FakeOwner, FakeEntry) SELECT guid, FakeOwner, FakeEntry FROM item_instance WHERE FakeOwner != 0 AND FakeEntry != 0;
++ALTER TABLE `item_instance`
++	DROP COLUMN `FakeEntry`,
++	DROP COLUMN `FakeOwner`;
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+new file mode 100644
+index 0000000..63059ee
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE `custom_transmogrification`
++	DROP COLUMN `FakeOwner`;
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
+new file mode 100644
+index 0000000..89c91ac
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
+@@ -0,0 +1,16 @@
++/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
++/*!40101 SET NAMES utf8 */;
++/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
++/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
++
++CREATE TABLE `custom_transmogrification_sets` (
++  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidlow',
++  `PresetID` tinyint(3) unsigned NOT NULL COMMENT 'Preset identifier',
++  `SetName` text COMMENT 'SetName',
++  `SetData` text COMMENT 'Slot1 Entry1 Slot2 Entry2',
++  PRIMARY KEY (`Owner`,`PresetID`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8;
++
++/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
++/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
++/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
+new file mode 100644
+index 0000000..03cc6d2
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
+@@ -0,0 +1 @@
++REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11129, 'You don\'t have enough %ss', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
+new file mode 100644
+index 0000000..8723683
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
+@@ -0,0 +1,27 @@
++DELETE FROM `trinity_string` WHERE `entry` BETWEEN 11100 AND 11129;
++
++SET @TEXT_ID := 50000;
++INSERT INTO `npc_text` (`ID`, `text0_0`, `WDBVerified`) VALUES
++(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.', 1),
++(@TEXT_ID+1, 'You can save your own transmogrification sets.\r\n\r\nTo save, first you must transmogrify your equipped items.\r\nThen when you go to the set management menu and go to save set menu,\r\nall items you have transmogrified are displayed so you see what you are saving.\r\nIf you think the set is fine, you can click to save the set and name it as you wish.\r\n\r\nTo use a set you can click the saved set in the set management menu and then select use set.\r\nIf the set has a transmogrification for an item that is already transmogrified, the old transmogrification is lost.\r\nNote that same transmogrification restrictions apply when trying to use a set as in normal transmogrification.\r\n\r\nTo delete a set you can go to the set\'s menu and select delete set.', 1);
++
++SET @STRING_ENTRY := 11100;
++INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES
++(@STRING_ENTRY+0, 'Item transmogrified'),
++(@STRING_ENTRY+1, 'Equipment slot is empty'),
++(@STRING_ENTRY+2, 'Invalid source item selected'),
++(@STRING_ENTRY+3, 'Source item does not exist'),
++(@STRING_ENTRY+4, 'Destination item does not exist'),
++(@STRING_ENTRY+5, 'Selected items are invalid'),
++(@STRING_ENTRY+6, 'Not enough money'),
++(@STRING_ENTRY+7, 'You don\'t have enough tokens'),
++(@STRING_ENTRY+8, 'Transmogrifications removed'),
++(@STRING_ENTRY+9, 'There are no transmogrifications'),
++(@STRING_ENTRY+10, 'Invalid name inserted');
++
++SET
++@Entry = 190010,
++@Name = "Warpweaver";
++
++REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
++(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
+diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
+new file mode 100644
+index 0000000..2a5e854
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
+@@ -0,0 +1,6 @@
++SET
++@Entry = 190010,
++@Name = "Warpweaver";
++
++REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
++(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
+diff --git a/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
+new file mode 100644
+index 0000000..1cd32f6
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
+@@ -0,0 +1,6 @@
++SET
++@Entry = 190010,
++@Name = "Warpweaver";
++
++INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
++(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify');
+diff --git a/sql/TrinityCore-Patches/Transmogrification/world_texts.sql b/sql/TrinityCore-Patches/Transmogrification/world_texts.sql
+new file mode 100644
+index 0000000..e0bdf56
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Transmogrification/world_texts.sql
+@@ -0,0 +1,18 @@
++SET @TEXT_ID := 50000;
++INSERT INTO `npc_text` (`ID`, `text0_0`) VALUES
++(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
++(@TEXT_ID+1, 'You can save your own transmogrification sets.\r\n\r\nTo save, first you must transmogrify your equipped items.\r\nThen when you go to the set management menu and go to save set menu,\r\nall items you have transmogrified are displayed so you see what you are saving.\r\nIf you think the set is fine, you can click to save the set and name it as you wish.\r\n\r\nTo use a set you can click the saved set in the set management menu and then select use set.\r\nIf the set has a transmogrification for an item that is already transmogrified, the old transmogrification is lost.\r\nNote that same transmogrification restrictions apply when trying to use a set as in normal transmogrification.\r\n\r\nTo delete a set you can go to the set\'s menu and select delete set.');
++
++SET @STRING_ENTRY := 11100;
++INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES
++(@STRING_ENTRY+0, 'Item transmogrified'),
++(@STRING_ENTRY+1, 'Equipment slot is empty'),
++(@STRING_ENTRY+2, 'Invalid source item selected'),
++(@STRING_ENTRY+3, 'Source item does not exist'),
++(@STRING_ENTRY+4, 'Destination item does not exist'),
++(@STRING_ENTRY+5, 'Selected items are invalid'),
++(@STRING_ENTRY+6, 'Not enough money'),
++(@STRING_ENTRY+7, 'You don\'t have enough tokens'),
++(@STRING_ENTRY+8, 'Transmogrifications removed'),
++(@STRING_ENTRY+9, 'There are no transmogrifications'),
++(@STRING_ENTRY+10, 'Invalid name inserted');
+diff --git a/sql/TrinityCore-Patches/anticheat/world.anticheat.sql b/sql/TrinityCore-Patches/anticheat/world.anticheat.sql
+new file mode 100644
+index 0000000..3504594
+--- /dev/null
++++ b/sql/TrinityCore-Patches/anticheat/world.anticheat.sql
+@@ -0,0 +1,30 @@
++DROP TABLE IF EXISTS `players_reports_status`;
++
++CREATE TABLE `players_reports_status` (
++  `guid` int(10) unsigned NOT NULL DEFAULT '0',
++  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
++  `average` float NOT NULL DEFAULT '0',
++  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  PRIMARY KEY (`guid`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
++
++DROP TABLE IF EXISTS `daily_players_reports`;
++CREATE TABLE `daily_players_reports` (
++  `guid` int(10) unsigned NOT NULL DEFAULT '0',
++  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
++  `average` float NOT NULL DEFAULT '0',
++  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
++  PRIMARY KEY (`guid`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
+\ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/beastmaster/2014_04_12-world-beastmaster.sql b/sql/TrinityCore-Patches/beastmaster/2014_04_12-world-beastmaster.sql
 new file mode 100644
 index 0000000..58c2512
@@ -2398,130 +2522,6 @@ index 0000000..e8d0cf5
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('60001', '0', '0', '0', '0', '0', '18', '0', '18', '0', 'Cyon', 'Profession master', '', '0', '59', '61', '0', '35', '1', '1.48', '1.14286', '0.0', '0', '655.0', '663.0', '0', '158', '1.0', '1500', '1900', '1', '0', '0', '0', '0', '0', '0', '0', '0.0', '0.0', '100', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1.0', '1.0', '1.0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'professionnpc', '1');
 +-- end
-diff --git a/sql/anticheat.sql b/sql/anticheat.sql
-new file mode 100644
-index 0000000..3504594
---- /dev/null
-+++ b/sql/anticheat.sql
-@@ -0,0 +1,30 @@
-+DROP TABLE IF EXISTS `players_reports_status`;
-+
-+CREATE TABLE `players_reports_status` (
-+  `guid` int(10) unsigned NOT NULL DEFAULT '0',
-+  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
-+  `average` float NOT NULL DEFAULT '0',
-+  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
-+
-+DROP TABLE IF EXISTS `daily_players_reports`;
-+CREATE TABLE `daily_players_reports` (
-+  `guid` int(10) unsigned NOT NULL DEFAULT '0',
-+  `creation_time` int(10) unsigned NOT NULL DEFAULT '0',
-+  `average` float NOT NULL DEFAULT '0',
-+  `total_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `speed_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `fly_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `jump_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `waterwalk_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
-+  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
-\ No newline at end of file
-diff --git a/sql/custom/AVFix.sql b/sql/custom/AVFix.sql
-new file mode 100644
-index 0000000..a0c7eb9
---- /dev/null
-+++ b/sql/custom/AVFix.sql
-@@ -0,0 +1,3 @@
-+UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
-+
-+UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
-diff --git a/sql/tools/setup_ahbot.sql b/sql/tools/setup_ahbot.sql
-new file mode 100644
-index 0000000..767a01e
---- /dev/null
-+++ b/sql/tools/setup_ahbot.sql
-@@ -0,0 +1,72 @@
-+CREATE TABLE `auctionhousebot` (
-+    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
-+    `name` CHAR(25) NULL DEFAULT NULL COMMENT 'Text name of the auctionhouse.',
-+    `minitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the minimum number of items you want to keep in the auction house. a 0 here will make it the same as the maximum.',
-+    `maxitems` INT(11) NULL DEFAULT '0' COMMENT 'This is the number of items you want to keep in the auction house.',
-+    `percentgreytradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Grey Trade Goods auction items',
-+    `percentwhitetradegoods` INT(11) NULL DEFAULT '27' COMMENT 'Sets the percentage of the White Trade Goods auction items',
-+    `percentgreentradegoods` INT(11) NULL DEFAULT '12' COMMENT 'Sets the percentage of the Green Trade Goods auction items',
-+    `percentbluetradegoods` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the Blue Trade Goods auction items',
-+    `percentpurpletradegoods` INT(11) NULL DEFAULT '1' COMMENT 'Sets the percentage of the Purple Trade Goods auction items',
-+    `percentorangetradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Orange Trade Goods auction items',
-+    `percentyellowtradegoods` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the Yellow Trade Goods auction items',
-+    `percentgreyitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Grey auction items',
-+    `percentwhiteitems` INT(11) NULL DEFAULT '10' COMMENT 'Sets the percentage of the non trade White auction items',
-+    `percentgreenitems` INT(11) NULL DEFAULT '30' COMMENT 'Sets the percentage of the non trade Green auction items',
-+    `percentblueitems` INT(11) NULL DEFAULT '8' COMMENT 'Sets the percentage of the non trade Blue auction items',
-+    `percentpurpleitems` INT(11) NULL DEFAULT '2' COMMENT 'Sets the percentage of the non trade Purple auction items',
-+    `percentorangeitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Orange auction items',
-+    `percentyellowitems` INT(11) NULL DEFAULT '0' COMMENT 'Sets the percentage of the non trade Yellow auction items',
-+    `minpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Minimum price of Grey items (percentage).',
-+    `maxpricegrey` INT(11) NULL DEFAULT '150' COMMENT 'Maximum price of Grey items (percentage).',
-+    `minpricewhite` INT(11) NULL DEFAULT '150' COMMENT 'Minimum price of White items (percentage).',
-+    `maxpricewhite` INT(11) NULL DEFAULT '250' COMMENT 'Maximum price of White items (percentage).',
-+    `minpricegreen` INT(11) NULL DEFAULT '800' COMMENT 'Minimum price of Green items (percentage).',
-+    `maxpricegreen` INT(11) NULL DEFAULT '1400' COMMENT 'Maximum price of Green items (percentage).',
-+    `minpriceblue` INT(11) NULL DEFAULT '1250' COMMENT 'Minimum price of Blue items (percentage).',
-+    `maxpriceblue` INT(11) NULL DEFAULT '1750' COMMENT 'Maximum price of Blue items (percentage).',
-+    `minpricepurple` INT(11) NULL DEFAULT '2250' COMMENT 'Minimum price of Purple items (percentage).',
-+    `maxpricepurple` INT(11) NULL DEFAULT '4550' COMMENT 'Maximum price of Purple items (percentage).',
-+    `minpriceorange` INT(11) NULL DEFAULT '3250' COMMENT 'Minimum price of Orange items (percentage).',
-+    `maxpriceorange` INT(11) NULL DEFAULT '5550' COMMENT 'Maximum price of Orange items (percentage).',
-+    `minpriceyellow` INT(11) NULL DEFAULT '5250' COMMENT 'Minimum price of Yellow items (percentage).',
-+    `maxpriceyellow` INT(11) NULL DEFAULT '6550' COMMENT 'Maximum price of Yellow items (percentage).',
-+    `minbidpricegrey` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 70',
-+    `maxbidpricegrey` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Grey items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricewhite` INT(11) NULL DEFAULT '70' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 70',
-+    `maxbidpricewhite` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of White items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricegreen` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpricegreen` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Green items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceblue` INT(11) NULL DEFAULT '75' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 75',
-+    `maxbidpriceblue` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Blue items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpricepurple` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpricepurple` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Purple items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceorange` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpriceorange` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Orange items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `minbidpriceyellow` INT(11) NULL DEFAULT '80' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 80',
-+    `maxbidpriceyellow` INT(11) NULL DEFAULT '100' COMMENT 'Starting bid price of Yellow items as a percentage of the randomly chosen buyout price. Default: 100',
-+    `maxstackgrey` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackwhite` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackgreen` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackblue` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackpurple` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackorange` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `maxstackyellow` INT(11) NULL DEFAULT '0' COMMENT 'Stack size limits for item qualities - a value of 0 will disable a maximum stack size for that quality, which will allow the bot to create items in stack as large as the item allows.',
-+    `buyerpricegrey` INT(11) NULL DEFAULT '1' COMMENT 'Multiplier to vendorprice when buying grey items from auctionhouse',
-+    `buyerpricewhite` INT(11) NULL DEFAULT '3' COMMENT 'Multiplier to vendorprice when buying white items from auctionhouse',
-+    `buyerpricegreen` INT(11) NULL DEFAULT '5' COMMENT 'Multiplier to vendorprice when buying green items from auctionhouse',
-+    `buyerpriceblue` INT(11) NULL DEFAULT '12' COMMENT 'Multiplier to vendorprice when buying blue items from auctionhouse',
-+    `buyerpricepurple` INT(11) NULL DEFAULT '15' COMMENT 'Multiplier to vendorprice when buying purple items from auctionhouse',
-+    `buyerpriceorange` INT(11) NULL DEFAULT '20' COMMENT 'Multiplier to vendorprice when buying orange items from auctionhouse',
-+    `buyerpriceyellow` INT(11) NULL DEFAULT '22' COMMENT 'Multiplier to vendorprice when buying yellow items from auctionhouse',
-+    `buyerbiddinginterval` INT(11) NULL DEFAULT '1' COMMENT 'Interval how frequently AHB bids on each AH. Time in minutes',
-+    `buyerbidsperinterval` INT(11) NULL DEFAULT '1' COMMENT 'number of bids to put in per bidding interval',
-+    PRIMARY KEY (`auctionhouse`)
-+)
-+ENGINE=InnoDB
-+ROW_FORMAT=DEFAULT;
-+
-+insert  into `auctionhousebot`(`auctionhouse`,`name`,`minitems`,`maxitems`,`percentgreytradegoods`,`percentwhitetradegoods`,`percentgreentradegoods`,`percentbluetradegoods`,`percentpurpletradegoods`,`percentorangetradegoods`,`percentyellowtradegoods`,`percentgreyitems`,`percentwhiteitems`,`percentgreenitems`,`percentblueitems`,`percentpurpleitems`,`percentorangeitems`,`percentyellowitems`,`minpricegrey`,`maxpricegrey`,`minpricewhite`,`maxpricewhite`,`minpricegreen`,`maxpricegreen`,`minpriceblue`,`maxpriceblue`,`minpricepurple`,`maxpricepurple`,`minpriceorange`,`maxpriceorange`,`minpriceyellow`,`maxpriceyellow`,`minbidpricegrey`,`maxbidpricegrey`,`minbidpricewhite`,`maxbidpricewhite`,`minbidpricegreen`,`maxbidpricegreen`,`minbidpriceblue`,`maxbidpriceblue`,`minbidpricepurple`,`maxbidpricepurple`,`minbidpriceorange`,`maxbidpriceorange`,`minbidpriceyellow`,`maxbidpriceyellow`,`maxstackgrey`,`maxstackwhite`,`maxstackgreen`,`maxstackblue`,`maxstackpurple`,`maxstackorange`,`maxstackyellow`,`buyerpricegrey`,`buyerpricewhite`,`buyerpricegreen`,`buyerpriceblue`,`buyerpricepurple`,`buyerpriceorange`,`buyerpriceyellow`,`buyerbiddinginterval`,`buyerbidsperinterval`) values
-+(2,'Alliance',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
-+(6,'Horde',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1),
-+(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp b/src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
 new file mode 100644
 index 0000000..041834a
@@ -33853,7 +33853,7 @@ index d31117c..a8d249c 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index 61b268b..9f709f5 100644
+index 23af4a7..fb489c4 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
 @@ -1134,6 +1134,11 @@ void WorldObject::setActive(bool on)
@@ -33894,7 +33894,7 @@ index 61b268b..9f709f5 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a694b45..d1778c4 100644
+index ee93fc0..46defed 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,12 @@
@@ -34636,7 +34636,7 @@ index a694b45..d1778c4 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26814,6 +27111,25 @@ bool Player::IsLoading() const
+@@ -26819,6 +27116,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -34662,7 +34662,7 @@ index a694b45..d1778c4 100644
  void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
-@@ -26821,3 +27137,4 @@ void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
+@@ -26826,3 +27142,4 @@ void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
      GetSession()->SendPacket(&data);
  }
  
@@ -37039,7 +37039,7 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index ce01273..8c1badf 100644
+index 862b8df..1a56186 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
@@ -37062,7 +37062,7 @@ index ce01273..8c1badf 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -706,6 +709,7 @@ void AddScripts()
+@@ -704,6 +707,7 @@ void AddScripts()
      AddSpellScripts();
      AddSC_SmartScripts();
      AddCommandScripts();
@@ -37070,7 +37070,7 @@ index ce01273..8c1badf 100644
  #ifdef SCRIPTS
      AddWorldScripts();
      AddEasternKingdomsScripts();
-@@ -750,9 +754,11 @@ void AddSpellScripts()
+@@ -748,9 +752,11 @@ void AddSpellScripts()
  
  void AddCommandScripts()
  {
@@ -37082,7 +37082,7 @@ index ce01273..8c1badf 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1438,13 +1444,93 @@ void AddBattlegroundScripts()
+@@ -1434,13 +1440,93 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -37267,7 +37267,7 @@ index 2bf9c0e..845fe96 100644
      if (!IsNeedSendToClient())
          return;
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 66fca83..078a298 100644
+index 0ab4e7c..dc9dcf3 100644
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -16,6 +16,7 @@
@@ -39812,7 +39812,7 @@ index 0000000..114e1f0
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.h b/src/server/scripts/Custom/ArenaGamblingSystem.h
 new file mode 100644
-index 0000000..e6f23bf
+index 0000000..1c256d3
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.h
 @@ -0,0 +1,458 @@
@@ -47038,10 +47038,10 @@ index c8c38d8..b5e77b0 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 4e837d0..398226f 100644
+index 20660c9..36e1e00 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -766,6 +766,13 @@ RecruitAFriend.MaxDifference = 4
+@@ -771,6 +771,13 @@ RecruitAFriend.MaxDifference = 4
  DisableWaterBreath = 4
  
  #
@@ -47055,7 +47055,7 @@ index 4e837d0..398226f 100644
  #    AllFlightPaths
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
-@@ -1215,6 +1222,14 @@ AllowTwoSide.Trade = 0
+@@ -1220,6 +1227,14 @@ AllowTwoSide.Trade = 0
  
  TalentsInspecting = 1
  
@@ -47070,7 +47070,7 @@ index 4e837d0..398226f 100644
  #
  ###################################################################################################
  
-@@ -2306,6 +2321,271 @@ Network.TcpNodelay = 1
+@@ -2311,6 +2326,271 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -47342,7 +47342,7 @@ index 4e837d0..398226f 100644
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
-@@ -2369,6 +2649,48 @@ SOAP.Port = 7878
+@@ -2374,6 +2654,48 @@ SOAP.Port = 7878
  
  #
  ###################################################################################################
@@ -47391,7 +47391,7 @@ index 4e837d0..398226f 100644
  
  ###################################################################################################
  # CHARACTER DELETE OPTIONS
-@@ -2585,6 +2907,40 @@ LevelReq.Auction = 1
+@@ -2590,6 +2912,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -47432,7 +47432,7 @@ index 4e837d0..398226f 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
-@@ -2609,6 +2965,44 @@ UI.ShowQuestLevelsInDialogs = 0
+@@ -2614,6 +2970,44 @@ UI.ShowQuestLevelsInDialogs = 0
  #
  ###################################################################################################
  
@@ -47477,7 +47477,7 @@ index 4e837d0..398226f 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
  #
-@@ -2799,3 +3193,408 @@ PacketSpoof.BanDuration = 86400
+@@ -2804,3 +3198,408 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
