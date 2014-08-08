@@ -1,6 +1,6 @@
-From 66b3d747f1aeb4f1df54bc0210e93885de3812f3 Mon Sep 17 00:00:00 2001
+From a6acc973c0628c4ebc03d61856e9b920102dc76c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 23 Jul 2014 14:42:30 -0400
+Date: Thu, 7 Aug 2014 19:23:07 -0400
 Subject: [PATCH] ALL-Old_NPCBots
 
 ---
@@ -162,7 +162,7 @@ Subject: [PATCH] ALL-Old_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |    4 +
  .../shared/Database/Implementation/WorldDatabase.h |    4 +
  src/server/worldserver/worldserver.conf.dist       |  774 +++
- 158 files changed, 38286 insertions(+), 135 deletions(-)
+ 158 files changed, 38282 insertions(+), 139 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 npc-entry-list.txt
@@ -14321,7 +14321,7 @@ index 0000000..4b8ed3e
 +}
 diff --git a/src/server/game/AI/NpcBots/bot_paladin_ai.cpp b/src/server/game/AI/NpcBots/bot_paladin_ai.cpp
 new file mode 100644
-index 0000000..f001ba4
+index 0000000..e0a9b37
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_paladin_ai.cpp
 @@ -0,0 +1,1125 @@
@@ -26022,7 +26022,7 @@ index cdc6fc3..0830ba1 100644
          if (player->GetTeam() == HORDE)
              player->CastSpell(player, SPELL_HORDE_GOLD_FLAG, true);
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index d17be29..7d1ca40 100644
+index 86236cd..e0909fa 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
 @@ -288,7 +288,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
@@ -26043,28 +26043,32 @@ index d17be29..7d1ca40 100644
                      player->SendDirectMessage(&status);
  
                      player->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
-@@ -673,12 +673,32 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
+@@ -673,22 +673,34 @@ void Battleground::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
              UpdatePlayerScore(player, SCORE_BONUS_HONOR, Honor);
  }
  
 -void Battleground::RewardReputationToTeam(uint32 faction_id, uint32 Reputation, uint32 TeamID)
-+void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 teamId)
++void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 TeamID)
  {
--    if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id))
--        for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
--            if (Player* player = _GetPlayerForTeam(TeamID, itr, "RewardReputationToTeam"))
--                player->GetReputationMgr().ModifyReputation(factionEntry, Reputation);
+-    FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id);
+-    if (!factionEntry)
 +    FactionEntry const* a_factionEntry = sFactionStore.LookupEntry(a_faction_id);
 +    FactionEntry const* h_factionEntry = sFactionStore.LookupEntry(h_faction_id);
 +
 +    if (!a_factionEntry || !h_factionEntry)
-+        return;
-+
-+    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-+    {
+         return;
+ 
+     for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+     {
+-        Player* player = _GetPlayerForTeam(TeamID, itr, "RewardReputationToTeam");
+-        if (!player)
 +        if (itr->second.OfflineRemoveTime)
-+            continue;
-+
+             continue;
+ 
+-        uint32 repGain = Reputation;
+-        AddPct(repGain, player->GetTotalAuraModifier(SPELL_AURA_MOD_REPUTATION_GAIN));
+-        AddPct(repGain, player->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_FACTION_REPUTATION_GAIN, faction_id));
+-        player->GetReputationMgr().ModifyReputation(factionEntry, repGain);
 +        Player* plr = ObjectAccessor::FindPlayer(itr->first);
 +
 +        if (!plr)
@@ -26073,15 +26077,17 @@ index d17be29..7d1ca40 100644
 +            continue;
 +        }
 +
-+        uint32 team = plr->GetTeam();
++        //uint32 team = plr->GetTeam();
 +
-+        if (team == teamId)
++        //if (team == TeamId)
++        if (Player* plr = _GetPlayerForTeam(TeamID, itr, "RewardReputationToTeam"))
++            {
 +            plr->GetReputationMgr().ModifyReputation(plr->GetOTeam() == ALLIANCE ? a_factionEntry : h_factionEntry, Reputation);
-+    }
++            }
+     }
  }
  
- void Battleground::UpdateWorldState(uint32 Field, uint32 Value)
-@@ -787,7 +807,7 @@ void Battleground::EndBattleground(uint32 winner)
+@@ -798,7 +810,7 @@ void Battleground::EndBattleground(uint32 winner)
          player->SendDirectMessage(&pvpLogData);
  
          WorldPacket data;
@@ -26090,7 +26096,7 @@ index d17be29..7d1ca40 100644
          player->SendDirectMessage(&data);
          player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
      }
-@@ -901,6 +921,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
+@@ -912,6 +924,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
  
      if (player)
      {
@@ -26098,7 +26104,7 @@ index d17be29..7d1ca40 100644
          // Do next only if found in battleground
          player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE);  // We're not in BG.
          // reset destination bg team
-@@ -970,7 +991,7 @@ void Battleground::AddPlayer(Player* player)
+@@ -981,7 +994,7 @@ void Battleground::AddPlayer(Player* player)
      // score struct must be created in inherited class
  
      uint64 guid = player->GetGUID();
@@ -26107,7 +26113,7 @@ index d17be29..7d1ca40 100644
  
      BattlegroundPlayer bp;
      bp.OfflineRemoveTime = 0;
-@@ -1021,6 +1042,8 @@ void Battleground::AddPlayer(Player* player)
+@@ -1032,6 +1045,8 @@ void Battleground::AddPlayer(Player* player)
      // setup BG group membership
      PlayerAddedToBGCheckIfBGIsRunning(player);
      AddOrSetPlayerToCorrectBgGroup(player, team);
@@ -26116,7 +26122,7 @@ index d17be29..7d1ca40 100644
  }
  
  // this method adds player to his team's bg group, or sets his correct group if player is already in bg group
-@@ -1090,8 +1113,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
+@@ -1101,8 +1116,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
  
          // 1 player is logging out, if it is the last, then end arena!
          if (isArena())
@@ -26127,7 +26133,7 @@ index d17be29..7d1ca40 100644
      }
  }
  
-@@ -1699,7 +1722,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
+@@ -1710,7 +1725,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
      BuildPvPLogDataPacket(data);
      player->SendDirectMessage(&data);
  
@@ -26137,7 +26143,7 @@ index d17be29..7d1ca40 100644
  }
  
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index c2e5b03..39cf83c 100644
+index c2e5b03..ef15d18 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
 @@ -355,7 +355,7 @@ class Battleground
@@ -26145,7 +26151,7 @@ index c2e5b03..39cf83c 100644
          void RemoveAuraOnTeam(uint32 SpellID, uint32 TeamID);
          void RewardHonorToTeam(uint32 Honor, uint32 TeamID);
 -        void RewardReputationToTeam(uint32 faction_id, uint32 Reputation, uint32 TeamID);
-+        void RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 teamId);
++        void RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 TeamId);
          void UpdateWorldState(uint32 Field, uint32 Value);
          void UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player* player);
          virtual void EndBattleground(uint32 winner);
@@ -26462,7 +26468,7 @@ index c50669b..57eb3c0 100644
      RewardHonorToTeam(GetBonusHonorFromKill(2), player->GetTeam());
  
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 84d6f87..b88a7f1 100644
+index 532900c..417d9f7 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -9,10 +9,12 @@
@@ -26507,7 +26513,7 @@ index 84d6f87..b88a7f1 100644
  )
  
  include_directories(
-@@ -128,13 +134,16 @@ include_directories(
+@@ -129,13 +135,16 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/shared/Utilities
    ${CMAKE_CURRENT_SOURCE_DIR}
    ${CMAKE_CURRENT_SOURCE_DIR}/Accounts
@@ -26897,7 +26903,7 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Conditions/ConditionMgr.cpp b/src/server/game/Conditions/ConditionMgr.cpp
-index c77b34a..35e9cba 100644
+index 817adc9..7165b21 100644
 --- a/src/server/game/Conditions/ConditionMgr.cpp
 +++ b/src/server/game/Conditions/ConditionMgr.cpp
 @@ -28,6 +28,7 @@
@@ -27026,7 +27032,7 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 52f3a87..6bd3601 100644
+index c9a2015..d75bf42 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -27076,7 +27082,7 @@ index 52f3a87..6bd3601 100644
      if (IsAIEnabled && TriggerJustRespawned)
      {
          TriggerJustRespawned = false;
-@@ -1285,6 +1304,11 @@ void Creature::SetCanDualWield(bool value)
+@@ -1276,6 +1295,11 @@ void Creature::SetCanDualWield(bool value)
  
  void Creature::LoadEquipment(int8 id, bool force /*= true*/)
  {
@@ -27088,7 +27094,7 @@ index 52f3a87..6bd3601 100644
      if (id == 0)
      {
          if (force)
-@@ -2139,6 +2163,9 @@ void Creature::SetInCombatWithZone()
+@@ -2130,6 +2154,9 @@ void Creature::SetInCombatWithZone()
  
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
@@ -27098,7 +27104,7 @@ index 52f3a87..6bd3601 100644
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
  
-@@ -2718,3 +2745,169 @@ void Creature::StartPickPocketRefillTimer()
+@@ -2709,3 +2736,169 @@ void Creature::StartPickPocketRefillTimer()
      _pickpocketLootRestore = time(NULL) + sWorld->getIntConfig(CONFIG_CREATURE_PICKPOCKET_REFILL);
  }
  
@@ -27269,7 +27275,7 @@ index 52f3a87..6bd3601 100644
 +        (m_creatureInfo->unit_flags2 & UNIT_FLAG2_ALLOW_ENEMY_INTERACT);
 +}
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 8ba5fdc..aaabd29 100644
+index 1154bc1..184b5d5 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -27284,7 +27290,7 @@ index 8ba5fdc..aaabd29 100644
  enum CreatureFlagsExtra
  {
      CREATURE_FLAG_EXTRA_INSTANCE_BIND   = 0x00000001,       // creature kill bind instance with killer and killer's group
-@@ -679,6 +684,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -680,6 +685,46 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
  
@@ -27331,7 +27337,7 @@ index 8ba5fdc..aaabd29 100644
      protected:
          bool CreateFromProto(uint32 guidlow, uint32 entry, CreatureData const* data = nullptr, uint32 vehId = 0);
          bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
-@@ -731,6 +776,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -732,6 +777,15 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const;
  
      private:
@@ -27367,7 +27373,7 @@ index d31117c..fb8ed9c 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index 23af4a7..96bf328 100644
+index dfc0c43..a6c33e8 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
 @@ -2190,6 +2190,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
@@ -27396,7 +27402,7 @@ index 23af4a7..96bf328 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index ee93fc0..9890ced 100644
+index e05553a..7184131 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,12 @@
@@ -27412,7 +27418,7 @@ index ee93fc0..9890ced 100644
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -530,6 +536,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+@@ -535,6 +541,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
  
@@ -27431,7 +27437,7 @@ index ee93fc0..9890ced 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -651,6 +669,12 @@ void KillRewarder::Reward()
+@@ -656,6 +674,12 @@ void KillRewarder::Reward()
  
  Player::Player(WorldSession* session): Unit(true)
  {
@@ -27444,7 +27450,7 @@ index ee93fc0..9890ced 100644
      m_speakTime = 0;
      m_speakCount = 0;
  
-@@ -881,6 +905,28 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -886,6 +910,28 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -27473,7 +27479,7 @@ index ee93fc0..9890ced 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -897,6 +943,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -902,6 +948,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -27484,7 +27490,7 @@ index ee93fc0..9890ced 100644
  }
  
  Player::~Player()
-@@ -935,6 +985,16 @@ Player::~Player()
+@@ -940,6 +990,16 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -27501,7 +27507,7 @@ index ee93fc0..9890ced 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1001,6 +1061,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
+@@ -1006,6 +1066,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
      uint32 RaceClassGender = (createInfo->Race) | (createInfo->Class << 8) | (createInfo->Gender << 16);
  
      SetUInt32Value(UNIT_FIELD_BYTES_0, (RaceClassGender | (powertype << 24)));
@@ -27514,7 +27520,7 @@ index ee93fc0..9890ced 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -1334,8 +1400,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
+@@ -1339,8 +1405,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
  {
      switch (timer)
      {
@@ -27526,7 +27532,7 @@ index ee93fc0..9890ced 100644
          case BREATH_TIMER:
          {
              if (!IsAlive() || HasAuraType(SPELL_AURA_WATER_BREATHING) || GetSession()->GetSecurity() >= AccountTypes(sWorld->getIntConfig(CONFIG_DISABLE_BREATHING)))
-@@ -1418,6 +1487,9 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1423,6 +1492,9 @@ void Player::HandleDrowning(uint32 time_diff)
      }
  
      // In dark water
@@ -27536,7 +27542,7 @@ index ee93fc0..9890ced 100644
      if (m_MirrorTimerFlags & UNDERWARER_INDARKWATER)
      {
          // Fatigue timer not activated - activate it
-@@ -1454,7 +1526,7 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1459,7 +1531,7 @@ void Player::HandleDrowning(uint32 time_diff)
          else if (m_MirrorTimerFlagsLast & UNDERWARER_INDARKWATER)
              SendMirrorTimer(FATIGUE_TIMER, DarkWaterTime, m_MirrorTimer[FATIGUE_TIMER], 10);
      }
@@ -27545,7 +27551,7 @@ index ee93fc0..9890ced 100644
      if (m_MirrorTimerFlags & (UNDERWATER_INLAVA /*| UNDERWATER_INSLIME*/) && !(_lastLiquid && _lastLiquid->SpellId))
      {
          // Breath timer not activated - activate it
-@@ -1552,6 +1624,8 @@ void Player::Update(uint32 p_time)
+@@ -1557,6 +1629,8 @@ void Player::Update(uint32 p_time)
      if (!IsInWorld())
          return;
  
@@ -27554,7 +27560,7 @@ index ee93fc0..9890ced 100644
      // undelivered mail
      if (m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
      {
-@@ -1779,6 +1853,10 @@ void Player::Update(uint32 p_time)
+@@ -1784,6 +1858,10 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -27565,7 +27571,7 @@ index ee93fc0..9890ced 100644
          }
          else
              m_nextSave -= p_time;
-@@ -1855,6 +1933,17 @@ void Player::Update(uint32 p_time)
+@@ -1860,6 +1938,17 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -27583,7 +27589,7 @@ index ee93fc0..9890ced 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2104,6 +2193,8 @@ void Player::SendTeleportAckPacket()
+@@ -2109,6 +2198,8 @@ void Player::SendTeleportAckPacket()
  
  bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
  {
@@ -27592,7 +27598,7 @@ index ee93fc0..9890ced 100644
      if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
      {
          TC_LOG_ERROR("maps", "TeleportTo: invalid map (%d) or invalid coordinates (X: %f, Y: %f, Z: %f, O: %f) given when teleporting player (GUID: %u, name: %s, map: %d, X: %f, Y: %f, Z: %f, O: %f).",
-@@ -2226,6 +2317,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2231,6 +2322,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -27606,7 +27612,7 @@ index ee93fc0..9890ced 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2459,6 +2557,916 @@ void Player::RemoveFromWorld()
+@@ -2464,6 +2562,916 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -28523,7 +28529,7 @@ index ee93fc0..9890ced 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2736,6 +3744,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2741,6 +3749,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
  
      // not enemy
      if (creature->IsHostileTo(this))
@@ -28533,7 +28539,7 @@ index ee93fc0..9890ced 100644
          return NULL;
  
      // not unfriendly
-@@ -2924,8 +3935,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2929,8 +3940,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (!group)
          return;
@@ -28565,7 +28571,7 @@ index ee93fc0..9890ced 100644
  }
  
  void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
-@@ -3018,7 +4052,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3015,7 +4049,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -28574,7 +28580,7 @@ index ee93fc0..9890ced 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3156,7 +4190,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3153,7 +4187,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -28583,7 +28589,7 @@ index ee93fc0..9890ced 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -4941,6 +5975,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4938,6 +5972,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -28597,7 +28603,7 @@ index ee93fc0..9890ced 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -5062,6 +6103,12 @@ void Player::BuildPlayerRepop()
+@@ -5059,6 +6100,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -28610,7 +28616,7 @@ index ee93fc0..9890ced 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5109,6 +6156,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5106,6 +6153,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -28620,7 +28626,7 @@ index ee93fc0..9890ced 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5209,7 +6259,7 @@ void Player::CreateCorpse()
+@@ -5206,7 +6256,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -28629,7 +28635,7 @@ index ee93fc0..9890ced 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -5434,6 +6484,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5431,6 +6481,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -28645,7 +28651,7 @@ index ee93fc0..9890ced 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -6895,10 +7954,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6892,10 +7951,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -28658,7 +28664,7 @@ index ee93fc0..9890ced 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -7000,6 +8059,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6997,6 +8056,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -28686,7 +28692,7 @@ index ee93fc0..9890ced 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7014,23 +8094,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7011,23 +8091,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -28716,7 +28722,7 @@ index ee93fc0..9890ced 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7125,7 +8205,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7122,7 +8202,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -28725,7 +28731,7 @@ index ee93fc0..9890ced 100644
              return false;
  
          return true;
-@@ -7137,6 +8217,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7134,6 +8214,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -28733,7 +28739,7 @@ index ee93fc0..9890ced 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7179,17 +8260,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7176,17 +8257,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -28797,7 +28803,7 @@ index ee93fc0..9890ced 100644
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
              // and those in a lifetime
-@@ -7197,6 +8315,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7194,6 +8312,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
@@ -28805,7 +28811,7 @@ index ee93fc0..9890ced 100644
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
          }
-@@ -7220,6 +8339,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7217,6 +8336,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -28822,7 +28828,7 @@ index ee93fc0..9890ced 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7290,6 +8419,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7287,6 +8416,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -28853,7 +28859,7 @@ index ee93fc0..9890ced 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7449,7 +8602,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7446,7 +8599,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -28862,7 +28868,7 @@ index ee93fc0..9890ced 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -11958,13 +13111,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11978,13 +13131,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
  
      if (proto)
      {
@@ -28879,7 +28885,7 @@ index ee93fc0..9890ced 100644
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
          if (proto->RequiredSkill != 0)
-@@ -12452,7 +13605,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12472,7 +13625,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -28891,7 +28897,7 @@ index ee93fc0..9890ced 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12578,6 +13734,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12598,6 +13754,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -28899,7 +28905,7 @@ index ee93fc0..9890ced 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15300,13 +16457,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15320,13 +16477,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -28927,7 +28933,7 @@ index ee93fc0..9890ced 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17202,6 +18372,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17222,6 +18392,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -28939,7 +28945,7 @@ index ee93fc0..9890ced 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17248,10 +18423,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17268,10 +18443,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -28950,7 +28956,7 @@ index ee93fc0..9890ced 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19168,7 +20339,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19188,7 +20359,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -28959,7 +28965,7 @@ index ee93fc0..9890ced 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19273,7 +20444,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19293,7 +20464,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -28968,7 +28974,7 @@ index ee93fc0..9890ced 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19427,6 +20598,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19447,6 +20618,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -28981,7 +28987,7 @@ index ee93fc0..9890ced 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20512,6 +21689,19 @@ void Player::StopCastingCharm()
+@@ -20532,6 +21709,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -29001,7 +29007,7 @@ index ee93fc0..9890ced 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22318,11 +23508,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22338,11 +23528,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -29013,7 +29019,7 @@ index ee93fc0..9890ced 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22398,7 +23583,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22418,7 +23603,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -29022,7 +29028,7 @@ index ee93fc0..9890ced 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26819,6 +28004,25 @@ bool Player::IsLoading() const
+@@ -26839,6 +28024,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -29048,13 +29054,13 @@ index ee93fc0..9890ced 100644
  void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
-@@ -26826,3 +28030,4 @@ void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
+@@ -26846,3 +28050,4 @@ void Player::SendSupercededSpell(uint32 oldSpell, uint32 newSpell)
      GetSession()->SendPacket(&data);
  }
  
 +uint32 Player::_customDataId = 0;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 851afec..1cc6c2a 100644
+index 0c1ddcd..60719b6 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,11 @@ class PlayerSocial;
@@ -29124,7 +29130,7 @@ index 851afec..1cc6c2a 100644
  class PlayerTaxi
  {
      public:
-@@ -1079,6 +1118,37 @@ class Player : public Unit, public GridObject<Player>
+@@ -1092,6 +1131,37 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -29162,7 +29168,7 @@ index 851afec..1cc6c2a 100644
  
          void CleanupsBeforeDelete(bool finalCleanup = true);
  
-@@ -1133,7 +1203,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1146,7 +1216,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
  
          PlayerTaxi m_taxi;
@@ -29171,7 +29177,7 @@ index 851afec..1cc6c2a 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1201,6 +1271,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1214,6 +1284,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
@@ -29180,7 +29186,7 @@ index 851afec..1cc6c2a 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1904,8 +1976,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1917,8 +1989,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -29190,7 +29196,7 @@ index 851afec..1cc6c2a 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -1942,6 +2013,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1955,6 +2026,7 @@ class Player : public Unit, public GridObject<Player>
          void ModifyHonorPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, honor save query will be added to trans
          void ModifyArenaPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, arena point save query will be added to trans
          uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
@@ -29198,7 +29204,7 @@ index 851afec..1cc6c2a 100644
          void SetHonorPoints(uint32 value);
          void SetArenaPoints(uint32 value);
  
-@@ -2049,7 +2121,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -2063,7 +2135,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -29206,7 +29212,7 @@ index 851afec..1cc6c2a 100644
  
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
-@@ -2318,6 +2389,50 @@ class Player : public Unit, public GridObject<Player>
+@@ -2332,6 +2403,50 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsLoading() const;
  
@@ -29257,7 +29263,7 @@ index 851afec..1cc6c2a 100644
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2581,6 +2696,31 @@ class Player : public Unit, public GridObject<Player>
+@@ -2595,6 +2710,31 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -29289,7 +29295,7 @@ index 851afec..1cc6c2a 100644
          // internal common parts for CanStore/StoreItem functions
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
-@@ -2646,6 +2786,12 @@ class Player : public Unit, public GridObject<Player>
+@@ -2660,6 +2800,12 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -29344,7 +29350,7 @@ index 0413622..3170a37 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index d475a0b..ece0bde 100644
+index b5a6079..71b01a6 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -16,6 +16,7 @@
@@ -29430,7 +29436,7 @@ index d475a0b..ece0bde 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10428,6 +10462,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
+@@ -10431,6 +10465,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (IS_CRE_OR_VEH_GUID(GetGUID()) && !(IsTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
@@ -29438,7 +29444,7 @@ index d475a0b..ece0bde 100644
          return 0.0f;
  
      // not critting spell
-@@ -12168,10 +12203,30 @@ void Unit::SetVisible(bool x)
+@@ -12171,10 +12206,30 @@ void Unit::SetVisible(bool x)
  
  void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
  {
@@ -29469,7 +29475,7 @@ index d475a0b..ece0bde 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12185,7 +12240,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12188,7 +12243,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -29478,7 +29484,7 @@ index d475a0b..ece0bde 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12219,7 +12274,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12222,7 +12277,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -29487,7 +29493,7 @@ index d475a0b..ece0bde 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
-@@ -13179,6 +13234,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13182,6 +13237,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -29499,7 +29505,7 @@ index d475a0b..ece0bde 100644
      return true;
  }
  
-@@ -15972,7 +16032,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+@@ -15973,7 +16033,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -29508,7 +29514,7 @@ index d475a0b..ece0bde 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16620,6 +16680,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16621,6 +16681,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -29691,7 +29697,7 @@ index d475a0b..ece0bde 100644
  
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
-@@ -16723,6 +16959,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16724,6 +16960,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -29714,10 +29720,10 @@ index d475a0b..ece0bde 100644
      return 0;
  }
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index e87eb95..150706c 100644
+index b88ea85..eef8fb5 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
-@@ -1359,8 +1359,10 @@ class Unit : public WorldObject
+@@ -1358,8 +1358,10 @@ class Unit : public WorldObject
          uint8 getLevel() const { return uint8(GetUInt32Value(UNIT_FIELD_LEVEL)); }
          uint8 getLevelForTarget(WorldObject const* /*target*/) const { return getLevel(); }
          void SetLevel(uint8 lvl);
@@ -29869,10 +29875,10 @@ index 738b997..4f34a9e 100644
          void LoadScripts(ScriptsType type);
          void CheckScripts(ScriptsType type, std::set<int32>& ids);
 diff --git a/src/server/game/Groups/Group.cpp b/src/server/game/Groups/Group.cpp
-index 2e76330..8cd67e6 100644
+index 8068e82..ab51802 100644
 --- a/src/server/game/Groups/Group.cpp
 +++ b/src/server/game/Groups/Group.cpp
-@@ -107,6 +107,9 @@ bool Group::Create(Player* leader)
+@@ -105,6 +105,9 @@ bool Group::Create(Player* leader)
      if (m_groupType & GROUPTYPE_RAID)
          _initRaidSubGroupsCounter();
  
@@ -29882,7 +29888,7 @@ index 2e76330..8cd67e6 100644
      if (!isLFGGroup())
          m_lootMethod = GROUP_LOOT;
  
-@@ -366,6 +369,8 @@ bool Group::AddMember(Player* player)
+@@ -364,6 +367,8 @@ bool Group::AddMember(Player* player)
  
      SubGroupCounterIncrease(subGroup);
  
@@ -29891,7 +29897,7 @@ index 2e76330..8cd67e6 100644
      player->SetGroupInvite(NULL);
      if (player->GetGroup())
      {
-@@ -381,6 +386,7 @@ bool Group::AddMember(Player* player)
+@@ -379,6 +384,7 @@ bool Group::AddMember(Player* player)
      InstanceGroupBind* bind = GetBoundInstance(player);
      if (bind && bind->save->GetInstanceId() == player->GetInstanceId())
          player->m_InstanceValid = true;
@@ -29899,7 +29905,7 @@ index 2e76330..8cd67e6 100644
  
      if (!isRaidGroup())                                      // reset targetIcons for non-raid-groups
      {
-@@ -405,6 +411,8 @@ bool Group::AddMember(Player* player)
+@@ -403,6 +409,8 @@ bool Group::AddMember(Player* player)
      SendUpdate();
      sScriptMgr->OnGroupAddMember(this, player->GetGUID());
  
@@ -29908,7 +29914,7 @@ index 2e76330..8cd67e6 100644
      if (!IsLeader(player->GetGUID()) && !isBGGroup() && !isBFGroup())
      {
          // reset the new member's instances, unless he is currently in one of them
-@@ -480,6 +488,7 @@ bool Group::AddMember(Player* player)
+@@ -478,6 +486,7 @@ bool Group::AddMember(Player* player)
  
      if (m_maxEnchantingLevel < player->GetSkillValue(SKILL_ENCHANTING))
          m_maxEnchantingLevel = player->GetSkillValue(SKILL_ENCHANTING);
@@ -29916,7 +29922,7 @@ index 2e76330..8cd67e6 100644
  
      return true;
  }
-@@ -603,6 +612,9 @@ bool Group::RemoveMember(uint64 guid, const RemoveMethod& method /*= GROUP_REMOV
+@@ -601,6 +610,9 @@ bool Group::RemoveMember(uint64 guid, const RemoveMethod& method /*= GROUP_REMOV
          }
  
          if (m_memberMgr.getSize() < ((isLFGGroup() || isBGGroup()) ? 1u : 2u))
@@ -29941,10 +29947,10 @@ index f0061a7..6d28e40 100644
          bool _setMembersGroup(uint64 guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index 57e9a84..3e5a07d 100644
+index bace2ec..d5e8e2b 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
-@@ -1206,6 +1206,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
+@@ -1207,6 +1207,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
      if (ret)
          sScriptMgr->OnGuildCreate(this, pLeader, name);
  
@@ -29954,7 +29960,7 @@ index 57e9a84..3e5a07d 100644
      return ret;
  }
  
-@@ -1957,6 +1960,10 @@ bool Guild::LoadFromDB(Field* fields)
+@@ -1958,6 +1961,10 @@ bool Guild::LoadFromDB(Field* fields)
          m_bankTabs[i] = new BankTab(m_id, i);
  
      _CreateLogHolders();
@@ -29965,7 +29971,7 @@ index 57e9a84..3e5a07d 100644
      return true;
  }
  
-@@ -2924,3 +2931,140 @@ void Guild::ResetTimes()
+@@ -2925,3 +2932,140 @@ void Guild::ResetTimes()
  
      _BroadcastEvent(GE_BANK_TAB_AND_MONEY_UPDATED, 0);
  }
@@ -30319,7 +30325,7 @@ index eccf7a6..6d48962 100644
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
              {
 diff --git a/src/server/game/Handlers/LootHandler.cpp b/src/server/game/Handlers/LootHandler.cpp
-index b9c6f34..8bc8798 100644
+index 8bc9c5d..4da3961 100644
 --- a/src/server/game/Handlers/LootHandler.cpp
 +++ b/src/server/game/Handlers/LootHandler.cpp
 @@ -30,6 +30,7 @@
@@ -30330,7 +30336,7 @@ index b9c6f34..8bc8798 100644
  
  void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recvData)
  {
-@@ -203,6 +204,16 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
+@@ -204,6 +205,16 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
              SendPacket(&data);
          }
  
@@ -30653,7 +30659,7 @@ index 2c65e36..6fd033d 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index fbc3341..07c6596 100644
+index b0164b7..9cb0980 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
 @@ -2678,7 +2678,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
@@ -30703,7 +30709,7 @@ index 8d0e97d..2c622bc 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3a680e3..5d10f03 100644
+index f4d1bc0..00a4c09 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -30726,7 +30732,7 @@ index 3a680e3..5d10f03 100644
      // Pinfo commands
      LANG_PINFO_PLAYER                   = 453,
      LANG_PINFO_GM_ACTIVE                = 548,
-@@ -1225,8 +1236,17 @@ enum TrinityStrings
+@@ -1172,8 +1183,17 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -30775,7 +30781,7 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 862b8df..cc968a2 100644
+index a0185bf..6332796 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
@@ -30827,7 +30833,7 @@ index 862b8df..cc968a2 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1434,13 +1442,91 @@ void AddBattlegroundScripts()
+@@ -1433,13 +1441,91 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -30922,7 +30928,7 @@ index 862b8df..cc968a2 100644
  #endif
  }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 1b91ed1..772f80b 100644
+index 0d1983a..24b592a 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
@@ -30943,7 +30949,7 @@ index 1b91ed1..772f80b 100644
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index f30991b3..35928f9 100644
+index abb48a6..f077c5b 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -434,6 +434,20 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
@@ -30978,10 +30984,10 @@ index f30991b3..35928f9 100644
  
          //! Send update to group and reset stored max enchanting level
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 7ad4390..aa17d38 100644
+index 5cf8559..4e1bda7 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -204,6 +204,31 @@ struct PacketCounter
+@@ -205,6 +205,31 @@ struct PacketCounter
      uint32 amountCounter;
  };
  
@@ -31014,7 +31020,7 @@ index 7ad4390..aa17d38 100644
  class WorldSession
  {
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 0ab4e7c..dc9dcf3 100644
+index 0200d33..0cc6ce8 100644
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -16,6 +16,7 @@
@@ -31026,22 +31032,19 @@ index 0ab4e7c..dc9dcf3 100644
  #include "DatabaseEnv.h"
  #include "WorldPacket.h"
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 807e168..842bd61 100644
+index 3f94cfb..3b75777 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -73,9 +73,11 @@
+@@ -31,6 +31,8 @@
  #include "CharacterDatabaseCleaner.h"
- #include "ScriptMgr.h"
- #include "WeatherMgr.h"
+ #include "Chat.h"
+ #include "Config.h"
 +#include "AuctionHouseBot.h"
- #include "CreatureTextMgr.h"
- #include "SmartAI.h"
- #include "Channel.h"
 +#include "AnticheatMgr.h"
- #include "WardenCheckMgr.h"
- #include "Warden.h"
- #include "CalendarMgr.h"
-@@ -671,6 +673,7 @@ void World::LoadConfigSettings(bool reload)
+ #include "CreatureAIRegistry.h"
+ #include "CreatureGroups.h"
+ #include "CreatureTextMgr.h"
+@@ -654,6 +656,7 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD]   = sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Guild", false);
      m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION] = sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Auction", false);
      m_bool_configs[CONFIG_ALLOW_TWO_SIDE_TRADE]               = sConfigMgr->GetBoolDefault("AllowTwoSide.Trade", false);
@@ -31049,7 +31052,7 @@ index 807e168..842bd61 100644
      m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfigMgr->GetIntDefault ("StrictPlayerNames",  0);
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
-@@ -855,6 +858,18 @@ void World::LoadConfigSettings(bool reload)
+@@ -838,6 +841,18 @@ void World::LoadConfigSettings(bool reload)
          TC_LOG_ERROR("server.loading", "MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
          m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
      }
@@ -31068,7 +31071,7 @@ index 807e168..842bd61 100644
  
      m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfigMgr->GetIntDefault("GM.LoginState", 2);
      m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfigMgr->GetIntDefault("GM.Visible", 2);
-@@ -1048,6 +1063,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1031,6 +1046,8 @@ void World::LoadConfigSettings(bool reload)
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
  
@@ -31077,7 +31080,7 @@ index 807e168..842bd61 100644
      if (int32 clientCacheId = sConfigMgr->GetIntDefault("ClientCacheVersion", 0))
      {
          // overwrite DB/old value
-@@ -1231,6 +1248,11 @@ void World::LoadConfigSettings(bool reload)
+@@ -1214,6 +1231,11 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
      m_bool_configs[CONFIG_UI_QUESTLEVELS_IN_DIALOGS] = sConfigMgr->GetBoolDefault("UI.ShowQuestLevelsInDialogs", false);
  
@@ -31089,7 +31092,7 @@ index 807e168..842bd61 100644
      // Wintergrasp battlefield
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
-@@ -1259,6 +1281,9 @@ void World::LoadConfigSettings(bool reload)
+@@ -1242,6 +1264,9 @@ void World::LoadConfigSettings(bool reload)
  
      m_bool_configs[CONFIG_IP_BASED_ACTION_LOGGING] = sConfigMgr->GetBoolDefault("Allow.IP.Based.Action.Logging", false);
  
@@ -31099,7 +31102,7 @@ index 807e168..842bd61 100644
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
-@@ -1443,6 +1468,9 @@ void World::SetInitialWorldSettings()
+@@ -1426,6 +1451,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -31109,7 +31112,7 @@ index 807e168..842bd61 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1605,6 +1633,9 @@ void World::SetInitialWorldSettings()
+@@ -1588,6 +1616,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
@@ -31119,7 +31122,7 @@ index 807e168..842bd61 100644
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1822,6 +1853,9 @@ void World::SetInitialWorldSettings()
+@@ -1805,6 +1836,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -31129,7 +31132,7 @@ index 807e168..842bd61 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1989,6 +2023,7 @@ void World::Update(uint32 diff)
+@@ -1972,6 +2006,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -31137,7 +31140,7 @@ index 807e168..842bd61 100644
          m_timers[WUPDATE_AUCTIONS].Reset();
  
          ///- Update mails (return old mails with item, or delete them)
-@@ -2875,6 +2910,8 @@ void World::ResetDailyQuests()
+@@ -2857,6 +2892,8 @@ void World::ResetDailyQuests()
  
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
@@ -31146,7 +31149,7 @@ index 807e168..842bd61 100644
  }
  
  void World::LoadDBAllowedSecurityLevel()
-@@ -3204,3 +3241,87 @@ void World::ReloadRBAC()
+@@ -3186,3 +3223,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -40396,7 +40399,7 @@ index 0000000..ce7ea24
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Spells/spell_generic.cpp b/src/server/scripts/Spells/spell_generic.cpp
-index 43f33f9..cf557c9 100644
+index 1d5443e..41690da 100644
 --- a/src/server/scripts/Spells/spell_generic.cpp
 +++ b/src/server/scripts/Spells/spell_generic.cpp
 @@ -37,6 +37,7 @@
@@ -40540,7 +40543,7 @@ index 6116768..0b4540d 100644
  };
  
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-index d0e9c46..0531136 100644
+index aa2ca4b..c28edc5 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.cpp
 @@ -91,4 +91,8 @@ void WorldDatabaseConnection::DoPrepareStatements()
@@ -40568,10 +40571,10 @@ index c8c38d8..9d82fae 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 20660c9..d27b171 100644
+index dd8f213..1960e33 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -771,6 +771,13 @@ RecruitAFriend.MaxDifference = 4
+@@ -770,6 +770,13 @@ RecruitAFriend.MaxDifference = 4
  DisableWaterBreath = 4
  
  #
@@ -40585,7 +40588,7 @@ index 20660c9..d27b171 100644
  #    AllFlightPaths
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
-@@ -1220,6 +1227,14 @@ AllowTwoSide.Trade = 0
+@@ -1219,6 +1226,14 @@ AllowTwoSide.Trade = 0
  
  TalentsInspecting = 1
  
@@ -40600,7 +40603,7 @@ index 20660c9..d27b171 100644
  #
  ###################################################################################################
  
-@@ -2311,6 +2326,271 @@ Network.TcpNodelay = 1
+@@ -2310,6 +2325,271 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -40872,7 +40875,7 @@ index 20660c9..d27b171 100644
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
-@@ -2374,6 +2654,48 @@ SOAP.Port = 7878
+@@ -2373,6 +2653,48 @@ SOAP.Port = 7878
  
  #
  ###################################################################################################
@@ -40921,7 +40924,7 @@ index 20660c9..d27b171 100644
  
  ###################################################################################################
  # CHARACTER DELETE OPTIONS
-@@ -2590,6 +2912,40 @@ LevelReq.Auction = 1
+@@ -2589,6 +2911,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -40962,7 +40965,7 @@ index 20660c9..d27b171 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
-@@ -2614,6 +2970,44 @@ UI.ShowQuestLevelsInDialogs = 0
+@@ -2613,6 +2969,44 @@ UI.ShowQuestLevelsInDialogs = 0
  #
  ###################################################################################################
  
@@ -41007,7 +41010,7 @@ index 20660c9..d27b171 100644
  ###################################################################################################
  #  LOGGING SYSTEM SETTINGS
  #
-@@ -2804,3 +3198,383 @@ PacketSpoof.BanDuration = 86400
+@@ -2803,3 +3197,383 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
