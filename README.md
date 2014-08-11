@@ -1,6 +1,6 @@
-TrinityCore-Patches now has a website (under construction. Using tikiwiki and I am unfamiliar with it, so be patient) The url is:
+TrinityCore-Patches now has a web site. There is a specific topic for patches. The url is:
 
-http://www.realmsofwarcraft.us
+http://www.realmsofwarcraft.com/bb
 
 Instead of posting an "issue" with suggestions of questions, try using the wiki. I will have a forums in there, where I will check often to answer questions.
 
