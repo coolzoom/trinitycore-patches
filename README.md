@@ -30,6 +30,9 @@ Here is a list of the patches, and a detailed description of each. (Not finished
 * **Beastmaster.patch** - 
   NPC that offers the sale of hunter pets. My version has pets in DB, and you can turn on/off hunter only, and GM only. You can also decide how much gold or tokens per pet, instead of per pet type (normal or exotic) like all the other beastmaster patches do.
 
+* **BountyHunter.patch**
+  Place a bounty on a player.
+
 * **CongratsOnLevel.patch** - 
   Small script that gives a reward for playing the game. Currently set for 2 items, gold and a spell for each 10 levels obtained.
 
@@ -62,6 +65,9 @@ Here is a list of the patches, and a detailed description of each. (Not finished
 
 * **Passive_Anticheat.patch** - 
   Best anti cheat out there. checks for speed hacks, flying, etc.
+
+* **Player_Events.patch**
+  Rewards based on specific events. Example: Level rewards. First honorable kill rewards. Check readme file for details.
 
 * **Playerbot-NPCBots.patch** - 
   Old NPCBots patch plus a playerbot patch that allows you to "log in" another character on your account, controlled by the server. Buggy at best, but fun to play with.
