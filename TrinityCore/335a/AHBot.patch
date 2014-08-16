@@ -428,6 +428,12 @@ index 0000000..fb20d2f
 +    DisableTGsBelowReqSkillRank = 0;
 +    DisableTGsAboveReqSkillRank = 0;
 +
++    // glyphs patch
++    GlyphBuyOutPriceMin = 0;
++    GlyphBuyOutPriceMax = 0;
++    GlyphBidPriceMin = 0;
++    GlyphBidPriceMax = 0;
+
 +    //End Filters
 +
 +    _lastrun_a = time(NULL);
@@ -711,16 +717,27 @@ index 0000000..fb20d2f
 +
 +            if (prototype->Quality <= AHB_MAX_QUALITY)
 +            {
-+                if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
-+                    stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
-+                else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
-+                    stackCount = urand(1, item->GetMaxStackCount());
-+                else
++                // glyphs patch
++                if(prototype->Class == 16) {
++                    buyoutPrice = urand(GlyphBuyOutPriceMin, GlyphBuyOutPriceMax);
++                    bidPrice = urand(GlyphBidPriceMin, GlyphBidPriceMax);
++                    if(buyoutPrice<bidPrice)
++                        bidPrice = buyoutPrice - 1;
 +                    stackCount = 1;
-+                buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-+                buyoutPrice /= 100;
-+                bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-+                bidPrice /= 100;
++                }
++                else
++                {
++                    if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
++                        stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
++                    else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
++                        stackCount = urand(1, item->GetMaxStackCount());
++                    else
++                        stackCount = 1;
++                    buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
++                    buyoutPrice /= 100;
++                    bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
++                    bidPrice /= 100;
++                }
 +            }
 +            else
 +            {
@@ -1140,7 +1157,8 @@ index 0000000..fb20d2f
 +            "SELECT item FROM milling_loot_template UNION "
 +            "SELECT item FROM pickpocketing_loot_template UNION "
 +            "SELECT item FROM prospecting_loot_template UNION "
-+            "SELECT item FROM skinning_loot_template";
++            "SELECT item FROM skinning_loot_template UNION "
++            "SELECT entry FROM item_template WHERE class = 16";
 +
 +        results = WorldDatabase.Query(lootQuery);
 +        if (results)
@@ -1716,6 +1734,12 @@ index 0000000..fb20d2f
 +    DisableItemsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
 +    DisableTGsBelowReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
 +    DisableTGsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
++
++    // glyphs patch
++    GlyphBuyOutPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMin", 0);
++    GlyphBuyOutPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
++    GlyphBidPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
++    GlyphBidPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
 +}
 +
 +void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
@@ -3441,6 +3465,12 @@ index 0000000..4dccf29
 +    uint32 DisableTGsBelowReqSkillRank;
 +    uint32 DisableTGsAboveReqSkillRank;
 +
++    // glyphs patch
++    uint32 GlyphBuyOutPriceMin;
++    uint32 GlyphBuyOutPriceMax;
++    uint32 GlyphBidPriceMin;
++    uint32 GlyphBidPriceMax;
++	
 +    std::set<uint32> DisableItemStore;
 +
 +    //End Filters
@@ -4451,6 +4481,13 @@ index c4e3ad8..bf5d555 100644
 +AuctionHouseBot.DisableItemsAboveReqSkillRank = 0
 +AuctionHouseBot.DisableTGsBelowReqSkillRank = 0
 +AuctionHouseBot.DisableTGsAboveReqSkillRank = 0
++
++##############################################################################
++
++AuctionHouseBot.GlyphBuyOutPriceMin = 10000
++AuctionHouseBot.GlyphBuyOutPriceMax = 500000
++AuctionHouseBot.GlyphBidPriceMin = 10000
++AuctionHouseBot.GlyphBidPriceMax = 500000
 +
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
