@@ -1,3 +1,28 @@
+From bb71c3fd5d9a50ea1713fa44b3af21734a303841 Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sat, 16 Aug 2014 12:46:25 -0400
+Subject: [PATCH] AHBot
+
+---
+ doc/AuctionHouseBot.txt                            |  235 +++
+ sql/TrinityCore-Patches/AHBot/characters.ahbot.sql |   72 +
+ .../AuctionHouseBot/AuctionHouseBot.cpp            | 1898 ++++++++++++++++++++
+ .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1258 +++++++++++++
+ src/server/game/AuctionHouse/AuctionHouseMgr.cpp   |   12 +-
+ src/server/game/CMakeLists.txt                     |    3 +
+ src/server/game/Mails/Mail.cpp                     |    8 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    2 +
+ src/server/game/World/World.cpp                    |    8 +
+ src/server/scripts/CMakeLists.txt                  |    1 +
+ src/server/scripts/Commands/cs_ah_bot.cpp          |  482 +++++
+ src/server/worldserver/worldserver.conf.dist       |  265 +++
+ 12 files changed, 4241 insertions(+), 3 deletions(-)
+ create mode 100644 doc/AuctionHouseBot.txt
+ create mode 100644 sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
+ create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
+ create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
+ create mode 100644 src/server/scripts/Commands/cs_ah_bot.cpp
+
 diff --git a/doc/AuctionHouseBot.txt b/doc/AuctionHouseBot.txt
 new file mode 100644
 index 0000000..8170bd2
@@ -239,11 +264,11 @@ index 0000000..8170bd2
 +AHBot Originally made by Chris K. Currently maintained by Paradox
 +Much thanks to Chris K, grether and Dolomit6!
 +AHBot Now includes AHBuyer created by Kerbe as a derivative of AHBot, and later modified by Paradox
-diff --git a/sql/tools/setup_ahbot.sql b/sql/tools/setup_ahbot.sql
+diff --git a/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql b/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
 new file mode 100644
 index 0000000..767a01e
 --- /dev/null
-+++ b/sql/tools/setup_ahbot.sql
++++ b/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
 @@ -0,0 +1,72 @@
 +CREATE TABLE `auctionhousebot` (
 +    `auctionhouse` INT(11) NOT NULL DEFAULT '0' COMMENT 'mapID of the auctionhouse.',
@@ -319,10 +344,10 @@ index 0000000..767a01e
 +(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
 new file mode 100644
-index 0000000..fb20d2f
+index 0000000..c3c2850
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
-@@ -0,0 +1,1897 @@
+@@ -0,0 +1,1898 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -345,6 +370,7 @@ index 0000000..fb20d2f
 +#include "ObjectMgr.h"
 +#include "AuctionHouseMgr.h"
 +#include "AuctionHouseBot.h"
++#include "Config.h"
 +#include "Player.h"
 +#include "WorldSession.h"
 +#include <vector>
@@ -428,12 +454,6 @@ index 0000000..fb20d2f
 +    DisableTGsBelowReqSkillRank = 0;
 +    DisableTGsAboveReqSkillRank = 0;
 +
-+    // glyphs patch
-+    GlyphBuyOutPriceMin = 0;
-+    GlyphBuyOutPriceMax = 0;
-+    GlyphBidPriceMin = 0;
-+    GlyphBidPriceMax = 0;
-
 +    //End Filters
 +
 +    _lastrun_a = time(NULL);
@@ -717,27 +737,16 @@ index 0000000..fb20d2f
 +
 +            if (prototype->Quality <= AHB_MAX_QUALITY)
 +            {
-+                // glyphs patch
-+                if(prototype->Class == 16) {
-+                    buyoutPrice = urand(GlyphBuyOutPriceMin, GlyphBuyOutPriceMax);
-+                    bidPrice = urand(GlyphBidPriceMin, GlyphBidPriceMax);
-+                    if(buyoutPrice<bidPrice)
-+                        bidPrice = buyoutPrice - 1;
-+                    stackCount = 1;
-+                }
++                if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
++                    stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
++                else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
++                    stackCount = urand(1, item->GetMaxStackCount());
 +                else
-+                {
-+                    if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
-+                        stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
-+                    else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
-+                        stackCount = urand(1, item->GetMaxStackCount());
-+                    else
-+                        stackCount = 1;
-+                    buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-+                    buyoutPrice /= 100;
-+                    bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-+                    bidPrice /= 100;
-+                }
++                    stackCount = 1;
++                buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
++                buyoutPrice /= 100;
++                bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
++                bidPrice /= 100;
 +            }
 +            else
 +            {
@@ -1157,8 +1166,7 @@ index 0000000..fb20d2f
 +            "SELECT item FROM milling_loot_template UNION "
 +            "SELECT item FROM pickpocketing_loot_template UNION "
 +            "SELECT item FROM prospecting_loot_template UNION "
-+            "SELECT item FROM skinning_loot_template UNION "
-+            "SELECT entry FROM item_template WHERE class = 16";
++            "SELECT item FROM skinning_loot_template";
 +
 +        results = WorldDatabase.Query(lootQuery);
 +        if (results)
@@ -1734,12 +1742,6 @@ index 0000000..fb20d2f
 +    DisableItemsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
 +    DisableTGsBelowReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
 +    DisableTGsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
-+
-+    // glyphs patch
-+    GlyphBuyOutPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMin", 0);
-+    GlyphBuyOutPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
-+    GlyphBidPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
-+    GlyphBidPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
 +}
 +
 +void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
@@ -2246,10 +2248,10 @@ index 0000000..fb20d2f
 +}
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
 new file mode 100644
-index 0000000..4dccf29
+index 0000000..123cfc8
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
-@@ -0,0 +1,1255 @@
+@@ -0,0 +1,1258 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -2272,10 +2274,13 @@ index 0000000..4dccf29
 +#ifndef AUCTION_HOUSE_BOT_H
 +#define AUCTION_HOUSE_BOT_H
 +
-+#include "World.h"
-+#include "Config.h"
++#include "Common.h"
++
++struct AuctionEntry;
++class Player;
++class WorldSession;
++
 +#include "ItemPrototype.h"
-+#include "AuctionHouseMgr.h"
 +#define AHB_GREY        0
 +#define AHB_WHITE       1
 +#define AHB_GREEN       2
@@ -3465,12 +3470,6 @@ index 0000000..4dccf29
 +    uint32 DisableTGsBelowReqSkillRank;
 +    uint32 DisableTGsAboveReqSkillRank;
 +
-+    // glyphs patch
-+    uint32 GlyphBuyOutPriceMin;
-+    uint32 GlyphBuyOutPriceMax;
-+    uint32 GlyphBidPriceMin;
-+    uint32 GlyphBidPriceMax;
-+	
 +    std::set<uint32> DisableItemStore;
 +
 +    //End Filters
@@ -3493,8 +3492,8 @@ index 0000000..4dccf29
 +public:
 +    static AuctionHouseBot* instance()
 +    {
-+        static AuctionHouseBot* instance = new AuctionHouseBot();
-+        return instance;
++        static AuctionHouseBot instance;
++        return &instance;
 +    }
 +
 +    ~AuctionHouseBot();
@@ -3512,10 +3511,18 @@ index 0000000..4dccf29
 +
 +#endif
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index f4699f0..4dda7ec 100644
+index f4699f0..ac0f511 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-@@ -171,7 +171,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
+@@ -27,6 +27,7 @@
+ #include "ScriptMgr.h"
+ #include "AccountMgr.h"
+ #include "AuctionHouseMgr.h"
++#include "AuctionHouseBot.h"
+ #include "Item.h"
+ #include "Language.h"
+ #include "Log.h"
+@@ -171,7 +172,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
          uint32 profit = auction->bid + auction->deposit - auction->GetAuctionCut();
  
          //FIXME: what do if owner offline
@@ -3524,7 +3531,7 @@ index f4699f0..4dda7ec 100644
          {
              owner->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GOLD_EARNED_BY_AUCTIONS, profit);
              owner->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_SOLD, auction->bid);
-@@ -199,7 +199,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction, SQLTransacti
+@@ -199,7 +200,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction, SQLTransacti
      // owner exist
      if (owner || owner_accId)
      {
@@ -3533,7 +3540,7 @@ index f4699f0..4dda7ec 100644
              owner->GetSession()->SendAuctionOwnerNotification(auction);
  
          MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(0, 0, auction->buyout, auction->deposit, 0))
-@@ -221,6 +221,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
+@@ -221,6 +222,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
      // old bidder exist
      if (oldBidder || oldBidder_accId)
      {
@@ -3543,7 +3550,7 @@ index f4699f0..4dda7ec 100644
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
  
-@@ -412,10 +415,12 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
+@@ -412,10 +416,12 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
  
      AuctionsMap[auction->Id] = auction;
      sScriptMgr->OnAuctionAdd(this, auction);
@@ -3557,21 +3564,8 @@ index f4699f0..4dda7ec 100644
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
  
      sScriptMgr->OnAuctionRemove(this, auction);
-diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.h b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-index 0f42a58..ac29761 100644
---- a/src/server/game/AuctionHouse/AuctionHouseMgr.h
-+++ b/src/server/game/AuctionHouse/AuctionHouseMgr.h
-@@ -23,6 +23,8 @@
- #include "DatabaseEnv.h"
- #include "DBCStructure.h"
- 
-+#include "AuctionHouseBot/AuctionHouseBot.h"
-+
- class Item;
- class Player;
- class WorldPacket;
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 84d6f87..3eb72bf 100644
+index 532900c..6a6d5bc 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -13,6 +13,7 @@ file(GLOB_RECURSE sources_Achievements Achievements/*.cpp Achievements/*.h)
@@ -3590,7 +3584,7 @@ index 84d6f87..3eb72bf 100644
    ${sources_Battlefield}
    ${sources_Battlegrounds}
    ${sources_Calendar}
-@@ -135,6 +137,7 @@ include_directories(
+@@ -136,6 +138,7 @@ include_directories(
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/ScriptedAI
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
@@ -3598,20 +3592,8 @@ index 84d6f87..3eb72bf 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlefield
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlefield/Zones
    ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds
-diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index 86fa042..6806a54 100644
---- a/src/server/game/Handlers/AuctionHouseHandler.cpp
-+++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
-@@ -22,6 +22,7 @@
- #include "WorldPacket.h"
- #include "WorldSession.h"
- 
-+#include "AuctionHouseBot.h"
- #include "AuctionHouseMgr.h"
- #include "Log.h"
- #include "Language.h"
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 2c65e36..283efa7 100644
+index 2c65e36..6fd033d 100644
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -27,6 +27,7 @@
@@ -3637,7 +3619,7 @@ index 2c65e36..283efa7 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index ce01273..c16e857 100644
+index d036d43..7c0bca1 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -48,6 +48,7 @@ void AddSC_SmartScripts();
@@ -3648,7 +3630,7 @@ index ce01273..c16e857 100644
  void AddSC_ban_commandscript();
  void AddSC_bf_commandscript();
  void AddSC_cast_commandscript();
-@@ -753,6 +754,7 @@ void AddCommandScripts()
+@@ -750,6 +751,7 @@ void AddCommandScripts()
      AddSC_account_commandscript();
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
@@ -3657,10 +3639,10 @@ index ce01273..c16e857 100644
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 631c4e6..e39c10c 100644
+index 3f94cfb..21e7eba 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -73,6 +73,7 @@
+@@ -23,6 +23,7 @@
  #include "World.h"
  #include "AchievementMgr.h"
  #include "ArenaTeamMgr.h"
@@ -3668,7 +3650,7 @@ index 631c4e6..e39c10c 100644
  #include "AuctionHouseMgr.h"
  #include "BattlefieldMgr.h"
  #include "BattlegroundMgr.h"
-@@ -1605,6 +1606,9 @@ void World::SetInitialWorldSettings()
+@@ -1588,6 +1589,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
  
@@ -3678,7 +3660,7 @@ index 631c4e6..e39c10c 100644
      // Delete expired auctions before loading
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
-@@ -1822,6 +1826,9 @@ void World::SetInitialWorldSettings()
+@@ -1805,6 +1809,9 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterNameData();
  
@@ -3688,7 +3670,7 @@ index 631c4e6..e39c10c 100644
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
  
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-@@ -1989,6 +1996,7 @@ void World::Update(uint32 diff)
+@@ -1972,6 +1979,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
@@ -3710,7 +3692,7 @@ index ba2709f..501b2b3 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/Battlegrounds
 diff --git a/src/server/scripts/Commands/cs_ah_bot.cpp b/src/server/scripts/Commands/cs_ah_bot.cpp
 new file mode 100644
-index 0000000..2a96cb0
+index 0000000..074c57d
 --- /dev/null
 +++ b/src/server/scripts/Commands/cs_ah_bot.cpp
 @@ -0,0 +1,482 @@
@@ -4196,24 +4178,11 @@ index 0000000..2a96cb0
 +{
 +    new ah_bot_commandscript();
 +}
-diff --git a/src/server/scripts/Commands/cs_reload.cpp b/src/server/scripts/Commands/cs_reload.cpp
-index f39dd0f..0c372fe 100644
---- a/src/server/scripts/Commands/cs_reload.cpp
-+++ b/src/server/scripts/Commands/cs_reload.cpp
-@@ -24,7 +24,7 @@ EndScriptData */
- 
- #include "AccountMgr.h"
- #include "AchievementMgr.h"
--#include "AuctionHouseMgr.h"
-+#include "AuctionHouseBot.h"
- #include "BattlegroundMgr.h"
- #include "Chat.h"
- #include "CreatureTextMgr.h"
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c4e3ad8..bf5d555 100644
+index dd8f213..7583a8b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2306,6 +2306,271 @@ Network.TcpNodelay = 1
+@@ -2310,6 +2310,271 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -4482,13 +4451,9 @@ index c4e3ad8..bf5d555 100644
 +AuctionHouseBot.DisableTGsBelowReqSkillRank = 0
 +AuctionHouseBot.DisableTGsAboveReqSkillRank = 0
 +
-+##############################################################################
-+
-+AuctionHouseBot.GlyphBuyOutPriceMin = 10000
-+AuctionHouseBot.GlyphBuyOutPriceMax = 500000
-+AuctionHouseBot.GlyphBidPriceMin = 10000
-+AuctionHouseBot.GlyphBidPriceMax = 500000
-+
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
+-- 
+1.7.10.4
+
