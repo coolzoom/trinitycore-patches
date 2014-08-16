@@ -1,8 +1,43 @@
-diff --git a/sql/anticheat.sql b/sql/anticheat.sql
+From 103b0bf5b38b041ef7609374a41b98ffc037e89f Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sat, 16 Aug 2014 12:14:19 -0400
+Subject: [PATCH] Passive_Anticheat
+
+---
+ .../Anticheat/world.anticheat.sql                  |   30 ++
+ src/server/game/Anticheat/AnticheatData.cpp        |  118 ++++++
+ src/server/game/Anticheat/AnticheatData.h          |   63 +++
+ src/server/game/Anticheat/AnticheatMgr.cpp         |  434 ++++++++++++++++++++
+ src/server/game/Anticheat/AnticheatMgr.h           |  103 +++++
+ src/server/game/Anticheat/AnticheatScripts.cpp     |   14 +
+ src/server/game/Anticheat/AnticheatScripts.h       |   15 +
+ src/server/game/CMakeLists.txt                     |    3 +
+ src/server/game/Entities/Player/Player.cpp         |   11 +
+ src/server/game/Entities/Player/Player.h           |    2 +
+ src/server/game/Entities/Unit/Unit.cpp             |    4 +
+ src/server/game/Handlers/MovementHandler.cpp       |    4 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    4 +
+ src/server/game/Spells/SpellEffects.cpp            |    1 +
+ src/server/game/World/World.cpp                    |    8 +
+ src/server/game/World/World.h                      |    4 +
+ src/server/scripts/CMakeLists.txt                  |    1 +
+ src/server/scripts/Commands/cs_anticheat.cpp       |  262 ++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   34 ++
+ 19 files changed, 1115 insertions(+)
+ create mode 100644 sql/TrinityCore-Patches/Anticheat/world.anticheat.sql
+ create mode 100644 src/server/game/Anticheat/AnticheatData.cpp
+ create mode 100644 src/server/game/Anticheat/AnticheatData.h
+ create mode 100644 src/server/game/Anticheat/AnticheatMgr.cpp
+ create mode 100644 src/server/game/Anticheat/AnticheatMgr.h
+ create mode 100644 src/server/game/Anticheat/AnticheatScripts.cpp
+ create mode 100644 src/server/game/Anticheat/AnticheatScripts.h
+ create mode 100644 src/server/scripts/Commands/cs_anticheat.cpp
+
+diff --git a/sql/TrinityCore-Patches/Anticheat/world.anticheat.sql b/sql/TrinityCore-Patches/Anticheat/world.anticheat.sql
 new file mode 100644
 index 0000000..3504594
 --- /dev/null
-+++ b/sql/anticheat.sql
++++ b/sql/TrinityCore-Patches/Anticheat/world.anticheat.sql
 @@ -0,0 +1,30 @@
 +DROP TABLE IF EXISTS `players_reports_status`;
 +
@@ -821,7 +856,7 @@ index 0000000..25d34d0
 +#endif
 \ No newline at end of file
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
-index 84d6f87..168b41e 100644
+index 532900c..303f42c 100644
 --- a/src/server/game/CMakeLists.txt
 +++ b/src/server/game/CMakeLists.txt
 @@ -9,6 +9,7 @@
@@ -840,7 +875,7 @@ index 84d6f87..168b41e 100644
    ${sources_Achievements}
    ${sources_Addons}
    ${sources_AI}
-@@ -128,6 +130,7 @@ include_directories(
+@@ -129,6 +131,7 @@ include_directories(
    ${CMAKE_SOURCE_DIR}/src/server/shared/Utilities
    ${CMAKE_CURRENT_SOURCE_DIR}
    ${CMAKE_CURRENT_SOURCE_DIR}/Accounts
@@ -849,18 +884,18 @@ index 84d6f87..168b41e 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/Addons
    ${CMAKE_CURRENT_SOURCE_DIR}/AI
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index a75253f..ea6852a 100644
+index fa009d9..782a1ce 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -25,6 +25,7 @@
- // 7
- // 8
- // 9
-+#include "AnticheatMgr.h"
- // 10
- 
+@@ -19,6 +19,7 @@
  #include "Player.h"
-@@ -1563,6 +1564,8 @@ void Player::Update(uint32 p_time)
+ #include "AccountMgr.h"
+ #include "AchievementMgr.h"
++#include "AnticheatMgr.h"
+ #include "ArenaTeam.h"
+ #include "ArenaTeamMgr.h"
+ #include "Battlefield.h"
+@@ -1557,6 +1558,8 @@ void Player::Update(uint32 p_time)
      if (!IsInWorld())
          return;
  
@@ -869,7 +904,7 @@ index a75253f..ea6852a 100644
      // undelivered mail
      if (m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
      {
-@@ -2115,6 +2118,8 @@ void Player::SendTeleportAckPacket()
+@@ -2109,6 +2112,8 @@ void Player::SendTeleportAckPacket()
  
  bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
  {
@@ -878,7 +913,7 @@ index a75253f..ea6852a 100644
      if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
      {
          TC_LOG_ERROR("maps", "TeleportTo: invalid map (%d) or invalid coordinates (X: %f, Y: %f, Z: %f, O: %f) given when teleporting player (GUID: %u, name: %s, map: %d, X: %f, Y: %f, Z: %f, O: %f).",
-@@ -19457,6 +19462,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19447,6 +19452,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -892,12 +927,12 @@ index a75253f..ea6852a 100644
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index b2a4c6c..2958e4e 100644
+index b1fd9d5..04b261c 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -1091,6 +1091,8 @@ class Player : public Unit, public GridObject<Player>
- // 9
- // 10
+@@ -1101,6 +1101,8 @@ class Player : public Unit, public GridObject<Player>
+         explicit Player(WorldSession* session);
+         ~Player();
  
 +        //AnticheatData anticheatData;
 +
@@ -905,7 +940,7 @@ index b2a4c6c..2958e4e 100644
  
          void AddToWorld() override;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index de71619..5e125c9 100644
+index a428366..b798d8d 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -16,6 +16,7 @@
@@ -916,7 +951,7 @@ index de71619..5e125c9 100644
  #include "Unit.h"
  #include "Common.h"
  #include "Battlefield.h"
-@@ -12168,6 +12169,9 @@ void Unit::SetVisible(bool x)
+@@ -12171,6 +12172,9 @@ void Unit::SetVisible(bool x)
  
  void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
  {
@@ -949,7 +984,7 @@ index 6fedc48..66a1fa6 100644
      /*----------------------*/
      if (m_clientTimeDelay == 0)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 6026945..337e68f 100644
+index d036d43..5880546 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
@@ -968,7 +1003,7 @@ index 6026945..337e68f 100644
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
  void AddSC_arena_commandscript();
-@@ -706,6 +708,7 @@ void AddScripts()
+@@ -703,6 +705,7 @@ void AddScripts()
      AddSpellScripts();
      AddSC_SmartScripts();
      AddCommandScripts();
@@ -976,7 +1011,7 @@ index 6026945..337e68f 100644
  #ifdef SCRIPTS
      AddWorldScripts();
      AddEasternKingdomsScripts();
-@@ -750,6 +753,7 @@ void AddSpellScripts()
+@@ -747,6 +750,7 @@ void AddSpellScripts()
  
  void AddCommandScripts()
  {
@@ -985,7 +1020,7 @@ index 6026945..337e68f 100644
      AddSC_achievement_commandscript();
      AddSC_arena_commandscript();
 diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
-index 4c0d577..a6a16f3 100644
+index 00b7873..57ab623 100644
 --- a/src/server/game/Spells/SpellEffects.cpp
 +++ b/src/server/game/Spells/SpellEffects.cpp
 @@ -16,6 +16,7 @@
@@ -997,10 +1032,10 @@ index 4c0d577..a6a16f3 100644
  #include "DatabaseEnv.h"
  #include "WorldPacket.h"
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 631c4e6..0f7f10b 100644
+index 3f94cfb..806d9f7 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -76,6 +76,7 @@
+@@ -26,6 +26,7 @@
  #include "AuctionHouseMgr.h"
  #include "BattlefieldMgr.h"
  #include "BattlegroundMgr.h"
@@ -1008,7 +1043,7 @@ index 631c4e6..0f7f10b 100644
  #include "CalendarMgr.h"
  #include "Channel.h"
  #include "CharacterDatabaseCleaner.h"
-@@ -1231,6 +1232,11 @@ void World::LoadConfigSettings(bool reload)
+@@ -1214,6 +1215,11 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
      m_bool_configs[CONFIG_UI_QUESTLEVELS_IN_DIALOGS] = sConfigMgr->GetBoolDefault("UI.ShowQuestLevelsInDialogs", false);
  
@@ -1020,7 +1055,7 @@ index 631c4e6..0f7f10b 100644
      // Wintergrasp battlefield
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
-@@ -2875,6 +2881,8 @@ void World::ResetDailyQuests()
+@@ -2857,6 +2863,8 @@ void World::ResetDailyQuests()
  
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
@@ -1030,7 +1065,7 @@ index 631c4e6..0f7f10b 100644
  
  void World::LoadDBAllowedSecurityLevel()
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 22dece5..075775c 100644
+index 0711ead..49ce03d 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -142,6 +142,7 @@ enum WorldBoolConfigs
@@ -1333,10 +1368,10 @@ index 0000000..3cc6784
 +    new anticheat_commandscript();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c4e3ad8..bc74237 100644
+index dd8f213..dab48e7 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2585,6 +2585,40 @@ LevelReq.Auction = 1
+@@ -2589,6 +2589,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -1377,3 +1412,6 @@ index c4e3ad8..bc74237 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
+-- 
+1.7.10.4
+
