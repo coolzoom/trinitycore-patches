@@ -1,13 +1,13 @@
-From bb71c3fd5d9a50ea1713fa44b3af21734a303841 Mon Sep 17 00:00:00 2001
+From e8755bbe91e9a0ef8b0ac5719894fb52de5b56e2 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 16 Aug 2014 12:46:25 -0400
+Date: Wed, 20 Aug 2014 10:20:26 -0400
 Subject: [PATCH] AHBot
 
 ---
  doc/AuctionHouseBot.txt                            |  235 +++
  sql/TrinityCore-Patches/AHBot/characters.ahbot.sql |   72 +
- .../AuctionHouseBot/AuctionHouseBot.cpp            | 1898 ++++++++++++++++++++
- .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1258 +++++++++++++
+ .../AuctionHouseBot/AuctionHouseBot.cpp            | 1922 ++++++++++++++++++++
+ .../AuctionHouse/AuctionHouseBot/AuctionHouseBot.h | 1267 +++++++++++++
  src/server/game/AuctionHouse/AuctionHouseMgr.cpp   |   12 +-
  src/server/game/CMakeLists.txt                     |    3 +
  src/server/game/Mails/Mail.cpp                     |    8 +
@@ -15,8 +15,8 @@ Subject: [PATCH] AHBot
  src/server/game/World/World.cpp                    |    8 +
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_ah_bot.cpp          |  482 +++++
- src/server/worldserver/worldserver.conf.dist       |  265 +++
- 12 files changed, 4241 insertions(+), 3 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  272 +++
+ 12 files changed, 4281 insertions(+), 3 deletions(-)
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
  create mode 100644 src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
@@ -344,10 +344,10 @@ index 0000000..767a01e
 +(7,'Neutral',250,250,0,27,12,10,1,0,0,0,10,30,8,2,0,0,100,150,150,250,800,1400,1250,1750,2250,4550,3250,5550,5250,6550,70,100,70,100,80,100,75,100,80,100,80,100,80,100,0,0,3,2,1,1,1,1,3,5,12,15,20,22,1,1);
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
 new file mode 100644
-index 0000000..c3c2850
+index 0000000..5c48ce5
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.cpp
-@@ -0,0 +1,1898 @@
+@@ -0,0 +1,1922 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -453,6 +453,12 @@ index 0000000..c3c2850
 +    DisableItemsAboveReqSkillRank = 0;
 +    DisableTGsBelowReqSkillRank = 0;
 +    DisableTGsAboveReqSkillRank = 0;
++
++    // glyphs patch
++    GlyphBuyOutPriceMin = 0;
++    GlyphBuyOutPriceMax = 0;
++    GlyphBidPriceMin = 0;
++    GlyphBidPriceMax = 0;
 +
 +    //End Filters
 +
@@ -737,16 +743,27 @@ index 0000000..c3c2850
 +
 +            if (prototype->Quality <= AHB_MAX_QUALITY)
 +            {
-+                if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
-+                    stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
-+                else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
-+                    stackCount = urand(1, item->GetMaxStackCount());
-+                else
++                // glyphs patch
++                if(prototype->Class == 16) {
++                    buyoutPrice = urand(GlyphBuyOutPriceMin, GlyphBuyOutPriceMax);
++                    bidPrice = urand(GlyphBidPriceMin, GlyphBidPriceMax);
++                    if(buyoutPrice<bidPrice)
++                        bidPrice = buyoutPrice - 1;
 +                    stackCount = 1;
-+                buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-+                buyoutPrice /= 100;
-+                bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-+                bidPrice /= 100;
++                }
++                else
++                {
++                    if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
++                        stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
++                    else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
++                        stackCount = urand(1, item->GetMaxStackCount());
++                    else
++                        stackCount = 1;
++                    buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
++                    buyoutPrice /= 100;
++                    bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
++                    bidPrice /= 100;
++                }
 +            }
 +            else
 +            {
@@ -1166,7 +1183,8 @@ index 0000000..c3c2850
 +            "SELECT item FROM milling_loot_template UNION "
 +            "SELECT item FROM pickpocketing_loot_template UNION "
 +            "SELECT item FROM prospecting_loot_template UNION "
-+            "SELECT item FROM skinning_loot_template";
++            "SELECT item FROM skinning_loot_template UNION "
++            "SELECT entry FROM item_template WHERE class = 16";
 +
 +        results = WorldDatabase.Query(lootQuery);
 +        if (results)
@@ -1742,6 +1760,12 @@ index 0000000..c3c2850
 +    DisableItemsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
 +    DisableTGsBelowReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
 +    DisableTGsAboveReqSkillRank = sConfigMgr->GetIntDefault("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
++
++    // glyphs patch
++    GlyphBuyOutPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMin", 0);
++    GlyphBuyOutPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBuyOutPriceMax", 0);
++    GlyphBidPriceMin = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMin", 0);
++    GlyphBidPriceMax = sConfigMgr->GetIntDefault("AuctionHouseBot.GlyphBidPriceMax", 0);
 +}
 +
 +void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
@@ -2248,10 +2272,10 @@ index 0000000..c3c2850
 +}
 diff --git a/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
 new file mode 100644
-index 0000000..123cfc8
+index 0000000..8dcaf0e
 --- /dev/null
 +++ b/src/server/game/AuctionHouse/AuctionHouseBot/AuctionHouseBot.h
-@@ -0,0 +1,1258 @@
+@@ -0,0 +1,1267 @@
 +/*
 + * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
 + * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -2274,6 +2298,8 @@ index 0000000..123cfc8
 +#ifndef AUCTION_HOUSE_BOT_H
 +#define AUCTION_HOUSE_BOT_H
 +
++#include "World.h"
++#include "Config.h"
 +#include "Common.h"
 +
 +struct AuctionEntry;
@@ -2281,6 +2307,7 @@ index 0000000..123cfc8
 +class WorldSession;
 +
 +#include "ItemPrototype.h"
++#include "AuctionHouseMgr.h"
 +#define AHB_GREY        0
 +#define AHB_WHITE       1
 +#define AHB_GREEN       2
@@ -3470,6 +3497,12 @@ index 0000000..123cfc8
 +    uint32 DisableTGsBelowReqSkillRank;
 +    uint32 DisableTGsAboveReqSkillRank;
 +
++    // glyphs patch
++    uint32 GlyphBuyOutPriceMin;
++    uint32 GlyphBuyOutPriceMax;
++    uint32 GlyphBidPriceMin;
++    uint32 GlyphBidPriceMax;
++
 +    std::set<uint32> DisableItemStore;
 +
 +    //End Filters
@@ -4179,10 +4212,10 @@ index 0000000..074c57d
 +    new ah_bot_commandscript();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index dd8f213..7583a8b 100644
+index dd8f213..e0abc87 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2310,6 +2310,271 @@ Network.TcpNodelay = 1
+@@ -2310,6 +2310,278 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -4451,9 +4484,16 @@ index dd8f213..7583a8b 100644
 +AuctionHouseBot.DisableTGsBelowReqSkillRank = 0
 +AuctionHouseBot.DisableTGsAboveReqSkillRank = 0
 +
++##############################################################################
++
++AuctionHouseBot.GlyphBuyOutPriceMin = 10000
++AuctionHouseBot.GlyphBuyOutPriceMax = 500000
++AuctionHouseBot.GlyphBidPriceMin = 10000
++AuctionHouseBot.GlyphBidPriceMax = 500000
++
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
 -- 
-1.7.10.4
+2.1.0.rc1
 
