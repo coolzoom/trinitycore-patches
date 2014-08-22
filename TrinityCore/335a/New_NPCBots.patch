@@ -1,6 +1,6 @@
-From 8dd1219b523185647a76086100000c498cb0ae7e Mon Sep 17 00:00:00 2001
+From dc9791e23412e3e54d8ab47b4c04638f347570ef Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 11 Aug 2014 10:30:08 -0400
+Date: Fri, 22 Aug 2014 10:42:08 -0400
 Subject: [PATCH] New_NPCBots
 
 ---
@@ -1521,7 +1521,7 @@ index 0000000..a53e73a
 +#endif
 diff --git a/src/server/game/AI/NpcBots/bot_ai.cpp b/src/server/game/AI/NpcBots/bot_ai.cpp
 new file mode 100644
-index 0000000..403b2ca
+index 0000000..643c546
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_ai.cpp
 @@ -0,0 +1,8124 @@
@@ -25553,7 +25553,7 @@ index 076ac79..28e0b1f 100644
      player.accept = LfgAnswer(accept);
  
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index c9a2015..d33679f 100644
+index c04f284..1936b20c 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,10 @@
@@ -26136,7 +26136,7 @@ index c9a2015..d33679f 100644
 +}
 +//END NPCBOT
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index ea4da5d..3f44edb 100644
+index 9b332bb..8314afa 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -26166,8 +26166,8 @@ index ea4da5d..3f44edb 100644
 +    CREATURE_FLAG_EXTRA_NPCBOT | \
      CREATURE_FLAG_EXTRA_GUARD)
  
- #define MAX_KILL_CREDIT 2
-@@ -680,6 +687,76 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+ #define CREATURE_REGEN_INTERVAL 2 * IN_MILLISECONDS
+@@ -679,6 +686,76 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
  
@@ -26244,7 +26244,7 @@ index ea4da5d..3f44edb 100644
      protected:
          bool CreateFromProto(uint32 guidlow, uint32 entry, CreatureData const* data = nullptr, uint32 vehId = 0);
          bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
-@@ -732,6 +809,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -731,6 +808,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const override;
  
      private:
@@ -26321,7 +26321,7 @@ index c96b6e3..30b88df 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index fa009d9..63a2e7e 100644
+index c9ac4e7..bf5c68b 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -80,6 +80,10 @@
@@ -26594,7 +26594,7 @@ index b8f5fd1..8dcf817 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/StatSystem.cpp b/src/server/game/Entities/Unit/StatSystem.cpp
-index 0413622..f507d74 100644
+index bac2a8e..3b20062 100644
 --- a/src/server/game/Entities/Unit/StatSystem.cpp
 +++ b/src/server/game/Entities/Unit/StatSystem.cpp
 @@ -217,6 +217,10 @@ bool Player::UpdateAllStats()
@@ -26609,7 +26609,7 @@ index 0413622..f507d74 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index b5a6079..01aeedf 100644
+index a428366..789c192 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -254,6 +254,13 @@ Unit::Unit(bool isWorldObject) :
@@ -27213,7 +27213,7 @@ index b5a6079..01aeedf 100644
      return true;
  }
  
-@@ -12898,6 +13227,10 @@ void Unit::ModSpellCastTime(SpellInfo const* spellInfo, int32 & castTime, Spell*
+@@ -12902,6 +13231,10 @@ void Unit::ModSpellCastTime(SpellInfo const* spellInfo, int32 & castTime, Spell*
      // called from caster
      if (Player* modOwner = GetSpellModOwner())
          modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell);
@@ -27224,7 +27224,7 @@ index b5a6079..01aeedf 100644
  
      if (!((spellInfo->Attributes & (SPELL_ATTR0_ABILITY | SPELL_ATTR0_TRADESPELL)) || (spellInfo->AttributesEx3 & SPELL_ATTR3_NO_DONE_BONUS)) &&
          ((GetTypeId() == TYPEID_PLAYER && spellInfo->SpellFamilyName) || GetTypeId() == TYPEID_UNIT))
-@@ -14047,6 +14380,14 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
+@@ -14051,6 +14384,14 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                      ToPlayer()->AddComboPoints(target, 1);
                      StartReactiveTimer(REACTIVE_OVERPOWER);
                  }
@@ -27239,7 +27239,7 @@ index b5a6079..01aeedf 100644
              }
          }
      }
-@@ -14592,6 +14933,29 @@ void Unit::ClearComboPointHolders()
+@@ -14596,6 +14937,29 @@ void Unit::ClearComboPointHolders()
      }
  }
  
@@ -27269,7 +27269,7 @@ index b5a6079..01aeedf 100644
  void Unit::ClearAllReactives()
  {
      for (uint8 i = 0; i < MAX_REACTIVE; ++i)
-@@ -14700,6 +15064,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
+@@ -14704,6 +15068,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
  {
      // Not apply this to creature cast spells with casttime == 0
      if (CastingTime == 0 && GetTypeId() == TYPEID_UNIT && !ToCreature()->IsPet())
@@ -27279,7 +27279,7 @@ index b5a6079..01aeedf 100644
          return 3500;
  
      if (CastingTime > 7000) CastingTime = 7000;
-@@ -15343,6 +15710,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
+@@ -15347,6 +15714,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
  
          // only if not player and not controlled by player pet. And not at BG
          if ((durabilityLoss && !player && !victim->ToPlayer()->InBattleground()) || (player && sWorld->getBoolConfig(CONFIG_DURABILITY_LOSS_IN_PVP)))
@@ -27289,7 +27289,7 @@ index b5a6079..01aeedf 100644
          {
              TC_LOG_DEBUG("entities.unit", "We are dead, losing %f percent durability", sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH));
              plrVictim->DurabilityLossAll(sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH), false);
-@@ -16281,6 +16651,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16285,6 +16655,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      //calculate miss chance
      float missChance = victim->GetUnitMissChance(attType);
  
@@ -27311,7 +27311,7 @@ index b5a6079..01aeedf 100644
      if (!spellId && haveOffhandWeapon())
          missChance += 19;
  
-@@ -16309,6 +16694,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16313,6 +16698,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      else
          missChance -= m_modMeleeHitChance;
  
@@ -27323,7 +27323,7 @@ index b5a6079..01aeedf 100644
      // Limit miss chance from 0 to 60%
      if (missChance < 0.0f)
          return 0.0f;
-@@ -16621,6 +17011,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16625,6 +17015,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -27507,7 +27507,7 @@ index b5a6079..01aeedf 100644
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index b65081b..fc9ca73 100644
+index 2e8d93e..dc9b5bf 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
 @@ -2157,6 +2157,18 @@ class Unit : public WorldObject
@@ -27530,10 +27530,10 @@ index b65081b..fc9ca73 100644
          explicit Unit (bool isWorldObject);
  
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index b7f2cd3..0e2e977 100644
+index 944ad4d..5386c53 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7905,6 +7905,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+@@ -7904,6 +7904,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
      return SKILL_RANGE_LEVEL;
  }
  
@@ -27617,7 +27617,7 @@ index b7f2cd3..0e2e977 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 738b997..4f34a9e 100644
+index 56ae4a4..3f6aad2 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -143,6 +143,21 @@ struct GameTele
@@ -27642,7 +27642,7 @@ index 738b997..4f34a9e 100644
  enum ScriptsType
  {
      SCRIPTS_FIRST = 1,
-@@ -1015,6 +1030,7 @@ class ObjectMgr
+@@ -1016,6 +1031,7 @@ class ObjectMgr
  
          void LoadNPCSpellClickSpells();
  
@@ -27650,7 +27650,7 @@ index 738b997..4f34a9e 100644
          void LoadGameTele();
  
          void LoadGossipMenu();
-@@ -1223,6 +1239,8 @@ class ObjectMgr
+@@ -1224,6 +1240,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
  
@@ -27659,7 +27659,7 @@ index 738b997..4f34a9e 100644
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
-@@ -1369,6 +1387,8 @@ class ObjectMgr
+@@ -1370,6 +1388,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
  
@@ -28004,10 +28004,10 @@ index 92a83f9..daeb908 100644
      float maxDiff = m_maxSpeed * diff;
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index a0185bf..673cde5 100644
+index d036d43..7529eab 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1433,13 +1433,43 @@ void AddBattlegroundScripts()
+@@ -1432,13 +1432,43 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -28054,10 +28054,10 @@ index a0185bf..673cde5 100644
  #endif
  }
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 3f54ec9..0e050f2 100644
+index 445e42a..fcb361c 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
-@@ -441,6 +441,10 @@ void WorldSession::LogoutPlayer(bool save)
+@@ -443,6 +443,10 @@ void WorldSession::LogoutPlayer(bool save)
      m_playerLogout = true;
      m_playerSave = save;
  
@@ -28069,7 +28069,7 @@ index 3f54ec9..0e050f2 100644
      {
          if (uint64 lguid = _player->GetLootGUID())
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index c81b3eb..d8dedce 100644
+index 14cf256..d2a18be 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -2389,6 +2389,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
@@ -28447,13 +28447,13 @@ index c73f0df..982d147 100644
  };
  
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-index aa2ca4b..bca41d5 100644
+index f5d9913..3f8ddfd 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-@@ -91,4 +91,9 @@ void WorldDatabaseConnection::DoPrepareStatements()
+@@ -89,4 +89,9 @@ void WorldDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(WORLD_INS_DISABLES, "INSERT INTO disables (entry, sourceType, flags, comment) VALUES (?, ?, ?, ?)", CONNECTION_ASYNC);
+     PrepareStatement(WORLD_SEL_DISABLES, "SELECT entry FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_SYNCH);
      PrepareStatement(WORLD_DEL_DISABLES, "DELETE FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_ASYNC);
-     // 0: uint8
-     PrepareStatement(WORLD_SEL_REQ_XP, "SELECT xp_for_next_level FROM player_xp_for_level WHERE lvl = ?", CONNECTION_SYNCH);
 +
 +    // Bot
 +    PrepareStatement(WORLD_SEL_NPCBOT_INFO, "SELECT guid, map, position_x, position_y, position_z, orientation FROM creature WHERE id = ?", CONNECTION_SYNCH);
@@ -28461,12 +28461,12 @@ index aa2ca4b..bca41d5 100644
 +    PrepareStatement(WORLD_UPD_NPCBOT_POSITION, "UPDATE creature SET map = ?, position_x = ?, position_y = ?, position_z = ?, orientation = ? WHERE guid = ?", CONNECTION_ASYNC);
  }
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.h b/src/server/shared/Database/Implementation/WorldDatabase.h
-index 625dfc6..2107313 100644
+index 8a5bd20..c516fb7 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.h
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.h
-@@ -112,6 +112,11 @@ enum WorldDatabaseStatements
+@@ -111,6 +111,11 @@ enum WorldDatabaseStatements
+     WORLD_INS_DISABLES,
      WORLD_DEL_DISABLES,
-     WORLD_SEL_REQ_XP,
  
 +    // Bot
 +    WORLD_SEL_NPCBOT_INFO,
@@ -28614,5 +28614,5 @@ index dd8f213..30969a8 100644
 +###################################################################################################
 \ No newline at end of file
 -- 
-1.7.10.4
+2.1.0.rc1
 
