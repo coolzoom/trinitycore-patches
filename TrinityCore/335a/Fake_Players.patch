@@ -1,21 +1,22 @@
-From 06879acde954eb7835ad704d347d6ea64c21368e Mon Sep 17 00:00:00 2001
+From 753cea65f03b616722c156c0018f5c29bcddb08b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 7 Aug 2014 14:31:34 -0400
+Date: Thu, 21 Aug 2014 10:42:02 -0400
 Subject: [PATCH] Fake_Players
 
 ---
- .../characters-characters_fake-full.sql            |   35 ++++++++++++++++++++
- .../characters-characters_fake-structure.sql       |   31 +++++++++++++++++
- .../fake_players/characters_fake_readme.txt        |   18 ++++++++++
- .../fake_players/trinity_string_fake_players.sql   |    8 +++++
- src/server/game/Entities/Player/Player.cpp         |    4 +++
- src/server/game/Handlers/ChatHandler.cpp           |    9 +++++
- src/server/game/Handlers/MiscHandler.cpp           |   34 ++++++++++++++++++-
- src/server/game/Miscellaneous/Language.h           |    4 +--
- src/server/game/World/World.cpp                    |    1 +
- src/server/game/World/World.h                      |    1 +
- src/server/worldserver/worldserver.conf.dist       |    8 +++++
- 11 files changed, 150 insertions(+), 3 deletions(-)
+ .../characters-characters_fake-full.sql            | 35 ++++++++++++++++++++++
+ .../characters-characters_fake-structure.sql       | 31 +++++++++++++++++++
+ .../fake_players/characters_fake_readme.txt        | 18 +++++++++++
+ .../fake_players/trinity_string_fake_players.sql   |  8 +++++
+ src/server/game/Entities/Player/Player.cpp         |  4 +++
+ src/server/game/Handlers/ChatHandler.cpp           |  9 ++++++
+ src/server/game/Handlers/GroupHandler.cpp          |  8 ++++-
+ src/server/game/Handlers/MiscHandler.cpp           | 34 ++++++++++++++++++++-
+ src/server/game/Miscellaneous/Language.h           |  4 +--
+ src/server/game/World/World.cpp                    |  1 +
+ src/server/game/World/World.h                      |  1 +
+ src/server/worldserver/worldserver.conf.dist       |  8 +++++
+ 12 files changed, 157 insertions(+), 4 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters-characters_fake-full.sql
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters-characters_fake-structure.sql
  create mode 100644 sql/TrinityCore-Patches/fake_players/characters_fake_readme.txt
@@ -139,7 +140,7 @@ index 0000000..6a4927d
 +
 +insert into `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) values('12001','Player wishes to not be disturbed and cannot receive whisper messages.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index e05553a..e5761d4 100644
+index c9ac4e7..df06f2e 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -1784,6 +1784,10 @@ void Player::Update(uint32 p_time)
@@ -176,16 +177,16 @@ index eccf7a6..0f67cf4 100644
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
              {
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index 5b35da2..e6ed293 100644
+index 5b35da2..22c3fc8 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
-@@ -79,7 +79,12 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
+@@ -79,7 +79,13 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
      // no player
      if (!player)
      {
 -        SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
 +        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) {
-            SendPartyResult(PARTY_OP_INVITE, membername, ERR_ALREADY_IN_GROUP_S);
++            SendPartyResult(PARTY_OP_INVITE, membername, ERR_ALREADY_IN_GROUP_S);
 +        }
 +        else
 +        {
@@ -193,7 +194,7 @@ index 5b35da2..e6ed293 100644
 +        }
          return;
      }
-             
+ 
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
 index baa20f7..ca9c552 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
@@ -267,7 +268,7 @@ index 3f94cfb..d803b2f 100644
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7d3c769..3521fd9 100644
+index 0711ead..147a5fb 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -95,6 +95,7 @@ enum WorldBoolConfigs
@@ -298,5 +299,5 @@ index dd8f213..b84ed21 100644
  ###################################################################################################
  
 -- 
-1.7.10.4
+2.1.0.rc1
 

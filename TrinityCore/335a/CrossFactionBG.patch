@@ -1,35 +1,35 @@
-From a6f883725650d064849f5f4f77cbca6886787865 Mon Sep 17 00:00:00 2001
+From 93c04387d6656e0a4b5355ba27c59d5fa2b20618 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 7 Aug 2014 15:56:55 -0400
+Date: Thu, 21 Aug 2014 09:30:00 -0400
 Subject: [PATCH] CrossFactionBG
 
 ---
- cmake/compiler/msvc/settings.cmake                 |    2 +-
- .../CrossFactionBG/world.AVFix.sql                 |    3 +
- src/server/game/Battlegrounds/Arena.cpp            |    4 +-
- src/server/game/Battlegrounds/Battleground.cpp     |   47 ++-
- src/server/game/Battlegrounds/Battleground.h       |    2 +-
- src/server/game/Battlegrounds/BattlegroundMgr.cpp  |    2 +-
- .../game/Battlegrounds/BattlegroundQueue.cpp       |   85 +++--
- src/server/game/Battlegrounds/BattlegroundQueue.h  |   11 +-
- .../game/Battlegrounds/Zones/BattlegroundAB.cpp    |    2 +-
- .../game/Battlegrounds/Zones/BattlegroundAV.cpp    |   19 +-
- .../game/Battlegrounds/Zones/BattlegroundWS.cpp    |    3 +-
- src/server/game/CMakeLists.txt                     |    2 +
- src/server/game/Cfbg/Cfbg.cpp                      |  325 ++++++++++++++++++++
- src/server/game/Cfbg/Cfbg.h                        |   35 +++
- src/server/game/Entities/Player/Player.cpp         |   98 ++++--
- src/server/game/Entities/Player/Player.h           |   37 ++-
- src/server/game/Entities/Unit/Unit.cpp             |   17 +-
- src/server/game/Entities/Unit/Unit.h               |    4 +-
- src/server/game/Handlers/BattleGroundHandler.cpp   |    4 +-
- src/server/game/Handlers/CharacterHandler.cpp      |    3 +
- src/server/game/Handlers/ChatHandler.cpp           |   18 +-
- src/server/game/Handlers/MiscHandler.cpp           |   15 +
- src/server/game/Handlers/QueryHandler.cpp          |    2 +-
- src/server/game/World/World.cpp                    |    2 +
- src/server/game/World/World.h                      |    1 +
- src/server/worldserver/worldserver.conf.dist       |   12 +
+ cmake/compiler/msvc/settings.cmake                 |   2 +-
+ .../CrossFactionBG/world.AVFix.sql                 |   3 +
+ src/server/game/Battlegrounds/Arena.cpp            |   4 +-
+ src/server/game/Battlegrounds/Battleground.cpp     |  47 ++-
+ src/server/game/Battlegrounds/Battleground.h       |   2 +-
+ src/server/game/Battlegrounds/BattlegroundMgr.cpp  |   2 +-
+ .../game/Battlegrounds/BattlegroundQueue.cpp       |  85 ++++--
+ src/server/game/Battlegrounds/BattlegroundQueue.h  |  11 +-
+ .../game/Battlegrounds/Zones/BattlegroundAB.cpp    |   2 +-
+ .../game/Battlegrounds/Zones/BattlegroundAV.cpp    |  19 +-
+ .../game/Battlegrounds/Zones/BattlegroundWS.cpp    |   3 +-
+ src/server/game/CMakeLists.txt                     |   2 +
+ src/server/game/Cfbg/Cfbg.cpp                      | 325 +++++++++++++++++++++
+ src/server/game/Cfbg/Cfbg.h                        |  35 +++
+ src/server/game/Entities/Player/Player.cpp         |  98 +++++--
+ src/server/game/Entities/Player/Player.h           |  37 ++-
+ src/server/game/Entities/Unit/Unit.cpp             |  17 +-
+ src/server/game/Entities/Unit/Unit.h               |   4 +-
+ src/server/game/Handlers/BattleGroundHandler.cpp   |   4 +-
+ src/server/game/Handlers/CharacterHandler.cpp      |   3 +
+ src/server/game/Handlers/ChatHandler.cpp           |  18 +-
+ src/server/game/Handlers/MiscHandler.cpp           |  15 +
+ src/server/game/Handlers/QueryHandler.cpp          |   2 +-
+ src/server/game/World/World.cpp                    |   2 +
+ src/server/game/World/World.h                      |   1 +
+ src/server/worldserver/worldserver.conf.dist       |  12 +
  26 files changed, 658 insertions(+), 97 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
  create mode 100644 src/server/game/Cfbg/Cfbg.cpp
@@ -74,7 +74,7 @@ index cdc6fc3..0830ba1 100644
          if (player->GetTeam() == HORDE)
              player->CastSpell(player, SPELL_HORDE_GOLD_FLAG, true);
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index 86236cd..1f0c0b0 100644
+index 3a59ffa..6681bde 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
 @@ -288,7 +288,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
@@ -148,7 +148,7 @@ index 86236cd..1f0c0b0 100644
          player->SendDirectMessage(&data);
          player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
      }
-@@ -912,6 +924,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
+@@ -914,6 +926,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
  
      if (player)
      {
@@ -156,7 +156,7 @@ index 86236cd..1f0c0b0 100644
          // Do next only if found in battleground
          player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE);  // We're not in BG.
          // reset destination bg team
-@@ -981,7 +994,7 @@ void Battleground::AddPlayer(Player* player)
+@@ -983,7 +996,7 @@ void Battleground::AddPlayer(Player* player)
      // score struct must be created in inherited class
  
      uint64 guid = player->GetGUID();
@@ -165,7 +165,7 @@ index 86236cd..1f0c0b0 100644
  
      BattlegroundPlayer bp;
      bp.OfflineRemoveTime = 0;
-@@ -1032,6 +1045,8 @@ void Battleground::AddPlayer(Player* player)
+@@ -1034,6 +1047,8 @@ void Battleground::AddPlayer(Player* player)
      // setup BG group membership
      PlayerAddedToBGCheckIfBGIsRunning(player);
      AddOrSetPlayerToCorrectBgGroup(player, team);
@@ -174,7 +174,7 @@ index 86236cd..1f0c0b0 100644
  }
  
  // this method adds player to his team's bg group, or sets his correct group if player is already in bg group
-@@ -1101,8 +1116,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
+@@ -1103,8 +1118,8 @@ void Battleground::EventPlayerLoggedOut(Player* player)
  
          // 1 player is logging out, if it is the last, then end arena!
          if (isArena())
@@ -185,7 +185,7 @@ index 86236cd..1f0c0b0 100644
      }
  }
  
-@@ -1710,7 +1725,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
+@@ -1712,7 +1727,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
      BuildPvPLogDataPacket(data);
      player->SendDirectMessage(&data);
  
@@ -357,7 +357,7 @@ index e52f75a..d8d2fd3 100644
              // we successfully created a pool
              Battleground* bg2 = sBattlegroundMgr->CreateNewBattleground(bgTypeId, bracketEntry, arenaType, false);
 diff --git a/src/server/game/Battlegrounds/BattlegroundQueue.h b/src/server/game/Battlegrounds/BattlegroundQueue.h
-index af283cb..da808ef 100644
+index f95e8ba..5d506eb 100644
 --- a/src/server/game/Battlegrounds/BattlegroundQueue.h
 +++ b/src/server/game/Battlegrounds/BattlegroundQueue.h
 @@ -42,6 +42,7 @@ struct GroupQueueInfo                                       // stores informatio
@@ -912,7 +912,7 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index e05553a..48aa327 100644
+index c9ac4e7..2202e03 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -656,6 +656,12 @@ void KillRewarder::Reward()
@@ -1074,7 +1074,7 @@ index e05553a..48aa327 100644
              return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
          if (proto->RequiredSkill != 0)
-@@ -17222,6 +17255,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17208,6 +17241,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -1086,7 +1086,7 @@ index e05553a..48aa327 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17268,10 +17306,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17254,10 +17292,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -1097,7 +1097,7 @@ index e05553a..48aa327 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19188,7 +19222,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19174,7 +19208,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -1106,7 +1106,7 @@ index e05553a..48aa327 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19293,7 +19327,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19279,7 +19313,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -1115,7 +1115,7 @@ index e05553a..48aa327 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -20532,6 +20566,19 @@ void Player::StopCastingCharm()
+@@ -20518,6 +20552,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -1135,7 +1135,7 @@ index e05553a..48aa327 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22338,11 +22385,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22324,11 +22371,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -1147,7 +1147,7 @@ index e05553a..48aa327 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22418,7 +22460,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22404,7 +22446,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -1157,10 +1157,10 @@ index e05553a..48aa327 100644
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 0c1ddcd..560095d 100644
+index b1fd9d5..2402857 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -1092,6 +1092,35 @@ class Player : public Unit, public GridObject<Player>
+@@ -1100,6 +1100,35 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -1194,9 +1194,9 @@ index 0c1ddcd..560095d 100644
 +        bool SendRealNameQuery();
 +        FakePlayers m_FakePlayers;
  
-         void CleanupsBeforeDelete(bool finalCleanup = true);
+         void CleanupsBeforeDelete(bool finalCleanup = true) override;
  
-@@ -1146,7 +1175,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1154,7 +1183,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
  
          PlayerTaxi m_taxi;
@@ -1205,7 +1205,7 @@ index 0c1ddcd..560095d 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1214,6 +1243,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1222,6 +1251,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
@@ -1214,7 +1214,7 @@ index 0c1ddcd..560095d 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1917,8 +1948,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1925,8 +1956,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -1224,7 +1224,7 @@ index 0c1ddcd..560095d 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -2063,7 +2093,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -2071,7 +2101,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -1233,10 +1233,10 @@ index 0c1ddcd..560095d 100644
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 9c77794..167174d 100644
+index a428366..469b2b4 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -15973,7 +15973,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+@@ -15977,7 +15977,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -1245,7 +1245,7 @@ index 9c77794..167174d 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16724,6 +16724,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16728,6 +16728,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -1268,12 +1268,12 @@ index 9c77794..167174d 100644
      return 0;
  }
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index e87eb95..150706c 100644
+index 2e8d93e..0a049ca 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
-@@ -1359,8 +1359,10 @@ class Unit : public WorldObject
+@@ -1357,8 +1357,10 @@ class Unit : public WorldObject
          uint8 getLevel() const { return uint8(GetUInt32Value(UNIT_FIELD_LEVEL)); }
-         uint8 getLevelForTarget(WorldObject const* /*target*/) const { return getLevel(); }
+         uint8 getLevelForTarget(WorldObject const* /*target*/) const override { return getLevel(); }
          void SetLevel(uint8 lvl);
 -        uint8 getRace() const { return GetByteValue(UNIT_FIELD_BYTES_0, 0); }
 +        uint8 getRace(bool forceoriginal = false) const;
@@ -1306,7 +1306,7 @@ index 95e4dd3..0d2cf52 100644
                  continue;
              }
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 4d52eab..a10689d 100644
+index b250787..74bdebb 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -1043,6 +1043,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
@@ -1415,7 +1415,7 @@ index 3f94cfb..dc73812 100644
      {
          // overwrite DB/old value
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7d3c769..039587c 100644
+index 0711ead..acaa0f2 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -84,6 +84,7 @@ enum WorldTimers
@@ -1448,5 +1448,5 @@ index dd8f213..5eb0c7c 100644
 +###################################################################################################
 \ No newline at end of file
 -- 
-1.7.10.4
+2.1.0.rc1
 
