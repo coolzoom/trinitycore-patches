@@ -1,6 +1,6 @@
-From 93c04387d6656e0a4b5355ba27c59d5fa2b20618 Mon Sep 17 00:00:00 2001
+From 168c0d60180ff0b088a4e45d6be50dc1b19a727e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 21 Aug 2014 09:30:00 -0400
+Date: Sun, 24 Aug 2014 14:51:22 -0400
 Subject: [PATCH] CrossFactionBG
 
 ---
@@ -912,7 +912,7 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index c9ac4e7..2202e03 100644
+index 1fc1cd9..6db206d 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -656,6 +656,12 @@ void KillRewarder::Reward()
@@ -1057,24 +1057,24 @@ index c9ac4e7..2202e03 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -11978,13 +12011,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11979,13 +12012,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+     if (!proto)
+         return EQUIP_ERR_ITEM_NOT_FOUND;
  
-     if (proto)
-     {
--        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetTeam() != HORDE)
-+        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetOTeam() != HORDE)
-             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
+-    if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetTeam() != HORDE)
++    if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetOTeam() != HORDE)
+         return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
--        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetTeam() != ALLIANCE)
-+        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetOTeam() != ALLIANCE)
-             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
+-    if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetTeam() != ALLIANCE)
++    if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetOTeam() != ALLIANCE)
+         return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
--        if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getRaceMask()) == 0)
-+        if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getORaceMask()) == 0)
-             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
+-    if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getRaceMask()) == 0)
++    if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getORaceMask()) == 0)
+         return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
-         if (proto->RequiredSkill != 0)
-@@ -17208,6 +17241,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+     if (proto->RequiredSkill != 0)
+@@ -17213,6 +17246,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -1086,7 +1086,7 @@ index c9ac4e7..2202e03 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17254,10 +17292,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17259,10 +17297,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -1097,7 +1097,7 @@ index c9ac4e7..2202e03 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19174,7 +19208,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19179,7 +19213,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -1106,7 +1106,7 @@ index c9ac4e7..2202e03 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19279,7 +19313,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19284,7 +19318,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -1115,7 +1115,7 @@ index c9ac4e7..2202e03 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -20518,6 +20552,19 @@ void Player::StopCastingCharm()
+@@ -20523,6 +20557,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -1135,7 +1135,7 @@ index c9ac4e7..2202e03 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22324,11 +22371,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22329,11 +22376,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -1147,7 +1147,7 @@ index c9ac4e7..2202e03 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22404,7 +22446,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22409,7 +22451,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -1233,7 +1233,7 @@ index b1fd9d5..2402857 100644
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index a428366..469b2b4 100644
+index aed0644..50a113f 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -15977,7 +15977,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
@@ -1268,7 +1268,7 @@ index a428366..469b2b4 100644
      return 0;
  }
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 2e8d93e..0a049ca 100644
+index a18bc3b..ea0328b 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
 @@ -1357,8 +1357,10 @@ class Unit : public WorldObject
@@ -1363,7 +1363,7 @@ index eccf7a6..b177617d 100644
                  sender->Say(msg, lang);
              else if (type == CHAT_MSG_EMOTE)
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index baa20f7..1a2f1e6 100644
+index b6c508e..6c7a23b 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -1432,6 +1432,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
@@ -1402,10 +1402,10 @@ index dbcfb1c..f3ff127 100644
      data << uint8(nameData->m_class);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 3f94cfb..dc73812 100644
+index 4de9cb3..231c871 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1031,6 +1031,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1043,6 +1043,8 @@ void World::LoadConfigSettings(bool reload)
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
  
@@ -1415,7 +1415,7 @@ index 3f94cfb..dc73812 100644
      {
          // overwrite DB/old value
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 0711ead..acaa0f2 100644
+index cb87e17..6f6cea1 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -84,6 +84,7 @@ enum WorldTimers
@@ -1427,10 +1427,10 @@ index 0711ead..acaa0f2 100644
      CONFIG_ALLOW_PLAYER_COMMANDS,
      CONFIG_CLEAN_CHARACTER_DB,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index dd8f213..5eb0c7c 100644
+index d98a061..8945164 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2803,3 +2803,15 @@ PacketSpoof.BanDuration = 86400
+@@ -2812,3 +2812,15 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

@@ -1,16 +1,15 @@
-From 52622d6df8ad9790bd088c95e20a19db8672ff6d Mon Sep 17 00:00:00 2001
+From 5d6d3a3ac90c33ca8bc0cde2cb18f65919ae637e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 21 Aug 2014 10:44:12 -0400
+Date: Sun, 24 Aug 2014 15:02:48 -0400
 Subject: [PATCH] GuildHouses
 
 ---
  npc-entry-list.txt                                 |   2 +
  .../Guildhouses/world_guildhouses.sql              |  67 +++++
  src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
- src/server/scripts/Custom/CMakeLists.txt           |   4 +-
  src/server/scripts/Custom/guildmaster.cpp          | 313 +++++++++++++++++++++
  src/server/worldserver/worldserver.conf.dist       |  30 ++
- 6 files changed, 418 insertions(+), 4 deletions(-)
+ 5 files changed, 416 insertions(+), 2 deletions(-)
  create mode 100644 npc-entry-list.txt
  create mode 100644 sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
  create mode 100644 src/server/scripts/Custom/guildmaster.cpp
@@ -26,7 +25,7 @@ index 0000000..64db51a
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 new file mode 100644
-index 0000000..13a034d
+index 0000000..61f7878
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 @@ -0,0 +1,67 @@
@@ -95,48 +94,33 @@ index 0000000..13a034d
 +
 +DELETE FROM creature_template WHERE `entry`=13;
 +
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
-+('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','181','189','0','158','1','1400','1900','1','0','0','8','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
+\ No newline at end of file
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..959feb5 100644
+index 62254c9..268fa85 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1432,13 +1432,15 @@ void AddBattlegroundScripts()
- 
- #ifdef SCRIPTS
- /* This is where custom scripts' loading functions should be declared. */
--
-+    //guildhouse
+@@ -1444,7 +1444,8 @@ void AddBattlegroundScripts()
+ // start14
+ // start15
+ // start16
+-// start17
++    //GuildHouse NPC
 +    void AddSC_guildmaster();
- #endif
- 
- void AddCustomScripts()
- {
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
--
-+    //guildhouse
+ // start18
+ // start19
+ // start20
+@@ -1470,7 +1471,8 @@ void AddCustomScripts()
+ // end14
+ // end15
+ // end16
+-// end17
++    // GuildHouse NPC
 +    AddSC_guildmaster();
- #endif
- }
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..20c2bc9 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -8,11 +8,11 @@
- # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
- # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
--# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-+file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
--#  ${sources_Custom}
-+  ${sources_Custom}
- )
- 
- message("  -> Prepared: Custom")
+ // end18
+ // end19
+ // end20
 diff --git a/src/server/scripts/Custom/guildmaster.cpp b/src/server/scripts/Custom/guildmaster.cpp
 new file mode 100644
 index 0000000..4a8b012
@@ -457,10 +441,10 @@ index 0000000..4a8b012
 + new guildmaster();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index dd8f213..2c793d6 100644
+index d98a061..ee2d327 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2803,3 +2803,33 @@ PacketSpoof.BanDuration = 86400
+@@ -2812,3 +2812,33 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

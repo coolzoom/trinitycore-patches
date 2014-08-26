@@ -1,9 +1,11 @@
-From 0ad6fa603f215ec8a259765fb50614c084fa060c Mon Sep 17 00:00:00 2001
+From 15bd7186801452edb5288d215c04d49084cdeb76 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 22 Aug 2014 11:04:43 -0400
+Date: Mon, 25 Aug 2014 11:42:22 -0400
 Subject: [PATCH] Transmogrification
 
 ---
+ Transmog_CHANGELOG.md                              | 122 +++
+ Transmog_README.md                                 |  50 ++
  .../Transmogrification/characters.sql              |  23 +
  .../Transmogrification/updates/_README.md          |   1 +
  .../updates/characters_update_2_1_to_2_2.sql       |  12 +
@@ -21,16 +23,15 @@ Subject: [PATCH] Transmogrification
  src/server/game/Entities/Player/Player.cpp         |   7 +-
  src/server/game/Entities/Player/Player.h           |  18 +
  src/server/game/Handlers/SpellHandler.cpp          |   8 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   4 +
- src/server/scripts/Custom/CMakeLists.txt           |   3 +
- src/server/scripts/Custom/Transmog/CHANGELOG.md    | 122 +++
- src/server/scripts/Custom/Transmog/README.md       |  50 ++
- .../scripts/Custom/Transmog/Transmogrification.cpp | 838 +++++++++++++++++++++
- .../scripts/Custom/Transmog/Transmogrification.h   | 140 ++++
- .../scripts/Custom/Transmog/Transmogrifier.cpp     | 399 ++++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |   9 +-
+ src/server/scripts/Custom/Transmogrification.cpp   | 838 +++++++++++++++++++++
+ src/server/scripts/Custom/Transmogrification.h     | 140 ++++
+ src/server/scripts/Custom/Transmogrifier.cpp       | 399 ++++++++++
  src/server/scripts/Spells/spell_generic.cpp        |  22 +-
  src/server/worldserver/worldserver.conf.dist       | 206 +++++
- 26 files changed, 1929 insertions(+), 10 deletions(-)
+ 25 files changed, 1928 insertions(+), 13 deletions(-)
+ create mode 100644 Transmog_CHANGELOG.md
+ create mode 100644 Transmog_README.md
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.md
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
@@ -41,12 +42,195 @@ Subject: [PATCH] Transmogrification
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_texts.sql
- create mode 100644 src/server/scripts/Custom/Transmog/CHANGELOG.md
- create mode 100644 src/server/scripts/Custom/Transmog/README.md
- create mode 100644 src/server/scripts/Custom/Transmog/Transmogrification.cpp
- create mode 100644 src/server/scripts/Custom/Transmog/Transmogrification.h
- create mode 100644 src/server/scripts/Custom/Transmog/Transmogrifier.cpp
+ create mode 100644 src/server/scripts/Custom/Transmogrification.cpp
+ create mode 100644 src/server/scripts/Custom/Transmogrification.h
+ create mode 100644 src/server/scripts/Custom/Transmogrifier.cpp
 
+diff --git a/Transmog_CHANGELOG.md b/Transmog_CHANGELOG.md
+new file mode 100644
+index 0000000..d5c97ec
+--- /dev/null
++++ b/Transmog_CHANGELOG.md
+@@ -0,0 +1,122 @@
++####6.0
++- Removed mutex locks - Different code style, works with ACE and boost, probably more efficient
++- Added regex checking for preset name
++- Fixed random properties not registering as item stats (Thanks Aokromes)
++- Made the code / patch compatible with herbs+veins patch (Thanks Aokromes)
++- Moved to bithub - Allows autogenerate patch and diff and management is easier:
++- https://github.com/Rochet2/TrinityCore/tree/transmog
++- Gist was at: https://gist.github.com/Rochet2/2c8765b53f8dda1e296a
++
++####5.6
++- Fixed few linux compile warnings
++- Moved to GIST
++- Old versions etc still available from:
++https://drive.google.com/folderview?id=0Bx5knS2IsjatTlVtWHRwbUN3VlE&usp=sharing
++
++####5.5
++- Updated to latest TC  rev
++- Fixed some tabs to spaces
++- Fixed a warning on gcc
++
++####5.4
++- Updated to latest TC rev
++
++####5.3
++- Rewrote transmogrification logic to be blizzlike.
++- Implemented multithread support.
++- Tweaked saving to work so that your data is saved whenever the player is saved.
++- This means that crashes can not be abused and DB wont have SQL executing and querying all the time.
++
++####5.2
++- Some logic fixes and other
++
++####5.1
++- Config options should now work properly. Please notify here if some still bug
++- Can transmog bows with guns and crossbows
++- Can transmog cloth to leather with config settings set
++- Can transmog robes with chest pieces
++- You should now be able to view the info menus with the new NPC
++- Allow shirt's to be transmogrified (were shown in menu but you weren't able to before)
++- Mirror image (mage spell) should now correctly copy the transmogrified outfit. Before it still got your old item displays.
++- Added new config options:
++
++####5.0
++- Ripped cata branch functions and thus altered how everything is coded pretty much.
++- Dropped translation support
++- Added colored item links as well as icons all over the place
++- Added new feature: Sets
++- Added many config options, for example to allow cloth and plate to be transmogrified with each other
++
++####4.0
++- I changed all the methods to normal functions and moved them to Transmogrification.cpp
++- I also updated the way transmogrifications are stored
++
++####3.9
++- Nothing was added
++- Now supporting latest TDB: 0d3554d4bf
++- Also tested and works on latest
++- Changed diff to patch for better compability
++
++####3.8
++- Nothing was added
++- Now supporting latest TDB: da9865b683
++
++####3.7
++- Quick update to the patch for latest trinitycore version
++
++####3.6
++- Updated the code to work with the new trinitycore changes
++- Added config (See the bottom of worldserver.conf)
++- Added token cost possibility -- in config
++- Added cost modification possibility -- in config
++- Added quality requirement modification possibility -- in config
++
++####3.5
++- Fixed a crash on item deletion from guild deleting and more
++
++####3.4
++- Added localization possibilities, even though I am not quite sure if it works and if it is good or good enough. Only tested that english works
++- Added possibility to disable gold cost before compiling
++- Cleaned all the code I could find to TrinityCore standards .. I think
++
++####3.3
++- Transformed the script into a full coremod instead of having some code in the gossip script. This allows the transmogrification methods to be used on any item anywhere.
++- Changed the way fake display entries are stored in the core. Instead of having a new variable for the item class, I am now having a contained, much like locales have.
++- Changed the files into one patch file like Aokromes suggested. You can find the DB table creation SQLs from sql/characters_transmogrification/
++- Removed prepared statements
++- Fake display entries are now loaded when the server starts up. All nonexistant item guids will be deleted before loading and when loading, all invalid item entries are deleted (deleted some custom items aye?
++
++####3.2
++- Fixed an issue with DB saving not taking action on login or server restart.
++
++####3.1
++- Corrected the quality check, which was left to return true in any case
++- Fixed invisible item entries from newly created items (.additem for example)
++
++####3.0
++- It will have mailing and auction etc restrictions properly coded (yay, no more Fake owner!)
++- Having its own prepared statement now
++- Moved loading transmogs to the item loading part.
++- The script should now be added to scriptloader by the patch. So you just need to add it to solution.
++- Included an NPC sql for everyone with NPC problems :3
++
++####2.2
++- Added a few sounds, altered to use switch instead of an IF block
++- Modified to have a separate table
++- And more?
++
++####2.1
++- Fixed a crash when getting item template of item entry 0
++
++####2.0
++- Possibly more ..
++- Implemented cost
++- Changed quality checks
++- Fixed few problems
++- Changed some messages for more blizzlike feeling
++- After trying to transmogrify or remove a transmogrification, you get to the item selection screen instead of main menu
++- Added Remove Transmogrification buttons and update main menu button (removed nevermind)
++- Added more checks for safety and blizzlike feeling
++
++####1.0
++- Added DB saving and remove transmogrifications option -> patch, sql and script needed
+\ No newline at end of file
+diff --git a/Transmog_README.md b/Transmog_README.md
+new file mode 100644
+index 0000000..663f2fc
+--- /dev/null
++++ b/Transmog_README.md
+@@ -0,0 +1,50 @@
++#Transmogrification [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=transmog)](https://travis-ci.org/Rochet2/TrinityCore)
++
++####About
++Transmogrification allows you to change the display of an item to something else.
++You can use any item in your bags as source of display, as long as it fits the requirements.
++Requirements can be tweaked in the server configuration file.
++Basically any item should work with transmogrification. Custom items as well. No item is hardcoded to the system.
++Has a feature to store sets of displays. This can be removed before compiling or in the configuration file.
++Made for 3.3.5a.<br />
++Source: http://rochet2.github.io/?page=Transmogrification
++
++Video: http://youtu.be/xtH4ogz12iM
++
++####Installation
++
++Available as:
++- Direct merge: https://github.com/Rochet2/TrinityCore/tree/transmog
++- Diff: https://github.com/Rochet2/TrinityCore/compare/transmog.diff
++- Patch: https://github.com/Rochet2/TrinityCore/compare/transmog.patch
++
++Using direct merge:
++- open git bash to source location
++- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
++- do `git pull rochet2 transmog`
++- use cmake and compile
++
++Using diff:
++- download the diff by __right clicking__ the link and select __save as__
++- place the downloaded `transmog.diff` to the source root folder
++- open git bash to source location
++- do `git apply transmog.diff`
++- use cmake and compile
++
++After compiling:
++- Navigate to `\src\server\scripts\Custom\Transmog\sql\`
++- Run `characters.sql` to your characters database
++- Run `world_texts.sql` to your world database
++ - optionally you can also insert a transmogrifier NPC to your database by running `world_NPC.sql` to your world database.
++- Change the settings to your liking in `worldserver.conf` (Note that you should copy over the new config created)
++
++####Usage
++Equip an item that is suitable for transmogrification.
++Have an item in your bags that is suitable to be used to transmogrify the equipped item
++Talk to Transmogrifier and select the item slot. Then select the item you want to transmogrify to.
++Click to proceed when prompted and your items are transmogrified.
++
++####Changelog: [Changelog](https://github.com/Rochet2/TrinityCore/blob/transmog/src/server/scripts/Custom/Transmog/CHANGELOG.md)
++
++####Bugs and Contact
++Report issues and similar to http://rochet2.github.io/
 diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.sql b/sql/TrinityCore-Patches/Transmogrification/characters.sql
 new file mode 100644
 index 0000000..815c4d3
@@ -185,7 +369,7 @@ index 0000000..2a5e854
 +(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
 diff --git a/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
 new file mode 100644
-index 0000000..1cd32f6
+index 0000000..23a816c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
 @@ -0,0 +1,6 @@
@@ -193,8 +377,8 @@ index 0000000..1cd32f6
 +@Entry = 190010,
 +@Name = "Warpweaver";
 +
-+INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
 diff --git a/sql/TrinityCore-Patches/Transmogrification/world_texts.sql b/sql/TrinityCore-Patches/Transmogrification/world_texts.sql
 new file mode 100644
 index 0000000..e0bdf56
@@ -281,18 +465,18 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index c9ac4e7..4db168e 100644
+index 1fc1cd9..cf54c7e 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,7 @@
  #include "WorldPacket.h"
  #include "WorldSession.h"
  #include "GameObjectAI.h"
-+#include "../../../scripts/Custom/Transmog/Transmogrification.h"
++#include "../../../scripts/Custom/Transmogrification.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12472,7 +12473,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12475,7 +12476,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -304,7 +488,7 @@ index c9ac4e7..4db168e 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12598,6 +12602,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12601,6 +12605,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -313,14 +497,14 @@ index c9ac4e7..4db168e 100644
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index b1fd9d5..8934301 100644
+index b1fd9d5..25e186e 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -28,6 +28,7 @@
  #include "QuestDef.h"
  #include "SpellMgr.h"
  #include "Unit.h"
-+#include "../../scripts/Custom/Transmog/Transmogrification.h"
++#include "../../scripts/Custom/Transmogrification.h"
  
  #include <limits>
  #include <string>
@@ -356,14 +540,14 @@ index b1fd9d5..8934301 100644
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
 diff --git a/src/server/game/Handlers/SpellHandler.cpp b/src/server/game/Handlers/SpellHandler.cpp
-index 13f79fb..2187e7e 100644
+index 13f79fb..a6d7cb7 100644
 --- a/src/server/game/Handlers/SpellHandler.cpp
 +++ b/src/server/game/Handlers/SpellHandler.cpp
 @@ -29,6 +29,7 @@
  #include "TemporarySummon.h"
  #include "SpellAuras.h"
  #include "CreatureAI.h"
-+#include "../../scripts/Custom/Transmog/Transmogrification.h"
++#include "../../scripts/Custom/Transmogrification.h"
  #include "ScriptMgr.h"
  #include "GameObjectAI.h"
  #include "SpellAuraEffects.h"
@@ -382,230 +566,44 @@ index 13f79fb..2187e7e 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..7537499 100644
+index 168e646..b17d32d 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1433,6 +1433,8 @@ void AddBattlegroundScripts()
- #ifdef SCRIPTS
- /* This is where custom scripts' loading functions should be declared. */
+@@ -694,7 +694,6 @@ void AddSC_outdoorpvp_zm();
+ // player
+ void AddSC_chat_log();
+ void AddSC_action_ip_logger();
+-
+ #endif
  
+ void AddScripts()
+@@ -1488,7 +1487,9 @@ void AddBattlegroundScripts()
+ // start54
+ // start55
+ // start56
+-// start57
++// Transmogrification
 +void AddSC_PWS_Transmogrification();
 +void AddSC_CS_Transmogrification();
- #endif
- 
- void AddCustomScripts()
-@@ -1440,5 +1442,7 @@ void AddCustomScripts()
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
- 
+ // start58
+ // start59
+ // start60
+@@ -1574,7 +1575,9 @@ void AddCustomScripts()
+ // end54
+ // end55
+ // end56
+-// end57
++    // Transmogrification
 +    AddSC_PWS_Transmogrification();
 +    AddSC_CS_Transmogrification();
- #endif
- }
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..3cff451 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -13,6 +13,9 @@
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
- #  ${sources_Custom}
-+    Custom/Transmog/Transmogrification.h
-+    Custom/Transmog/Transmogrification.cpp
-+    Custom/Transmog/Transmogrifier.cpp
- )
- 
- message("  -> Prepared: Custom")
-diff --git a/src/server/scripts/Custom/Transmog/CHANGELOG.md b/src/server/scripts/Custom/Transmog/CHANGELOG.md
-new file mode 100644
-index 0000000..d5c97ec
---- /dev/null
-+++ b/src/server/scripts/Custom/Transmog/CHANGELOG.md
-@@ -0,0 +1,122 @@
-+####6.0
-+- Removed mutex locks - Different code style, works with ACE and boost, probably more efficient
-+- Added regex checking for preset name
-+- Fixed random properties not registering as item stats (Thanks Aokromes)
-+- Made the code / patch compatible with herbs+veins patch (Thanks Aokromes)
-+- Moved to bithub - Allows autogenerate patch and diff and management is easier:
-+- https://github.com/Rochet2/TrinityCore/tree/transmog
-+- Gist was at: https://gist.github.com/Rochet2/2c8765b53f8dda1e296a
-+
-+####5.6
-+- Fixed few linux compile warnings
-+- Moved to GIST
-+- Old versions etc still available from:
-+https://drive.google.com/folderview?id=0Bx5knS2IsjatTlVtWHRwbUN3VlE&usp=sharing
-+
-+####5.5
-+- Updated to latest TC  rev
-+- Fixed some tabs to spaces
-+- Fixed a warning on gcc
-+
-+####5.4
-+- Updated to latest TC rev
-+
-+####5.3
-+- Rewrote transmogrification logic to be blizzlike.
-+- Implemented multithread support.
-+- Tweaked saving to work so that your data is saved whenever the player is saved.
-+- This means that crashes can not be abused and DB wont have SQL executing and querying all the time.
-+
-+####5.2
-+- Some logic fixes and other
-+
-+####5.1
-+- Config options should now work properly. Please notify here if some still bug
-+- Can transmog bows with guns and crossbows
-+- Can transmog cloth to leather with config settings set
-+- Can transmog robes with chest pieces
-+- You should now be able to view the info menus with the new NPC
-+- Allow shirt's to be transmogrified (were shown in menu but you weren't able to before)
-+- Mirror image (mage spell) should now correctly copy the transmogrified outfit. Before it still got your old item displays.
-+- Added new config options:
-+
-+####5.0
-+- Ripped cata branch functions and thus altered how everything is coded pretty much.
-+- Dropped translation support
-+- Added colored item links as well as icons all over the place
-+- Added new feature: Sets
-+- Added many config options, for example to allow cloth and plate to be transmogrified with each other
-+
-+####4.0
-+- I changed all the methods to normal functions and moved them to Transmogrification.cpp
-+- I also updated the way transmogrifications are stored
-+
-+####3.9
-+- Nothing was added
-+- Now supporting latest TDB: 0d3554d4bf
-+- Also tested and works on latest
-+- Changed diff to patch for better compability
-+
-+####3.8
-+- Nothing was added
-+- Now supporting latest TDB: da9865b683
-+
-+####3.7
-+- Quick update to the patch for latest trinitycore version
-+
-+####3.6
-+- Updated the code to work with the new trinitycore changes
-+- Added config (See the bottom of worldserver.conf)
-+- Added token cost possibility -- in config
-+- Added cost modification possibility -- in config
-+- Added quality requirement modification possibility -- in config
-+
-+####3.5
-+- Fixed a crash on item deletion from guild deleting and more
-+
-+####3.4
-+- Added localization possibilities, even though I am not quite sure if it works and if it is good or good enough. Only tested that english works
-+- Added possibility to disable gold cost before compiling
-+- Cleaned all the code I could find to TrinityCore standards .. I think
-+
-+####3.3
-+- Transformed the script into a full coremod instead of having some code in the gossip script. This allows the transmogrification methods to be used on any item anywhere.
-+- Changed the way fake display entries are stored in the core. Instead of having a new variable for the item class, I am now having a contained, much like locales have.
-+- Changed the files into one patch file like Aokromes suggested. You can find the DB table creation SQLs from sql/characters_transmogrification/
-+- Removed prepared statements
-+- Fake display entries are now loaded when the server starts up. All nonexistant item guids will be deleted before loading and when loading, all invalid item entries are deleted (deleted some custom items aye?
-+
-+####3.2
-+- Fixed an issue with DB saving not taking action on login or server restart.
-+
-+####3.1
-+- Corrected the quality check, which was left to return true in any case
-+- Fixed invisible item entries from newly created items (.additem for example)
-+
-+####3.0
-+- It will have mailing and auction etc restrictions properly coded (yay, no more Fake owner!)
-+- Having its own prepared statement now
-+- Moved loading transmogs to the item loading part.
-+- The script should now be added to scriptloader by the patch. So you just need to add it to solution.
-+- Included an NPC sql for everyone with NPC problems :3
-+
-+####2.2
-+- Added a few sounds, altered to use switch instead of an IF block
-+- Modified to have a separate table
-+- And more?
-+
-+####2.1
-+- Fixed a crash when getting item template of item entry 0
-+
-+####2.0
-+- Possibly more ..
-+- Implemented cost
-+- Changed quality checks
-+- Fixed few problems
-+- Changed some messages for more blizzlike feeling
-+- After trying to transmogrify or remove a transmogrification, you get to the item selection screen instead of main menu
-+- Added Remove Transmogrification buttons and update main menu button (removed nevermind)
-+- Added more checks for safety and blizzlike feeling
-+
-+####1.0
-+- Added DB saving and remove transmogrifications option -> patch, sql and script needed
-\ No newline at end of file
-diff --git a/src/server/scripts/Custom/Transmog/README.md b/src/server/scripts/Custom/Transmog/README.md
-new file mode 100644
-index 0000000..663f2fc
---- /dev/null
-+++ b/src/server/scripts/Custom/Transmog/README.md
-@@ -0,0 +1,50 @@
-+#Transmogrification [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=transmog)](https://travis-ci.org/Rochet2/TrinityCore)
-+
-+####About
-+Transmogrification allows you to change the display of an item to something else.
-+You can use any item in your bags as source of display, as long as it fits the requirements.
-+Requirements can be tweaked in the server configuration file.
-+Basically any item should work with transmogrification. Custom items as well. No item is hardcoded to the system.
-+Has a feature to store sets of displays. This can be removed before compiling or in the configuration file.
-+Made for 3.3.5a.<br />
-+Source: http://rochet2.github.io/?page=Transmogrification
-+
-+Video: http://youtu.be/xtH4ogz12iM
-+
-+####Installation
-+
-+Available as:
-+- Direct merge: https://github.com/Rochet2/TrinityCore/tree/transmog
-+- Diff: https://github.com/Rochet2/TrinityCore/compare/transmog.diff
-+- Patch: https://github.com/Rochet2/TrinityCore/compare/transmog.patch
-+
-+Using direct merge:
-+- open git bash to source location
-+- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
-+- do `git pull rochet2 transmog`
-+- use cmake and compile
-+
-+Using diff:
-+- download the diff by __right clicking__ the link and select __save as__
-+- place the downloaded `transmog.diff` to the source root folder
-+- open git bash to source location
-+- do `git apply transmog.diff`
-+- use cmake and compile
-+
-+After compiling:
-+- Navigate to `\src\server\scripts\Custom\Transmog\sql\`
-+- Run `characters.sql` to your characters database
-+- Run `world_texts.sql` to your world database
-+ - optionally you can also insert a transmogrifier NPC to your database by running `world_NPC.sql` to your world database.
-+- Change the settings to your liking in `worldserver.conf` (Note that you should copy over the new config created)
-+
-+####Usage
-+Equip an item that is suitable for transmogrification.
-+Have an item in your bags that is suitable to be used to transmogrify the equipped item
-+Talk to Transmogrifier and select the item slot. Then select the item you want to transmogrify to.
-+Click to proceed when prompted and your items are transmogrified.
-+
-+####Changelog: [Changelog](https://github.com/Rochet2/TrinityCore/blob/transmog/src/server/scripts/Custom/Transmog/CHANGELOG.md)
-+
-+####Bugs and Contact
-+Report issues and similar to http://rochet2.github.io/
-diff --git a/src/server/scripts/Custom/Transmog/Transmogrification.cpp b/src/server/scripts/Custom/Transmog/Transmogrification.cpp
+ // end58
+ // end59
+ // end60
+diff --git a/src/server/scripts/Custom/Transmogrification.cpp b/src/server/scripts/Custom/Transmogrification.cpp
 new file mode 100644
 index 0000000..ce95786
 --- /dev/null
-+++ b/src/server/scripts/Custom/Transmog/Transmogrification.cpp
++++ b/src/server/scripts/Custom/Transmogrification.cpp
 @@ -0,0 +1,838 @@
 +#include "ScriptPCH.h"
 +#include "Config.h"
@@ -1445,11 +1443,11 @@ index 0000000..ce95786
 +    new WS_Transmogrification();
 +    new PS_Transmogrification();
 +}
-diff --git a/src/server/scripts/Custom/Transmog/Transmogrification.h b/src/server/scripts/Custom/Transmog/Transmogrification.h
+diff --git a/src/server/scripts/Custom/Transmogrification.h b/src/server/scripts/Custom/Transmogrification.h
 new file mode 100644
 index 0000000..23f17be
 --- /dev/null
-+++ b/src/server/scripts/Custom/Transmog/Transmogrification.h
++++ b/src/server/scripts/Custom/Transmogrification.h
 @@ -0,0 +1,140 @@
 +#ifndef DEF_TRANSMOGRIFICATION_H
 +#define DEF_TRANSMOGRIFICATION_H
@@ -1591,11 +1589,11 @@ index 0000000..23f17be
 +#define sTransmogrification Transmogrification::instance()
 +
 +#endif
-diff --git a/src/server/scripts/Custom/Transmog/Transmogrifier.cpp b/src/server/scripts/Custom/Transmog/Transmogrifier.cpp
+diff --git a/src/server/scripts/Custom/Transmogrifier.cpp b/src/server/scripts/Custom/Transmogrifier.cpp
 new file mode 100644
 index 0000000..a608f4e
 --- /dev/null
-+++ b/src/server/scripts/Custom/Transmog/Transmogrifier.cpp
++++ b/src/server/scripts/Custom/Transmogrifier.cpp
 @@ -0,0 +1,399 @@
 +/*
 +6.0
@@ -1997,14 +1995,14 @@ index 0000000..a608f4e
 +    new CS_Transmogrification();
 +}
 diff --git a/src/server/scripts/Spells/spell_generic.cpp b/src/server/scripts/Spells/spell_generic.cpp
-index 1d5443e..917759f 100644
+index 86ef8bd..5564378 100644
 --- a/src/server/scripts/Spells/spell_generic.cpp
 +++ b/src/server/scripts/Spells/spell_generic.cpp
 @@ -37,6 +37,7 @@
  #include "SpellScript.h"
  #include "SpellAuraEffects.h"
  #include "Vehicle.h"
-+#include "../Custom/Transmog/Transmogrification.h"
++#include "../Custom/Transmogrification.h"
  
  class spell_gen_absorb0_hitlimit1 : public SpellScriptLoader
  {
@@ -2051,10 +2049,10 @@ index 1d5443e..917759f 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index dd8f213..3f4829f 100644
+index d98a061..1b9292c 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2803,3 +2803,209 @@ PacketSpoof.BanDuration = 86400
+@@ -2812,3 +2812,209 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

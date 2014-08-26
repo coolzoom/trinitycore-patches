@@ -1,16 +1,15 @@
-From b3503a2460f0da1dd61d0ee8528397c11839ee62 Mon Sep 17 00:00:00 2001
+From 06a304667b1e4040fb9ea00cfedb304a4e02af3e Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 22 Aug 2014 10:58:38 -0400
+Date: Mon, 25 Aug 2014 10:32:44 -0400
 Subject: [PATCH] ProfessionNPC
 
 ---
  npc-entry-list.txt                                 |   2 +
  .../profession_npc/world_professionnpc.sql         |   4 +
- src/server/game/Scripting/ScriptLoader.cpp         |   5 +
- src/server/scripts/Custom/CMakeLists.txt           |   4 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   7 +-
  src/server/scripts/Custom/professionnpc.cpp        | 396 +++++++++++++++++++++
  src/server/worldserver/worldserver.conf.dist       |  42 +++
- 6 files changed, 451 insertions(+), 2 deletions(-)
+ 5 files changed, 448 insertions(+), 3 deletions(-)
  create mode 100644 npc-entry-list.txt
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
  create mode 100644 src/server/scripts/Custom/professionnpc.cpp
@@ -26,54 +25,46 @@ index 0000000..f1ec64c
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql b/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
 new file mode 100644
-index 0000000..e8d0cf5
+index 0000000..d2141cf
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
 @@ -0,0 +1,4 @@
 +DELETE FROM `creature_template` WHERE `entry` = 60001;
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
-+('60001', '0', '0', '0', '0', '0', '18', '0', '18', '0', 'Cyon', 'Profession master', '', '0', '59', '61', '0', '35', '1', '1.48', '1.14286', '0.0', '0', '655.0', '663.0', '0', '158', '1.0', '1500', '1900', '1', '0', '0', '0', '0', '0', '0', '0', '0.0', '0.0', '100', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1.0', '1.0', '1.0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'professionnpc', '1');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
 +-- end
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..7292cd2 100644
+index 168e646..cb1b0ab 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -44,6 +44,9 @@ void AddSC_holiday_spell_scripts();
+@@ -694,7 +694,6 @@ void AddSC_outdoorpvp_zm();
+ // player
+ void AddSC_chat_log();
+ void AddSC_action_ip_logger();
+-
+ #endif
  
- void AddSC_SmartScripts();
- 
-+//Custom
+ void AddScripts()
+@@ -1476,7 +1475,8 @@ void AddBattlegroundScripts()
+ // start42
+ // start43
+ // start44
+-// start45
++// Profession Npc
 +void AddSC_professionnpc();
-+
- //Commands
- void AddSC_account_commandscript();
- void AddSC_achievement_commandscript();
-@@ -1440,5 +1443,7 @@ void AddCustomScripts()
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
- 
+ // start46
+ // start47
+ // start48
+@@ -1562,7 +1562,8 @@ void AddCustomScripts()
+ // end42
+ // end43
+ // end44
+-// end45
 +    // Profession Npc
 +    AddSC_professionnpc();
- #endif
- }
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..20c2bc9 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -8,11 +8,11 @@
- # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
- # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
--# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-+file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
--#  ${sources_Custom}
-+  ${sources_Custom}
- )
- 
- message("  -> Prepared: Custom")
+ // end46
+ // end47
+ // end48
 diff --git a/src/server/scripts/Custom/professionnpc.cpp b/src/server/scripts/Custom/professionnpc.cpp
 new file mode 100644
 index 0000000..3407d40
@@ -477,10 +468,10 @@ index 0000000..3407d40
 +
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index dd8f213..9848c53 100644
+index d98a061..f0b3f87 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2612,6 +2612,48 @@ UI.ShowQuestLevelsInDialogs = 0
+@@ -2621,6 +2621,48 @@ UI.ShowQuestLevelsInDialogs = 0
  
  #
  ###################################################################################################

@@ -1,15 +1,16 @@
-From a1f1713ec767a4fd2e1d375c6306e95eb4058a24 Mon Sep 17 00:00:00 2001
+From fa0bc70032b91b1e7befaa1c3a38e7ba0ecf499c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 22 Aug 2014 10:53:04 -0400
+Date: Mon, 25 Aug 2014 10:22:15 -0400
 Subject: [PATCH] Player_Events
 
 ---
- event_readme.txt                           | 208 ++++++++++
- src/server/game/Scripting/ScriptLoader.cpp |   6 +-
- src/server/scripts/Custom/CMakeLists.txt   |   4 +-
- src/server/scripts/Custom/event.cpp        | 646 +++++++++++++++++++++++++++++
- 4 files changed, 860 insertions(+), 4 deletions(-)
+ event_readme.txt                                   | 208 +++++++
+ .../Player_Events/world.player_events.sql          |  75 +++
+ src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
+ src/server/scripts/Custom/event.cpp                | 646 +++++++++++++++++++++
+ 4 files changed, 933 insertions(+), 2 deletions(-)
  create mode 100644 event_readme.txt
+ create mode 100644 sql/TrinityCore-Patches/Player_Events/world.player_events.sql
  create mode 100644 src/server/scripts/Custom/event.cpp
 
 diff --git a/event_readme.txt b/event_readme.txt
@@ -227,46 +228,111 @@ index 0000000..085effe
 +If message contains the text CODEMSG message will be overriden by a hardcoded message with reward text.
 +```
 \ No newline at end of file
+diff --git a/sql/TrinityCore-Patches/Player_Events/world.player_events.sql b/sql/TrinityCore-Patches/Player_Events/world.player_events.sql
+new file mode 100644
+index 0000000..1e76146
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Player_Events/world.player_events.sql
+@@ -0,0 +1,75 @@
++/*
++Navicat MySQL Data Transfer
++
++Source Server         : Local
++Source Server Version : 50612
++Source Host           : localhost:3306
++Source Database       : tc_world
++
++Target Server Type    : MYSQL
++Target Server Version : 50612
++File Encoding         : 65001
++
++Date: 2014-07-11 05:24:41
++*/
++
++SET FOREIGN_KEY_CHECKS=0;
++
++-- ----------------------------
++-- Table structure for lil_actions
++-- ----------------------------
++DROP TABLE IF EXISTS `lil_actions`;
++CREATE TABLE `lil_actions` (
++  `id` int(10) unsigned NOT NULL,
++  `type` int(10) DEFAULT '0',
++  `avalue0` float DEFAULT '0',
++  `avalue1` float DEFAULT '0',
++  `avalue2` float DEFAULT '0',
++  `avalue3` float DEFAULT '0',
++  `avalue4` float DEFAULT '0',
++  `message` varchar(255) DEFAULT NULL,
++  PRIMARY KEY (`id`)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1;
++
++-- ----------------------------
++-- Records of lil_actions
++-- ----------------------------
++INSERT INTO `lil_actions` VALUES ('1', '1', '10000', '0', '0', '0', '0', 'CODEMSG');
++
++-- ----------------------------
++-- Table structure for lil_conditions
++-- ----------------------------
++DROP TABLE IF EXISTS `lil_conditions`;
++CREATE TABLE `lil_conditions` (
++  `id` int(10) unsigned NOT NULL,
++  `TCConditionType` int(10) DEFAULT '0',
++  `TCConditionEntry` int(10) DEFAULT '0',
++  `TCGameEventEntry` int(10) DEFAULT '0',
++  `PRace` int(1) DEFAULT '0',
++  `PClass` int(1) DEFAULT '0',
++  `CValue` int(10) DEFAULT '0',
++  PRIMARY KEY (`id`)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1;
++
++-- ----------------------------
++-- Records of lil_conditions
++-- ----------------------------
++INSERT INTO `lil_conditions` VALUES ('1', '0', '0', '0', '0', '0', '0');
++
++-- ----------------------------
++-- Table structure for lil_events
++-- ----------------------------
++DROP TABLE IF EXISTS `lil_events`;
++CREATE TABLE `lil_events` (
++  `id` int(10) unsigned NOT NULL,
++  `type` int(10) DEFAULT '0',
++  `condition` int(10) DEFAULT '0',
++  `action` int(10) DEFAULT '0',
++  PRIMARY KEY (`id`)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1;
++
++-- ----------------------------
++-- Records of lil_events
++-- ----------------------------
++INSERT INTO `lil_events` VALUES ('0', '0', '0', '0');
++INSERT INTO `lil_events` VALUES ('1', '1', '1', '1');
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..9b9b80c 100644
+index 168e646..58cc28f 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1432,13 +1432,15 @@ void AddBattlegroundScripts()
- 
- #ifdef SCRIPTS
- /* This is where custom scripts' loading functions should be declared. */
--
+@@ -1472,7 +1472,8 @@ void AddBattlegroundScripts()
+ // start38
+ // start39
+ // start40
+-// start41
 +// Events
 +void AddSC_LevelEvents();
- #endif
- 
- void AddCustomScripts()
- {
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
--
+ // start42
+ // start43
+ // start44
+@@ -1558,7 +1559,8 @@ void AddCustomScripts()
+ // end38
+ // end39
+ // end40
+-// end41
 +    // Events
 +    AddSC_LevelEvents();
- #endif
- }
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..20c2bc9 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -8,11 +8,11 @@
- # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
- # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
--# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-+file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
--#  ${sources_Custom}
-+  ${sources_Custom}
- )
- 
- message("  -> Prepared: Custom")
+ // end42
+ // end43
+ // end44
 diff --git a/src/server/scripts/Custom/event.cpp b/src/server/scripts/Custom/event.cpp
 new file mode 100644
 index 0000000..52941fb

@@ -1,15 +1,14 @@
-From c350b1983fbc12ab8a37b77abd1c432e50c1fd37 Mon Sep 17 00:00:00 2001
+From cbe75b6fce372c840aa718649a055d6330aaa8c5 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 22 Aug 2014 10:45:09 -0400
+Date: Mon, 25 Aug 2014 10:12:09 -0400
 Subject: [PATCH] npc-enchant
 
 ---
  npc-entry-list.txt                                |    2 +
  sql/TrinityCore-Patches/enchant/world.enchant.sql |    4 +
  src/server/game/Scripting/ScriptLoader.cpp        |    6 +-
- src/server/scripts/Custom/CMakeLists.txt          |    4 +-
  src/server/scripts/Custom/enchant.cpp             | 1621 +++++++++++++++++++++
- 5 files changed, 1634 insertions(+), 3 deletions(-)
+ 4 files changed, 1631 insertions(+), 2 deletions(-)
  create mode 100644 npc-entry-list.txt
  create mode 100644 sql/TrinityCore-Patches/enchant/world.enchant.sql
  create mode 100644 src/server/scripts/Custom/enchant.cpp
@@ -25,55 +24,38 @@ index 0000000..40e97ab
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/enchant/world.enchant.sql b/sql/TrinityCore-Patches/enchant/world.enchant.sql
 new file mode 100644
-index 0000000..bc63672
+index 0000000..647019c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/enchant/world.enchant.sql
 @@ -0,0 +1,4 @@
 +-- Creature template. Young woman enchantress
 +DELETE FROM `creature_template` WHERE `entry` = 100067;
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('100067','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','1755','1755','0','1504','1','1500','0','1','0','2048','0','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_enchantment','0');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('100067','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_enchantment','0');
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..28e7677 100644
+index 7e043c5..410408b 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -85,6 +85,9 @@ void AddSC_ticket_commandscript();
- void AddSC_titles_commandscript();
- void AddSC_wp_commandscript();
- 
-+//Custom
+@@ -1468,7 +1468,8 @@ void AddBattlegroundScripts()
+ // start34
+ // start35
+ // start36
+-// start37
++// Enchant NPC
 +void AddSC_npc_enchantment();
-+
- #ifdef SCRIPTS
- //world
- void AddSC_areatrigger_scripts();
-@@ -1439,6 +1442,7 @@ void AddCustomScripts()
- {
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
--
+ // start38
+ // start39
+ // start40
+@@ -1514,7 +1515,8 @@ void AddCustomScripts()
+ // end34
+ // end35
+ // end36
+-// end37
 +    // Enchant NPC
 +    AddSC_npc_enchantment();
- #endif
- }
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..20c2bc9 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -8,11 +8,11 @@
- # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
- # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
--# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-+file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
--#  ${sources_Custom}
-+  ${sources_Custom}
- )
- 
- message("  -> Prepared: Custom")
+ // end38
+ // end39
+ // end40
 diff --git a/src/server/scripts/Custom/enchant.cpp b/src/server/scripts/Custom/enchant.cpp
 new file mode 100644
 index 0000000..c6a7fdc

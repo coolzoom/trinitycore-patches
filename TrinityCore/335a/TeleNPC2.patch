@@ -1,19 +1,19 @@
-From 4084b236246274ab2e0eb435cfcb0e0b9b2c37b1 Mon Sep 17 00:00:00 2001
+From 25e2601b2633272e072ba668d9fd9a894cbeb74b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 22 Aug 2014 11:03:25 -0400
+Date: Mon, 25 Aug 2014 11:13:34 -0400
 Subject: [PATCH] TeleNPC2
 
 ---
  README.NPCTELEPORT                                 |  14 +
  npc-entry-list.txt                                 |   2 +
- .../TeleNPC2/world.npc_teleport.sql                | 119 +++++++
+ .../TeleNPC2/world.npc_teleport.sql                | 120 +++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  | 380 +++++++++++++++++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    | 151 ++++++++
  src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
  src/server/game/Scripting/ScriptMgr.cpp            |   3 +
  src/server/scripts/CMakeLists.txt                  |   3 +
  src/server/scripts/Custom/npc_teleport.cpp         | 222 ++++++++++++
- 9 files changed, 899 insertions(+), 1 deletion(-)
+ 9 files changed, 899 insertions(+), 2 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 npc-entry-list.txt
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
@@ -52,10 +52,10 @@ index 0000000..3f9a9b0
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 new file mode 100644
-index 0000000..52372d0
+index 0000000..91b00a9
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
-@@ -0,0 +1,119 @@
+@@ -0,0 +1,120 @@
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
 +  `id` int(6) unsigned NOT NULL default '0',
@@ -174,7 +174,8 @@ index 0000000..52372d0
 +   (100001, 'Choose your Destination.');
 +
 +-- `creature_template`
-+INSERT INTO `creature_template` VALUES (100000, 0, 0, 0, 0, 0, 26502, 0, 0, 0, 'Abisal Vortex', '', '', 0, 83, 83, 0, 35, 1, 1, 1.14286, 2, 1, 509, 683, 0, 805, 1, 0, 0, 1, 0, 2048, 0, 0, 0, 0, 0, 0, 371, 535, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 'npc_teleport', 1);
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('100000','0','0','0','0','0','26502','0','0','0','Abisal Vortex','','','0','83','83','0','35','1','1','1.14286','2','1','0','0','0','1','1','1','0','2048','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','2','npc_teleport','1');
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
 index 0000000..3aed0f7
@@ -719,30 +720,31 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..94b1776 100644
+index 168e646..7e15050 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -25,6 +25,9 @@ void AddSC_example_gossip_codebox();
- void AddSC_example_misc();
- void AddSC_example_commandscript();
- 
-+//TeleNPC2
+@@ -1484,7 +1484,8 @@ void AddBattlegroundScripts()
+ // start50
+ // start51
+ // start52
+-// start53
++// TeleNPC2
 +void AddSC_npc_teleport();
-+
- // spells
- void AddSC_deathknight_spell_scripts();
- void AddSC_druid_spell_scripts();
-@@ -1439,6 +1442,7 @@ void AddCustomScripts()
- {
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
--
+ // start54
+ // start55
+ // start56
+@@ -1570,7 +1571,8 @@ void AddCustomScripts()
+ // end50
+ // end51
+ // end52
+-// end53
 +    // TeleNPC2
 +    AddSC_npc_teleport();
- #endif
- }
+ // end54
+ // end55
+ // end56
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index fa83c4b..aa62b6f 100644
+index daa4c36..24f76ee 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@

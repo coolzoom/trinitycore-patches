@@ -1,21 +1,20 @@
-From 64b6e5d51c2e580a8582fa6c036762917643cdba Mon Sep 17 00:00:00 2001
+From 5b87a45ef539196376faac0a4116f30ffdd4e9d3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 20 Aug 2014 10:11:22 -0400
+Date: Sun, 24 Aug 2014 13:55:44 -0400
 Subject: [PATCH] ArenaGambler
 
 ---
- npc-entry-list.txt                                |   2 +
- sql/TrinityCore-Patches/ArenaGambler/CharactersDB |  59 ++
- sql/TrinityCore-Patches/ArenaGambler/WorldDB      | 502 +++++++++++++++
- src/server/game/Scripting/ScriptLoader.cpp        |   6 +-
- src/server/scripts/Custom/ArenaGambler.cpp        | 308 +++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.cpp | 723 ++++++++++++++++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.h   | 458 ++++++++++++++
- src/server/scripts/Custom/CMakeLists.txt          |   4 +-
- 8 files changed, 2059 insertions(+), 3 deletions(-)
+ npc-entry-list.txt                                 |   2 +
+ .../ArenaGambler/CharactersDB.sql                  |  59 ++
+ sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql   | 503 ++++++++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
+ src/server/scripts/Custom/ArenaGambler.cpp         | 308 +++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.cpp  | 723 +++++++++++++++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.h    | 458 +++++++++++++
+ 7 files changed, 2057 insertions(+), 2 deletions(-)
  create mode 100644 npc-entry-list.txt
- create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB
- create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB
+ create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
+ create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
  create mode 100644 src/server/scripts/Custom/ArenaGambler.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.h
@@ -29,11 +28,11 @@ index 0000000..c0e1a47
 +Arena Gambler
 +908001 - The Lich King
 \ No newline at end of file
-diff --git a/sql/TrinityCore-Patches/ArenaGambler/CharactersDB b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB
+diff --git a/sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
 new file mode 100644
 index 0000000..ac486b2
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB
++++ b/sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
 @@ -0,0 +1,59 @@
 +/*
 + * Author: Xees
@@ -94,15 +93,16 @@ index 0000000..ac486b2
 +    `matchDate` timestamp ,
 +    `matchWinner` int (11)
 +);
-diff --git a/sql/TrinityCore-Patches/ArenaGambler/WorldDB b/sql/TrinityCore-Patches/ArenaGambler/WorldDB
+diff --git a/sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql b/sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
 new file mode 100644
-index 0000000..952985e
+index 0000000..b3e8963
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/ArenaGambler/WorldDB
-@@ -0,0 +1,502 @@
++++ b/sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
+@@ -0,0 +1,503 @@
 +
 +DELETE FROM `creature_template` WHERE (`entry`=908001);
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES (908001, 0, 0, 0, 0, 0, 28122, 0, 28122, 0, 'The Lich King', '', '', 0, 83, 83, 0, 35, 1, 1.5, 2, 1.5, 3, 2150, 2618, 0, 1100, 1, 2000, 2250, 1, 0, 0, 0, 0, 0, 0, 0, 929.6, 1479.89, 4217, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 65, 'duel_system', 1);
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('25266','0','0','0','0','0','24818','3422','24819','24821','Arena Gambler','','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','','1');
 +
 +DELETE FROM `creature` WHERE (`guid`=1118308);
 +INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `MovementType`, `npcflag`, `unit_flags`, `dynamicflags`, `VerifiedBuild`) VALUES (1118308, 908001, 1, 1, 1, 0, 0, -7207.9, 1056.01, 327.532, 4.59111, 300, 0, 0, 108000, 0, 2, 0, 0, 0, 0);
@@ -603,28 +603,29 @@ index 0000000..952985e
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index d036d43..a46f750 100644
+index 62254c9..9bc79d7 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -44,6 +44,9 @@ void AddSC_holiday_spell_scripts();
- 
- void AddSC_SmartScripts();
- 
-+//Custom
+@@ -1435,7 +1435,8 @@ void AddBattlegroundScripts()
+ // start02
+ // start03
+ // start04
+-// start05
++// Arena Gambler
 +void AddSC_ArenaGambler();
-+
- //Commands
- void AddSC_account_commandscript();
- void AddSC_achievement_commandscript();
-@@ -1439,6 +1442,7 @@ void AddCustomScripts()
- {
- #ifdef SCRIPTS
-     /* This is where custom scripts should be added. */
--
+ // start06
+ // start07
+ // start08
+@@ -1461,7 +1462,8 @@ void AddCustomScripts()
+ // end02
+ // end03
+ // end04
+-// end05
 +    // Arena Gambler
 +    AddSC_ArenaGambler();
- #endif
- }
+ // end06
+ // end07
+ // end08
 diff --git a/src/server/scripts/Custom/ArenaGambler.cpp b/src/server/scripts/Custom/ArenaGambler.cpp
 new file mode 100644
 index 0000000..376d946
@@ -2135,24 +2136,6 @@ index 0000000..1c256d3
 +#define sGamblingSystem GamblingSystem::instance()
 +#endif
 \ No newline at end of file
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 80ebe36..20c2bc9 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -8,11 +8,11 @@
- # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
- # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
--# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
-+file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
--#  ${sources_Custom}
-+  ${sources_Custom}
- )
- 
- message("  -> Prepared: Custom")
 -- 
 2.1.0.rc1
 
