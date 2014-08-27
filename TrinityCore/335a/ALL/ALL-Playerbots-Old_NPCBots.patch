@@ -1,6 +1,6 @@
-From 311c25bc6754db8be12e7159f10127b03cbd8699 Mon Sep 17 00:00:00 2001
+From 9133f6fe61923d58c5a51100fab306f745b0ea44 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 27 Aug 2014 12:42:34 -0400
+Date: Wed, 27 Aug 2014 14:53:12 -0400
 Subject: [PATCH] ALL-Playerbots-Old_NPCBots
 
 ---
@@ -127,7 +127,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  src/server/game/Entities/Creature/Creature.h       |    54 +
  .../game/Entities/Creature/TemporarySummon.cpp     |     8 +
  src/server/game/Entities/Object/Object.cpp         |    11 +
- src/server/game/Entities/Player/Player.cpp         |  1362 ++-
+ src/server/game/Entities/Player/Player.cpp         |  1367 ++-
  src/server/game/Entities/Player/Player.h           |   191 +-
  src/server/game/Entities/Totem/Totem.cpp           |     7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |     5 +
@@ -140,7 +140,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  src/server/game/Guilds/Guild.cpp                   |   144 +
  src/server/game/Guilds/Guild.h                     |    37 +
  src/server/game/Handlers/BattleGroundHandler.cpp   |     4 +-
- src/server/game/Handlers/CharacterHandler.cpp      |    85 +
+ src/server/game/Handlers/CharacterHandler.cpp      |   155 +-
  src/server/game/Handlers/ChatHandler.cpp           |    60 +-
  src/server/game/Handlers/GroupHandler.cpp          |    21 +
  src/server/game/Handlers/LootHandler.cpp           |    11 +
@@ -194,7 +194,7 @@ Subject: [PATCH] ALL-Playerbots-Old_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |     4 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   896 ++
- 190 files changed, 62058 insertions(+), 183 deletions(-)
+ 190 files changed, 62131 insertions(+), 185 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Transmog_CHANGELOG.md
  create mode 100644 Transmog_README.md
@@ -49224,7 +49224,7 @@ index 77f3180..740cfdd 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 4b3e624..bb998fb 100644
+index 900bba0..ec30791 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -19,6 +19,7 @@
@@ -49235,15 +49235,20 @@ index 4b3e624..bb998fb 100644
  #include "ArenaTeam.h"
  #include "ArenaTeamMgr.h"
  #include "Battlefield.h"
-@@ -80,6 +81,7 @@
+@@ -80,6 +81,12 @@
  #include "WorldSession.h"
  #include "GameObjectAI.h"
  #include "Config.h"
 +#include "../../../scripts/Custom/Transmogrification.h"
++// Playerbot mod
++#include "PlayerbotAI.h"
++
++// NPCBot
++#include "bothelper.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -536,6 +538,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+@@ -536,6 +543,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
  
@@ -49262,7 +49267,7 @@ index 4b3e624..bb998fb 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -657,6 +671,12 @@ void KillRewarder::Reward()
+@@ -657,6 +676,12 @@ void KillRewarder::Reward()
  
  Player::Player(WorldSession* session): Unit(true)
  {
@@ -49275,7 +49280,7 @@ index 4b3e624..bb998fb 100644
      m_speakTime = 0;
      m_speakCount = 0;
  
-@@ -887,6 +907,31 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -887,6 +912,31 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -49307,7 +49312,7 @@ index 4b3e624..bb998fb 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -903,6 +948,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -903,6 +953,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -49318,7 +49323,7 @@ index 4b3e624..bb998fb 100644
  }
  
  Player::~Player()
-@@ -941,6 +990,23 @@ Player::~Player()
+@@ -941,6 +995,23 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -49342,7 +49347,7 @@ index 4b3e624..bb998fb 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1007,6 +1073,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
+@@ -1007,6 +1078,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
      uint32 RaceClassGender = (createInfo->Race) | (createInfo->Class << 8) | (createInfo->Gender << 16);
  
      SetUInt32Value(UNIT_FIELD_BYTES_0, (RaceClassGender | (powertype << 24)));
@@ -49355,7 +49360,7 @@ index 4b3e624..bb998fb 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -1340,8 +1412,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
+@@ -1340,8 +1417,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
  {
      switch (timer)
      {
@@ -49367,7 +49372,7 @@ index 4b3e624..bb998fb 100644
          case BREATH_TIMER:
          {
              if (!IsAlive() || HasAuraType(SPELL_AURA_WATER_BREATHING) || GetSession()->GetSecurity() >= AccountTypes(sWorld->getIntConfig(CONFIG_DISABLE_BREATHING)))
-@@ -1424,6 +1499,9 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1424,6 +1504,9 @@ void Player::HandleDrowning(uint32 time_diff)
      }
  
      // In dark water
@@ -49377,7 +49382,7 @@ index 4b3e624..bb998fb 100644
      if (m_MirrorTimerFlags & UNDERWARER_INDARKWATER)
      {
          // Fatigue timer not activated - activate it
-@@ -1460,7 +1538,7 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1460,7 +1543,7 @@ void Player::HandleDrowning(uint32 time_diff)
          else if (m_MirrorTimerFlagsLast & UNDERWARER_INDARKWATER)
              SendMirrorTimer(FATIGUE_TIMER, DarkWaterTime, m_MirrorTimer[FATIGUE_TIMER], 10);
      }
@@ -49386,7 +49391,7 @@ index 4b3e624..bb998fb 100644
      if (m_MirrorTimerFlags & (UNDERWATER_INLAVA /*| UNDERWATER_INSLIME*/) && !(_lastLiquid && _lastLiquid->SpellId))
      {
          // Breath timer not activated - activate it
-@@ -1558,6 +1636,8 @@ void Player::Update(uint32 p_time)
+@@ -1558,6 +1641,8 @@ void Player::Update(uint32 p_time)
      if (!IsInWorld())
          return;
  
@@ -49395,7 +49400,7 @@ index 4b3e624..bb998fb 100644
      // undelivered mail
      if (m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
      {
-@@ -1785,6 +1865,13 @@ void Player::Update(uint32 p_time)
+@@ -1785,6 +1870,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -49409,7 +49414,7 @@ index 4b3e624..bb998fb 100644
          }
          else
              m_nextSave -= p_time;
-@@ -1861,6 +1948,21 @@ void Player::Update(uint32 p_time)
+@@ -1861,6 +1953,21 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -49431,7 +49436,7 @@ index 4b3e624..bb998fb 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2110,6 +2212,8 @@ void Player::SendTeleportAckPacket()
+@@ -2110,6 +2217,8 @@ void Player::SendTeleportAckPacket()
  
  bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
  {
@@ -49440,7 +49445,7 @@ index 4b3e624..bb998fb 100644
      if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
      {
          TC_LOG_ERROR("maps", "TeleportTo: invalid map (%d) or invalid coordinates (X: %f, Y: %f, Z: %f, O: %f) given when teleporting player (GUID: %u, name: %s, map: %d, X: %f, Y: %f, Z: %f, O: %f).",
-@@ -2124,6 +2228,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2124,6 +2233,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -49453,7 +49458,7 @@ index 4b3e624..bb998fb 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2232,6 +2342,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2232,6 +2347,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -49467,7 +49472,7 @@ index 4b3e624..bb998fb 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2465,6 +2582,935 @@ void Player::RemoveFromWorld()
+@@ -2465,6 +2587,935 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -50403,7 +50408,7 @@ index 4b3e624..bb998fb 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2742,6 +3788,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
+@@ -2742,6 +3793,9 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
  
      // not enemy
      if (creature->IsHostileTo(this))
@@ -50413,7 +50418,7 @@ index 4b3e624..bb998fb 100644
          return NULL;
  
      // not unfriendly
-@@ -2930,8 +3979,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
+@@ -2930,8 +3984,31 @@ void Player::RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method /* =
  {
      if (!group)
          return;
@@ -50446,7 +50451,7 @@ index 4b3e624..bb998fb 100644
  }
  
  void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
-@@ -3016,7 +4088,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3016,7 +4093,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -50455,7 +50460,7 @@ index 4b3e624..bb998fb 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3103,6 +4175,9 @@ void Player::GiveLevel(uint8 level)
+@@ -3103,6 +4180,9 @@ void Player::GiveLevel(uint8 level)
              }
  
      sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
@@ -50465,7 +50470,7 @@ index 4b3e624..bb998fb 100644
  }
  
  void Player::InitTalentForLevel()
-@@ -3154,7 +4229,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3154,7 +4234,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -50474,7 +50479,7 @@ index 4b3e624..bb998fb 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -4939,6 +6014,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
+@@ -4939,6 +6019,13 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -50488,7 +50493,7 @@ index 4b3e624..bb998fb 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -5060,6 +6142,12 @@ void Player::BuildPlayerRepop()
+@@ -5060,6 +6147,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -50501,7 +50506,7 @@ index 4b3e624..bb998fb 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5107,6 +6195,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5107,6 +6200,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -50511,7 +50516,7 @@ index 4b3e624..bb998fb 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5207,7 +6298,7 @@ void Player::CreateCorpse()
+@@ -5207,7 +6303,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -50520,7 +50525,7 @@ index 4b3e624..bb998fb 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -5432,6 +6523,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5432,6 +6528,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -50536,7 +50541,7 @@ index 4b3e624..bb998fb 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -6893,10 +7993,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6893,10 +7998,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -50549,7 +50554,7 @@ index 4b3e624..bb998fb 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -6998,6 +8098,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6998,6 +8103,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -50577,7 +50582,7 @@ index 4b3e624..bb998fb 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7012,23 +8133,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7012,23 +8138,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -50607,7 +50612,7 @@ index 4b3e624..bb998fb 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7123,7 +8244,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7123,7 +8249,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -50616,7 +50621,7 @@ index 4b3e624..bb998fb 100644
              return false;
  
          return true;
-@@ -7135,6 +8256,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7135,6 +8261,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -50624,7 +50629,7 @@ index 4b3e624..bb998fb 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7177,16 +8299,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7177,16 +8304,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -50687,7 +50692,7 @@ index 4b3e624..bb998fb 100644
  
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
-@@ -7195,6 +8354,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7195,6 +8359,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
@@ -50695,7 +50700,7 @@ index 4b3e624..bb998fb 100644
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
          }
-@@ -7218,6 +8378,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7218,6 +8383,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -50712,7 +50717,7 @@ index 4b3e624..bb998fb 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7288,6 +8458,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7288,6 +8463,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -50743,7 +50748,7 @@ index 4b3e624..bb998fb 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7447,7 +8641,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7447,7 +8646,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -50752,7 +50757,7 @@ index 4b3e624..bb998fb 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7788,6 +8982,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7788,6 +8987,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -50773,7 +50778,7 @@ index 4b3e624..bb998fb 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7802,10 +9010,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7802,10 +9015,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -50799,7 +50804,7 @@ index 4b3e624..bb998fb 100644
          }
  
          if (val == 0)
-@@ -11980,13 +13202,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11980,13 +13207,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
      if (!proto)
          return EQUIP_ERR_ITEM_NOT_FOUND;
  
@@ -50816,7 +50821,7 @@ index 4b3e624..bb998fb 100644
          return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
      if (proto->RequiredSkill != 0)
-@@ -12476,7 +13698,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12476,7 +13703,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -50828,7 +50833,7 @@ index 4b3e624..bb998fb 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12596,20 +13821,20 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12596,20 +13826,20 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -50852,7 +50857,7 @@ index 4b3e624..bb998fb 100644
      // 08
      // 09
      // 10
-@@ -15334,13 +16559,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15334,13 +16564,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -50880,7 +50885,7 @@ index 4b3e624..bb998fb 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17238,6 +18476,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17238,6 +18481,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -50892,7 +50897,7 @@ index 4b3e624..bb998fb 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17284,10 +18527,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17284,10 +18532,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -50903,7 +50908,7 @@ index 4b3e624..bb998fb 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19204,7 +20443,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19204,7 +20448,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -50912,7 +50917,7 @@ index 4b3e624..bb998fb 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19309,7 +20548,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19309,7 +20553,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -50921,7 +50926,7 @@ index 4b3e624..bb998fb 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19463,6 +20702,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19463,6 +20707,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -50934,7 +50939,7 @@ index 4b3e624..bb998fb 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20548,6 +21793,19 @@ void Player::StopCastingCharm()
+@@ -20548,6 +21798,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -50954,7 +50959,7 @@ index 4b3e624..bb998fb 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22354,11 +23612,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22354,11 +23617,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -50966,7 +50971,7 @@ index 4b3e624..bb998fb 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22434,7 +23687,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22434,7 +23692,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -50975,7 +50980,7 @@ index 4b3e624..bb998fb 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26855,6 +28108,25 @@ bool Player::IsLoading() const
+@@ -26857,6 +28115,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -52205,7 +52210,7 @@ index 95e4dd3..0d2cf52 100644
                  continue;
              }
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index b250787..c3dab23 100644
+index 974ca97..e501b94 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
@@ -52219,10 +52224,11 @@ index b250787..c3dab23 100644
  class LoginQueryHolder : public SQLQueryHolder
  {
      private:
-@@ -1039,10 +1043,40 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
- 
-     // Handle Login-Achievements (should be handled after loading)
-     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
+@@ -1043,7 +1047,34 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     // 01
+     // 02
+     // 03
+-    // 04
 +    //the only place where we check if it has NPC bots
 +    if (sConfigMgr->GetBoolDefault("Bot.EnableNpcBots", true))
 +    {
@@ -52250,7 +52256,11 @@ index b250787..c3dab23 100644
 +            } while (result->NextRow());
 +        }
 +    }
- 
++
+     // 05
+     // 06
+     // 07
+@@ -1066,13 +1097,82 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
  
      delete holder;
@@ -52258,9 +52268,83 @@ index b250787..c3dab23 100644
 +    if (pCurrChar->GetTeam() != pCurrChar->GetOTeam())
 +        pCurrChar->FitPlayerInTeam(pCurrChar->GetBattleground() && !pCurrChar->GetBattleground()->isArena() ? true : false, pCurrChar->GetBattleground());
  }
- 
- void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
-@@ -1065,6 +1099,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
+     // Prepatch by LordPsyan
+     // 01
+     // 02
+     // 03
+     // 04
+-    // 05
++//Playerbot mod: is different from the normal
++//HandlePlayerLoginCallback in that it sets up the bot's
++//world session and also stores the pointer to the bot player
++//in the master's world session m_playerBots map
++void WorldSession::HandlePlayerBotLogin(SQLQueryHolder* holder)
++{
++    if (!holder) return;
++
++    LoginQueryHolder* lqh = (LoginQueryHolder*)holder;
++
++    if (!lqh || !lqh->GetAccountId()) // Probably excessively verbose..
++    {
++        //sLog->outError("Excessively verbose Playerbot error checkpoint #1 hit. Please report this error immediately.");
++        if (holder) delete holder;
++        return;
++    }
++
++    WorldSession* masterSession = sWorld->FindSession(lqh->GetAccountId());
++
++    if (!masterSession) // Probably excessively verbose..
++    {
++        //sLog->outError("Excessively verbose Playerbot error checkpoint #2 hit. Please report this error immediately.");
++        if (holder) delete holder;
++        return;
++    }
++
++    //This WorldSession is owned by the bot player object
++    //it will deleted in the Player class constructor for Playerbots
++    //only
++    WorldSession* botSession = new WorldSession(lqh->GetAccountId(), NULL, masterSession->GetSecurity(), masterSession->Expansion(), 0, masterSession->GetSessionDbcLocale(), 0, false);
++
++    if (!botSession) // Probably excessively verbose..
++    {
++        //sLog->outError("Excessively verbose Playerbot error checkpoint #3 hit. Please report this error immediately.");
++        if (holder) delete holder;
++        return;
++    }
++
++    uint64 guid = lqh->GetGuid();
++    if (!guid) // Probably excessively verbose..
++    {
++        //sLog->outError("Excessively verbose Playerbot error checkpoint #4 hit. Please report this error immediately.");
++        if (holder) delete holder;
++        if (botSession) delete botSession;
++        return;
++    }
++
++    botSession->HandlePlayerLogin(lqh);
++    Player* const botPlayer = botSession->GetPlayer();
++
++    if (!botPlayer) // Probably excessively verbose..
++    {
++        //sLog->outError("Excessively verbose Playerbot error checkpoint #5 hit. Please report this error immediately.");
++        //if (holder) delete holder; //already deleted in HandlePlayerLogin
++        if (botSession) delete botSession;
++        return;
++    }
++
++    //give the bot some AI, object is owned by the player class
++    PlayerbotAI* ai = new PlayerbotAI(masterSession->GetPlayer(), botPlayer);
++    botPlayer->SetPlayerbotAI(ai);
++
++    //tell the world session that they now manage this new bot
++    (masterSession->m_playerBots)[guid] = botPlayer;
++
++    botSession->m_master = masterSession->GetPlayer();
++}
+     // 06
+     // 07
+     // 08
+@@ -1111,6 +1211,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
  
@@ -53275,7 +53359,7 @@ index 168e646..db41306 100644
  // end80
  #endif
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index daa4c36..24f76ee 100644
+index d13c81e..2ed9512 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
