@@ -1,6 +1,6 @@
-From 0802d04d7086d5beb3b0d7cf160df2a02fdf52ed Mon Sep 17 00:00:00 2001
+From 9a4948d6ae19ca7b1f3b9a6aa772b14e5da87c0a Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 27 Aug 2014 12:34:53 -0400
+Date: Wed, 27 Aug 2014 12:57:08 -0400
 Subject: [PATCH] Playerbots-Old_NPCBots
 
 ---
@@ -64,7 +64,7 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  src/server/game/Globals/ObjectMgr.h                |    20 +
  src/server/game/Groups/Group.cpp                   |    16 +
  src/server/game/Groups/Group.h                     |     3 +
- src/server/game/Handlers/CharacterHandler.cpp      |   150 +
+ src/server/game/Handlers/CharacterHandler.cpp      |   152 +-
  src/server/game/Handlers/ChatHandler.cpp           |    32 +-
  src/server/game/Handlers/GroupHandler.cpp          |    14 +
  src/server/game/Handlers/MiscHandler.cpp           |    35 +
@@ -82,7 +82,7 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |     4 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42775 insertions(+), 7 deletions(-)
+ 78 files changed, 42775 insertions(+), 9 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -41097,7 +41097,7 @@ index 77f3180..740cfdd 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 4b3e624..d2453b0 100644
+index 900bba0..38607b2 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -80,6 +80,11 @@
@@ -42896,7 +42896,7 @@ index 08f91ca..77d234a 100644
          bool _setMembersGroup(uint64 guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index b250787..6690539 100644
+index 974ca97..a2d543e 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
@@ -42910,10 +42910,11 @@ index b250787..6690539 100644
  class LoginQueryHolder : public SQLQueryHolder
  {
      private:
-@@ -1040,10 +1044,105 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
-     // Handle Login-Achievements (should be handled after loading)
-     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
- 
+@@ -1043,7 +1047,34 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     // 01
+     // 02
+     // 03
+-    // 04
 +    //the only place where we check if it has NPC bots
 +    if (sConfigMgr->GetBoolDefault("Bot.EnableNpcBots", true))
 +    {
@@ -42942,10 +42943,14 @@ index b250787..6690539 100644
 +        }
 +    }
 +
-     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
- 
-     delete holder;
- }
+     // 05
+     // 06
+     // 07
+@@ -1072,7 +1103,73 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     // 02
+     // 03
+     // 04
+-    // 05
 +//Playerbot mod: is different from the normal
 +//HandlePlayerLoginCallback in that it sets up the bot's
 +//world session and also stores the pointer to the bot player
@@ -43013,10 +43018,10 @@ index b250787..6690539 100644
 +
 +    botSession->m_master = masterSession->GetPlayer();
 +}
- 
- void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
- {
-@@ -1065,6 +1164,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
+     // 06
+     // 07
+     // 08
+@@ -1111,6 +1208,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
  
