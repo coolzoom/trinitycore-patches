@@ -1,24 +1,52 @@
-From 719ce462133ea7c4b4457de6ac60e6b579ae42c3 Mon Sep 17 00:00:00 2001
+From be6cb8ad40928b11d2ddcfe62ffed5f90d81265f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 25 Aug 2014 23:40:24 -0400
+Date: Tue, 26 Aug 2014 17:55:19 -0400
 Subject: [PATCH] Reforging
 
 ---
- src/server/game/Entities/Player/Player.cpp         |  32 +-
- src/server/game/Entities/Player/Player.h           |   9 +
- src/server/game/Scripting/ScriptLoader.cpp         |   7 +-
- src/server/scripts/Custom/Reforging/README.md      |  40 ++
- src/server/scripts/Custom/Reforging/Reforging.cpp  | 646 +++++++++++++++++++++
- .../scripts/Custom/Reforging/sql/characters.sql    |  10 +
- .../scripts/Custom/Reforging/sql/world_npc.sql     |   6 +
- 7 files changed, 746 insertions(+), 4 deletions(-)
+ sql/TrinityCore-Patches/Reforging/characters.sql  |  10 +
+ sql/TrinityCore-Patches/Reforging/world_npc.sql   |   6 +
+ src/server/game/Entities/Player/Player.cpp        |  34 +-
+ src/server/game/Entities/Player/Player.h          |   9 +
+ src/server/game/Scripting/ScriptLoader.cpp        |   6 +-
+ src/server/scripts/Custom/Reforging/README.md     |  40 ++
+ src/server/scripts/Custom/Reforging/Reforging.cpp | 646 ++++++++++++++++++++++
+ 7 files changed, 746 insertions(+), 5 deletions(-)
+ create mode 100644 sql/TrinityCore-Patches/Reforging/characters.sql
+ create mode 100644 sql/TrinityCore-Patches/Reforging/world_npc.sql
  create mode 100644 src/server/scripts/Custom/Reforging/README.md
  create mode 100644 src/server/scripts/Custom/Reforging/Reforging.cpp
- create mode 100644 src/server/scripts/Custom/Reforging/sql/characters.sql
- create mode 100644 src/server/scripts/Custom/Reforging/sql/world_npc.sql
 
+diff --git a/sql/TrinityCore-Patches/Reforging/characters.sql b/sql/TrinityCore-Patches/Reforging/characters.sql
+new file mode 100644
+index 0000000..9ac7bf6
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Reforging/characters.sql
+@@ -0,0 +1,10 @@
++CREATE TABLE `custom_reforging` (
++	`GUID` INT(10) UNSIGNED NOT NULL COMMENT 'item guid low',
++	`increase` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
++	`decrease` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
++	`stat_value` INT(10) NOT NULL DEFAULT '0' COMMENT 'stat change',
++	`Owner` INT(10) UNSIGNED NULL DEFAULT NULL COMMENT 'player guid',
++	PRIMARY KEY (`GUID`)
++)
++COLLATE='utf8_general_ci'
++ENGINE=InnoDB;
+diff --git a/sql/TrinityCore-Patches/Reforging/world_npc.sql b/sql/TrinityCore-Patches/Reforging/world_npc.sql
+new file mode 100644
+index 0000000..176a9be
+--- /dev/null
++++ b/sql/TrinityCore-Patches/Reforging/world_npc.sql
+@@ -0,0 +1,6 @@
++SET
++@Entry = 190011,
++@Name = "Thaumaturge Vashreen";
++
++INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
++(@Entry, 20988, 0, @Name, "Arcane Reforger", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 1fc1cd9..14da2fd 100644
+index 84e4726..37bf211 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -7787,6 +7787,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
@@ -68,20 +96,23 @@ index 1fc1cd9..14da2fd 100644
          }
  
          if (val == 0)
-@@ -12596,11 +12624,13 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12595,14 +12623,14 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+             pItem->SendUpdateToPlayer(this);
      }
  }
- 
+-
 +extern void RemoveReforge(Player* player, uint32 itemguid, bool update);
  // Common operation need to remove item from inventory without delete in trade, auction, guild bank, mail....
  void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
+     // Prepatch by LordPsyan
+-    // 01
 +        RemoveReforge(this, it->GetGUIDLow(), true);
-         ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
-         RemoveItem(bag, slot, update);
-         it->SetNotRefundable(this, false);
+     // 02
+     // 03
+     // 04
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index b1fd9d5..7994021 100644
 --- a/src/server/game/Entities/Player/Player.h
@@ -110,37 +141,29 @@ index b1fd9d5..7994021 100644
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 168e646..620151e 100644
+index 168e646..8eed6b1 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -694,7 +694,6 @@ void AddSC_outdoorpvp_zm();
- // player
- void AddSC_chat_log();
- void AddSC_action_ip_logger();
--
- #endif
- 
- void AddScripts()
-@@ -1492,7 +1491,8 @@ void AddBattlegroundScripts()
- // start58
- // start59
- // start60
--// start61
+@@ -1509,7 +1509,8 @@ void AddBattlegroundScripts()
+ // start75
+ // start76
+ // start77
+-// start78
 +// Reforging
 +void AddSC_REFORGER_NPC();
- // start62
- // start63
- // start64
-@@ -1578,7 +1578,8 @@ void AddCustomScripts()
- // end58
- // end59
- // end60
--// end61
+ // start79
+ // start80
+ #endif
+@@ -1595,7 +1596,8 @@ void AddCustomScripts()
+ // end75
+ // end76
+ // end77
+-// end78
 +    // Reforging
 +    AddSC_REFORGER_NPC();
- // end62
- // end63
- // end64
+ // end79
+ // end80
+ #endif
 diff --git a/src/server/scripts/Custom/Reforging/README.md b/src/server/scripts/Custom/Reforging/README.md
 new file mode 100644
 index 0000000..3fb4d03
@@ -839,34 +862,6 @@ index 0000000..ff16b5e
 +}
 +
 +#undef FOR_REFORGE_ITEMS
-diff --git a/src/server/scripts/Custom/Reforging/sql/characters.sql b/src/server/scripts/Custom/Reforging/sql/characters.sql
-new file mode 100644
-index 0000000..9ac7bf6
---- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/sql/characters.sql
-@@ -0,0 +1,10 @@
-+CREATE TABLE `custom_reforging` (
-+	`GUID` INT(10) UNSIGNED NOT NULL COMMENT 'item guid low',
-+	`increase` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
-+	`decrease` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
-+	`stat_value` INT(10) NOT NULL DEFAULT '0' COMMENT 'stat change',
-+	`Owner` INT(10) UNSIGNED NULL DEFAULT NULL COMMENT 'player guid',
-+	PRIMARY KEY (`GUID`)
-+)
-+COLLATE='utf8_general_ci'
-+ENGINE=InnoDB;
-diff --git a/src/server/scripts/Custom/Reforging/sql/world_npc.sql b/src/server/scripts/Custom/Reforging/sql/world_npc.sql
-new file mode 100644
-index 0000000..176a9be
---- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/sql/world_npc.sql
-@@ -0,0 +1,6 @@
-+SET
-+@Entry = 190011,
-+@Name = "Thaumaturge Vashreen";
-+
-+INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
-+(@Entry, 20988, 0, @Name, "Arcane Reforger", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC');
 -- 
 2.1.0.rc1
 

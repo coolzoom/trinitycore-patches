@@ -1,18 +1,18 @@
-From 9492f7d70d6de7af77bccde0b52ff3c2f5e6423d Mon Sep 17 00:00:00 2001
+From f62a48a855b2a42cec7d8bdb1eb4786687a244db Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 24 Aug 2014 16:40:05 -0400
+Date: Tue, 26 Aug 2014 09:20:09 -0400
 Subject: [PATCH] Individual-XP-Rate
 
 ---
  .../auth_individuale_xp_Rate.sql                   |  5 ++
  .../world_individuale_xp_Rate.sql                  |  8 +++
- src/server/game/Accounts/RBAC.h                    |  2 +
+ src/server/game/Accounts/RBAC.h                    |  3 +-
  src/server/game/Entities/Player/Player.cpp         | 25 ++++++++-
  src/server/game/Entities/Player/Player.h           | 16 ++++++
- src/server/game/Miscellaneous/Formulas.h           |  5 +-
- src/server/game/Miscellaneous/Language.h           |  9 ++-
+ src/server/game/Miscellaneous/Formulas.h           |  4 +-
+ src/server/game/Miscellaneous/Language.h           |  7 ++-
  src/server/scripts/Commands/cs_modify.cpp          | 64 ++++++++++++++++++++++
- 8 files changed, 130 insertions(+), 4 deletions(-)
+ 8 files changed, 128 insertions(+), 4 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 
@@ -43,18 +43,19 @@ index 0000000..f310d3d
 +INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 855ffd5..5a7a49d 100644
+index a73db68..fe2c039 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -683,6 +683,8 @@ enum RBACPermissions
-     RBAC_PERM_COMMAND_MAILBOX                                = 777,
- 
-     // custom permissions 1000+
+@@ -688,7 +688,8 @@ enum RBACPermissions
+     // 02
+     // 03
+     // 04
+-    // 05
 +    RBAC_PERM_COMMAND_MODIFY_XP_KILL                         = 1010,
 +    RBAC_PERM_COMMAND_MODIFY_XP_QUEST                        = 1011,
-     RBAC_PERM_MAX
- };
- 
+     // 06
+     // 07
+     // 08
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
 index 1fc1cd9..2900612 100644
 --- a/src/server/game/Entities/Player/Player.cpp
@@ -147,44 +148,40 @@ index b1fd9d5..bf7be1f 100644
  
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index e6ff1a0..0afc417 100644
+index 2970e3a..8edb90f 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
-@@ -183,9 +183,10 @@ namespace Trinity
- 
-                     xpMod *= creature->GetCreatureTemplate()->ModExperience;
-                 }
+@@ -191,7 +191,9 @@ namespace Trinity
+                     // 02
+                     // 03
+                     // 04
+-                    // 05
 +                //Individuale_XP-Rate
 +                float individualXpKill = player->GetIndividualXpKillRate();
- 
--                xpMod *= sWorld->getRate(RATE_XP_KILL);
--                gain = uint32(gain * xpMod);
 +                gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
-             }
- 
-             sScriptMgr->OnGainCalculation(gain, player, u);
+                     // 06
+                     // 07
+                     // 08
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index f4d1bc0..5d208ae 100644
+index ac47d59..2c17236 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1172,7 +1172,14 @@ enum TrinityStrings
-     LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
- 
-     LANG_NPCINFO_INHABIT_TYPE                     = 11008,
--    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
-+    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
-+
+@@ -1178,7 +1178,12 @@ enum TrinityStrings
+     // 02
+     // 03
+     // 04
+-    // 05
 +    //Individuale_XP-Rate
 +    LANG_INDIVIDUAL_KILLRATE_SET                  = 15000,
 +    LANG_INDIVIDUAL_QUESTRATE_SET                 = 15001,
 +    LANG_INDIVIDUAL_RATE_TO_HIGH                  = 15002,
 +    LANG_INDIVIDUAL_RATE_TO_LOW                   = 15003,
 +    LANG_INDIVIDUAL_RATES_INFO                    = 15004,
- 
-     // NOT RESERVED IDS                   12000-1999999999
-     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // 06
+     // 07
+     // 08
 diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
-index 5dbe95b..e2c592b 100644
+index f70f172..7781ca3 100644
 --- a/src/server/scripts/Commands/cs_modify.cpp
 +++ b/src/server/scripts/Commands/cs_modify.cpp
 @@ -70,6 +70,8 @@ public:

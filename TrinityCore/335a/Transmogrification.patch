@@ -1,6 +1,6 @@
-From 15bd7186801452edb5288d215c04d49084cdeb76 Mon Sep 17 00:00:00 2001
+From 19ae8eb64a9ad2eaf036ac63ffa343252737b2ab Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 25 Aug 2014 11:42:22 -0400
+Date: Wed, 27 Aug 2014 00:22:27 -0400
 Subject: [PATCH] Transmogrification
 
 ---
@@ -20,10 +20,10 @@ Subject: [PATCH] Transmogrification
  src/server/game/DataStores/DBCStores.h             |   2 +-
  src/server/game/DataStores/DBCStructure.h          |   2 +-
  src/server/game/DataStores/DBCfmt.h                |   2 +-
- src/server/game/Entities/Player/Player.cpp         |   7 +-
+ src/server/game/Entities/Player/Player.cpp         |   8 +-
  src/server/game/Entities/Player/Player.h           |  18 +
  src/server/game/Handlers/SpellHandler.cpp          |   8 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   9 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   8 +-
  src/server/scripts/Custom/Transmogrification.cpp   | 838 +++++++++++++++++++++
  src/server/scripts/Custom/Transmogrification.h     | 140 ++++
  src/server/scripts/Custom/Transmogrifier.cpp       | 399 ++++++++++
@@ -465,18 +465,18 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 1fc1cd9..cf54c7e 100644
+index 4b3e624..656bd84 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -79,6 +79,7 @@
- #include "WorldPacket.h"
+@@ -80,6 +80,7 @@
  #include "WorldSession.h"
  #include "GameObjectAI.h"
+ #include "Config.h"
 +#include "../../../scripts/Custom/Transmogrification.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12475,7 +12476,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12476,7 +12477,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -488,14 +488,15 @@ index 1fc1cd9..cf54c7e 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12601,6 +12605,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
- {
-     if (Item* it = GetItemByPos(bag, slot))
-     {
+@@ -12609,7 +12613,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+     // 04
+     // 05
+     // 06
+-    // 07
 +        sTransmogrification->DeleteFakeEntry(this, it);
-         ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
-         RemoveItem(bag, slot, update);
-         it->SetNotRefundable(this, false);
+     // 08
+     // 09
+     // 10
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index b1fd9d5..25e186e 100644
 --- a/src/server/game/Entities/Player/Player.h
@@ -566,18 +567,10 @@ index 13f79fb..a6d7cb7 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 168e646..b17d32d 100644
+index 168e646..149b37b 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -694,7 +694,6 @@ void AddSC_outdoorpvp_zm();
- // player
- void AddSC_chat_log();
- void AddSC_action_ip_logger();
--
- #endif
- 
- void AddScripts()
-@@ -1488,7 +1487,9 @@ void AddBattlegroundScripts()
+@@ -1488,7 +1488,9 @@ void AddBattlegroundScripts()
  // start54
  // start55
  // start56
@@ -588,7 +581,7 @@ index 168e646..b17d32d 100644
  // start58
  // start59
  // start60
-@@ -1574,7 +1575,9 @@ void AddCustomScripts()
+@@ -1574,7 +1576,9 @@ void AddCustomScripts()
  // end54
  // end55
  // end56
@@ -2049,14 +2042,13 @@ index 86ef8bd..5564378 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index d98a061..1b9292c 100644
+index 8aa902f..62b04bd 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2812,3 +2812,209 @@ PacketSpoof.BanDuration = 86400
- 
+@@ -2835,6 +2835,212 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
-+
+ 
 +###################################################################################################
 +#    Transmogrification config
 +###################################################################################################
@@ -2262,6 +2254,10 @@ index d98a061..1b9292c 100644
 +
 +#
 +###################################################################################################
++
+ #
+ # Prepatch by LordPsyan.
+ # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
 2.1.0.rc1
 

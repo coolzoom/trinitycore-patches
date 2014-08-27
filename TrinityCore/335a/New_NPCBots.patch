@@ -1,6 +1,6 @@
-From b85130fb9b3fe5e7b30ff2fb2f8359363274cb30 Mon Sep 17 00:00:00 2001
+From 829397ac02e64eb0856e0ecf1f8e6a83f019d8fc Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 25 Aug 2014 09:52:30 -0400
+Date: Tue, 26 Aug 2014 08:21:46 -0400
 Subject: [PATCH] New_NPCBots
 
 ---
@@ -59,8 +59,7 @@ Subject: [PATCH] New_NPCBots
  .../Database/Implementation/CharacterDatabase.h    |   15 +
  .../Database/Implementation/WorldDatabase.cpp      |    5 +
  .../shared/Database/Implementation/WorldDatabase.h |    5 +
- src/server/worldserver/worldserver.conf.dist       |  128 +
- 56 files changed, 27265 insertions(+), 2 deletions(-)
+ 55 files changed, 27137 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_bots.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
@@ -26596,7 +26595,7 @@ index 94f0a90..cf44b83 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index d75e7db..aba8b7f 100644
+index bfa57ef..b0e941d 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -254,6 +254,13 @@ Unit::Unit(bool isWorldObject) :
@@ -27226,7 +27225,7 @@ index d75e7db..aba8b7f 100644
              }
          }
      }
-@@ -14596,6 +14937,29 @@ void Unit::ClearComboPointHolders()
+@@ -14607,6 +14948,29 @@ void Unit::ClearComboPointHolders()
      }
  }
  
@@ -27256,7 +27255,7 @@ index d75e7db..aba8b7f 100644
  void Unit::ClearAllReactives()
  {
      for (uint8 i = 0; i < MAX_REACTIVE; ++i)
-@@ -14704,6 +15068,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
+@@ -14715,6 +15079,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
  {
      // Not apply this to creature cast spells with casttime == 0
      if (CastingTime == 0 && GetTypeId() == TYPEID_UNIT && !ToCreature()->IsPet())
@@ -27266,7 +27265,7 @@ index d75e7db..aba8b7f 100644
          return 3500;
  
      if (CastingTime > 7000) CastingTime = 7000;
-@@ -15347,6 +15714,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
+@@ -15358,6 +15725,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
  
          // only if not player and not controlled by player pet. And not at BG
          if ((durabilityLoss && !player && !victim->ToPlayer()->InBattleground()) || (player && sWorld->getBoolConfig(CONFIG_DURABILITY_LOSS_IN_PVP)))
@@ -27276,7 +27275,7 @@ index d75e7db..aba8b7f 100644
          {
              TC_LOG_DEBUG("entities.unit", "We are dead, losing %f percent durability", sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH));
              plrVictim->DurabilityLossAll(sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH), false);
-@@ -16285,6 +16655,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16296,6 +16666,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      //calculate miss chance
      float missChance = victim->GetUnitMissChance(attType);
  
@@ -27298,7 +27297,7 @@ index d75e7db..aba8b7f 100644
      if (!spellId && haveOffhandWeapon())
          missChance += 19;
  
-@@ -16313,6 +16698,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16324,6 +16709,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      else
          missChance -= m_modMeleeHitChance;
  
@@ -27310,7 +27309,7 @@ index d75e7db..aba8b7f 100644
      // Limit miss chance from 0 to 60%
      if (missChance < 0.0f)
          return 0.0f;
-@@ -16625,6 +17015,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16636,6 +17026,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -27781,7 +27780,7 @@ index 13f79fb..9174bbb 100644
      // Get creator of the unit (SPELL_AURA_CLONE_CASTER does not stack)
      Unit* creator = unit->GetAuraEffectsByType(SPELL_AURA_CLONE_CASTER).front()->GetCaster();
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index 243a931..da35731 100644
+index 9e29fb0..8165a8d 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
 @@ -36,6 +36,10 @@
@@ -27991,10 +27990,10 @@ index 92a83f9..daeb908 100644
      float maxDiff = m_maxSpeed * diff;
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e043c5..cf8dbe9 100644
+index 168e646..56c6056 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1453,7 +1453,22 @@ void AddBattlegroundScripts()
+@@ -1460,7 +1460,22 @@ void AddBattlegroundScripts()
  // start26
  // start27
  // start28
@@ -28018,7 +28017,7 @@ index 7e043c5..cf8dbe9 100644
  // start30
  // start31
  // start32
-@@ -1499,7 +1514,22 @@ void AddCustomScripts()
+@@ -1546,7 +1561,22 @@ void AddCustomScripts()
  // end26
  // end27
  // end28
@@ -28452,143 +28451,6 @@ index 8a5bd20..c516fb7 100644
      MAX_WORLDDATABASE_STATEMENTS
  };
  
-diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index d98a061..d5121be 100644
---- a/src/server/worldserver/worldserver.conf.dist
-+++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2812,3 +2812,131 @@ PacketSpoof.BanDuration = 86400
- 
- #
- ###################################################################################################
-+
-+###################################################################################################
-+# NPCBOT CONFIGURATION
-+#
-+#    NpcBot.Enable
-+#        Description: Enable NpcBot system
-+#        Default:   1 - enable
-+#                   0 - disable
-+
-+NpcBot.Enable = 1
-+
-+#   BotMaster.EnableBots
-+#        Description: Enable NPCBot Spawn NPC
-+#        Default: 1 - enable
-+#                 0 - disable
-+
-+BotMaster.EnableBots = 1
-+
-+#   BotMaster.OnlyGMs
-+#        Description: Only allow GM to use
-+#        Default: 0 - disable
-+#                 1 - enable
-+
-+BotMaster.OnlyGMs = 0
-+
-+#    NpcBot.MaxBots
-+#        Description: Maximum number of bots allowed for players.
-+#        Default:   1
-+#        Recommend: 1-2
-+#        Max:       4
-+
-+NpcBot.MaxBots = 1
-+
-+#    NpcBot.MaxBotsPerClass
-+#        Description: Maximum bots of each class allowed for players.
-+#        Default:   1
-+#                   0 - no limit
-+
-+NpcBot.MaxBotsPerClass = 1
-+
-+#    NpcBot.BaseFollowDistance
-+#        Description: Default bot follow distance.
-+#        Note: This parameter determines bots' formation size, distance at which bots will chase and attack enemies.
-+#        Note2: This parameter is set for each player at login.
-+#        Default:   30
-+
-+NpcBot.BaseFollowDistance = 30
-+
-+#    NpcBot.XpReduction
-+#        Description: XP percent penalty for each bot used starting with second.
-+#        Example: 3 bots, xp reduction is 20: ((3-1)*20) = 40%, 60% exp gained only.
-+#        Note: Maximum overall xp reduction is 90%.
-+#        Default:   0
-+
-+NpcBot.XpReduction = 0
-+
-+#    NpcBot.HealTargetIconsMask
-+#        Description: Icon number bitmask which bots use to search for additional targets to heal (out of party).
-+#        Note: Many creatures cannot accept heal.
-+#        Example: to check Star, Triangle and Square we need 1 + 8 + 32 = 41.
-+#        Default:   0 (Disable)
-+#                   1 - Star
-+#                   2 - Circle
-+#                   4 - Diamond
-+#                   8 - Triangle
-+#                   16 - Moon
-+#                   32 - Square
-+#                   64 - Cross
-+#                   128 - Skull
-+
-+NpcBot.HealTargetIconsMask = 0
-+
-+#    NpcBot.Mult.Damage.Melee
-+#    NpcBot.Mult.Damage.Spell
-+#    NpcBot.Mult.Healing
-+#        Description: Multipliers for bots' damage and healing. Allows to balance bots vs players.
-+#        Minimum:   0.1
-+#        Maximum:  10.0
-+#        Default:   1.0
-+
-+NpcBot.Mult.Damage.Melee = 1.0
-+NpcBot.Mult.Damage.Spell = 1.0
-+NpcBot.Mult.Healing      = 1.0
-+
-+#    NpcBot.Enable.Dungeon
-+#    NpcBot.Enable.Raid
-+#    NpcBot.Enable.BG
-+#    NpcBot.Enable.Arena
-+#    NpcBot.Enable.DungeonFinder
-+#        Description: Allow bots to enter PvE/PvP areas and Dungeon Finder query
-+#        Default:   1 - (NpcBot.Enable.Dungeon)
-+#                   0 - (NpcBot.Enable.Raid)
-+#                   0 - (NpcBot.Enable.BG)
-+#                   0 - (NpcBot.Enable.Arena)
-+#                   1 - (NpcBot.Enable.DungeonFinder)
-+
-+NpcBot.Enable.Dungeon       = 1
-+NpcBot.Enable.Raid          = 0
-+NpcBot.Enable.BG            = 0
-+NpcBot.Enable.Arena         = 0
-+NpcBot.Enable.DungeonFinder = 1
-+
-+#    NpcBot.Limit.Dungeon
-+#    NpcBot.Limit.Raid
-+#        Description: Enable/Disable instance players limitation rules for bots.
-+#        Default:   1 - (NpcBot.Limit.Dungeon)
-+#                   1 - (NpcBot.Limit.Raid)
-+
-+NpcBot.Limit.Dungeon = 1
-+NpcBot.Limit.Raid    = 1
-+
-+#    NpcBot.Cost
-+#        Description: Bot recruitment cost (in copper).
-+#        Note: This value is for level 80 characters.
-+#              Cost is reduced for lower levels by simple formula: (cost * level / 80).
-+#        Default:   1000000 (100 gold, 1g25s at level 1)
-+
-+NpcBot.Cost = 1000000
-+
-+#    NpcBot.PvP
-+#        Description: Allow bots to attack player-controlled units (players, pets, bots, etc.)
-+#        Note: This rule only applies to player-controlled bots
-+#        Default:   1
-+
-+NpcBot.PvP = 1
-+
-+#
-+###################################################################################################
-\ No newline at end of file
 -- 
 2.1.0.rc1
 
