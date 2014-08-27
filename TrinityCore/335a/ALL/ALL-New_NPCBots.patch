@@ -1,6 +1,6 @@
-From 287b040c0d2cae70c8e0f4998cea9a42b05366ca Mon Sep 17 00:00:00 2001
+From f5887f2f60c524785541c4cbf4bacc467aa153d3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 27 Aug 2014 07:47:33 -0400
+Date: Wed, 27 Aug 2014 09:44:57 -0400
 Subject: [PATCH] ALL-New_NPCBots
 
 ---
@@ -170,12 +170,12 @@ Subject: [PATCH] ALL-New_NPCBots
  src/server/scripts/Spells/spell_generic.cpp        |   22 +-
  src/server/scripts/Spells/spell_paladin.cpp        |   41 +
  src/server/scripts/Spells/spell_priest.cpp         |    4 +
- .../Database/Implementation/CharacterDatabase.cpp  |   30 +
+ .../Database/Implementation/CharacterDatabase.cpp  |   30 +-
  .../Database/Implementation/CharacterDatabase.h    |   22 +
  .../Database/Implementation/WorldDatabase.cpp      |    5 +
  .../shared/Database/Implementation/WorldDatabase.h |    5 +
  src/server/worldserver/worldserver.conf.dist       |  688 ++
- 171 files changed, 46494 insertions(+), 177 deletions(-)
+ 171 files changed, 46492 insertions(+), 179 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Transmog_CHANGELOG.md
  create mode 100644 Transmog_README.md
@@ -49515,14 +49515,14 @@ index a128c30..8b50415 100644
              }
  
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 24e61e7..76cfe26 100644
+index b4cae75..afe4fb0 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -600,4 +600,34 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(CHAR_UPD_CHAR_PET_SLOT_BY_ID, "UPDATE character_pet SET slot = ? WHERE owner = ? AND id = ?", CONNECTION_ASYNC);
+@@ -601,11 +601,37 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      PrepareStatement(CHAR_DEL_CHAR_PET_BY_ID, "DELETE FROM character_pet WHERE id = ?", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_CHAR_PET_BY_SLOT, "DELETE FROM character_pet WHERE owner = ? AND (slot = ? OR slot > ?)", CONNECTION_ASYNC);
-+
+     // Prepatch by LordPsyan
+-    // 01
 +    //Guild-Level-System
 +    //Load
 +    PrepareStatement(CHAR_SEL_GUILD_BONUS_INFO, "SELECT RequiredGuildLevel FROM guild_bonus_config WHERE BonusId = ?", CONNECTION_SYNCH);
@@ -49532,8 +49532,11 @@ index 24e61e7..76cfe26 100644
 +    //Save
 +    PrepareStatement(CHAR_UPD_GUILD_LEVEL, "UPDATE guild SET level = ? WHERE guildid = ?", CONNECTION_ASYNC);
 +    PrepareStatement(CHAR_UPD_GUILD_XP, "UPDATE guild SET xp = (xp + ?) WHERE guildid = ?", CONNECTION_ASYNC);
-+
-+    // Bot
+     // 02
+     // 03
+     // 04
+-    // 05
++    // New NPCBots
 +    PrepareStatement(CHAR_SEL_NPCBOTS, "SELECT entry FROM characters_npcbot", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_SEL_NPCBOT_OWNER, "SELECT owner FROM characters_npcbot WHERE entry = ?", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_UPD_NPCBOT_OWNER, "UPDATE characters_npcbot SET owner = ? WHERE entry = ?", CONNECTION_ASYNC);
@@ -49552,7 +49555,9 @@ index 24e61e7..76cfe26 100644
 +    PrepareStatement(CHAR_INS_NPCBOT, "INSERT INTO characters_npcbot (entry, roles) VALUES (?, ?)", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_UPD_NPCBOT_FACTION, "UPDATE characters_npcbot SET faction = ? WHERE entry = ?", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_SEL_NPCBOT_FACTION, "SELECT faction FROM characters_npcbot WHERE entry = ?", CONNECTION_SYNCH);
- }
+     // 06
+     // 07
+     // 08
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
 index c73f0df..943d434 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
