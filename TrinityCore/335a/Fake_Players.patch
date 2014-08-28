@@ -1,24 +1,29 @@
-From 5f72b56709233d0c62e9fedf97bd85661d37b01c Mon Sep 17 00:00:00 2001
+From d2934103d0ff6dcd3f8fa48639d7932e856d5545 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 26 Aug 2014 23:51:56 -0400
+Date: Thu, 28 Aug 2014 08:55:59 -0400
 Subject: [PATCH] Fake_Players
 
 ---
- .../Fake_Players/characters.fake-structure.sql     | 14 ++++++++
- .../Fake_Players/characters.fake_full.sql          | 40 ++++++++++++++++++++++
- .../Fake_Players/world.fake_players.sql            |  1 +
- src/server/game/Entities/Player/Player.cpp         |  7 ++++
- src/server/game/Handlers/ChatHandler.cpp           | 10 +++++-
- src/server/game/Handlers/GroupHandler.cpp          |  7 ++++
- src/server/game/Handlers/MiscHandler.cpp           | 38 +++++++++++++++++++-
- src/server/game/Miscellaneous/Language.h           |  2 +-
+ .../Fake_Players/characters.fake-structure.sql     | 14 ++++
+ .../Fake_Players/characters.fake_full.sql          | 40 +++++++++++
+ .../Fake_Players/world.fake_players.sql            |  2 +
+ src/server/game/Entities/Player/Player.cpp         |  7 ++
+ src/server/game/Entities/Vehicle/Vehicle.cpp       |  0
+ src/server/game/Guilds/Guild.cpp                   | 24 +++++++
+ src/server/game/Handlers/ChatHandler.cpp           | 10 ++-
+ src/server/game/Handlers/GroupHandler.cpp          | 12 +++-
+ src/server/game/Handlers/MiscHandler.cpp           | 78 +++++++++++++++++++++-
+ src/server/game/Miscellaneous/Language.h           |  2 +
  src/server/game/World/World.cpp                    |  1 +
  src/server/game/World/World.h                      |  1 +
- src/server/worldserver/worldserver.conf.dist       |  8 +++++
- 11 files changed, 126 insertions(+), 3 deletions(-)
+ .../Database/Implementation/CharacterDatabase.cpp  |  5 ++
+ .../Database/Implementation/CharacterDatabase.h    |  4 ++
+ src/server/worldserver/worldserver.conf.dist       |  8 +++
+ 15 files changed, 205 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake_full.sql
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
+ mode change 100755 => 100644 src/server/game/Entities/Vehicle/Vehicle.cpp
 
 diff --git a/sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql b/sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql
 new file mode 100644
@@ -89,17 +94,18 @@ index 0000000..0b4bf14
 +('Jabari', 10, 2, 3, 25, 0, '2014-08-08 09:11:53', '2014-08-08 16:22:37');
 diff --git a/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql b/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
 new file mode 100644
-index 0000000..2338ddc
+index 0000000..4db956c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
-@@ -0,0 +1 @@
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Player wishes to not be disturbed and cannot receive whisper messages.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".');
+@@ -0,0 +1,2 @@
++DELETE FROM `trinity_string` WHERE `entry` = 12001;
++INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".');
 \ No newline at end of file
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 84e4726..25cde35 100644
+index 900bba0..bb35eab 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1784,6 +1784,13 @@ void Player::Update(uint32 p_time)
+@@ -1785,6 +1785,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -113,8 +119,46 @@ index 84e4726..25cde35 100644
          }
          else
              m_nextSave -= p_time;
+diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Entities/Vehicle/Vehicle.cpp
+old mode 100755
+new mode 100644
+diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
+index bace2ec..5fd9dc8 100644
+--- a/src/server/game/Guilds/Guild.cpp
++++ b/src/server/game/Guilds/Guild.cpp
+@@ -1516,6 +1516,30 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
+     Player* pInvitee = sObjectAccessor->FindPlayerByName(name);
+     if (!pInvitee)
+     {
++        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
++        {
++            PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE);
++            fake->setString(0, name);
++            PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
++
++            if (fakeresult)
++            {
++                Field* fields = fakeresult->Fetch();
++                uint32 team = Player::TeamForRace(fields[0].GetUInt8());
++
++                if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD) && team != session->GetPlayer()->GetTeam())
++                {
++                    SendCommandResult(session, GUILD_COMMAND_INVITE, ERR_GUILD_NOT_ALLIED, name);
++                }
++                else
++                {
++                    ChatHandler(session->GetPlayer()->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
++                }
++
++                return;
++            }
++        }
++
+         SendCommandResult(session, GUILD_COMMAND_INVITE, ERR_GUILD_PLAYER_NOT_FOUND_S, name);
+         return;
+     }
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index eccf7a6..3309227 100644
+index eccf7a6..8be27df 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -271,7 +271,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
@@ -125,7 +169,7 @@ index eccf7a6..3309227 100644
 +                // If Fake WHO List system on then show player DND
 +                if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +                {
-+                    ChatHandler(sender->GetSession()).PSendSysMessage(LANG_NOT_WHISPER);
++                    ChatHandler(sender->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
 +                }
 +                else
 +                {
@@ -135,15 +179,27 @@ index eccf7a6..3309227 100644
              }
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index 5b35da2..048ea3e 100644
+index 5b35da2..62ee828 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
-@@ -80,6 +80,13 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
+@@ -33,6 +33,9 @@
+ #include "WorldPacket.h"
+ #include "WorldSession.h"
+
++#include "Chat.h"
++#include "Language.h"
++
+ class Aura;
+
+ /* differeces from off:
+@@ -79,7 +82,14 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
+     // no player
      if (!player)
      {
-         SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
-+        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST)) {
-+            SendPartyResult(PARTY_OP_INVITE, membername, ERR_ALREADY_IN_GROUP_S);
+-        SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
++        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
++        {
++           ChatHandler(_player->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
 +        }
 +        else
 +        {
@@ -151,25 +207,50 @@ index 5b35da2..048ea3e 100644
 +        }
          return;
      }
- 
+
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index b6c508e..a4a5b93 100644
+index b6c508e..96c2318 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
-@@ -365,7 +365,39 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+@@ -192,6 +192,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+     uint32 zoneids[10];                                     // 10 is client limit
+     std::string player_name, guild_name;
+
++    bool searchBool = false;
++    std::string searchName;
++
+     recvData >> level_min;                                 // maximal player level, default 0
+     recvData >> level_max;                                 // minimal player level, default 100 (MAX_LEVEL)
+     recvData >> player_name;                               // player name, case sensitive...
+@@ -231,6 +234,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+
+         wstrToLower(str[i]);
+
++        searchBool = true;
++        searchName = temp.c_str();
++
+         TC_LOG_DEBUG("network", "String %u: %s", i, temp.c_str());
+     }
+
+@@ -365,7 +371,44 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
          ++displaycount;
      }
- 
+
 -    data.put(0, displaycount);                            // insert right count, count displayed
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
 +    {
-+        // Fake players on WHO LIST                            0,   1,    2,   3,    4,   5
-+        QueryResult result = CharacterDatabase.Query("SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3)");
-+        if (result)
++        const char fake_players = (searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
++        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(fake_players);
++
++        if (searchBool)
++            fake->setString(0, searchName);
++
++        PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
++        if (fakeresult)
 +        {
 +            do
 +            {
-+                Field *fields = result->Fetch();
++                Field *fields = fakeresult->Fetch();
 +
 +                std::string pname = fields[0].GetString();  // player name
 +                std::string gname;                          // guild name
@@ -189,38 +270,74 @@ index b6c508e..a4a5b93 100644
 +
 +                if ((++matchcount) == 49)
 +                    break;
-+            } while (result->NextRow());
++            } while (fakeresult->NextRow());
 +        }
 +    }
 +
 +    data.put(0, matchcount);                            // insert right count, count displayed
      data.put(4, matchcount);                              // insert right count, count of matches
- 
+
      SendPacket(&data);
-@@ -605,6 +637,10 @@ void WorldSession::HandleAddFriendOpcodeCallBack(PreparedQueryResult result, std
-             }
-         }
-     }
-+    else if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
+@@ -549,6 +592,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
+     TC_LOG_DEBUG("network", "WORLD: %s asked to add friend : '%s'",
+         GetPlayer()->GetName().c_str(), friendName.c_str());
+
++    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +    {
-+        friendResult = FRIEND_ENEMY;
++        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(FAKE_CHAR_SEL_RACE_BY_NAME);
++        fake->setString(0, friendName);
++        PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
++
++        if (fakeresult)
++        {
++            Field* fields = fakeresult->Fetch();
++            uint32 team = Player::TeamForRace(fields[0].GetUInt8());
++
++            if (GetPlayer()->GetTeam() != team && !HasPermission(rbac::RBAC_PERM_TWO_SIDE_ADD_FRIEND))
++                sSocialMgr->SendFriendStatus(_player, FRIEND_ENEMY, false, false);
++            else
++                ChatHandler(_player->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
++
++            return;
++        }
 +    }
- 
-     sSocialMgr->SendFriendStatus(GetPlayer(), friendResult, GUID_LOPART(friendGuid), false);
- 
++
+     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
+
+     stmt->setString(0, friendName);
+@@ -640,6 +703,19 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
+     TC_LOG_DEBUG("network", "WORLD: %s asked to Ignore: '%s'",
+         GetPlayer()->GetName().c_str(), ignoreName.c_str());
+
++    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
++    {
++        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE);
++        fake->setString(0, ignoreName.c_str());
++        PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
++
++        if (fakeresult)
++        {
++            ChatHandler(_player->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
++            return;
++        }
++    }
++
+     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_BY_NAME);
+
+     stmt->setString(0, ignoreName);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index ac47d59..f16326c 100644
+index ac47d59..04ffcce 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1193,7 +1193,7 @@ enum TrinityStrings
-     // 17
-     // 18
-     // 19
--    // 20
-+    LANG_NOT_WHISPER                              = 12001,
-     // Visit http://www.realmsofwarcraft.com/bb for forums and information
-     //
-     // End of prepatch
+@@ -1159,6 +1159,8 @@ enum TrinityStrings
+     LANG_AUTO_BROADCAST                 = 11000,
+     LANG_INVALID_REALMID                = 11001,
+
++    LANG_FAKE_NOT_DISTURB    = 12001,
++
+     // Show Kick in world
+     LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
+
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
 index 4de9cb3..f1977ba 100644
 --- a/src/server/game/World/World.cpp
@@ -230,7 +347,7 @@ index 4de9cb3..f1977ba 100644
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
 +    m_bool_configs[CONFIG_FAKE_WHO_LIST]                      = sConfigMgr->GetBoolDefault("Fake.WHO.List", false);
- 
+
      m_int_configs[CONFIG_MIN_PLAYER_NAME]                     = sConfigMgr->GetIntDefault ("MinPlayerName",  2);
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
@@ -244,7 +361,38 @@ index cb87e17..33a9be4 100644
 +    CONFIG_FAKE_WHO_LIST,
      BOOL_CONFIG_VALUE_COUNT
  };
- 
+
+diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
+index b4cae75..568028d 100644
+--- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
+@@ -22,6 +22,11 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     if (!m_reconnecting)
+         m_stmts.resize(MAX_CHARACTERDATABASE_STATEMENTS);
+
++    PrepareStatement(FAKE_CHAR_SEL_RACE_BY_NAME, "SELECT race FROM characters_fake WHERE name = ?", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE, "SELECT race FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3) AND name = ?", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_ONLINE, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3)", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_ONLINE_SEARCH, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3) AND name = ?", CONNECTION_SYNCH);
++
+     PrepareStatement(CHAR_DEL_QUEST_POOL_SAVE, "DELETE FROM pool_quest_save WHERE pool_id = ?", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_INS_QUEST_POOL_SAVE, "INSERT INTO pool_quest_save (pool_id, quest_id) VALUES (?, ?)", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM, "DELETE FROM guild_bank_item WHERE guildid = ? AND TabId = ? AND SlotId = ?", CONNECTION_ASYNC);
+diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
+index c73f0df..65beddd 100644
+--- a/src/server/shared/Database/Implementation/CharacterDatabase.h
++++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
+@@ -42,6 +42,10 @@ enum CharacterDatabaseStatements
+         name for a suiting suffix.
+     */
+
++    FAKE_CHAR_SEL_RACE_BY_NAME,
++    FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE,
++    FAKE_CHAR_ONLINE,
++    FAKE_CHAR_ONLINE_SEARCH,
+     CHAR_DEL_QUEST_POOL_SAVE,
+     CHAR_INS_QUEST_POOL_SAVE,
+     CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
 index 8aa902f..e0adcfd 100644
 --- a/src/server/worldserver/worldserver.conf.dist
@@ -252,7 +400,7 @@ index 8aa902f..e0adcfd 100644
 @@ -8,6 +8,14 @@
  #       http://www.realmsofwarcraft.com/       #
  ################################################
- 
+
 +#    Fake.WHO.List
 +#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
 +#        49 real players online
@@ -264,6 +412,6 @@ index 8aa902f..e0adcfd 100644
  ###################################################################################################
  #
  # Prepatch Configuration
--- 
+--
 2.1.0.rc1
 

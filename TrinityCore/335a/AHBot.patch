@@ -1,7 +1,7 @@
-From b70a0933628f77ce522d84c2d6064bdf6ce115b0 Mon Sep 17 00:00:00 2001
+From 3afc730f5186788e7ef473fc96c221a16c559e15 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 24 Aug 2014 13:17:59 -0400
-Subject: [PATCH 2/2] AHBot
+Date: Thu, 28 Aug 2014 08:35:16 -0400
+Subject: [PATCH] AHBot
 
 ---
  doc/AuctionHouseBot.txt                            |  235 +++
@@ -3557,7 +3557,7 @@ index f4699f0..ac0f511 100644
  #include "Log.h"
 @@ -171,7 +172,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction, SQLTransa
          uint32 profit = auction->bid + auction->deposit - auction->GetAuctionCut();
- 
+
          //FIXME: what do if owner offline
 -        if (owner)
 +        if (owner && owner->GetGUIDLow() != auctionbot->GetAHBplayerGUID())
@@ -3571,7 +3571,7 @@ index f4699f0..ac0f511 100644
 -        if (owner)
 +        if (owner && owner->GetGUIDLow() != auctionbot->GetAHBplayerGUID())
              owner->GetSession()->SendAuctionOwnerNotification(auction);
- 
+
          MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(0, 0, auction->buyout, auction->deposit, 0))
 @@ -221,6 +222,9 @@ void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry* auction, uint32 new
      // old bidder exist
@@ -3582,20 +3582,20 @@ index f4699f0..ac0f511 100644
 +
          if (oldBidder && newBidder)
              oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, newBidder->GetGUID(), newPrice, auction->GetAuctionOutBid(), auction->itemEntry);
- 
+
 @@ -412,10 +416,12 @@ void AuctionHouseObject::AddAuction(AuctionEntry* auction)
- 
+
      AuctionsMap[auction->Id] = auction;
      sScriptMgr->OnAuctionAdd(this, auction);
 +    auctionbot->IncrementItemCounts(auction);
  }
- 
+
 -bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 /*itemEntry*/)
 +bool AuctionHouseObject::RemoveAuction(AuctionEntry* auction, uint32 itemEntry)
  {
 +    auctionbot->DecrementItemCounts(auction, itemEntry);
      bool wasInMap = AuctionsMap.erase(auction->Id) ? true : false;
- 
+
      sScriptMgr->OnAuctionRemove(this, auction);
 diff --git a/src/server/game/CMakeLists.txt b/src/server/game/CMakeLists.txt
 index 532900c..6a6d5bc 100644
@@ -3634,13 +3634,13 @@ index 2c65e36..6fd033d 100644
  #include "AuctionHouseMgr.h"
  #include "CalendarMgr.h"
 +#include "AuctionHouseBot.h"
- 
+
  MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery(stationery)
  {
 @@ -180,6 +181,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
- 
+
      uint32 mailId = sObjectMgr->GenerateMailID();
- 
+
 +    if (receiver.GetPlayerGUIDLow() == auctionbot->GetAHBplayerGUID())
 +    {
 +        if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
@@ -3649,10 +3649,10 @@ index 2c65e36..6fd033d 100644
 +    }
 +
      time_t deliver_time = time(NULL) + deliver_delay;
- 
+
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 62254c9..7966bee 100644
+index 168e646..f7ebd8c 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -48,6 +48,7 @@ void AddSC_SmartScripts();
@@ -3686,7 +3686,7 @@ index 4de9cb3..d3036e9 100644
 @@ -1600,6 +1601,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Completed Achievements...");
      sAchievementMgr->LoadCompletedAchievements();
- 
+
 +    // Initialize AHBot settings before deleting expired auctions due to AHBot hooks
 +    auctionbot->InitializeConfiguration();
 +
@@ -3694,14 +3694,14 @@ index 4de9cb3..d3036e9 100644
      TC_LOG_INFO("server.loading", "Deleting expired auctions...");
      sAuctionMgr->DeleteExpiredAuctionsAtStartup();
 @@ -1817,6 +1821,9 @@ void World::SetInitialWorldSettings()
- 
+
      LoadCharacterNameData();
- 
+
 +    TC_LOG_INFO("server.loading", "Initialize AuctionHouseBot...");
 +    auctionbot->Initialize();
 +
      uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
- 
+
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
 @@ -1984,6 +1991,7 @@ void World::Update(uint32 diff)
      /// <ul><li> Handle auctions when the timer has passed
@@ -3709,7 +3709,7 @@ index 4de9cb3..d3036e9 100644
      {
 +        auctionbot->Update();
          m_timers[WUPDATE_AUCTIONS].Reset();
- 
+
          ///- Update mails (return old mails with item, or delete them)
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index ba2709f..501b2b3 100644
@@ -4212,13 +4212,13 @@ index 0000000..074c57d
 +    new ah_bot_commandscript();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index d98a061..bf1bc7d 100644
+index 8aa902f..caac26b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2319,6 +2319,278 @@ Network.TcpNodelay = 1
+@@ -2341,6 +2341,278 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
- 
+
 +###############################################################################
 +# AUCTION HOUSE BOT SETTINGS
 +#
@@ -4494,6 +4494,6 @@ index d98a061..bf1bc7d 100644
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
--- 
+--
 2.1.0.rc1
 

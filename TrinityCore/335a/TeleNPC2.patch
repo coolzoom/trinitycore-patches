@@ -1,6 +1,6 @@
-From 25e2601b2633272e072ba668d9fd9a894cbeb74b Mon Sep 17 00:00:00 2001
+From 0298ab0b74227dfbfe1e49a807953214231a70a8 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 25 Aug 2014 11:13:34 -0400
+Date: Thu, 28 Aug 2014 11:15:11 -0400
 Subject: [PATCH] TeleNPC2
 
 ---
@@ -12,7 +12,7 @@ Subject: [PATCH] TeleNPC2
  src/server/game/Scripting/ScriptMgr.cpp            |   3 +
  src/server/scripts/CMakeLists.txt                  |   3 +
  src/server/scripts/Custom/npc_teleport.cpp         | 222 ++++++++++++
- 9 files changed, 899 insertions(+), 2 deletions(-)
+ 8 files changed, 897 insertions(+), 2 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
@@ -41,7 +41,7 @@ index 0000000..015c9c2
 +your world DB. This will setup the DB and you can customize from there.
 diff --git a/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 new file mode 100644
-index 0000000..91b00a9
+index 0000000..ff6c46c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 @@ -0,0 +1,120 @@
@@ -163,7 +163,7 @@ index 0000000..91b00a9
 +   (100001, 'Choose your Destination.');
 +
 +-- `creature_template`
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('100000','0','0','0','0','0','26502','0','0','0','Abisal Vortex','','','0','83','83','0','35','1','1','1.14286','2','1','0','0','0','1','1','1','0','2048','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','2','npc_teleport','1');
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
@@ -733,7 +733,7 @@ index 168e646..7e15050 100644
  // end55
  // end56
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index daa4c36..24f76ee 100644
+index d13c81e..2ed9512 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
