@@ -1,6 +1,6 @@
-From 2da16c34b55670df1d7c7e30f1d2ab7b580e89f7 Mon Sep 17 00:00:00 2001
+From c2c04d04ef7dfe0c2ae3bb227aba974db2eec956 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 27 Aug 2014 23:47:49 -0400
+Date: Thu, 28 Aug 2014 07:54:32 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -10,7 +10,8 @@ Subject: [PATCH] ALL-No-Bots
  cmake/compiler/msvc/settings.cmake                 |    2 +-
  doc/AuctionHouseBot.txt                            |  235 +++
  event_readme.txt                                   |  208 +++
- .../1-Combined/world/world.all.sql                 | 1017 +++++++++++
+ npc-entry-list.txt                                 |   24 +
+ .../1-Combined/world/world.all.sql                 | 1010 ++++++++++
  sql/TrinityCore-Patches/AHBot/characters.ahbot.sql |   72 +
  sql/TrinityCore-Patches/All-In-One/auth_AIO.sql    |   11 +
  .../All-In-One/characters_AIO.sql                  |    1 +
@@ -51,7 +52,7 @@ Subject: [PATCH] ALL-No-Bots
  .../profession_npc/world_professionnpc.sql         |    4 +
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  380 ++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++
- src/server/game/Accounts/RBAC.h                    |    7 +-
+ src/server/game/Accounts/RBAC.h                    |   27 +
  src/server/game/Anticheat/AnticheatData.cpp        |  118 ++
  src/server/game/Anticheat/AnticheatData.h          |   63 +
  src/server/game/Anticheat/AnticheatMgr.cpp         |  434 +++++
@@ -79,14 +80,14 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/DataStores/DBCStores.h             |    2 +-
  src/server/game/DataStores/DBCStructure.h          |    2 +-
  src/server/game/DataStores/DBCfmt.h                |    2 +-
- src/server/game/Entities/Player/Player.cpp         |  313 +++-
+ src/server/game/Entities/Player/Player.cpp         |  334 +++-
  src/server/game/Entities/Player/Player.h           |  104 +-
  src/server/game/Entities/Unit/Unit.cpp             |   43 +-
  src/server/game/Entities/Unit/Unit.h               |    4 +-
  src/server/game/Guilds/Guild.cpp                   |  144 ++
  src/server/game/Guilds/Guild.h                     |   37 +
  src/server/game/Handlers/BattleGroundHandler.cpp   |    4 +-
- src/server/game/Handlers/CharacterHandler.cpp      |    3 +
+ src/server/game/Handlers/CharacterHandler.cpp      |   53 +-
  src/server/game/Handlers/ChatHandler.cpp           |   28 +-
  src/server/game/Handlers/GroupHandler.cpp          |    7 +
  src/server/game/Handlers/LootHandler.cpp           |   11 +
@@ -95,10 +96,10 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/Handlers/QueryHandler.cpp          |    2 +-
  src/server/game/Handlers/SpellHandler.cpp          |    8 +-
  src/server/game/Mails/Mail.cpp                     |    8 +
- src/server/game/Miscellaneous/Formulas.h           |   15 +-
- src/server/game/Miscellaneous/Language.h           |   26 +-
+ src/server/game/Miscellaneous/Formulas.h           |   41 +-
+ src/server/game/Miscellaneous/Language.h           |   46 +-
  src/server/game/Reputation/ReputationMgr.cpp       |   10 +
- src/server/game/Scripting/ScriptLoader.cpp         |   99 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |  201 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
  src/server/game/Spells/SpellEffects.cpp            |    1 +
  src/server/game/World/World.cpp                    |  118 ++
@@ -111,6 +112,7 @@ Subject: [PATCH] ALL-No-Bots
  src/server/scripts/Custom/ArenaGambler.cpp         |  308 ++++
  src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 ++++++++
  src/server/scripts/Custom/ArenaGamblingSystem.h    |  458 +++++
+ src/server/scripts/Custom/CMakeLists.txt           |    4 +-
  src/server/scripts/Custom/Reforging/README.md      |   40 +
  src/server/scripts/Custom/Reforging/Reforging.cpp  |  646 +++++++
  src/server/scripts/Custom/Transmogrification.cpp   |  838 +++++++++
@@ -129,15 +131,16 @@ Subject: [PATCH] ALL-No-Bots
  src/server/scripts/Custom/professionnpc.cpp        |  396 ++++
  src/server/scripts/Custom/summon.cpp               |   46 +
  src/server/scripts/Spells/spell_generic.cpp        |   22 +-
- .../Database/Implementation/CharacterDatabase.cpp  |   10 +-
+ .../Database/Implementation/CharacterDatabase.cpp  |   32 +
  .../Database/Implementation/CharacterDatabase.h    |    7 +
- src/server/worldserver/worldserver.conf.dist       |  688 +++++++
- 128 files changed, 20245 insertions(+), 176 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  715 ++++++++
+ 130 files changed, 20586 insertions(+), 144 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Transmog_CHANGELOG.md
  create mode 100644 Transmog_README.md
  create mode 100644 doc/AuctionHouseBot.txt
  create mode 100644 event_readme.txt
+ create mode 100644 npc-entry-list.txt
  create mode 100644 sql/TrinityCore-Patches/1-Combined/world/world.all.sql
  create mode 100644 sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
  create mode 100644 sql/TrinityCore-Patches/All-In-One/auth_AIO.sql
@@ -673,7 +676,7 @@ index 0000000..8170bd2
 +AHBot Now includes AHBuyer created by Kerbe as a derivative of AHBot, and later modified by Paradox
 diff --git a/event_readme.txt b/event_readme.txt
 new file mode 100644
-index 0000000..085effe
+index 0000000..f323938
 --- /dev/null
 +++ b/event_readme.txt
 @@ -0,0 +1,208 @@
@@ -886,15 +889,46 @@ index 0000000..085effe
 +If message contains the text CODEMSG message will be overriden by a hardcoded message with reward text.
 +```
 \ No newline at end of file
+diff --git a/npc-entry-list.txt b/npc-entry-list.txt
+new file mode 100644
+index 0000000..4090a23
+--- /dev/null
++++ b/npc-entry-list.txt
+@@ -0,0 +1,24 @@
++This is a list of all NPC's used in all of the patches.
++
++All-In-One NPC
++80000 - Young Woman
++Arena Gambler
++908001 - The Lich King
++BeastMaster
++99990 - LordPsyan
++Guild Houses
++13 - Beltez
++TeleNPC
++100000 - Abyssal Vortex
++NPC Buff
++60002 - LordPsyan
++Enchant:
++100067 - Young Woman
++Profession NPC
++60001 - Cyon
++Level NPC
++60003 - Lucy
++Reforging
++190011 - Thaumaturge Vashreen
++Transmogrification
++190010 - Warpweaver
+\ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/1-Combined/world/world.all.sql b/sql/TrinityCore-Patches/1-Combined/world/world.all.sql
 new file mode 100644
-index 0000000..5e7158c
+index 0000000..92ebb76
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/1-Combined/world/world.all.sql
-@@ -0,0 +1,1017 @@
-+-- -------------------------------------------------------- 
-+-- world-beastmaster.sql 
-+-- -------------------------------------------------------- 
+@@ -0,0 +1,1010 @@
++-- --------------------------------------------------------
++-- world-beastmaster.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `beastmaster`;
 +
 +CREATE TABLE `beastmaster` (
@@ -959,11 +993,11 @@ index 0000000..5e7158c
 +('99990','0','4540','0','0','0'),
 +('99990','0','4541','0','0','0'),
 +('99990','0','4542','0','0','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.anticheat.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.anticheat.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `players_reports_status`;
 +
 +CREATE TABLE `players_reports_status` (
@@ -993,43 +1027,43 @@ index 0000000..5e7158c
 +  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
 +  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
 +  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT=''; 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.AVFix.sql 
-+-- -------------------------------------------------------- 
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
++
++-- --------------------------------------------------------
++-- world.AVFix.sql
++-- --------------------------------------------------------
 +UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
 +
 +UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.enchant.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.enchant.sql
++-- --------------------------------------------------------
 +-- Creature template. Young woman enchantress
 +DELETE FROM `creature_template` WHERE `entry` = 100067;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('100067','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_enchantment','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.fake_players.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.fake_players.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Player wishes to not be disturbed and cannot receive whisper messages.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.levelnpc.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Player wishes to not be disturbed and cannot receive whisper messages.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".');
++
++-- --------------------------------------------------------
++-- world.levelnpc.sql
++-- --------------------------------------------------------
 +-- Creature_template entry. Make sure entry number does not conflict.
 +DELETE FROM `creature_template` WHERE `entry` = 60003;
 +
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('60003','0','0','0','0','0','2591','0','0','0','Lucy','Level NPC','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','levelnpc','0'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.npc_teleport.sql 
-+-- -------------------------------------------------------- 
++('60003','0','0','0','0','0','2591','0','0','0','Lucy','Level NPC','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','levelnpc','0');
++
++-- --------------------------------------------------------
++-- world.npc_teleport.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
 +  `id` int(6) unsigned NOT NULL default '0',
@@ -1150,11 +1184,11 @@ index 0000000..5e7158c
 +-- `creature_template`
 +REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('100000','0','0','0','0','0','26502','0','0','0','Abisal Vortex','','','0','83','83','0','35','1','1','1.14286','2','1','0','0','0','1','1','1','0','2048','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','2','npc_teleport','1');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.player_events.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.player_events.sql
++-- --------------------------------------------------------
 +/*
 +Navicat MySQL Data Transfer
 +
@@ -1230,20 +1264,20 @@ index 0000000..5e7158c
 +-- ----------------------------
 +INSERT INTO `lil_events` VALUES ('0', '0', '0', '0');
 +INSERT INTO `lil_events` VALUES ('1', '1', '1', '1');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.summonnpc-item.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.summonnpc-item.sql
++-- --------------------------------------------------------
 +-- Example item:
 +DELETE FROM `item_template` WHERE `entry` = 100000;
 +insert into `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `StatsCount`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `flagsCustom`, `VerifiedBuild`) values
 +('100000','15','0','-1','Icerune','46787','4','72','0','1','0','0','0','-1','-1','1','1','0','0','0','0','0','0','6','1','1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','18282','0','0','0','8000','0','-1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','1','|cff00FF00Use: Summons Lithathrad Teleporter.|r','0','0','0','0','0','3','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','-1','0','0','0','0','summon','0','0','0','0','0','-4');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- WorldDB.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- WorldDB.sql
++-- --------------------------------------------------------
 +REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('25266','0','0','0','0','0','24818','3422','24819','24821','Arena Gambler','','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','','1');
 +REPLACE INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `MovementType`, `npcflag`, `unit_flags`, `dynamicflags`, `VerifiedBuild`) VALUES (1118308, 908001, 1, 1, 1, 0, 0, -7207.9, 1056.01, 327.532, 4.59111, 300, 0, 0, 108000, 0, 2, 0, 0, 0, 0);
@@ -1615,11 +1649,11 @@ index 0000000..5e7158c
 +(72037, 194608, 571, 1, 1, 8368.94, 708.93, 553.772, 2.93164, 0, 0, 0.994495, 0.104784, 30, 0, 1),
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_AIO.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_AIO.sql
++-- --------------------------------------------------------
 +-- Updates
 +-- WARNING! It's changes official blizz data!
 +UPDATE `creature_template` SET `faction`=35 WHERE `entry` IN(28474, 914, 23128, 17204, 5115, 4584, 16655, 28958, 4090, 23534);
@@ -1651,11 +1685,11 @@ index 0000000..5e7158c
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('80000','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_all','0');
 +-- end
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_creature_template_outfits.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_creature_template_outfits.sql
++-- --------------------------------------------------------
 +
 +
 +    -- --------------------------------------------------------
@@ -1698,11 +1732,11 @@ index 0000000..5e7158c
 +    /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 +    /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 +    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_guildhouses.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_guildhouses.sql
++-- --------------------------------------------------------
 +-- ----------------------------
 +-- Table structure for guildhouses
 +-- ----------------------------
@@ -1769,22 +1803,22 @@ index 0000000..5e7158c
 +DELETE FROM creature_template WHERE `entry`=13;
 +
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_guild_level_system.sql 
-+-- -------------------------------------------------------- 
++('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
++
++-- --------------------------------------------------------
++-- world_guild_level_system.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` IN (13000, 13001);
 +INSERT INTO `trinity_string` VALUES ('13000', 'Guild Level: %u.', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('13001', 'Guild Experience: %u/%u.', null, null, null, null, null, null, null, null);
 +DELETE FROM `command` WHERE `permission` IN (1000, 1001, 1002);
 +INSERT INTO `command` VALUES ('guild info', '1000', 'Syntax: .guild info');
 +INSERT INTO `command` VALUES ('guild setlevel', '1001', 'Syntax: .guild setlevel $GuildName $Level');
-+INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_individuale_xp_Rate.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
++
++-- --------------------------------------------------------
++-- world_individuale_xp_Rate.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` IN (15000, 15001, 15002, 15003, 15004);
 +INSERT INTO `trinity_string` VALUES ('15004', 'Current XpKill Rate: %f.$BCurrent XpQuest Rate: %f.', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('15003', 'The specified value is too low, it should be between 1 and 8.', null, null, null, null, null, null, null, null);
@@ -1793,22 +1827,22 @@ index 0000000..5e7158c
 +INSERT INTO `trinity_string` VALUES ('15000', 'XpKill Rate set to %f ', null, null, null, null, null, null, null, null);
 +DELETE FROM `command` WHERE `permission` IN (1010, 1011);
 +INSERT INTO `command` VALUES ('modify xpkill', '1010', 'Syntax: .modify xpkill #wert');
-+INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_npc.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
++
++-- --------------------------------------------------------
++-- world_npc.sql
++-- --------------------------------------------------------
 +SET
 +@Entry = 190010,
 +@Name = "Warpweaver";
 +DELETE FROM `creature_template` WHERE `entry` = @Entry;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_npc_buff.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_npc_buff.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `npc_buff_spells`;
 +
 +CREATE TABLE `npc_buff_spells` (
@@ -1870,20 +1904,20 @@ index 0000000..5e7158c
 +
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +   (100002, 'Choose your Buff Type.'),
-+   (100003, 'Choose your Buff.'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_professionnpc.sql 
-+-- -------------------------------------------------------- 
++   (100003, 'Choose your Buff.');
++
++-- --------------------------------------------------------
++-- world_professionnpc.sql
++-- --------------------------------------------------------
 +DELETE FROM `creature_template` WHERE `entry` = 60001;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
 +-- end
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_texts.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_texts.sql
++-- --------------------------------------------------------
 +SET @TEXT_ID := 50000;
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
@@ -1902,13 +1936,6 @@ index 0000000..5e7158c
 +(@STRING_ENTRY+8, 'Transmogrifications removed'),
 +(@STRING_ENTRY+9, 'There are no transmogrifications'),
 +(@STRING_ENTRY+10, 'Invalid name inserted');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- _MERGED.sql 
-+-- -------------------------------------------------------- 
-+ 
-+ 
 diff --git a/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql b/sql/TrinityCore-Patches/AHBot/characters.ahbot.sql
 new file mode 100644
 index 0000000..767a01e
@@ -2942,17 +2969,17 @@ index 0000000..1e76146
 +INSERT INTO `lil_events` VALUES ('1', '1', '1', '1');
 diff --git a/sql/TrinityCore-Patches/Reforging/characters.sql b/sql/TrinityCore-Patches/Reforging/characters.sql
 new file mode 100644
-index 0000000..9ac7bf6
+index 0000000..fb31f1b
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Reforging/characters.sql
 @@ -0,0 +1,10 @@
 +CREATE TABLE `custom_reforging` (
-+	`GUID` INT(10) UNSIGNED NOT NULL COMMENT 'item guid low',
-+	`increase` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
-+	`decrease` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
-+	`stat_value` INT(10) NOT NULL DEFAULT '0' COMMENT 'stat change',
-+	`Owner` INT(10) UNSIGNED NULL DEFAULT NULL COMMENT 'player guid',
-+	PRIMARY KEY (`GUID`)
++   `GUID` INT(10) UNSIGNED NOT NULL COMMENT 'item guid low',
++   `increase` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
++   `decrease` INT(10) UNSIGNED NOT NULL COMMENT 'stat_type',
++   `stat_value` INT(10) NOT NULL DEFAULT '0' COMMENT 'stat change',
++   `Owner` INT(10) UNSIGNED NULL DEFAULT NULL COMMENT 'player guid',
++   PRIMARY KEY (`GUID`)
 +)
 +COLLATE='utf8_general_ci'
 +ENGINE=InnoDB;
@@ -3142,30 +3169,30 @@ index 0000000..2632510
 +DO NOT RUN THE UPDATES WHEN MAKING A CLEAN INSTALL
 diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
 new file mode 100644
-index 0000000..ee57844
+index 0000000..bf3cb0c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
 @@ -0,0 +1,12 @@
 +CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
-+	`GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
++   `GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++   `FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
++   `FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
 +)
 +COLLATE='latin1_swedish_ci'
 +ENGINE=InnoDB;
 +
 +REPLACE INTO custom_transmogrification (GUID, FakeOwner, FakeEntry) SELECT guid, FakeOwner, FakeEntry FROM item_instance WHERE FakeOwner != 0 AND FakeEntry != 0;
 +ALTER TABLE `item_instance`
-+	DROP COLUMN `FakeEntry`,
-+	DROP COLUMN `FakeOwner`;
++   DROP COLUMN `FakeEntry`,
++   DROP COLUMN `FakeOwner`;
 diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
 new file mode 100644
-index 0000000..63059ee
+index 0000000..696d379
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
 @@ -0,0 +1,2 @@
 +ALTER TABLE `custom_transmogrification`
-+	DROP COLUMN `FakeOwner`;
++   DROP COLUMN `FakeOwner`;
 diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
 new file mode 100644
 index 0000000..89c91ac
@@ -3979,26 +4006,43 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index a73db68..1161e16 100644
+index 855ffd5..1161e16 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -684,11 +684,14 @@ enum RBACPermissions
+@@ -683,6 +683,33 @@ enum RBACPermissions
+     RBAC_PERM_COMMAND_MAILBOX                                = 777,
  
      // custom permissions 1000+
-     // Prepatch by LordPsyan
--    // 01
++    // Prepatch by LordPsyan
 +    RBAC_PERM_COMMAND_GUILD_INFO                             = 1000,
 +    RBAC_PERM_COMMAND_GUILD_SET_LEVEL                        = 1001,
 +    RBAC_PERM_COMMAND_GUILD_GIVE_XP                          = 1002,
-     // 02
-     // 03
-     // 04
--    // 05
++    // 02
++    // 03
++    // 04
 +    RBAC_PERM_COMMAND_MODIFY_XP_KILL                         = 1010,
 +    RBAC_PERM_COMMAND_MODIFY_XP_QUEST                        = 1011,
-     // 06
-     // 07
-     // 08
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+     RBAC_PERM_MAX
+ };
+ 
 diff --git a/src/server/game/Anticheat/AnticheatData.cpp b/src/server/game/Anticheat/AnticheatData.cpp
 new file mode 100644
 index 0000000..8c69972
@@ -9065,7 +9109,7 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 900bba0..7e28ad9 100644
+index 2876b4f..7e28ad9 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -19,6 +19,7 @@
@@ -9076,15 +9120,16 @@ index 900bba0..7e28ad9 100644
  #include "ArenaTeam.h"
  #include "ArenaTeamMgr.h"
  #include "Battlefield.h"
-@@ -80,6 +81,7 @@
+@@ -79,6 +80,8 @@
+ #include "WorldPacket.h"
  #include "WorldSession.h"
  #include "GameObjectAI.h"
- #include "Config.h"
++#include "Config.h"
 +#include "../../../scripts/Custom/Transmogrification.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -657,6 +659,12 @@ void KillRewarder::Reward()
+@@ -656,6 +659,12 @@ void KillRewarder::Reward()
  
  Player::Player(WorldSession* session): Unit(true)
  {
@@ -9097,7 +9142,7 @@ index 900bba0..7e28ad9 100644
      m_speakTime = 0;
      m_speakCount = 0;
  
-@@ -903,6 +911,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -902,6 +911,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -9108,7 +9153,7 @@ index 900bba0..7e28ad9 100644
  }
  
  Player::~Player()
-@@ -1007,6 +1019,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
+@@ -1006,6 +1019,12 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
      uint32 RaceClassGender = (createInfo->Race) | (createInfo->Class << 8) | (createInfo->Gender << 16);
  
      SetUInt32Value(UNIT_FIELD_BYTES_0, (RaceClassGender | (powertype << 24)));
@@ -9121,7 +9166,7 @@ index 900bba0..7e28ad9 100644
      InitDisplayIds();
      if (sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_PVP || sWorld->getIntConfig(CONFIG_GAME_TYPE) == REALM_TYPE_RPPVP)
      {
-@@ -1340,8 +1358,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
+@@ -1339,8 +1358,11 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
  {
      switch (timer)
      {
@@ -9133,7 +9178,7 @@ index 900bba0..7e28ad9 100644
          case BREATH_TIMER:
          {
              if (!IsAlive() || HasAuraType(SPELL_AURA_WATER_BREATHING) || GetSession()->GetSecurity() >= AccountTypes(sWorld->getIntConfig(CONFIG_DISABLE_BREATHING)))
-@@ -1424,6 +1445,9 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1423,6 +1445,9 @@ void Player::HandleDrowning(uint32 time_diff)
      }
  
      // In dark water
@@ -9143,7 +9188,7 @@ index 900bba0..7e28ad9 100644
      if (m_MirrorTimerFlags & UNDERWARER_INDARKWATER)
      {
          // Fatigue timer not activated - activate it
-@@ -1460,7 +1484,7 @@ void Player::HandleDrowning(uint32 time_diff)
+@@ -1459,7 +1484,7 @@ void Player::HandleDrowning(uint32 time_diff)
          else if (m_MirrorTimerFlagsLast & UNDERWARER_INDARKWATER)
              SendMirrorTimer(FATIGUE_TIMER, DarkWaterTime, m_MirrorTimer[FATIGUE_TIMER], 10);
      }
@@ -9152,7 +9197,7 @@ index 900bba0..7e28ad9 100644
      if (m_MirrorTimerFlags & (UNDERWATER_INLAVA /*| UNDERWATER_INSLIME*/) && !(_lastLiquid && _lastLiquid->SpellId))
      {
          // Breath timer not activated - activate it
-@@ -1558,6 +1582,8 @@ void Player::Update(uint32 p_time)
+@@ -1557,6 +1582,8 @@ void Player::Update(uint32 p_time)
      if (!IsInWorld())
          return;
  
@@ -9161,7 +9206,7 @@ index 900bba0..7e28ad9 100644
      // undelivered mail
      if (m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
      {
-@@ -1785,6 +1811,13 @@ void Player::Update(uint32 p_time)
+@@ -1784,6 +1811,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -9175,7 +9220,7 @@ index 900bba0..7e28ad9 100644
          }
          else
              m_nextSave -= p_time;
-@@ -2110,6 +2143,8 @@ void Player::SendTeleportAckPacket()
+@@ -2109,6 +2143,8 @@ void Player::SendTeleportAckPacket()
  
  bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
  {
@@ -9184,7 +9229,7 @@ index 900bba0..7e28ad9 100644
      if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
      {
          TC_LOG_ERROR("maps", "TeleportTo: invalid map (%d) or invalid coordinates (X: %f, Y: %f, Z: %f, O: %f) given when teleporting player (GUID: %u, name: %s, map: %d, X: %f, Y: %f, Z: %f, O: %f).",
-@@ -3016,7 +3051,7 @@ void Player::GiveLevel(uint8 level)
+@@ -3015,7 +3051,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -9193,7 +9238,7 @@ index 900bba0..7e28ad9 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -3154,7 +3189,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -3153,7 +3189,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -9202,7 +9247,7 @@ index 900bba0..7e28ad9 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -5060,6 +5095,12 @@ void Player::BuildPlayerRepop()
+@@ -5059,6 +5095,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -9215,7 +9260,7 @@ index 900bba0..7e28ad9 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5107,6 +5148,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5106,6 +5148,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -9225,7 +9270,7 @@ index 900bba0..7e28ad9 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5207,7 +5251,7 @@ void Player::CreateCorpse()
+@@ -5206,7 +5251,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -9234,7 +9279,7 @@ index 900bba0..7e28ad9 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -5432,6 +5476,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5431,6 +5476,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -9250,7 +9295,7 @@ index 900bba0..7e28ad9 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -6893,10 +6946,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6892,10 +6946,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -9263,7 +9308,7 @@ index 900bba0..7e28ad9 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -6998,6 +7051,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6997,6 +7051,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -9291,7 +9336,7 @@ index 900bba0..7e28ad9 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7012,23 +7086,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7011,23 +7086,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -9321,7 +9366,7 @@ index 900bba0..7e28ad9 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7123,7 +7197,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7122,7 +7197,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -9330,7 +9375,7 @@ index 900bba0..7e28ad9 100644
              return false;
  
          return true;
-@@ -7135,6 +7209,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7134,6 +7209,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -9338,7 +9383,7 @@ index 900bba0..7e28ad9 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7177,16 +7252,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7176,16 +7252,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -9401,7 +9446,7 @@ index 900bba0..7e28ad9 100644
  
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
-@@ -7195,6 +7307,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7194,6 +7307,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
@@ -9409,7 +9454,7 @@ index 900bba0..7e28ad9 100644
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
          }
-@@ -7218,6 +7331,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7217,6 +7331,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -9426,7 +9471,7 @@ index 900bba0..7e28ad9 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7288,6 +7411,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7287,6 +7411,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -9457,7 +9502,7 @@ index 900bba0..7e28ad9 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7447,7 +7594,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7446,7 +7594,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -9466,7 +9511,7 @@ index 900bba0..7e28ad9 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7788,6 +7935,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7787,6 +7935,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -9487,7 +9532,7 @@ index 900bba0..7e28ad9 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7802,10 +7963,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7801,10 +7963,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -9513,7 +9558,7 @@ index 900bba0..7e28ad9 100644
          }
  
          if (val == 0)
-@@ -11980,13 +12155,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11979,13 +12155,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
      if (!proto)
          return EQUIP_ERR_ITEM_NOT_FOUND;
  
@@ -9530,7 +9575,7 @@ index 900bba0..7e28ad9 100644
          return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
      if (proto->RequiredSkill != 0)
-@@ -12476,7 +12651,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12475,7 +12651,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -9542,7 +9587,7 @@ index 900bba0..7e28ad9 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12596,20 +12774,20 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12595,12 +12774,36 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -9553,20 +9598,34 @@ index 900bba0..7e28ad9 100644
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
-     // Prepatch by LordPsyan
--    // 01
++    // Prepatch by LordPsyan
 +        RemoveReforge(this, it->GetGUIDLow(), true);
-     // 02
-     // 03
-     // 04
-     // 05
-     // 06
--    // 07
++    // 02
++    // 03
++    // 04
++    // 05
++    // 06
 +        sTransmogrification->DeleteFakeEntry(this, it);
-     // 08
-     // 09
-     // 10
-@@ -15334,13 +15512,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+         ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
+         RemoveItem(bag, slot, update);
+         it->SetNotRefundable(this, false);
+@@ -15309,13 +15512,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -9594,7 +9653,7 @@ index 900bba0..7e28ad9 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17238,6 +17429,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17213,6 +17429,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -9606,7 +9665,7 @@ index 900bba0..7e28ad9 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17284,10 +17480,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17259,10 +17480,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -9617,7 +9676,7 @@ index 900bba0..7e28ad9 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19204,7 +19396,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19179,7 +19396,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -9626,7 +9685,7 @@ index 900bba0..7e28ad9 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19309,7 +19501,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19284,7 +19501,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -9635,7 +9694,7 @@ index 900bba0..7e28ad9 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19463,6 +19655,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19438,6 +19655,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -9648,7 +9707,7 @@ index 900bba0..7e28ad9 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20548,6 +20746,19 @@ void Player::StopCastingCharm()
+@@ -20523,6 +20746,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -9668,7 +9727,7 @@ index 900bba0..7e28ad9 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22354,11 +22565,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22329,11 +22565,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -9680,7 +9739,7 @@ index 900bba0..7e28ad9 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22434,7 +22640,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22409,7 +22640,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -9689,7 +9748,7 @@ index 900bba0..7e28ad9 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -26857,6 +27063,25 @@ bool Player::IsLoading() const
+@@ -26832,6 +27063,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -10278,19 +10337,71 @@ index 95e4dd3..0d2cf52 100644
                  continue;
              }
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 974ca97..4014b38 100644
+index b250787..2eda9f2 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -1066,6 +1066,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
-     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
+@@ -1041,10 +1041,59 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
+     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
+-
++    // Prepatch by LordPsyan
++    // 01
++    // 02
++    // 03
++    // 04
++    // 05
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
      delete holder;
-+
+-}
+ 
 +    if (pCurrChar->GetTeam() != pCurrChar->GetOTeam())
 +        pCurrChar->FitPlayerInTeam(pCurrChar->GetBattleground() && !pCurrChar->GetBattleground()->isArena() ? true : false, pCurrChar->GetBattleground());
- }
-     // Prepatch by LordPsyan
-     // 01
++}
++    // Prepatch by LordPsyan
++    // 01
++    // 02
++    // 03
++    // 04
++    // 05
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+ void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
+ {
+     TC_LOG_DEBUG("network", "WORLD: Received CMSG_SET_FACTION_ATWAR");
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
 index eccf7a6..7b5536f 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
@@ -10564,22 +10675,26 @@ index 2c65e36..6fd033d 100644
  
      //expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 2970e3a..62ed9a5 100644
+index e6ff1a0..62ed9a5 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
-@@ -24,6 +24,7 @@
+@@ -23,6 +23,8 @@
+ #include "SharedDefines.h"
  #include "ScriptMgr.h"
  #include "Player.h"
- #include "Config.h"
++#include "Config.h"
 +#include "Guild.h"
  
  namespace Trinity
  {
-@@ -187,11 +188,21 @@ namespace Trinity
-             if(sConfigMgr->GetBoolDefault("PrepatchGI.Added", false))
-                 {
-                     // Prepatch by LordPsyan
--                    // 01
+@@ -183,9 +185,46 @@ namespace Trinity
+ 
+                     xpMod *= creature->GetCreatureTemplate()->ModExperience;
+                 }
+-
++            if(sConfigMgr->GetBoolDefault("PrepatchGI.Added", false))
++                {
++                    // Prepatch by LordPsyan
 +                //Guild-Level-System (Bonus: MonsterKillXp)
 +                if (Guild* guild = player->GetGuild())
 +                {
@@ -10589,18 +10704,39 @@ index 2970e3a..62ed9a5 100644
 +                    if (guild->HasLevelForBonus(GUILD_BONUS_XP_2))
 +                        gain += uint32(gain*0.1f);
 +                }
-                     // 02
-                     // 03
-                     // 04
--                    // 05
++                    // 02
++                    // 03
++                    // 04
 +                //Individuale_XP-Rate
 +                float individualXpKill = player->GetIndividualXpKillRate();
 +                gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
-                     // 06
-                     // 07
-                     // 08
++                    // 06
++                    // 07
++                    // 08
++                    // 09
++                    // 10
++                    // 11
++                    // 12
++                    // 13
++                    // 14
++                    // 15
++                    // 16
++                    // 17
++                    // 18
++                    // 19
++                    // 20
++                    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++                    //
++                    // End of prepatch
++                } else {
+                 xpMod *= sWorld->getRate(RATE_XP_KILL);
+                 gain = uint32(gain * xpMod);
++                }
+             }
+ 
+             sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index ac47d59..2ef3041 100644
+index f4d1bc0..2ef3041 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -10623,36 +10759,46 @@ index ac47d59..2ef3041 100644
      // Pinfo commands
      LANG_PINFO_PLAYER                   = 453,
      LANG_PINFO_GM_ACTIVE                = 548,
-@@ -1174,11 +1185,18 @@ enum TrinityStrings
+@@ -1172,7 +1183,38 @@ enum TrinityStrings
+     LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
+ 
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
-     LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
-     // Prepatch by LordPsyan
--    // 01
+-    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
++    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
++    // Prepatch by LordPsyan
 +    //Guild-Level-System
 +    LANG_GUILDINFO_LEVEL                          = 13000,
 +    LANG_GUILDINFO_XP_INFO                        = 13001,
-     // 02
-     // 03
-     // 04
--    // 05
++    // 02
++    // 03
++    // 04
 +    //Individuale_XP-Rate
 +    LANG_INDIVIDUAL_KILLRATE_SET                  = 15000,
 +    LANG_INDIVIDUAL_QUESTRATE_SET                 = 15001,
 +    LANG_INDIVIDUAL_RATE_TO_HIGH                  = 15002,
 +    LANG_INDIVIDUAL_RATE_TO_LOW                   = 15003,
 +    LANG_INDIVIDUAL_RATES_INFO                    = 15004,
-     // 06
-     // 07
-     // 08
-@@ -1193,7 +1211,7 @@ enum TrinityStrings
-     // 17
-     // 18
-     // 19
--    // 20
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
 +    LANG_NOT_WHISPER                              = 12001,
-     // Visit http://www.realmsofwarcraft.com/bb for forums and information
-     //
-     // End of prepatch
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+ 
+     // NOT RESERVED IDS                   12000-1999999999
+     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
 index f19d6d7..5690f3e 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
@@ -10682,7 +10828,7 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 168e646..b0a9d60 100644
+index d036d43..b0a9d60 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
@@ -10733,212 +10879,212 @@ index 168e646..b0a9d60 100644
      AddSC_ban_commandscript();
      AddSC_bf_commandscript();
      AddSC_cast_commandscript();
-@@ -1432,31 +1437,38 @@ void AddBattlegroundScripts()
+@@ -1432,13 +1437,203 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
--// start01
+-
 +// All In One NPC
 +void AddSC_npc_all();
- // start02
- // start03
- // start04
--// start05
++// start02
++// start03
++// start04
 +// Arena Gambler
 +void AddSC_ArenaGambler();
- // start06
- // start07
- // start08
--// start09
++// start06
++// start07
++// start08
 +// Beastmaster
 +void AddSC_Npc_Beastmaster();
- // start10
- // start11
- // start12
--// start13
++// start10
++// start11
++// start12
 +// Bounty Hunter
 +void AddSC_BountyHunter();
- // start14
- // start15
- // start16
--// start17
++// start14
++// start15
++// start16
 +    //GuildHouse NPC
 +    void AddSC_guildmaster();
- // start18
- // start19
- // start20
--// start21
++// start18
++// start19
++// start20
 +// Killstreak
 +void AddSC_PvP_System();
- // start22
- // start23
- // start24
--// start25
++// start22
++// start23
++// start24
 +// Level NPC
 +void AddSC_levelnpc();
- // start26
- // start27
- // start28
-@@ -1464,31 +1476,39 @@ void AddBattlegroundScripts()
- // start30
- // start31
- // start32
--// start33
++// start26
++// start27
++// start28
++// start29
++// start30
++// start31
++// start32
 +// Buff NPC
 +void AddSC_Npc_Buff();
- // start34
- // start35
- // start36
--// start37
++// start34
++// start35
++// start36
 +// Enchant NPC
 +void AddSC_npc_enchantment();
- // start38
- // start39
- // start40
--// start41
++// start38
++// start39
++// start40
 +// Events
 +void AddSC_LevelEvents();
- // start42
- // start43
- // start44
--// start45
++// start42
++// start43
++// start44
 +// Profession Npc
 +void AddSC_professionnpc();
- // start46
- // start47
- // start48
--// start49
++// start46
++// start47
++// start48
 +// IceRune
 +void AddSC_summon();
- // start50
- // start51
- // start52
--// start53
++// start50
++// start51
++// start52
 +// TeleNPC2
 +void AddSC_npc_teleport();
- // start54
- // start55
- // start56
--// start57
++// start54
++// start55
++// start56
 +// Transmogrification
 +void AddSC_PWS_Transmogrification();
 +void AddSC_CS_Transmogrification();
- // start58
- // start59
- // start60
-@@ -1509,7 +1529,8 @@ void AddBattlegroundScripts()
- // start75
- // start76
- // start77
--// start78
++// start58
++// start59
++// start60
++// start61
++// start62
++// start63
++// start64
++// start65
++// start66
++// start67
++// start68
++// start69
++// start70
++// start71
++// start72
++// start73
++// start74
++// start75
++// start76
++// start77
 +// Reforging
 +void AddSC_REFORGER_NPC();
- // start79
- // start80
++// start79
++// start80
  #endif
-@@ -1518,31 +1539,38 @@ void AddCustomScripts()
+ 
+ void AddCustomScripts()
  {
  #ifdef SCRIPTS
      /* This is where custom scripts should be added. */
--// end01
+-
 +    // All In One NPC
 +    AddSC_npc_all();
- // end02
- // end03
- // end04
--// end05
++// end02
++// end03
++// end04
 +    // Arena Gambler
 +    AddSC_ArenaGambler();
- // end06
- // end07
- // end08
--// end09
++// end06
++// end07
++// end08
 +    // Beastmaster
 +    AddSC_Npc_Beastmaster();
- // end10
- // end11
- // end12
--// end13
++// end10
++// end11
++// end12
 +    // Bounty Hunter
 +    AddSC_BountyHunter();
- // end14
- // end15
- // end16
--// end17
++// end14
++// end15
++// end16
 +    // GuildHouse NPC
 +    AddSC_guildmaster();
- // end18
- // end19
- // end20
--// end21
++// end18
++// end19
++// end20
 +    // Killstreak
 +    AddSC_PvP_System();
- // end22
- // end23
- // end24
--// end25
++// end22
++// end23
++// end24
 +    // Level NPC
 +    AddSC_levelnpc();
- // end26
- // end27
- // end28
-@@ -1550,31 +1578,39 @@ void AddCustomScripts()
- // end30
- // end31
- // end32
--// end33
++// end26
++// end27
++// end28
++// end29
++// end30
++// end31
++// end32
 +    // Buff NPC
 +    AddSC_Npc_Buff();
- // end34
- // end35
- // end36
--// end37
++// end34
++// end35
++// end36
 +    // Enchant NPC
 +    AddSC_npc_enchantment();
- // end38
- // end39
- // end40
--// end41
++// end38
++// end39
++// end40
 +    // Events
 +    AddSC_LevelEvents();
- // end42
- // end43
- // end44
--// end45
++// end42
++// end43
++// end44
 +    // Profession Npc
 +    AddSC_professionnpc();
- // end46
- // end47
- // end48
--// end49
++// end46
++// end47
++// end48
 +    // IceRune
 +    AddSC_summon();
- // end50
- // end51
- // end52
--// end53
++// end50
++// end51
++// end52
 +    // TeleNPC2
 +    AddSC_npc_teleport();
- // end54
- // end55
- // end56
--// end57
++// end54
++// end55
++// end56
 +    // Transmogrification
 +    AddSC_PWS_Transmogrification();
 +    AddSC_CS_Transmogrification();
- // end58
- // end59
- // end60
-@@ -1595,7 +1631,8 @@ void AddCustomScripts()
- // end75
- // end76
- // end77
--// end78
++// end58
++// end59
++// end60
++// end61
++// end62
++// end63
++// end64
++// end65
++// end66
++// end67
++// end68
++// end69
++// end70
++// end71
++// end72
++// end73
++// end74
++// end75
++// end76
++// end77
 +    // Reforging
 +    AddSC_REFORGER_NPC();
- // end79
- // end80
++// end79
++// end80
  #endif
+ }
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
 index d13c81e..2ed9512 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
@@ -13816,6 +13962,24 @@ index 0000000..1c256d3
 +#define sGamblingSystem GamblingSystem::instance()
 +#endif
 \ No newline at end of file
+diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
+index 80ebe36..20c2bc9 100644
+--- a/src/server/scripts/Custom/CMakeLists.txt
++++ b/src/server/scripts/Custom/CMakeLists.txt
+@@ -8,11 +8,11 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ 
+-# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
++file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
+ 
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
+-#  ${sources_Custom}
++  ${sources_Custom}
+ )
+ 
+ message("  -> Prepared: Custom")
 diff --git a/src/server/scripts/Custom/Reforging/README.md b/src/server/scripts/Custom/Reforging/README.md
 new file mode 100644
 index 0000000..3fb4d03
@@ -13864,7 +14028,7 @@ index 0000000..3fb4d03
 +Report issues and similar to https://rochet2.github.io/
 diff --git a/src/server/scripts/Custom/Reforging/Reforging.cpp b/src/server/scripts/Custom/Reforging/Reforging.cpp
 new file mode 100644
-index 0000000..ff16b5e
+index 0000000..d775e75
 --- /dev/null
 +++ b/src/server/scripts/Custom/Reforging/Reforging.cpp
 @@ -0,0 +1,646 @@
@@ -13899,13 +14063,13 @@ index 0000000..ff16b5e
 +{
 +    switch(ItemStatType)
 +    {
-+    case ITEM_MOD_SPIRIT                   	: return "Spirit"; break;
-+    case ITEM_MOD_DODGE_RATING             	: return "Dodge rating"; break;
-+    case ITEM_MOD_PARRY_RATING             	: return "Parry rating"; break;
-+    case ITEM_MOD_HIT_RATING               	: return "Hit rating"; break;
-+    case ITEM_MOD_CRIT_RATING              	: return "Crit rating"; break;
-+    case ITEM_MOD_HASTE_RATING             	: return "Haste rating"; break;
-+    case ITEM_MOD_EXPERTISE_RATING         	: return "Expertise rating"; break;
++    case ITEM_MOD_SPIRIT                      : return "Spirit"; break;
++    case ITEM_MOD_DODGE_RATING                : return "Dodge rating"; break;
++    case ITEM_MOD_PARRY_RATING                : return "Parry rating"; break;
++    case ITEM_MOD_HIT_RATING                  : return "Hit rating"; break;
++    case ITEM_MOD_CRIT_RATING                 : return "Crit rating"; break;
++    case ITEM_MOD_HASTE_RATING                : return "Haste rating"; break;
++    case ITEM_MOD_EXPERTISE_RATING            : return "Expertise rating"; break;
 +    default: return NULL;
 +    }
 +}
@@ -17639,7 +17803,7 @@ index 0000000..9cff63d
 +}
 diff --git a/src/server/scripts/Custom/bountyhunter.cpp b/src/server/scripts/Custom/bountyhunter.cpp
 new file mode 100644
-index 0000000..317d1ff
+index 0000000..6bc0c56
 --- /dev/null
 +++ b/src/server/scripts/Custom/bountyhunter.cpp
 @@ -0,0 +1,462 @@
@@ -17682,43 +17846,43 @@ index 0000000..317d1ff
 +
 +enum BountyPrice
 +{
-+	BOUNTY_PRICE_1 = 1000,
-+	BOUNTY_PRICE_2 = 2000,
-+	BOUNTY_PRICE_3 = 5000,
-+	BOUNTY_PRICE_4 = 10000,
++   BOUNTY_PRICE_1 = 1000,
++   BOUNTY_PRICE_2 = 2000,
++   BOUNTY_PRICE_3 = 5000,
++   BOUNTY_PRICE_4 = 10000,
 +};
 +#else
 +enum BountyPrice
 +{
-+	BOUNTY_PRICE_1 = 1,
-+	BOUNTY_PRICE_2 = 3,
-+	BOUNTY_PRICE_3 = 5,
-+	BOUNTY_PRICE_4 = 10,
++   BOUNTY_PRICE_1 = 1,
++   BOUNTY_PRICE_2 = 3,
++   BOUNTY_PRICE_3 = 5,
++   BOUNTY_PRICE_4 = 10,
 +};
 +#endif
 +
 +bool passChecks(Player * pPlayer, const char * name)
-+{ 
-+	
-+	Player * pBounty = sObjectAccessor->FindPlayerByName(name);
-+	WorldSession * m_session = pPlayer->GetSession();
-+	if(!pBounty)
-+	{
-+		m_session->SendNotification("Es ist kein Spieler mit diesem Namen online!");
-+		return false;
-+	}
-+	QueryResult result = CharacterDatabase.PQuery("SELECT * FROM bounties WHERE guid ='%u'", pBounty->GetGUID());
-+	if(result)
-+	{
-+		m_session->SendNotification("Auf diesen Spieler wurde schon ein Kopfgeld ausgesetzt!");
-+		return false;
-+	}
-+	if(pPlayer->GetGUID() == pBounty->GetGUID())
-+	{
-+		m_session->SendNotification("Du kannst auf dich kein Kopfgeld aussetzen!");
-+		return false;
-+	}
-+	return true;
++{
++
++   Player * pBounty = sObjectAccessor->FindPlayerByName(name);
++   WorldSession * m_session = pPlayer->GetSession();
++   if(!pBounty)
++   {
++      m_session->SendNotification("Es ist kein Spieler mit diesem Namen online!");
++      return false;
++   }
++   QueryResult result = CharacterDatabase.PQuery("SELECT * FROM bounties WHERE guid ='%u'", pBounty->GetGUID());
++   if(result)
++   {
++      m_session->SendNotification("Auf diesen Spieler wurde schon ein Kopfgeld ausgesetzt!");
++      return false;
++   }
++   if(pPlayer->GetGUID() == pBounty->GetGUID())
++   {
++      m_session->SendNotification("Du kannst auf dich kein Kopfgeld aussetzen!");
++      return false;
++   }
++   return true;
 +}
 +
 +void alertServer(const char * name, int msg)
@@ -17742,373 +17906,373 @@ index 0000000..317d1ff
 +
 +bool hasCurrency(Player * pPlayer, uint32 required, int currency)
 +{
-+	WorldSession *m_session = pPlayer->GetSession();
-+	switch(currency)
-+	{
-+		case 0: //gold
-+			{
-+			uint32 currentmoney = pPlayer->GetMoney();
-+			uint32 requiredmoney = (required * 10000);
-+			if(currentmoney < requiredmoney)
-+			{
-+				m_session->SendNotification("Du hast nicht genug Gold!");
-+				return false;
-+			}
-+			pPlayer->SetMoney(currentmoney - requiredmoney);
-+			break;
-+			}
-+		case 1: //honor
-+			{
-+			uint32 currenthonor = pPlayer->GetHonorPoints();
-+			if(currenthonor < required)
-+			{
-+				m_session->SendNotification("You don't have enough honor!");
-+				return false;
-+			}
-+			pPlayer->SetHonorPoints(currenthonor - required);
-+			break;
-+			}
-+		case 2: //tokens
-+			{
-+			if(!pPlayer->HasItemCount(TOKEN_ID, required))
-+			{
-+				m_session->SendNotification("You don't have enough tokens!");
-+				return false;
-+			}
-+			pPlayer->DestroyItemCount(TOKEN_ID, required, true, false);
-+			break;
-+			}
++   WorldSession *m_session = pPlayer->GetSession();
++   switch(currency)
++   {
++      case 0: //gold
++         {
++         uint32 currentmoney = pPlayer->GetMoney();
++         uint32 requiredmoney = (required * 10000);
++         if(currentmoney < requiredmoney)
++         {
++            m_session->SendNotification("Du hast nicht genug Gold!");
++            return false;
++         }
++         pPlayer->SetMoney(currentmoney - requiredmoney);
++         break;
++         }
++      case 1: //honor
++         {
++         uint32 currenthonor = pPlayer->GetHonorPoints();
++         if(currenthonor < required)
++         {
++            m_session->SendNotification("You don't have enough honor!");
++            return false;
++         }
++         pPlayer->SetHonorPoints(currenthonor - required);
++         break;
++         }
++      case 2: //tokens
++         {
++         if(!pPlayer->HasItemCount(TOKEN_ID, required))
++         {
++            m_session->SendNotification("You don't have enough tokens!");
++            return false;
++         }
++         pPlayer->DestroyItemCount(TOKEN_ID, required, true, false);
++         break;
++         }
 +
-+	}
-+	return true;
++   }
++   return true;
 +}
 +
 +void flagPlayer(const char * name)
 +{
-+	std::string message;
-+	Player * pBounty = sObjectAccessor->FindPlayerByName(name);
-+	pBounty->SetPvP(true);
-+	pBounty->SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
++   std::string message;
++   Player * pBounty = sObjectAccessor->FindPlayerByName(name);
++   pBounty->SetPvP(true);
++   pBounty->SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
 +}
 +
 +class BountyHunter : public CreatureScript
 +{
-+	public:
-+		BountyHunter() : CreatureScript("BountyHunter"){}
-+		bool OnGossipHello(Player * Player, Creature * Creature)
-+		{
-+			Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, PLACE_BOUNTY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-+			Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, LIST_BOUNTY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-+			Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, NVM, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+3);
-+			Player->PlayerTalkClass->SendGossipMenu(907, Creature->GetGUID());
-+			return true;
-+		}
++   public:
++      BountyHunter() : CreatureScript("BountyHunter"){}
++      bool OnGossipHello(Player * Player, Creature * Creature)
++      {
++         Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, PLACE_BOUNTY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
++         Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, LIST_BOUNTY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
++         Player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, NVM, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+3);
++         Player->PlayerTalkClass->SendGossipMenu(907, Creature->GetGUID());
++         return true;
++      }
 +
-+		bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-+		{
-+			pPlayer->PlayerTalkClass->ClearMenus();
-+			switch(uiAction)
-+			{
-+				case GOSSIP_ACTION_INFO_DEF+1:
-+				{
-+					pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+5, "", 0, true);
-+					pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+6, "", 0, true);
-+					pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+7, "", 0, true);
-+					pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_4, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+8, "", 0, true);
-+					pPlayer->PlayerTalkClass->SendGossipMenu(365, pCreature->GetGUID());
-+					break;
-+				}
-+				case GOSSIP_ACTION_INFO_DEF+2:
-+				{
-+					QueryResult Bounties = CharacterDatabase.PQuery("SELECT * FROM bounties");
-+					
-+					if(!Bounties)
-+					{
-+						pPlayer->PlayerTalkClass->SendCloseGossip();
-+						return false;
-+					}
++      bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
++      {
++         pPlayer->PlayerTalkClass->ClearMenus();
++         switch(uiAction)
++         {
++            case GOSSIP_ACTION_INFO_DEF+1:
++            {
++               pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+5, "", 0, true);
++               pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+6, "", 0, true);
++               pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+7, "", 0, true);
++               pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_BATTLE, BOUNTY_4, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+8, "", 0, true);
++               pPlayer->PlayerTalkClass->SendGossipMenu(365, pCreature->GetGUID());
++               break;
++            }
++            case GOSSIP_ACTION_INFO_DEF+2:
++            {
++               QueryResult Bounties = CharacterDatabase.PQuery("SELECT * FROM bounties");
++
++               if(!Bounties)
++               {
++                  pPlayer->PlayerTalkClass->SendCloseGossip();
++                  return false;
++               }
 +#if SET_CURRENCY == 0
-+					if(	Bounties->GetRowCount() > 1)
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						do
-+						{
-+							Field * fields = Bounties->Fetch();
-+							std::string option;
-+							QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+							Field * names = name->Fetch();
-+							option = names[0].GetString();
-+							option +=" ";
-+							option += fields[1].GetString();
-+							option += " gold";
-+							pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						}while(Bounties->NextRow());
-+					}
-+					else
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						Field * fields = Bounties->Fetch();
-+						std::string option;
-+						QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+						Field * names = name->Fetch();
-+						option = names[0].GetString();
-+						option +=" ";
-+						option += fields[1].GetString();
-+						option += " gold";
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						
-+					}
++               if(   Bounties->GetRowCount() > 1)
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  do
++                  {
++                     Field * fields = Bounties->Fetch();
++                     std::string option;
++                     QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                     Field * names = name->Fetch();
++                     option = names[0].GetString();
++                     option +=" ";
++                     option += fields[1].GetString();
++                     option += " gold";
++                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++                  }while(Bounties->NextRow());
++               }
++               else
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  Field * fields = Bounties->Fetch();
++                  std::string option;
++                  QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                  Field * names = name->Fetch();
++                  option = names[0].GetString();
++                  option +=" ";
++                  option += fields[1].GetString();
++                  option += " gold";
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++
++               }
 +#endif
 +#if SET_CURRENCY == 1
-+					if(	Bounties->GetRowCount() > 1)
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						do
-+						{
-+							Field * fields = Bounties->Fetch();
-+							std::string option;
-+							QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+							Field * names = name->Fetch();
-+							option = names[0].GetString();
-+							option +=" ";
-+							option += fields[1].GetString();
-+							option += " honor";
-+							pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						}while(Bounties->NextRow());
-+					}
-+					else
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						Field * fields = Bounties->Fetch();
-+						std::string option;
-+						QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+						Field * names = name->Fetch();
-+						option = names[0].GetString();
-+						option +=" ";
-+						option += fields[1].GetString();
-+						option += " honor";
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						
-+					}
++               if(   Bounties->GetRowCount() > 1)
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  do
++                  {
++                     Field * fields = Bounties->Fetch();
++                     std::string option;
++                     QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                     Field * names = name->Fetch();
++                     option = names[0].GetString();
++                     option +=" ";
++                     option += fields[1].GetString();
++                     option += " honor";
++                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++                  }while(Bounties->NextRow());
++               }
++               else
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  Field * fields = Bounties->Fetch();
++                  std::string option;
++                  QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                  Field * names = name->Fetch();
++                  option = names[0].GetString();
++                  option +=" ";
++                  option += fields[1].GetString();
++                  option += " honor";
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++
++               }
 +#endif
 +#if SET_CURRENCY == 2
-+					if(	Bounties->GetRowCount() > 1)
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						do
-+						{
-+							Field * fields = Bounties->Fetch();
-+							std::string option;
-+							QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+							Field * names = name->Fetch();
-+							option = names[0].GetString();
-+							option +=" ";
-+							option += fields[1].GetString();
-+							option += " coins";
-+							pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						}while(Bounties->NextRow());
-+					}
-+					else
-+					{
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
-+						Field * fields = Bounties->Fetch();
-+						std::string option;
-+						QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
-+						Field * names = name->Fetch();
-+						option = names[0].GetString();
-+						option +=" ";
-+						option += fields[1].GetString();
-+						option += " coins";
-+						pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
-+						
-+					}
++               if(   Bounties->GetRowCount() > 1)
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  do
++                  {
++                     Field * fields = Bounties->Fetch();
++                     std::string option;
++                     QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                     Field * names = name->Fetch();
++                     option = names[0].GetString();
++                     option +=" ";
++                     option += fields[1].GetString();
++                     option += " coins";
++                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++                  }while(Bounties->NextRow());
++               }
++               else
++               {
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Kopfgeld: ", GOSSIP_SENDER_MAIN, 1);
++                  Field * fields = Bounties->Fetch();
++                  std::string option;
++                  QueryResult name = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid='%u'", fields[0].GetUInt64());
++                  Field * names = name->Fetch();
++                  option = names[0].GetString();
++                  option +=" ";
++                  option += fields[1].GetString();
++                  option += " coins";
++                  pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, option, GOSSIP_SENDER_MAIN, 1);
++
++               }
 +#endif
-+					pPlayer->PlayerTalkClass->SendGossipMenu(878, pCreature->GetGUID());
-+					break;
-+				}
-+				case GOSSIP_ACTION_INFO_DEF+3:
-+				{
-+					pPlayer->PlayerTalkClass->SendCloseGossip();
-+					break;
-+				}
-+				case GOSSIP_ACTION_INFO_DEF+4:
-+				{
-+					CharacterDatabase.PExecute("TRUNCATE TABLE bounties");
-+					pPlayer->PlayerTalkClass->SendCloseGossip();
-+					break;
-+				}
-+			}
-+			return true;
-+		}
++               pPlayer->PlayerTalkClass->SendGossipMenu(878, pCreature->GetGUID());
++               break;
++            }
++            case GOSSIP_ACTION_INFO_DEF+3:
++            {
++               pPlayer->PlayerTalkClass->SendCloseGossip();
++               break;
++            }
++            case GOSSIP_ACTION_INFO_DEF+4:
++            {
++               CharacterDatabase.PExecute("TRUNCATE TABLE bounties");
++               pPlayer->PlayerTalkClass->SendCloseGossip();
++               break;
++            }
++         }
++         return true;
++      }
 +
-+		bool OnGossipSelectCode(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char * code)
-+		{
-+			pPlayer->PlayerTalkClass->ClearMenus();
-+			if ( uiSender == GOSSIP_SENDER_MAIN )
-+			{
-+				if(islower(code[0]))
-+					toupper(code[0]);
++      bool OnGossipSelectCode(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char * code)
++      {
++         pPlayer->PlayerTalkClass->ClearMenus();
++         if ( uiSender == GOSSIP_SENDER_MAIN )
++         {
++            if(islower(code[0]))
++               toupper(code[0]);
 +
-+				if(passChecks(pPlayer, code))
-+				{
-+					Player * pBounty = sObjectAccessor->FindPlayerByName(code);
-+					switch (uiAction)
-+					{
-+						case GOSSIP_ACTION_INFO_DEF+5:
-+						{
-+							if(hasCurrency(pPlayer, BOUNTY_PRICE_1, SET_CURRENCY))
-+							{
-+								#if SET_CURRENCY != 2
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u','1000', '1')", pBounty->GetGUID());
-+								#else
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u','1', '1')", pBounty->GetGUID());
-+								#endif
-+								alertServer(code, 1);
-+								flagPlayer(code);
-+								pPlayer->PlayerTalkClass->SendCloseGossip();
-+							}
-+							break;
-+						}
-+							
-+						case GOSSIP_ACTION_INFO_DEF+6:
-+						{
-+							if(hasCurrency(pPlayer, BOUNTY_PRICE_2, SET_CURRENCY))
-+							{
-+								#if SET_CURRENCY != 2
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '2000', '2')", pBounty->GetGUID());
-+								#else
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '3', '2')", pBounty->GetGUID());
-+								#endif
-+								alertServer(code, 1);
-+								flagPlayer(code);
-+								pPlayer->PlayerTalkClass->SendCloseGossip();
-+							}
-+							break;
-+						}
-+						case GOSSIP_ACTION_INFO_DEF+7:
-+						{
-+							if(hasCurrency(pPlayer, BOUNTY_PRICE_3, SET_CURRENCY))
-+							{
-+								#if SET_CURRENCY != 2
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '5000', '3')", pBounty->GetGUID());
-+								#else
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '5', '3')", pBounty->GetGUID());
-+								#endif
-+								alertServer(code, 1);
-+								flagPlayer(code);
-+								pPlayer->PlayerTalkClass->SendCloseGossip();
-+							}
-+							break;
-+						}
-+						case GOSSIP_ACTION_INFO_DEF+8:
-+						{
-+							if(hasCurrency(pPlayer, BOUNTY_PRICE_4, SET_CURRENCY))
-+							{
-+								#if SET_CURRENCY != 2
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '10000', '4')", pBounty->GetGUID());
-+								#else
-+								CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '10', '3')", pBounty->GetGUID());
-+								#endif
-+								alertServer(code, 1);
-+								flagPlayer(code);
-+								pPlayer->PlayerTalkClass->SendCloseGossip();
-+							}
-+							break;
-+						}
++            if(passChecks(pPlayer, code))
++            {
++               Player * pBounty = sObjectAccessor->FindPlayerByName(code);
++               switch (uiAction)
++               {
++                  case GOSSIP_ACTION_INFO_DEF+5:
++                  {
++                     if(hasCurrency(pPlayer, BOUNTY_PRICE_1, SET_CURRENCY))
++                     {
++                        #if SET_CURRENCY != 2
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u','1000', '1')", pBounty->GetGUID());
++                        #else
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u','1', '1')", pBounty->GetGUID());
++                        #endif
++                        alertServer(code, 1);
++                        flagPlayer(code);
++                        pPlayer->PlayerTalkClass->SendCloseGossip();
++                     }
++                     break;
++                  }
 +
-+					}
-+				}
-+				else
-+				{
-+					pPlayer->PlayerTalkClass->SendCloseGossip();
-+				}
-+			}
-+			return true;
-+		}
++                  case GOSSIP_ACTION_INFO_DEF+6:
++                  {
++                     if(hasCurrency(pPlayer, BOUNTY_PRICE_2, SET_CURRENCY))
++                     {
++                        #if SET_CURRENCY != 2
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '2000', '2')", pBounty->GetGUID());
++                        #else
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '3', '2')", pBounty->GetGUID());
++                        #endif
++                        alertServer(code, 1);
++                        flagPlayer(code);
++                        pPlayer->PlayerTalkClass->SendCloseGossip();
++                     }
++                     break;
++                  }
++                  case GOSSIP_ACTION_INFO_DEF+7:
++                  {
++                     if(hasCurrency(pPlayer, BOUNTY_PRICE_3, SET_CURRENCY))
++                     {
++                        #if SET_CURRENCY != 2
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '5000', '3')", pBounty->GetGUID());
++                        #else
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '5', '3')", pBounty->GetGUID());
++                        #endif
++                        alertServer(code, 1);
++                        flagPlayer(code);
++                        pPlayer->PlayerTalkClass->SendCloseGossip();
++                     }
++                     break;
++                  }
++                  case GOSSIP_ACTION_INFO_DEF+8:
++                  {
++                     if(hasCurrency(pPlayer, BOUNTY_PRICE_4, SET_CURRENCY))
++                     {
++                        #if SET_CURRENCY != 2
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '10000', '4')", pBounty->GetGUID());
++                        #else
++                        CharacterDatabase.PExecute("INSERT INTO bounties VALUES('%u', '10', '3')", pBounty->GetGUID());
++                        #endif
++                        alertServer(code, 1);
++                        flagPlayer(code);
++                        pPlayer->PlayerTalkClass->SendCloseGossip();
++                     }
++                     break;
++                  }
++
++               }
++            }
++            else
++            {
++               pPlayer->PlayerTalkClass->SendCloseGossip();
++            }
++         }
++         return true;
++      }
 +};
 +
 +
 +class BountyKills : public PlayerScript
 +{
-+	public:
-+		BountyKills() : PlayerScript("BountyKills"){}
++   public:
++      BountyKills() : PlayerScript("BountyKills"){}
 +
-+		void OnPVPKill(Player * Killer, Player * Bounty)
-+		{
-+			if(Killer->GetGUID() == Bounty->GetGUID())
-+				return;
++      void OnPVPKill(Player * Killer, Player * Bounty)
++      {
++         if(Killer->GetGUID() == Bounty->GetGUID())
++            return;
 +
-+			QueryResult result = CharacterDatabase.PQuery("SELECT * FROM bounties WHERE guid='%u'", Bounty->GetGUID());
-+			if(!result)
-+				return;
++         QueryResult result = CharacterDatabase.PQuery("SELECT * FROM bounties WHERE guid='%u'", Bounty->GetGUID());
++         if(!result)
++            return;
 +
-+			Field * fields = result->Fetch();
++         Field * fields = result->Fetch();
 +#if SET_CURRENCY == 0
-+			switch(fields[2].GetUInt64())
-+			{
-+			case 1:
-+				Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_1 * 10000));
-+				break;
-+			case 2:
-+				Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_2 * 10000));
-+				break;
-+			case 3:
-+				Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_3 * 10000));
-+				break;
-+			case 4:
-+				Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_4 * 10000));
-+				break;
-+			}
++         switch(fields[2].GetUInt64())
++         {
++         case 1:
++            Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_1 * 10000));
++            break;
++         case 2:
++            Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_2 * 10000));
++            break;
++         case 3:
++            Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_3 * 10000));
++            break;
++         case 4:
++            Killer->SetMoney(Killer->GetMoney() + (BOUNTY_PRICE_4 * 10000));
++            break;
++         }
 +#endif
 +#if SET_CURRENCY == 1
-+			switch(fields[2].GetUInt64())
-+			{
-+			case 1:
-+				Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_1));
-+				break;
-+			case 2:
-+				Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_2));
-+				break;
-+			case 3:
-+				Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_3));
-+				break;
-+			case 4:
-+				Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_4));
-+				break;
-+			}
++         switch(fields[2].GetUInt64())
++         {
++         case 1:
++            Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_1));
++            break;
++         case 2:
++            Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_2));
++            break;
++         case 3:
++            Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_3));
++            break;
++         case 4:
++            Killer->SetHonorPoints(Killer->GetHonorPoints() + (BOUNTY_PRICE_4));
++            break;
++         }
 +#endif
 +#if SET_CURRENCY == 2
-+			switch(fields[2].GetUInt64())
-+			{
-+			case 1:
-+				Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_1);
-+				break;
-+			case 2:
-+				Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_2);
-+				break;
-+			case 3:
-+				Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_3);
-+				break;
-+			case 4:
-+				Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_4);
-+				break;
-+			}
++         switch(fields[2].GetUInt64())
++         {
++         case 1:
++            Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_1);
++            break;
++         case 2:
++            Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_2);
++            break;
++         case 3:
++            Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_3);
++            break;
++         case 4:
++            Killer->AddItem(TOKEN_ID, BOUNTY_PRICE_4);
++            break;
++         }
 +#endif
-+			CharacterDatabase.PExecute("DELETE FROM bounties WHERE guid='%u'", Bounty->GetGUID());
-+			alertServer(Bounty->GetName().c_str(), 2);
++         CharacterDatabase.PExecute("DELETE FROM bounties WHERE guid='%u'", Bounty->GetGUID());
++         alertServer(Bounty->GetName().c_str(), 2);
 +
-+		}
++      }
 +};
 +
 +void AddSC_BountyHunter()
 +{
-+	new BountyHunter();
-+	new BountyKills();
++   new BountyHunter();
++   new BountyKills();
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/enchant.cpp b/src/server/scripts/Custom/enchant.cpp
 new file mode 100644
-index 0000000..c6a7fdc
+index 0000000..4a3ef33
 --- /dev/null
 +++ b/src/server/scripts/Custom/enchant.cpp
 @@ -0,0 +1,1621 @@
@@ -22145,14 +22309,14 @@ index 86ef8bd..5564378 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index b4cae75..df91199 100644
+index 24e61e7..df91199 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -601,7 +601,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -600,4 +600,36 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_UPD_CHAR_PET_SLOT_BY_ID, "UPDATE character_pet SET slot = ? WHERE owner = ? AND id = ?", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_CHAR_PET_BY_ID, "DELETE FROM character_pet WHERE id = ?", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_CHAR_PET_BY_SLOT, "DELETE FROM character_pet WHERE owner = ? AND (slot = ? OR slot > ?)", CONNECTION_ASYNC);
-     // Prepatch by LordPsyan
--    // 01
++    // Prepatch by LordPsyan
 +    //Guild-Level-System
 +    //Load
 +    PrepareStatement(CHAR_SEL_GUILD_BONUS_INFO, "SELECT RequiredGuildLevel FROM guild_bonus_config WHERE BonusId = ?", CONNECTION_SYNCH);
@@ -22162,9 +22326,29 @@ index b4cae75..df91199 100644
 +    //Save
 +    PrepareStatement(CHAR_UPD_GUILD_LEVEL, "UPDATE guild SET level = ? WHERE guildid = ?", CONNECTION_ASYNC);
 +    PrepareStatement(CHAR_UPD_GUILD_XP, "UPDATE guild SET xp = (xp + ?) WHERE guildid = ?", CONNECTION_ASYNC);
-     // 02
-     // 03
-     // 04
++    // 02
++    // 03
++    // 04
++    // 05
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+ }
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
 index c73f0df..8117a52 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
@@ -22184,13 +22368,18 @@ index c73f0df..8117a52 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 8aa902f..73d0716 100644
+index d98a061..c5dc043 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -8,6 +8,14 @@
- #       http://www.realmsofwarcraft.com/       #
+@@ -3,6 +3,36 @@
  ################################################
+ [worldserver]
  
++################################################
++#         Prepatch config by LordPsyan         #
++#       http://www.realmsofwarcraft.com/       #
++################################################
++
 +#    Fake.WHO.List
 +#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
 +#        49 real players online
@@ -22199,10 +22388,27 @@ index 8aa902f..73d0716 100644
 +
 +Fake.WHO.List = 0
 +
++###################################################################################################
++#
++# Prepatch Configuration
++#
++#
++# If you add GuildLevelSystem or Individual XP Rate patches, you must
++# set this to 1.
++#
++# PrepatchGI Added
++#         default = 0 (GuildLevelSystem and Individual XP Rate not added)
++#                 = 1 (GuildLevelSystem and/or Individual XP Rate added)
++
++PrepatchGI.Added = 0
++
++#
++###################################################################################################
++
  ###################################################################################################
+ # SECTION INDEX
  #
- # Prepatch Configuration
-@@ -792,6 +800,13 @@ RecruitAFriend.MaxDifference = 4
+@@ -770,6 +800,13 @@ RecruitAFriend.MaxDifference = 4
  DisableWaterBreath = 4
  
  #
@@ -22216,7 +22422,7 @@ index 8aa902f..73d0716 100644
  #    AllFlightPaths
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
-@@ -2341,6 +2356,278 @@ Network.TcpNodelay = 1
+@@ -2319,6 +2356,278 @@ Network.TcpNodelay = 1
  #
  ###################################################################################################
  
@@ -22495,7 +22701,7 @@ index 8aa902f..73d0716 100644
  ###################################################################################################
  # CONSOLE AND REMOTE ACCESS
  #
-@@ -2620,6 +2907,40 @@ LevelReq.Auction = 1
+@@ -2598,6 +2907,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -22536,10 +22742,11 @@ index 8aa902f..73d0716 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
-@@ -2835,6 +3156,373 @@ PacketSpoof.BanDuration = 86400
+@@ -2812,3 +3155,375 @@ PacketSpoof.BanDuration = 86400
+ 
  #
  ###################################################################################################
- 
++
 +###################################################################################################
 +#
 +# BeastMaster Configuration
@@ -22721,12 +22928,12 @@ index 8aa902f..73d0716 100644
 +#
 +#    Transmogrification.Allowed
 +#        Description: A list of item entries that are allowed for transmogrification (skips quality and CanUseItem check)
-+#					  Example: "25 35674 5623"
++#                 Example: "25 35674 5623"
 +#        Default:    ""
 +#
 +#    Transmogrification.NotAllowed
 +#        Description: A list of item entries that are NOT allowed for transmogrification
-+#					  Example: "25 35674 5623"
++#                 Example: "25 35674 5623"
 +#        Default:    ""
 +
 +Logger.custom.transmog = 3, Console Server
@@ -22907,9 +23114,10 @@ index 8aa902f..73d0716 100644
 +#
 +###################################################################################################
 +
- #
- # Prepatch by LordPsyan.
- # See http://www.realmsofwarcraft.com/bb for forums and information.
++#
++# Prepatch by LordPsyan.
++# See http://www.realmsofwarcraft.com/bb for forums and information.
++#
 -- 
 2.1.0.rc1
 
