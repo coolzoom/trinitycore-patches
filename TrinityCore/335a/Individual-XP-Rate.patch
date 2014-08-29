@@ -1,6 +1,6 @@
-From 8dd4fcea8984cdb74ffa29a762af3dce05788058 Mon Sep 17 00:00:00 2001
+From 9bbd906da86e619904057993c52cd14e5ce6ebad Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 28 Aug 2014 09:02:35 -0400
+Date: Fri, 29 Aug 2014 08:29:14 -0400
 Subject: [PATCH] Individual-XP-Rate
 
 ---
@@ -44,10 +44,10 @@ index 0000000..5a757bf
 +INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index a73db68..fe2c039 100644
+index c2e38c3..4e3521e 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -688,7 +688,8 @@ enum RBACPermissions
+@@ -705,7 +705,8 @@ enum RBACPermissions
      // 02
      // 03
      // 04
@@ -58,7 +58,7 @@ index a73db68..fe2c039 100644
      // 07
      // 08
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 900bba0..ea34ef9 100644
+index 27bf513..09c3873 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -903,6 +903,10 @@ Player::Player(WorldSession* session): Unit(true)
@@ -70,21 +70,21 @@ index 900bba0..ea34ef9 100644
 +    _individual_kill = 0.0f;
 +    _individual_quest = 0.0f;
  }
-
+ 
  Player::~Player()
-@@ -15334,7 +15338,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15347,7 +15351,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
-
+ 
      // Not give XP in case already completed once repeatable quest
--    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
-+    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*(_individual_quest > 0 ? _individual_quest : sWorld->getRate(RATE_XP_QUEST)));
-
+-    uint32 XP = rewarded && !quest->IsDFQuest() ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
++    uint32 XP = rewarded && !quest->IsDFQuest() ? 0 : uint32(quest->XPValue(this)*(_individual_quest > 0 ? _individual_quest : sWorld->getRate(RATE_XP_QUEST)));
+ 
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
-@@ -26857,6 +26861,25 @@ bool Player::IsLoading() const
+@@ -26870,6 +26874,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
-
+ 
 +//Individuale_XP-Rate
 +void Player::SetIndividualRate(IndividualXpRate rate, float value)
 +{
@@ -114,7 +114,7 @@ index b1fd9d5..bf7be1f 100644
 @@ -917,6 +917,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
-
+ 
 +//Individuale_XP-Rate
 +enum IndividualXpRate
 +{
@@ -126,9 +126,9 @@ index b1fd9d5..bf7be1f 100644
  {
      public:
 @@ -2340,6 +2347,11 @@ class Player : public Unit, public GridObject<Player>
-
+ 
          bool IsLoading() const;
-
+ 
 +        //Individuale_XP-Rate
 +        void SetIndividualRate(IndividualXpRate rate, float value);
 +        float GetIndividualXpKillRate() { return _individual_kill; };
@@ -139,14 +139,14 @@ index b1fd9d5..bf7be1f 100644
          WhisperListContainer WhisperList;
 @@ -2668,6 +2680,10 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
-
+ 
          uint32 _activeCheats;
 +
 +        //Individuale_XP-Rate
 +        float _individual_kill;
 +        float _individual_quest;
  };
-
+ 
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
 index 2970e3a..8edb90f 100644
@@ -164,10 +164,10 @@ index 2970e3a..8edb90f 100644
                      // 07
                      // 08
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index ac47d59..2c17236 100644
+index 0d29f91..becb600 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1178,7 +1178,12 @@ enum TrinityStrings
+@@ -1205,7 +1205,12 @@ enum TrinityStrings
      // 02
      // 03
      // 04
@@ -195,7 +195,7 @@ index f70f172..7781ca3 100644
          };
          static ChatCommand commandTable[] =
 @@ -1393,6 +1395,68 @@ public:
-
+ 
          return true;
      }
 +
@@ -261,8 +261,8 @@ index f70f172..7781ca3 100644
 +        return true;
 +    }
  };
-
+ 
  void AddSC_modify_commandscript()
---
+-- 
 2.1.0.rc1
 
