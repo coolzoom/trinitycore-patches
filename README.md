@@ -2,6 +2,8 @@ TrinityCore-Patches now has a web site. There is a specific topic for patches. T
 
 http://www.realmsofwarcraft.com/bb
 
+This site also has the test servers for upcoming patches. Dark Psyon is the test server for 335a.
+
 Instead of posting an "issue" with suggestions or questions, try using the forums. I will try to check often and answer questions.
 
 There is a new prepatch. This patch must be used before using the patches you want, unless you are using an ALL patch, which already has the prepatch in it. You can now pick and choose which patches you wish to use, instead of being stuck with all of the patches.
@@ -9,12 +11,9 @@ There is a new prepatch. This patch must be used before using the patches you wa
 If you add GuildLevelSystem or Individual XP Rate patches, you must change a "PrepatchGI.Added = 0" to 1 or they won't work. This was the only way I could get those patches included in the prepatch. Setting this to 0 with either of those patches added will not disable the patch... it will crash the realm. (not test, but most likely). This is located at the top of the config file.
 
 Now for the patches...
-I will start with ALL patches. Currently there are 4 ALL Patches.
+I will start with the ALL patch. Apply Bots patch of your choice after applying ALL
 
 * ALL without any bots.
-* ALL with New NPCBots
-* ALL with Old NPCBots
-* All with Playerbots and Old NPCBots
 
 I am also accepting donations. I am only adding this because a few people have asked how to donate. I never
 thought about it, and never expected to get donations. I do this because I enjoy it. If you want to donate,
