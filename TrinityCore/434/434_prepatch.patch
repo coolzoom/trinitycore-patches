@@ -1,6 +1,6 @@
-From 28a55dc6542493c0acda556fcd9646b7b6a6c544 Mon Sep 17 00:00:00 2001
+From 5da08d24e2d1d8758f67a762ff962985d1974423 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 28 Aug 2014 14:31:46 -0400
+Date: Fri, 29 Aug 2014 07:47:24 -0400
 Subject: [PATCH] 434_prepatch
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH] 434_prepatch
  src/server/game/Miscellaneous/Language.h           |  26 +++-
  src/server/game/Scripting/ScriptLoader.cpp         | 162 ++++++++++++++++++++-
  src/server/scripts/Custom/CMakeLists.txt           |   4 +-
- .../Database/Implementation/CharacterDatabase.cpp  |  24 +++
+ .../Database/Implementation/CharacterDatabase.cpp  |  25 +++-
  .../Database/Implementation/CharacterDatabase.h    |  25 +++-
  src/server/worldserver/worldserver.conf.dist       |  27 ++++
- 11 files changed, 412 insertions(+), 9 deletions(-)
+ 11 files changed, 412 insertions(+), 10 deletions(-)
  create mode 100644 npc-entry-list.txt
 
 diff --git a/npc-entry-list.txt b/npc-entry-list.txt
@@ -50,11 +50,11 @@ index 0000000..4090a23
 +190010 - Warpweaver
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 25f7edd..cd824cd 100644
+index 020ed1a..c2e38c3 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -683,6 +683,30 @@ enum RBACPermissions
-     RBAC_PERM_COMMAND_MAILBOX                                = 777,
+@@ -700,6 +700,30 @@ enum RBACPermissions
+     RBAC_PERM_COMMAND_GUILD_INFO                             = 794,
  
      // custom permissions 1000+
 +    // Prepatch by LordPsyan
@@ -85,18 +85,18 @@ index 25f7edd..cd824cd 100644
  };
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index d9c92d0..9f382a3 100644
+index baafa14..27bf513 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -81,6 +81,7 @@
+@@ -79,6 +79,7 @@
+ #include "WorldPacket.h"
  #include "WorldSession.h"
- #include "MovementStructures.h"
  #include "GameObjectAI.h"
 +#include "Config.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12386,6 +12387,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12601,6 +12602,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -128,10 +128,10 @@ index d9c92d0..9f382a3 100644
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 422e5ce..a5d3fa3 100644
+index b250787..bfb88bd 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -1138,10 +1138,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -1041,10 +1041,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
@@ -191,7 +191,7 @@ index 422e5ce..a5d3fa3 100644
  {
      TC_LOG_DEBUG("network", "WORLD: Received CMSG_SET_FACTION_ATWAR");
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 537fa75..24ff516 100644
+index e6ff1a0..2970e3a 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -23,6 +23,7 @@
@@ -202,7 +202,7 @@ index 537fa75..24ff516 100644
  
  namespace Trinity
  {
-@@ -186,9 +187,36 @@ namespace Trinity
+@@ -183,9 +184,36 @@ namespace Trinity
  
                      xpMod *= creature->GetCreatureTemplate()->ModExperience;
                  }
@@ -241,10 +241,10 @@ index 537fa75..24ff516 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 0f917f4..60b0fe6 100644
+index cb86809..0d29f91 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1181,7 +1181,31 @@ enum TrinityStrings
+@@ -1199,7 +1199,31 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -278,10 +278,10 @@ index 0f917f4..60b0fe6 100644
      // NOT RESERVED IDS                   12000-1999999999
      // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 9bdf591..ae94944 100644
+index ed6c543..5d120b2 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1455,13 +1455,171 @@ void AddBattlegroundScripts()
+@@ -1434,13 +1434,171 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -474,13 +474,14 @@ index 80ebe36..20c2bc9 100644
  
  message("  -> Prepared: Custom")
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index f2e9ed8..e0fc421 100644
+index 0669d0b..2690b88 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -632,4 +632,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(CHAR_UPD_CHAR_PET_SLOT_BY_ID, "UPDATE character_pet SET slot = ? WHERE owner = ? AND id = ?", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_DEL_CHAR_PET_BY_ID, "DELETE FROM character_pet WHERE id = ?", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_DEL_CHAR_PET_BY_SLOT, "DELETE FROM character_pet WHERE owner = ? AND (slot = ? OR slot > ?)", CONNECTION_ASYNC);
+@@ -605,5 +605,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_SEL_PVPSTATS_MAXID, "SELECT MAX(id) FROM pvpstats_battlegrounds", CONNECTION_SYNCH);
+     PrepareStatement(CHAR_INS_PVPSTATS_BATTLEGROUND, "INSERT INTO pvpstats_battlegrounds (id, winner_faction, bracket_id, type, date) VALUES (?, ?, ?, ?, NOW())", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_INS_PVPSTATS_PLAYER, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
+-
 +    // Prepatch by LordPsyan
 +    // 01
 +    // 02
@@ -507,13 +508,13 @@ index f2e9ed8..e0fc421 100644
 +    // End of prepatch
  }
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 5accf57..79b3340 100644
+index 19b5fef..b918715 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -560,7 +560,30 @@ enum CharacterDatabaseStatements
-     CHAR_SEL_ITEMCONTAINER_MONEY,
-     CHAR_DEL_ITEMCONTAINER_MONEY,
-     CHAR_INS_ITEMCONTAINER_MONEY,
+@@ -537,7 +537,30 @@ enum CharacterDatabaseStatements
+     CHAR_SEL_PVPSTATS_MAXID,
+     CHAR_INS_PVPSTATS_BATTLEGROUND,
+     CHAR_INS_PVPSTATS_PLAYER,
 -
 +    // Prepatch by LordPsyan
 +    // 01
@@ -543,7 +544,7 @@ index 5accf57..79b3340 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index a6cdd20..c345a5f 100644
+index 9a78d74..76f9334 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -575,7 +576,7 @@ index a6cdd20..c345a5f 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -2924,3 +2946,8 @@ PacketSpoof.BanDuration = 86400
+@@ -3172,3 +3194,8 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
