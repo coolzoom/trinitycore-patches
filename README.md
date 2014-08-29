@@ -24,9 +24,6 @@ to donate, go here: http://www.realmsofwarcraft.com/donate.php or make a donatio
 
 Here is a list of the patches, and a detailed description of each. (Not finished, but working on it.)
 
-* **AHBot-No-VIP-Glyphs.patch** - 
-  AuctionHouse Bot buys and sells items in the AuctionHouse. Config settings and DB settings.
-
 * **All-In-One-NPC.patch** - 
   NPC that does a variety of things, from buffing to morphing.
 
