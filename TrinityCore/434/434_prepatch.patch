@@ -1,6 +1,6 @@
-From 5da08d24e2d1d8758f67a762ff962985d1974423 Mon Sep 17 00:00:00 2001
+From 0f3897dd3b5600e30d57a4a78542858afc797a27 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 29 Aug 2014 07:47:24 -0400
+Date: Sat, 30 Aug 2014 12:59:10 -0400
 Subject: [PATCH] 434_prepatch
 
 ---
@@ -50,7 +50,7 @@ index 0000000..4090a23
 +190010 - Warpweaver
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 020ed1a..c2e38c3 100644
+index fc22f76..812b00b 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -700,6 +700,30 @@ enum RBACPermissions
@@ -85,18 +85,18 @@ index 020ed1a..c2e38c3 100644
  };
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index baafa14..27bf513 100644
+index 45c0cea..0bc3e16 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -79,6 +79,7 @@
- #include "WorldPacket.h"
+@@ -81,6 +81,7 @@
  #include "WorldSession.h"
+ #include "MovementStructures.h"
  #include "GameObjectAI.h"
 +#include "Config.h"
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12601,6 +12602,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12386,6 +12387,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -128,10 +128,10 @@ index baafa14..27bf513 100644
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index b250787..bfb88bd 100644
+index 422e5ce..a5d3fa3 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -1041,10 +1041,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -1138,10 +1138,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
@@ -191,7 +191,7 @@ index b250787..bfb88bd 100644
  {
      TC_LOG_DEBUG("network", "WORLD: Received CMSG_SET_FACTION_ATWAR");
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index e6ff1a0..2970e3a 100644
+index 537fa75..24ff516 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -23,6 +23,7 @@
@@ -202,7 +202,7 @@ index e6ff1a0..2970e3a 100644
  
  namespace Trinity
  {
-@@ -183,9 +184,36 @@ namespace Trinity
+@@ -186,9 +187,36 @@ namespace Trinity
  
                      xpMod *= creature->GetCreatureTemplate()->ModExperience;
                  }
@@ -241,10 +241,10 @@ index e6ff1a0..2970e3a 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index cb86809..0d29f91 100644
+index 57fa39b..8c23953 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1199,7 +1199,31 @@ enum TrinityStrings
+@@ -1179,7 +1179,31 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -278,10 +278,10 @@ index cb86809..0d29f91 100644
      // NOT RESERVED IDS                   12000-1999999999
      // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index ed6c543..5d120b2 100644
+index 4b68aa6..918d802 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1434,13 +1434,171 @@ void AddBattlegroundScripts()
+@@ -1457,13 +1457,171 @@ void AddBattlegroundScripts()
  
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
@@ -474,10 +474,10 @@ index 80ebe36..20c2bc9 100644
  
  message("  -> Prepared: Custom")
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 0669d0b..2690b88 100644
+index adde80c..3b4bb7e 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -605,5 +605,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -637,5 +637,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      PrepareStatement(CHAR_SEL_PVPSTATS_MAXID, "SELECT MAX(id) FROM pvpstats_battlegrounds", CONNECTION_SYNCH);
      PrepareStatement(CHAR_INS_PVPSTATS_BATTLEGROUND, "INSERT INTO pvpstats_battlegrounds (id, winner_faction, bracket_id, type, date) VALUES (?, ?, ?, ?, NOW())", CONNECTION_ASYNC);
      PrepareStatement(CHAR_INS_PVPSTATS_PLAYER, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
@@ -508,10 +508,10 @@ index 0669d0b..2690b88 100644
 +    // End of prepatch
  }
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 19b5fef..b918715 100644
+index e2a046a..b6e597f 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -537,7 +537,30 @@ enum CharacterDatabaseStatements
+@@ -564,7 +564,30 @@ enum CharacterDatabaseStatements
      CHAR_SEL_PVPSTATS_MAXID,
      CHAR_INS_PVPSTATS_BATTLEGROUND,
      CHAR_INS_PVPSTATS_PLAYER,
@@ -544,7 +544,7 @@ index 19b5fef..b918715 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9a78d74..76f9334 100644
+index 14ac9a3..ffeb8f6 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -576,7 +576,7 @@ index 9a78d74..76f9334 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -3172,3 +3194,8 @@ PacketSpoof.BanDuration = 86400
+@@ -3284,3 +3306,8 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
