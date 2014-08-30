@@ -1,10 +1,11 @@
-From ce6c758cfb47c1516dd3bbfcfd73a5bd8911125a Mon Sep 17 00:00:00 2001
+From 544c77a8f04d191fe72190adbf4a5d38ddbe7707 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 30 Aug 2014 13:43:59 -0400
+Date: Sat, 30 Aug 2014 14:39:58 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
  README.NPCTELEPORT                                 |   14 +
+ Reforging_README.md                                |   40 +
  Transmog_CHANGELOG.md                              |  122 ++
  Transmog_README.md                                 |   50 +
  cmake/compiler/msvc/settings.cmake                 |    2 +-
@@ -66,14 +67,13 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/World/World.h                      |   49 +
  src/server/scripts/CMakeLists.txt                  |    4 +
  src/server/scripts/Commands/cs_anticheat.cpp       |  262 ++++
- src/server/scripts/Commands/cs_guild.cpp           |  120 ++
+ src/server/scripts/Commands/cs_guild.cpp           |  121 ++
  src/server/scripts/Commands/cs_modify.cpp          |   64 +
  src/server/scripts/Custom/ArenaGambler.cpp         |  308 ++++
  src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 +++++++++
  src/server/scripts/Custom/ArenaGamblingSystem.h    |  458 ++++++
  src/server/scripts/Custom/CMakeLists.txt           |    4 +-
- src/server/scripts/Custom/Reforging/README.md      |   40 +
- src/server/scripts/Custom/Reforging/Reforging.cpp  |  646 ++++++++
+ src/server/scripts/Custom/Reforging.cpp            |  646 ++++++++
  src/server/scripts/Custom/Transmogrification.cpp   |  838 ++++++++++
  src/server/scripts/Custom/Transmogrification.h     |  140 ++
  src/server/scripts/Custom/Transmogrifier.cpp       |  399 +++++
@@ -93,8 +93,9 @@ Subject: [PATCH] ALL-No-Bots
  .../Database/Implementation/CharacterDatabase.cpp  |   38 +-
  .../Database/Implementation/CharacterDatabase.h    |   34 +-
  src/server/worldserver/worldserver.conf.dist       |  443 ++++++
- 89 files changed, 15484 insertions(+), 138 deletions(-)
+ 89 files changed, 15485 insertions(+), 138 deletions(-)
  create mode 100644 README.NPCTELEPORT
+ create mode 100644 Reforging_README.md
  create mode 100644 Transmog_CHANGELOG.md
  create mode 100644 Transmog_README.md
  create mode 100644 event_readme.txt
@@ -117,8 +118,7 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 src/server/scripts/Custom/ArenaGambler.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.cpp
  create mode 100644 src/server/scripts/Custom/ArenaGamblingSystem.h
- create mode 100644 src/server/scripts/Custom/Reforging/README.md
- create mode 100644 src/server/scripts/Custom/Reforging/Reforging.cpp
+ create mode 100644 src/server/scripts/Custom/Reforging.cpp
  create mode 100644 src/server/scripts/Custom/Transmogrification.cpp
  create mode 100644 src/server/scripts/Custom/Transmogrification.h
  create mode 100644 src/server/scripts/Custom/Transmogrifier.cpp
@@ -155,6 +155,52 @@ index 0000000..015c9c2
 +
 +Run the query setup_npc_teleport.sql located in the trinity sql directory on
 +your world DB. This will setup the DB and you can customize from there.
+diff --git a/Reforging_README.md b/Reforging_README.md
+new file mode 100644
+index 0000000..3fb4d03
+--- /dev/null
++++ b/Reforging_README.md
+@@ -0,0 +1,40 @@
++#Reforging [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=reforging)](https://travis-ci.org/Rochet2/TrinityCore)
++
++####About
++Blizz*like* reforging
++Change 40% of your item stats to something else
++Sends item packets so you can see the changes on item tooltips
++Simple and easy to use interface
++Made for 3.3.5a.<br />
++Source: https://rochet2.github.io/?page=Reforging
++
++Video: https://youtu.be/84EtvKTfqQM
++
++####Installation
++
++Available as:
++- Direct merge: https://github.com/Rochet2/TrinityCore/tree/reforging
++- Diff: https://github.com/Rochet2/TrinityCore/compare/reforging.diff
++- Patch: https://github.com/Rochet2/TrinityCore/compare/reforging.patch
++
++Using direct merge:
++- open git bash to source location
++- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
++- do `git pull rochet2 reforging`
++- use cmake and compile
++
++Using diff:
++- DO NOT COPY THE DIFF DIRECTLY! It causes apply to fail.
++- download the diff by __right clicking__ the link and select __Save link as__
++- place the downloaded `reforging.diff` to the source root folder
++- open git bash to source location
++- do `git apply reforging.diff`
++- use cmake and compile
++
++After compiling:
++- Navigate to `\src\server\scripts\Custom\Reforging\sql\`
++- Run `characters.sql` to your characters database
++ - optionally you can also insert a reforger NPC to your database by running `world_npc.sql` to your world database.
++
++####Bugs and Contact
++Report issues and similar to https://rochet2.github.io/
 diff --git a/Transmog_CHANGELOG.md b/Transmog_CHANGELOG.md
 new file mode 100644
 index 0000000..d5c97ec
@@ -2471,7 +2517,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 020ed1a..e45caa6 100644
+index 020ed1a..b1d8bff 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -700,6 +700,33 @@ enum RBACPermissions
@@ -2479,7 +2525,7 @@ index 020ed1a..e45caa6 100644
  
      // custom permissions 1000+
 +    // Prepatch by LordPsyan
-+    //RBAC_PERM_COMMAND_GUILD_INFO                             = 1000,
++    RBAC_PERM_COMMAND_GUILDL_INFO                            = 1000,
 +    RBAC_PERM_COMMAND_GUILD_SET_LEVEL                        = 1001,
 +    RBAC_PERM_COMMAND_GUILD_GIVE_XP                          = 1002,
 +    // 02
@@ -6971,25 +7017,26 @@ index 0000000..3cc6784
 +    new anticheat_commandscript();
 +}
 diff --git a/src/server/scripts/Commands/cs_guild.cpp b/src/server/scripts/Commands/cs_guild.cpp
-index 7b07408..484ac00 100644
+index 7b07408..453d800 100644
 --- a/src/server/scripts/Commands/cs_guild.cpp
 +++ b/src/server/scripts/Commands/cs_guild.cpp
-@@ -45,6 +45,8 @@ public:
+@@ -45,6 +45,9 @@ public:
              { "rank",     rbac::RBAC_PERM_COMMAND_GUILD_RANK,     true, &HandleGuildRankCommand,             "", NULL },
              { "rename",   rbac::RBAC_PERM_COMMAND_GUILD_RENAME,   true, &HandleGuildRenameCommand,           "", NULL },
              { "info",     rbac::RBAC_PERM_COMMAND_GUILD_INFO,     true, &HandleGuildInfoCommand,             "", NULL },
++            { "linfo",    rbac::RBAC_PERM_COMMAND_GUILDL_INFO,     true, &HandleGuildLInfoCommand,            "", NULL },
 +            { "setlevel", rbac::RBAC_PERM_COMMAND_GUILD_SET_LEVEL,true, &HandleGuildSetLevelCommand,         "", NULL },
 +            { "givexp",   rbac::RBAC_PERM_COMMAND_GUILD_GIVE_XP,  true, &HandleGuildGiveXpCommand,           "", NULL },
              { NULL,       0,                               false, NULL,                                "", NULL }
          };
          static ChatCommand commandTable[] =
-@@ -287,6 +289,124 @@ public:
+@@ -287,6 +290,124 @@ public:
          handler->PSendSysMessage(LANG_GUILD_INFO_EXTRA_INFO, guild->GetInfo().c_str()); // Extra Information
          return true;
      }
 +
 +    //Guild-Level-System
-+    static bool HandleGuildInfoCommand(ChatHandler* handler, char const* /*args*/)
++    static bool HandleGuildLInfoCommand(ChatHandler* handler, char const* /*args*/)
 +    {
 +        Guild* guild = handler->GetSession()->GetPlayer()->GetGuild();
 +
@@ -8718,57 +8765,11 @@ index 80ebe36..20c2bc9 100644
  )
  
  message("  -> Prepared: Custom")
-diff --git a/src/server/scripts/Custom/Reforging/README.md b/src/server/scripts/Custom/Reforging/README.md
-new file mode 100644
-index 0000000..3fb4d03
---- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/README.md
-@@ -0,0 +1,40 @@
-+#Reforging [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=reforging)](https://travis-ci.org/Rochet2/TrinityCore)
-+
-+####About
-+Blizz*like* reforging
-+Change 40% of your item stats to something else
-+Sends item packets so you can see the changes on item tooltips
-+Simple and easy to use interface
-+Made for 3.3.5a.<br />
-+Source: https://rochet2.github.io/?page=Reforging
-+
-+Video: https://youtu.be/84EtvKTfqQM
-+
-+####Installation
-+
-+Available as:
-+- Direct merge: https://github.com/Rochet2/TrinityCore/tree/reforging
-+- Diff: https://github.com/Rochet2/TrinityCore/compare/reforging.diff
-+- Patch: https://github.com/Rochet2/TrinityCore/compare/reforging.patch
-+
-+Using direct merge:
-+- open git bash to source location
-+- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
-+- do `git pull rochet2 reforging`
-+- use cmake and compile
-+
-+Using diff:
-+- DO NOT COPY THE DIFF DIRECTLY! It causes apply to fail.
-+- download the diff by __right clicking__ the link and select __Save link as__
-+- place the downloaded `reforging.diff` to the source root folder
-+- open git bash to source location
-+- do `git apply reforging.diff`
-+- use cmake and compile
-+
-+After compiling:
-+- Navigate to `\src\server\scripts\Custom\Reforging\sql\`
-+- Run `characters.sql` to your characters database
-+ - optionally you can also insert a reforger NPC to your database by running `world_npc.sql` to your world database.
-+
-+####Bugs and Contact
-+Report issues and similar to https://rochet2.github.io/
-diff --git a/src/server/scripts/Custom/Reforging/Reforging.cpp b/src/server/scripts/Custom/Reforging/Reforging.cpp
+diff --git a/src/server/scripts/Custom/Reforging.cpp b/src/server/scripts/Custom/Reforging.cpp
 new file mode 100644
 index 0000000..ff16b5e
 --- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/Reforging.cpp
++++ b/src/server/scripts/Custom/Reforging.cpp
 @@ -0,0 +1,646 @@
 +#include "ScriptPCH.h"
 +

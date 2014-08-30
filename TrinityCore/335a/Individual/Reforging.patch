@@ -1,22 +1,68 @@
-From 64fbf01a491cb5c6c1abe8e0067ef5f10721d8ae Mon Sep 17 00:00:00 2001
+From 0f75f39d9dcbdb17c24512804cc51f80076f91e4 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 29 Aug 2014 08:44:16 -0400
+Date: Sat, 30 Aug 2014 14:37:23 -0400
 Subject: [PATCH] Reforging
 
 ---
- sql/TrinityCore-Patches/Reforging/characters.sql  |  10 +
- sql/TrinityCore-Patches/Reforging/world_npc.sql   |   6 +
- src/server/game/Entities/Player/Player.cpp        |  34 +-
- src/server/game/Entities/Player/Player.h          |   9 +
- src/server/game/Scripting/ScriptLoader.cpp        |   6 +-
- src/server/scripts/Custom/Reforging/README.md     |  40 ++
- src/server/scripts/Custom/Reforging/Reforging.cpp | 646 ++++++++++++++++++++++
+ Reforging_README.md                              |  40 ++
+ sql/TrinityCore-Patches/Reforging/characters.sql |  10 +
+ sql/TrinityCore-Patches/Reforging/world_npc.sql  |   6 +
+ src/server/game/Entities/Player/Player.cpp       |  34 +-
+ src/server/game/Entities/Player/Player.h         |   9 +
+ src/server/game/Scripting/ScriptLoader.cpp       |   6 +-
+ src/server/scripts/Custom/Reforging.cpp          | 646 +++++++++++++++++++++++
  7 files changed, 746 insertions(+), 5 deletions(-)
+ create mode 100644 Reforging_README.md
  create mode 100644 sql/TrinityCore-Patches/Reforging/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Reforging/world_npc.sql
- create mode 100644 src/server/scripts/Custom/Reforging/README.md
- create mode 100644 src/server/scripts/Custom/Reforging/Reforging.cpp
+ create mode 100644 src/server/scripts/Custom/Reforging.cpp
 
+diff --git a/Reforging_README.md b/Reforging_README.md
+new file mode 100644
+index 0000000..3fb4d03
+--- /dev/null
++++ b/Reforging_README.md
+@@ -0,0 +1,40 @@
++#Reforging [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=reforging)](https://travis-ci.org/Rochet2/TrinityCore)
++
++####About
++Blizz*like* reforging
++Change 40% of your item stats to something else
++Sends item packets so you can see the changes on item tooltips
++Simple and easy to use interface
++Made for 3.3.5a.<br />
++Source: https://rochet2.github.io/?page=Reforging
++
++Video: https://youtu.be/84EtvKTfqQM
++
++####Installation
++
++Available as:
++- Direct merge: https://github.com/Rochet2/TrinityCore/tree/reforging
++- Diff: https://github.com/Rochet2/TrinityCore/compare/reforging.diff
++- Patch: https://github.com/Rochet2/TrinityCore/compare/reforging.patch
++
++Using direct merge:
++- open git bash to source location
++- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
++- do `git pull rochet2 reforging`
++- use cmake and compile
++
++Using diff:
++- DO NOT COPY THE DIFF DIRECTLY! It causes apply to fail.
++- download the diff by __right clicking__ the link and select __Save link as__
++- place the downloaded `reforging.diff` to the source root folder
++- open git bash to source location
++- do `git apply reforging.diff`
++- use cmake and compile
++
++After compiling:
++- Navigate to `\src\server\scripts\Custom\Reforging\sql\`
++- Run `characters.sql` to your characters database
++ - optionally you can also insert a reforger NPC to your database by running `world_npc.sql` to your world database.
++
++####Bugs and Contact
++Report issues and similar to https://rochet2.github.io/
 diff --git a/sql/TrinityCore-Patches/Reforging/characters.sql b/sql/TrinityCore-Patches/Reforging/characters.sql
 new file mode 100644
 index 0000000..9ac7bf6
@@ -46,7 +92,7 @@ index 0000000..9a91aae
 +INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
 +(@Entry, 20988, 0, @Name, "Arcane Reforger", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 27bf513..f62173d 100644
+index 061d960..6c95017 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -7788,6 +7788,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
@@ -114,7 +160,7 @@ index 27bf513..f62173d 100644
      // 03
      // 04
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index b1fd9d5..7994021 100644
+index 27ea835..d7c576b 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -126,6 +126,13 @@ typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
@@ -131,7 +177,7 @@ index b1fd9d5..7994021 100644
  typedef std::list<uint64> WhisperListContainer;
  
  struct SpellCooldown
-@@ -2340,6 +2347,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2342,6 +2349,8 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsLoading() const;
  
@@ -164,57 +210,11 @@ index 5d120b2..9368799 100644
  // end79
  // end80
  #endif
-diff --git a/src/server/scripts/Custom/Reforging/README.md b/src/server/scripts/Custom/Reforging/README.md
-new file mode 100644
-index 0000000..3fb4d03
---- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/README.md
-@@ -0,0 +1,40 @@
-+#Reforging [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=reforging)](https://travis-ci.org/Rochet2/TrinityCore)
-+
-+####About
-+Blizz*like* reforging
-+Change 40% of your item stats to something else
-+Sends item packets so you can see the changes on item tooltips
-+Simple and easy to use interface
-+Made for 3.3.5a.<br />
-+Source: https://rochet2.github.io/?page=Reforging
-+
-+Video: https://youtu.be/84EtvKTfqQM
-+
-+####Installation
-+
-+Available as:
-+- Direct merge: https://github.com/Rochet2/TrinityCore/tree/reforging
-+- Diff: https://github.com/Rochet2/TrinityCore/compare/reforging.diff
-+- Patch: https://github.com/Rochet2/TrinityCore/compare/reforging.patch
-+
-+Using direct merge:
-+- open git bash to source location
-+- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
-+- do `git pull rochet2 reforging`
-+- use cmake and compile
-+
-+Using diff:
-+- DO NOT COPY THE DIFF DIRECTLY! It causes apply to fail.
-+- download the diff by __right clicking__ the link and select __Save link as__
-+- place the downloaded `reforging.diff` to the source root folder
-+- open git bash to source location
-+- do `git apply reforging.diff`
-+- use cmake and compile
-+
-+After compiling:
-+- Navigate to `\src\server\scripts\Custom\Reforging\sql\`
-+- Run `characters.sql` to your characters database
-+ - optionally you can also insert a reforger NPC to your database by running `world_npc.sql` to your world database.
-+
-+####Bugs and Contact
-+Report issues and similar to https://rochet2.github.io/
-diff --git a/src/server/scripts/Custom/Reforging/Reforging.cpp b/src/server/scripts/Custom/Reforging/Reforging.cpp
+diff --git a/src/server/scripts/Custom/Reforging.cpp b/src/server/scripts/Custom/Reforging.cpp
 new file mode 100644
 index 0000000..ff16b5e
 --- /dev/null
-+++ b/src/server/scripts/Custom/Reforging/Reforging.cpp
++++ b/src/server/scripts/Custom/Reforging.cpp
 @@ -0,0 +1,646 @@
 +#include "ScriptPCH.h"
 +
