@@ -1,6 +1,6 @@
-From a3605eedeb948f5a7798d1123c4adc4a1d8016cc Mon Sep 17 00:00:00 2001
+From ce6c758cfb47c1516dd3bbfcfd73a5bd8911125a Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 30 Aug 2014 12:10:09 -0400
+Date: Sat, 30 Aug 2014 13:43:59 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -29,7 +29,7 @@ Subject: [PATCH] ALL-No-Bots
  .../game/Battlegrounds/BattlegroundQueue.cpp       |   85 +-
  src/server/game/Battlegrounds/BattlegroundQueue.h  |   11 +-
  .../game/Battlegrounds/Zones/BattlegroundAB.cpp    |    2 +-
- .../game/Battlegrounds/Zones/BattlegroundAV.cpp    |   20 +-
+ .../game/Battlegrounds/Zones/BattlegroundAV.cpp    |   19 +-
  .../game/Battlegrounds/Zones/BattlegroundWS.cpp    |    3 +-
  src/server/game/CMakeLists.txt                     |    5 +
  src/server/game/Cfbg/Cfbg.cpp                      |  325 ++++
@@ -93,7 +93,7 @@ Subject: [PATCH] ALL-No-Bots
  .../Database/Implementation/CharacterDatabase.cpp  |   38 +-
  .../Database/Implementation/CharacterDatabase.h    |   34 +-
  src/server/worldserver/worldserver.conf.dist       |  443 ++++++
- 89 files changed, 15484 insertions(+), 139 deletions(-)
+ 89 files changed, 15484 insertions(+), 138 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Transmog_CHANGELOG.md
  create mode 100644 Transmog_README.md
@@ -2471,7 +2471,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 020ed1a..034c56a 100644
+index 020ed1a..e45caa6 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -700,6 +700,33 @@ enum RBACPermissions
@@ -3643,7 +3643,7 @@ index 2622ab9..4438c56 100644
                  }
  
 diff --git a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp b/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
-index fde358b..2dae5ae 100644
+index fde358b..3f02942 100644
 --- a/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
 +++ b/src/server/game/Battlegrounds/Zones/BattlegroundAV.cpp
 @@ -89,7 +89,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
@@ -3682,16 +3682,15 @@ index fde358b..2dae5ae 100644
          RewardHonorToTeam(GetBonusHonorFromKill(BG_AV_KILL_CAPTAIN), ALLIANCE);
          UpdateScore(HORDE, (-1)*BG_AV_RES_CAPTAIN);
          //spawn destroyed aura
-@@ -150,7 +150,7 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
- {
+@@ -151,6 +151,7 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
      if (GetStatus() != STATUS_IN_PROGRESS)
          return;//maybe we should log this, cause this must be a cheater or a big bug
--    uint8 team = GetTeamIndexByTeamId(player->GetTeam());
+     uint8 team = GetTeamIndexByTeamId(player->GetTeam());
 +    uint8 oteam = GetTeamIndexByTeamId(GetOtherTeam(player->GetTeam()));
      /// @todo add reputation, events (including quest not available anymore, next quest available, go/npc de/spawning)and maybe honor
      TC_LOG_DEBUG("bg.battleground", "BG_AV Quest %i completed", questid);
      switch (questid)
-@@ -175,21 +175,21 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
+@@ -175,21 +176,21 @@ void BattlegroundAV::HandleQuestComplete(uint32 questid, Player* player)
          case AV_QUEST_A_COMMANDER1:
          case AV_QUEST_H_COMMANDER1:
              m_Team_QuestStatus[team][1]++;
@@ -3716,7 +3715,7 @@ index fde358b..2dae5ae 100644
              if (m_Team_QuestStatus[team][3] == 120)
                  TC_LOG_DEBUG("bg.battleground", "BG_AV Quest %i completed (need to implement some events here", questid);
              break;
-@@ -471,7 +471,7 @@ void BattlegroundAV::EndBattleground(uint32 winner)
+@@ -471,7 +472,7 @@ void BattlegroundAV::EndBattleground(uint32 winner)
              rep[i]   += BG_AV_REP_SURVIVING_CAPTAIN;
          }
          if (rep[i] != 0)
@@ -3725,7 +3724,7 @@ index fde358b..2dae5ae 100644
          if (kills[i] != 0)
              RewardHonorToTeam(GetBonusHonorFromKill(kills[i]), i == 0 ? ALLIANCE : HORDE);
      }
-@@ -576,7 +576,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
+@@ -576,7 +577,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
              SpawnBGObject(BG_AV_OBJECT_BURN_DUNBALDAR_SOUTH + i + (tmp * 10), RESPAWN_IMMEDIATELY);
  
          UpdateScore((owner == ALLIANCE) ? HORDE : ALLIANCE, -1 * BG_AV_RES_TOWER);
