@@ -1,0 +1,208 @@
+From 0df0b48c4d92bcc6d2334d7429386e0b5160eadb Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 31 Aug 2014 11:03:43 -0400
+Subject: [PATCH] Cheats
+
+---
+ src/server/game/Entities/Player/Player.cpp   | 16 +++++++++---
+ src/server/game/Handlers/SpellHandler.cpp    |  3 +++
+ src/server/game/Spells/Spell.cpp             | 10 +++++---
+ src/server/game/Spells/SpellInfo.cpp         |  6 ++++-
+ src/server/game/World/World.cpp              |  5 ++++
+ src/server/game/World/World.h                |  3 +++
+ src/server/worldserver/worldserver.conf.dist | 37 ++++++++++++++++++++++++++++
+ 7 files changed, 72 insertions(+), 8 deletions(-)
+
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index 158ff17..a6eb6de 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -1682,7 +1682,10 @@ void Player::Update(uint32 p_time)
+ 
+                     // do attack
+                     AttackerStateUpdate(victim, BASE_ATTACK);
+-                    resetAttackTimer(BASE_ATTACK);
++                    if (sWorld->getBoolConfig(CONFIG_HURT_IN_REAL_TIME))
++                        AttackStop();
++                    else
++                        resetAttackTimer(BASE_ATTACK);
+                 }
+             }
+ 
+@@ -22053,6 +22056,8 @@ void Player::AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 ite
+ 
+ void Player::AddSpellCooldown(uint32 spellid, uint32 itemid, time_t end_time)
+ {
++    if (sWorld->getBoolConfig(CONFIG_NO_COOLDOWN))
++        return;
+     SpellCooldown sc;
+     sc.end = end_time;
+     sc.itemid = itemid;
+@@ -22874,10 +22879,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
+ 
+     SendEquipmentSetList();
+ 
++    float speedrate = sWorld->getFloatConfig(CONFIG_SPEED_GAME);
++    uint32 speedtime = ((sWorld->GetGameTime() - sWorld->GetUptime()) + (sWorld->GetUptime() * speedrate));
++
+     data.Initialize(SMSG_LOGIN_SETTIMESPEED, 4 + 4 + 4);
+-    data.AppendPackedTime(sWorld->GetGameTime());
+-    data << float(0.01666667f);                             // game speed
+-    data << uint32(0);                                      // added in 3.1.2
++    data.AppendPackedTime(speedtime);
++    data << float(0.01666667f) * speedrate; // game speed
++    data << uint32(0); // added in 3.1.2
+     GetSession()->SendPacket(&data);
+ 
+     GetReputationMgr().SendForceReactions();                // SMSG_SET_FORCED_REACTIONS
+diff --git a/src/server/game/Handlers/SpellHandler.cpp b/src/server/game/Handlers/SpellHandler.cpp
+index 13f79fb..47af710 100644
+--- a/src/server/game/Handlers/SpellHandler.cpp
++++ b/src/server/game/Handlers/SpellHandler.cpp
+@@ -359,6 +359,9 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
+         return;
+     }
+ 
++    if (sWorld->getBoolConfig(CONFIG_NO_COOLDOWN))
++        _player->RemoveSpellCooldown(spellId, true);
++
+     // Client is resending autoshot cast opcode when other spell is cast during shoot rotation
+     // Skip it to prevent "interrupt" message
+     if (spellInfo->IsAutoRepeatRangedSpell() && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)
+diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
+index de6effb..2bbb874 100644
+--- a/src/server/game/Spells/Spell.cpp
++++ b/src/server/game/Spells/Spell.cpp
+@@ -2967,6 +2967,9 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
+         if (!m_casttime && !m_spellInfo->StartRecoveryTime && !m_castItemGUID && GetCurrentContainer() == CURRENT_GENERIC_SPELL)
+             cast(true);
+     }
++        if (sWorld->getBoolConfig(CONFIG_NO_COOLDOWN))
++            if (m_caster->GetTypeId() == TYPEID_PLAYER)
++                ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id, true);
+ }
+ 
+ void Spell::cancel()
+@@ -4633,7 +4636,7 @@ SpellCastResult Spell::CheckCast(bool strict)
+         {
+             if (m_triggeredByAuraSpell)
+                 return SPELL_FAILED_DONT_REPORT;
+-            else
++            else if (!sWorld->getBoolConfig(CONFIG_NO_COOLDOWN))
+                 return SPELL_FAILED_NOT_READY;
+         }
+ 
+@@ -4649,8 +4652,9 @@ SpellCastResult Spell::CheckCast(bool strict)
+     }
+ 
+     // Check global cooldown
+-    if (strict && !(_triggeredCastFlags & TRIGGERED_IGNORE_GCD) && HasGlobalCooldown())
+-        return SPELL_FAILED_NOT_READY;
++    if (!sWorld->getBoolConfig(CONFIG_NO_COOLDOWN))
++        if (strict && !(_triggeredCastFlags & TRIGGERED_IGNORE_GCD) && HasGlobalCooldown())
++            return SPELL_FAILED_NOT_READY;
+ 
+     // only triggered spells can be processed an ended battleground
+     if (!IsTriggered() && m_caster->GetTypeId() == TYPEID_PLAYER)
+diff --git a/src/server/game/Spells/SpellInfo.cpp b/src/server/game/Spells/SpellInfo.cpp
+index 99c3d23..5342846 100644
+--- a/src/server/game/Spells/SpellInfo.cpp
++++ b/src/server/game/Spells/SpellInfo.cpp
+@@ -25,6 +25,7 @@
+ #include "Battleground.h"
+ #include "Vehicle.h"
+ #include "Pet.h"
++#include "World.h"
+ 
+ uint32 GetTargetFlagMask(SpellTargetObjectTypes objType)
+ {
+@@ -2103,7 +2104,10 @@ uint32 SpellInfo::CalcCastTime(Spell* spell /*= NULL*/) const
+     if (Attributes & SPELL_ATTR0_REQ_AMMO && (!IsAutoRepeatRangedSpell()))
+         castTime += 500;
+ 
+-    return (castTime > 0) ? uint32(castTime) : 0;
++    if (!sWorld->getBoolConfig(CONFIG_NO_CAST_TIME))
++        return (castTime > 0) ? uint32(castTime) : 0;
++    else
++        return 0;
+ }
+ 
+ uint32 SpellInfo::GetMaxTicks() const
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index 79dc565..e83c9ae 100644
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -1107,6 +1107,11 @@ void World::LoadConfigSettings(bool reload)
+     m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+     m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+ 
++    m_float_configs[CONFIG_SPEED_GAME] = sConfigMgr->GetFloatDefault("Custom.SpeedGame", 1.0f);
++    m_bool_configs[CONFIG_NO_CAST_TIME] = sConfigMgr->GetBoolDefault("Custom.NoCastTime", false);
++    m_bool_configs[CONFIG_NO_COOLDOWN] = sConfigMgr->GetBoolDefault("Custom.NoCooldown", false);
++    m_bool_configs[CONFIG_HURT_IN_REAL_TIME] = sConfigMgr->GetBoolDefault("Custom.HurtInRealTime", false);
++
+     ///- Load the CharDelete related config options
+     m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
+     m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 8a36a0a..8323f94 100644
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -156,6 +156,9 @@ enum WorldBoolConfigs
+     CONFIG_STATS_LIMITS_ENABLE,
+     CONFIG_INSTANCES_RESET_ANNOUNCE,
+     CONFIG_IP_BASED_ACTION_LOGGING,
++    CONFIG_NO_CAST_TIME,
++    CONFIG_NO_COOLDOWN,
++    CONFIG_HURT_IN_REAL_TIME,
+     BOOL_CONFIG_VALUE_COUNT
+ };
+ 
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 9a78d74..9f42994 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -3172,3 +3172,40 @@ PacketSpoof.BanDuration = 86400
+ 
+ #
+ ###################################################################################################
++
++###################################################################################################
++#
++# Custom.SpeedGame
++# Set it to a number upper than 1 to speed up realm timer
++# Default : 1 (Real Time)
++# Example : 60 to force 1scde (real time) = 1 minute (realm timer)
++#
++
++Custom.SpeedGame = 1
++
++#
++# Custom.NoCastTime
++# Set it to 1 to disable cast time
++# Default : 0 (Cast Time Enable)
++#
++
++Custom.NoCastTime = 0
++
++#
++# Custom.NoCooldown
++# Set it to 1 to disable cooldown
++# Default : 0 (Cooldown Enable)
++#
++
++Custom.NoCooldown = 0
++
++#
++# Custom.HurtInRealTime
++# Set it to 1 to disable autohurt with weapon
++# Default : 0 (Autohurt Enable)
++#
++
++Custom.HurtInRealTime = 0
++
++#
++###################################################################################################
+-- 
+2.1.0.rc1
+
