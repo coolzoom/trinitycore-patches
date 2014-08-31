@@ -1,0 +1,132 @@
+From c98b0c64a4bcdf25d8236b32889375e10604991e Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 31 Aug 2014 11:49:48 -0400
+Subject: [PATCH] Guard-Elite-Honor
+
+---
+ src/server/game/Entities/Player/Player.cpp   | 47 ++++++++++++++++++++++++++++
+ src/server/game/World/World.cpp              |  3 ++
+ src/server/game/World/World.h                |  4 +++
+ src/server/worldserver/worldserver.conf.dist | 22 +++++++++++++
+ 4 files changed, 76 insertions(+)
+
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index 158ff17..b9e725b 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -7197,6 +7197,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
+         }
++        else if (sWorld->getBoolConfig(CONFIG_GAIN_HONOR_GUARD) && victim->ToCreature()->IsGuard())
++        {
++            uint8 k_level = getLevel();
++            uint8 k_grey = Trinity::XP::GetGrayLevel(k_level);
++            uint8 v_level = victim->getLevel();
++
++            if (v_level <= k_grey)
++                return false;
++
++            uint32 victim_title = 0;
++            victim_guid = 0;
++
++            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
++
++            // count the number of playerkills in one day
++            ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
++            // and those in a lifetime
++            ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
++        }
++        else if (sWorld->getBoolConfig(CONFIG_GAIN_HONOR_ELITE) && victim->ToCreature()->isElite())
++        {
++            uint8 k_level = getLevel();
++            uint8 k_grey = Trinity::XP::GetGrayLevel(k_level);
++            uint8 v_level = victim->getLevel();
++
++            if (v_level <= k_grey)
++                return false;
++
++            uint32 victim_title = 0;
++            victim_guid = 0;
++            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
++            // count the number of playerkills in one day
++            ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
++
++            // and those in a lifetime
++            ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
++        }
+         else
+         {
+             if (!victim->ToCreature()->IsRacialLeader())
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index 79dc565..ce859d6 100644
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -1107,6 +1107,9 @@ void World::LoadConfigSettings(bool reload)
+     m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+     m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+ 
++    m_bool_configs[CONFIG_GAIN_HONOR_GUARD] = sConfigMgr->GetBoolDefault("Custom.GainHonorOnGuardKill", false);
++    m_bool_configs[CONFIG_GAIN_HONOR_ELITE] = sConfigMgr->GetBoolDefault("Custom.GainHonorOnEliteKill", false);
++
+     ///- Load the CharDelete related config options
+     m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
+     m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 8a36a0a..1082dd7 100644
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -156,6 +156,10 @@ enum WorldBoolConfigs
+     CONFIG_STATS_LIMITS_ENABLE,
+     CONFIG_INSTANCES_RESET_ANNOUNCE,
+     CONFIG_IP_BASED_ACTION_LOGGING,
++
++    CONFIG_GAIN_HONOR_GUARD,
++    CONFIG_GAIN_HONOR_ELITE,
++
+     BOOL_CONFIG_VALUE_COUNT
+ };
+ 
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 9a78d74..b22e274 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -3172,3 +3172,25 @@ PacketSpoof.BanDuration = 86400
+ 
+ #
+ ###################################################################################################
++
++###################################################################################################
++#
++# Custom.GainHonorOnGuardKill
++# Set it to 1 to gain honor when you kill a guard.
++# Note that not all city guards will give you honor. It seems only capital and big city guards are flagged
++# as so in the database.
++# Default : 0 (No honor when you kill a guard)
++#
++
++Custom.GainHonorOnGuardKill = 0
++
++#
++# Custom.GainHonorOnEliteKill
++# Set it to 1 to gain honor when you kill an elite mob (this does not apply on rare mob, unless he is also elite).
++# Default : 0 (No honor when you kill an elite mob)
++#
++
++Custom.GainHonorOnEliteKill = 0
++
++#
++###################################################################################################
+-- 
+2.1.0.rc1
+
