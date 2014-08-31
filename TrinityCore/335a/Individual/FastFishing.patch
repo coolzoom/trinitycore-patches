@@ -1,0 +1,76 @@
+From 09e40b3bf90475303746086a11f0c5b589b7da0e Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Sun, 31 Aug 2014 11:39:36 -0400
+Subject: [PATCH] FastFishing
+
+---
+ src/server/game/Spells/SpellEffects.cpp      |  3 +++
+ src/server/game/World/World.cpp              |  2 ++
+ src/server/game/World/World.h                |  3 +++
+ src/server/worldserver/worldserver.conf.dist | 12 ++++++++++++
+ 4 files changed, 20 insertions(+)
+
+diff --git a/src/server/game/Spells/SpellEffects.cpp b/src/server/game/Spells/SpellEffects.cpp
+index 00b7873..d5825d4 100644
+--- a/src/server/game/Spells/SpellEffects.cpp
++++ b/src/server/game/Spells/SpellEffects.cpp
+@@ -5164,6 +5164,9 @@ void Spell::EffectTransmitted(SpellEffIndex effIndex)
+                 case 3: lastSec = 17; break;
+             }
+ 
++            if (sWorld->getBoolConfig(CONFIG_FAST_FISHING))
++                lastSec = 17;
++
+             duration = duration - lastSec*IN_MILLISECONDS + FISHING_BOBBER_READY_TIME*IN_MILLISECONDS;
+             break;
+         }
+diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
+index 79dc565..e2bdc76 100644
+--- a/src/server/game/World/World.cpp
++++ b/src/server/game/World/World.cpp
+@@ -1107,6 +1107,8 @@ void World::LoadConfigSettings(bool reload)
+     m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+     m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
+ 
++    m_bool_configs[CONFIG_FAST_FISHING] = sConfigMgr->GetBoolDefault("Custom.FastFishing", false);
++
+     ///- Load the CharDelete related config options
+     m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
+     m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 8a36a0a..7912dcf 100644
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -156,6 +156,9 @@ enum WorldBoolConfigs
+     CONFIG_STATS_LIMITS_ENABLE,
+     CONFIG_INSTANCES_RESET_ANNOUNCE,
+     CONFIG_IP_BASED_ACTION_LOGGING,
++
++    CONFIG_FAST_FISHING,
++
+     BOOL_CONFIG_VALUE_COUNT
+ };
+ 
+diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
+index 9a78d74..b5f5dc4 100644
+--- a/src/server/worldserver/worldserver.conf.dist
++++ b/src/server/worldserver/worldserver.conf.dist
+@@ -3172,3 +3172,15 @@ PacketSpoof.BanDuration = 86400
+ 
+ #
+ ###################################################################################################
++
++###################################################################################################
++#
++# Custom.FastFishing
++# Set it to 1 to make fishing a lot faster!
++# Default : 0 (Fishing is normal)
++#
++
++Custom.FastFishing = 0
++
++#
++###################################################################################################
+-- 
+2.1.0.rc1
+
