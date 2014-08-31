@@ -1,6 +1,6 @@
-From 3b9b3d8bff798a35249f99fbb906a982d51fac01 Mon Sep 17 00:00:00 2001
+From cf753afaa94259a57978b9facc8168195905b87f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 29 Aug 2014 08:25:30 -0400
+Date: Sun, 31 Aug 2014 13:17:45 -0400
 Subject: [PATCH] GuildLevelSystem
 
 ---
@@ -20,17 +20,17 @@ Subject: [PATCH] GuildLevelSystem
  src/server/game/Reputation/ReputationMgr.cpp       |  10 ++
  src/server/game/World/World.cpp                    |  87 +++++++++++++
  src/server/game/World/World.h                      |  20 +++
- src/server/scripts/Commands/cs_guild.cpp           | 120 +++++++++++++++++
+ src/server/scripts/Commands/cs_guild.cpp           | 121 +++++++++++++++++
  .../Database/Implementation/CharacterDatabase.cpp  |  10 +-
  .../Database/Implementation/CharacterDatabase.h    |   7 +-
- 19 files changed, 615 insertions(+), 8 deletions(-)
+ 19 files changed, 616 insertions(+), 8 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
 
 diff --git a/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql b/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
 new file mode 100644
-index 0000000..598b496
+index 0000000..0846910
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
 @@ -0,0 +1,7 @@
@@ -105,7 +105,7 @@ index 0000000..ae05ff6
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql b/sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
 new file mode 100644
-index 0000000..a972927
+index 0000000..fcf2396
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
 @@ -0,0 +1,7 @@
@@ -118,7 +118,7 @@ index 0000000..a972927
 +INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index c2e38c3..3e93fb0 100644
+index c2e38c3..f26f935 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -701,7 +701,9 @@ enum RBACPermissions
@@ -126,7 +126,7 @@ index c2e38c3..3e93fb0 100644
      // custom permissions 1000+
      // Prepatch by LordPsyan
 -    // 01
-+    //RBAC_PERM_COMMAND_GUILD_INFO                             = 1000,
++    RBAC_PERM_COMMAND_GUILD_LINFO                            = 1000,
 +    RBAC_PERM_COMMAND_GUILD_SET_LEVEL                        = 1001,
 +    RBAC_PERM_COMMAND_GUILD_GIVE_XP                          = 1002,
      // 02
@@ -201,7 +201,7 @@ index ff50821..a1d5fd4 100644
  
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 27bf513..ef07116 100644
+index 061d960..d34213b 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -5060,6 +5060,12 @@ void Player::BuildPlayerRepop()
@@ -260,7 +260,7 @@ index 27bf513..ef07116 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -15354,6 +15382,19 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15343,6 +15371,19 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
  
@@ -628,10 +628,10 @@ index 2970e3a..10b78b8 100644
                      // 03
                      // 04
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 0d29f91..1625bd1 100644
+index 245c5d5..0e93f0b 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1201,7 +1201,9 @@ enum TrinityStrings
+@@ -1171,7 +1171,9 @@ enum TrinityStrings
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
      LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
      // Prepatch by LordPsyan
@@ -671,10 +671,10 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index f9c8c80..9e9d9fa 100644
+index 2322e2a..5502d96 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1259,6 +1259,9 @@ void World::LoadConfigSettings(bool reload)
+@@ -1282,6 +1282,9 @@ void World::LoadConfigSettings(bool reload)
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
  
@@ -684,7 +684,7 @@ index f9c8c80..9e9d9fa 100644
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
-@@ -3216,3 +3219,87 @@ void World::ReloadRBAC()
+@@ -3241,3 +3244,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -773,10 +773,10 @@ index f9c8c80..9e9d9fa 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index b77f877..09991d8 100644
+index 12a5a71..e23bd56 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -748,6 +748,11 @@ class World
+@@ -796,6 +796,11 @@ class World
  
          void ReloadRBAC();
  
@@ -788,7 +788,7 @@ index b77f877..09991d8 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -850,6 +855,21 @@ class World
+@@ -898,6 +903,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
@@ -811,25 +811,26 @@ index b77f877..09991d8 100644
  
  extern uint32 realmID;
 diff --git a/src/server/scripts/Commands/cs_guild.cpp b/src/server/scripts/Commands/cs_guild.cpp
-index 0359cbb..9cd48fa 100644
+index 7b07408..a329975 100644
 --- a/src/server/scripts/Commands/cs_guild.cpp
 +++ b/src/server/scripts/Commands/cs_guild.cpp
-@@ -45,6 +45,8 @@ public:
+@@ -45,6 +45,9 @@ public:
              { "rank",     rbac::RBAC_PERM_COMMAND_GUILD_RANK,     true, &HandleGuildRankCommand,             "", NULL },
              { "rename",   rbac::RBAC_PERM_COMMAND_GUILD_RENAME,   true, &HandleGuildRenameCommand,           "", NULL },
              { "info",     rbac::RBAC_PERM_COMMAND_GUILD_INFO,     true, &HandleGuildInfoCommand,             "", NULL },
++            { "linfo",    rbac::RBAC_PERM_COMMAND_GUILD_LINFO,    true, &HandleGuildLInfoCommand,            "", NULL },
 +            { "setlevel", rbac::RBAC_PERM_COMMAND_GUILD_SET_LEVEL,true, &HandleGuildSetLevelCommand,         "", NULL },
 +            { "givexp",   rbac::RBAC_PERM_COMMAND_GUILD_GIVE_XP,  true, &HandleGuildGiveXpCommand,           "", NULL },
              { NULL,       0,                               false, NULL,                                "", NULL }
          };
          static ChatCommand commandTable[] =
-@@ -301,6 +303,124 @@ public:
+@@ -287,6 +290,124 @@ public:
          handler->PSendSysMessage(LANG_GUILD_INFO_EXTRA_INFO, guild->GetInfo().c_str()); // Extra Information
          return true;
      }
 +
 +    //Guild-Level-System
-+    static bool HandleGuildInfoCommand(ChatHandler* handler, char const* /*args*/)
++    static bool HandleGuildLInfoCommand(ChatHandler* handler, char const* /*args*/)
 +    {
 +        Guild* guild = handler->GetSession()->GetPlayer()->GetGuild();
 +
