@@ -1,6 +1,6 @@
-From 4eb6cfc24b10ec84ff9db411ad17994f4027aafa Mon Sep 17 00:00:00 2001
+From 7c2fd80012372072f7389510a5c1b5e91e4654ea Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 8 Sep 2014 19:13:19 -0400
+Date: Mon, 8 Sep 2014 22:26:51 -0400
 Subject: [PATCH] External_Mail
 
 ---
@@ -33,7 +33,7 @@ index 0000000..8cd6a05
 +) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8;
 \ No newline at end of file
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 2c65e36..684d123 100644
+index 2c65e36..b204180 100644
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -20,6 +20,7 @@
@@ -52,7 +52,7 @@ index 2c65e36..684d123 100644
 +void WorldSession::SendExternalMails()
 +{
 +    TC_LOG_DEBUG("entities.player.character", "External Mail> Sending mails in queue...");
-+	
++
 +    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_GET_EXTERNAL_MAIL);
 +    PreparedQueryResult result = CharacterDatabase.Query(stmt);
 +    if (!result)
@@ -74,27 +74,27 @@ index 2c65e36..684d123 100644
 +        std::string body = fields[3].GetString();
 +        uint32 money = fields[4].GetUInt32();
 +        uint32 itemId = fields[5].GetUInt32();
-+        uint32 itemCount = fields[6].GetUInt32();	
++        uint32 itemCount = fields[6].GetUInt32();
 +
 +        Player *receiver = ObjectAccessor::FindPlayer(receiver_guid);
 +
-+        mail = new MailDraft(subject, body);	
-+	
-+        if (money)	
++        mail = new MailDraft(subject, body);
++
++        if (money)
 +        {
 +            TC_LOG_DEBUG("entities.player.character", "External Mail> Adding money");
 +            mail->AddMoney(money);
 +        }
 +
-+        if (itemId)	
++        if (itemId)
 +        {
 +             TC_LOG_DEBUG("entities.player.character", "External Mail> Adding %u of item with id %u", itemCount, itemId);
-+             if(Item* mailItem = Item::CreateItem(itemId, itemCount))	
++             if(Item* mailItem = Item::CreateItem(itemId, itemCount))
 +             {
-+                 mailItem->SaveToDB(trans);	
++                 mailItem->SaveToDB(trans);
 +                 mail->AddItem(mailItem);
-+             }	
-+        }	
++             }
++        }
 +
 +        mail->SendMailTo(trans, receiver ? receiver : MailReceiver(receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
 +        delete mail;
@@ -105,9 +105,9 @@ index 2c65e36..684d123 100644
 +
 +        TC_LOG_DEBUG("entities.player.character", "External Mail> Mail sent");
 +   } while (result->NextRow());
-+	
++
 +   CharacterDatabase.CommitTransaction(trans);
-+   TC_LOG_DEBUG("entities.player.character", "External Mail> All Mails Sent...");	
++   TC_LOG_DEBUG("entities.player.character", "External Mail> All Mails Sent...");
 +}
 \ No newline at end of file
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
@@ -118,37 +118,37 @@ index 2e6a699..fafa565 100644
              }
          }
          //used with item_page table
-+		static void SendExternalMails();
++        static void SendExternalMails();
          bool SendItemInfo(uint32 itemid, WorldPacket data);
          //auction
          void SendAuctionHello(uint64 guid, Creature* unit);
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 1c0f0c1..11d8d01 100644
+index a0c3d1c..cfd88f4 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1247,6 +1247,10 @@ void World::LoadConfigSettings(bool reload)
+@@ -1248,6 +1248,10 @@ void World::LoadConfigSettings(bool reload)
      // MySQL ping time interval
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
  
-+ 	// External Mail
++     // External Mail
 +    m_bool_configs[CONFIG_EXTERNAL_MAIL_ENABLE] = sConfigMgr->GetBoolDefault("External.Mail.Enable", false);
 +    m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] = sConfigMgr->GetIntDefault("External.Mail.Interval", 1);
 +
      // misc
      m_bool_configs[CONFIG_PDUMP_NO_PATHS] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowPaths", true);
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
-@@ -1780,7 +1784,9 @@ void World::SetInitialWorldSettings()
+@@ -1781,7 +1785,9 @@ void World::SetInitialWorldSettings()
      tm localTm;
      localtime_r(&m_gameTime, &localTm);
      mail_timer = ((((localTm.tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
 -                                                            //1440
-+    
++
 +    extmail_timer.SetInterval(m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] * MINUTE * IN_MILLISECONDS);
 +
      mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
      TC_LOG_INFO("server.loading", "Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
  
-@@ -2016,6 +2022,17 @@ void World::Update(uint32 diff)
+@@ -2017,6 +2023,17 @@ void World::Update(uint32 diff)
      if (m_gameTime > m_NextGuildReset)
          ResetGuildCap();
  
@@ -160,14 +160,14 @@ index 1c0f0c1..11d8d01 100644
 +        {
 +            WorldSession::SendExternalMails();
 +            extmail_timer.Reset();
-+        }	
++        }
 +    }
 +
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 780c5a3..cdddb36 100644
+index 9a726fa..eef10c3 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -175,7 +175,7 @@ enum WorldBoolConfigs
@@ -175,28 +175,28 @@ index 780c5a3..cdddb36 100644
      // 17
      // 18
 -    // 19
-+	CONFIG_EXTERNAL_MAIL_ENABLE,
++    CONFIG_EXTERNAL_MAIL_ENABLE,
      // 20
      // Visit http://www.realmsofwarcraft.com/bb for forums and information
      //
-@@ -384,6 +384,7 @@ enum WorldIntConfigs
+@@ -385,6 +385,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
-+	CONFIG_EXTERNAL_MAIL_INTERVAL,
++    CONFIG_EXTERNAL_MAIL_INTERVAL,
      INT_CONFIG_VALUE_COUNT
  };
  
-@@ -828,6 +829,7 @@ class World
+@@ -829,6 +830,7 @@ class World
          time_t m_startTime;
          time_t m_gameTime;
          IntervalTimer m_timers[WUPDATE_COUNT];
-+		IntervalTimer extmail_timer;
++        IntervalTimer extmail_timer;
          time_t mail_timer;
          time_t mail_timer_expires;
          uint32 m_updateTime, m_updateTimeSum;
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 2690b88..eaccdae 100644
+index 374711a..f3b1680 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 @@ -142,6 +142,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
@@ -205,7 +205,7 @@ index 2690b88..eaccdae 100644
      PrepareStatement(CHAR_UPD_ITEM_OWNER, "UPDATE item_instance SET owner_guid = ? WHERE guid = ?", CONNECTION_ASYNC);
 +    PrepareStatement(CHAR_GET_EXTERNAL_MAIL, "SELECT id, receiver, subject, message, money, item, item_count FROM mail_external ORDER BY id ASC", CONNECTION_SYNCH);
 +    PrepareStatement(CHAR_DEL_EXTERNAL_MAIL, "DELETE FROM mail_external WHERE id = ?", CONNECTION_ASYNC);
-+ 
++
  
      PrepareStatement(CHAR_SEL_ITEM_REFUNDS, "SELECT player_guid, paidMoney, paidExtendedCost FROM item_refund_instance WHERE item_guid = ? AND player_guid = ? LIMIT 1", CONNECTION_SYNCH);
      PrepareStatement(CHAR_SEL_ITEM_BOP_TRADE, "SELECT allowedPlayers FROM item_soulbound_trade_data WHERE itemGuid = ? LIMIT 1", CONNECTION_SYNCH);
@@ -223,10 +223,10 @@ index b918715..b39850b 100644
      CHAR_SEL_ITEM_BOP_TRADE,
      CHAR_DEL_ITEM_BOP_TRADE,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index cca8e48..7c312ea 100644
+index 9097e0b..5f7af52 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2664,6 +2664,20 @@ PlayerDump.DisallowOverwrite = 1
+@@ -2672,6 +2672,20 @@ PlayerDump.DisallowOverwrite = 1
  UI.ShowQuestLevelsInDialogs = 0
  
  #

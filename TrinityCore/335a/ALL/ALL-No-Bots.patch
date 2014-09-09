@@ -1,6 +1,6 @@
-From 24e580af447b0f593497b5048588cd36f6a33f56 Mon Sep 17 00:00:00 2001
+From 867d38f9767e84e18174edb2bb33f27c48dc85a7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 31 Aug 2014 13:34:42 -0400
+Date: Tue, 9 Sep 2014 02:27:13 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -14,13 +14,12 @@ Subject: [PATCH] ALL-No-Bots
  sql/TrinityCore-Patches/All-In-One/auth_AIO.sql    |   11 +
  .../All-In-One/characters_AIO.sql                  |    1 +
  sql/TrinityCore-Patches/All-In-One/world_AIO.sql   |   31 +
- .../Anticheat/characters.anticheat.sql                  |   30 +
+ .../Anticheat/characters.anticheat.sql             |   30 +
  .../ArenaGambler/CharactersDB.sql                  |   59 +
  sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql   |  371 +++++
  .../BountyHunter/characters.BountyHunter.sql       |   38 +
  .../CrossFactionBG/world.AVFix.sql                 |    3 +
- .../Fake_Players/characters.fake-structure.sql     |   14 +
- .../Fake_Players/characters.fake_full.sql          |   40 +
+ .../Fake_Players/characters.fake_players.sql       |   40 +
  .../Fake_Players/world.fake_players.sql            |    2 +
  .../GuildLevelSystem/auth_guild_level_system.sql   |    7 +
  .../characters_guild_level_system.sql              |   55 +
@@ -30,8 +29,8 @@ Subject: [PATCH] ALL-No-Bots
  .../world_individuale_xp_Rate.sql                  |    9 +
  .../LevelNPC/world.levelnpc.sql                    |    5 +
  .../Player_Events/world.player_events.sql          |   75 +
- sql/TrinityCore-Patches/Reforging/characters.sql   |   10 +
- sql/TrinityCore-Patches/Reforging/world_npc.sql    |    6 +
+ .../Reforging/characters.reforging.sql             |   10 +
+ .../Reforging/world.reforging.sql                  |    6 +
  .../SummonNPC/world.summonnpc-item.sql             |    4 +
  .../TeleNPC2/world.npc_teleport.sql                |  120 ++
  .../Transmogrification/characters.sql              |   23 +
@@ -48,6 +47,7 @@ Subject: [PATCH] ALL-No-Bots
  sql/TrinityCore-Patches/enchant/world.enchant.sql  |    4 +
  .../npc_buff/world_npc_buff.sql                    |   62 +
  .../profession_npc/world_professionnpc.sql         |    4 +
+ .../External_Mail/characters.external_mail.sql     |   10 +
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  380 +++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++
  src/server/game/Accounts/RBAC.h                    |   27 +
@@ -77,31 +77,33 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/DataStores/DBCfmt.h                |    2 +-
  src/server/game/Entities/Creature/Creature.cpp     |    2 +-
  src/server/game/Entities/Player/Player.cpp         |  397 ++++-
- src/server/game/Entities/Player/Player.h           |  104 +-
+ src/server/game/Entities/Player/Player.h           |  101 +-
  src/server/game/Entities/Unit/Unit.cpp             |   52 +-
  src/server/game/Entities/Unit/Unit.h               |    4 +-
  src/server/game/Entities/Vehicle/Vehicle.cpp       |    0
- src/server/game/Guilds/Guild.cpp                   |  168 ++
+ src/server/game/Guilds/Guild.cpp                   |  169 ++
  src/server/game/Guilds/Guild.h                     |   37 +
  src/server/game/Handlers/BattleGroundHandler.cpp   |    4 +-
  src/server/game/Handlers/CharacterHandler.cpp      |   53 +-
  src/server/game/Handlers/ChatHandler.cpp           |   28 +-
  src/server/game/Handlers/GroupHandler.cpp          |   12 +-
  src/server/game/Handlers/LootHandler.cpp           |   11 +
- src/server/game/Handlers/MiscHandler.cpp           |   93 +-
+ src/server/game/Handlers/MiscHandler.cpp           |   95 +-
  src/server/game/Handlers/MovementHandler.cpp       |    4 +
  src/server/game/Handlers/QueryHandler.cpp          |    2 +-
  src/server/game/Handlers/SpellHandler.cpp          |   11 +-
+ src/server/game/Mails/Mail.cpp                     |   62 +
  src/server/game/Miscellaneous/Formulas.h           |   42 +-
  src/server/game/Miscellaneous/Language.h           |   48 +-
  src/server/game/Reputation/ReputationMgr.cpp       |   10 +
  src/server/game/Scripting/ScriptLoader.cpp         |  199 ++-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
+ src/server/game/Server/WorldSession.h              |    1 +
  src/server/game/Spells/Spell.cpp                   |   10 +-
  src/server/game/Spells/SpellEffects.cpp            |    4 +
  src/server/game/Spells/SpellInfo.cpp               |    6 +-
- src/server/game/World/World.cpp                    |  140 +-
- src/server/game/World/World.h                      |  101 ++
+ src/server/game/World/World.cpp                    |  162 +-
+ src/server/game/World/World.h                      |  104 ++
  src/server/scripts/CMakeLists.txt                  |    4 +
  src/server/scripts/Commands/cs_anticheat.cpp       |  262 ++++
  src/server/scripts/Commands/cs_guild.cpp           |  121 ++
@@ -127,10 +129,10 @@ Subject: [PATCH] ALL-No-Bots
  src/server/scripts/Custom/professionnpc.cpp        |  396 +++++
  src/server/scripts/Custom/summon.cpp               |   46 +
  src/server/scripts/Spells/spell_generic.cpp        |   22 +-
- .../Database/Implementation/CharacterDatabase.cpp  |   38 +-
- .../Database/Implementation/CharacterDatabase.h    |   34 +-
- src/server/worldserver/worldserver.conf.dist       |  547 +++++++
- 126 files changed, 15662 insertions(+), 149 deletions(-)
+ .../Database/Implementation/CharacterDatabase.cpp  |   41 +-
+ .../Database/Implementation/CharacterDatabase.h    |   37 +-
+ src/server/worldserver/worldserver.conf.dist       |  563 +++++++
+ 128 files changed, 15767 insertions(+), 150 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Reforging_README.md
  create mode 100644 Transmog_CHANGELOG.md
@@ -145,8 +147,7 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
  create mode 100644 sql/TrinityCore-Patches/BountyHunter/characters.BountyHunter.sql
  create mode 100644 sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
- create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql
- create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake_full.sql
+ create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake_players.sql
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
@@ -156,8 +157,8 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
  create mode 100644 sql/TrinityCore-Patches/LevelNPC/world.levelnpc.sql
  create mode 100644 sql/TrinityCore-Patches/Player_Events/world.player_events.sql
- create mode 100644 sql/TrinityCore-Patches/Reforging/characters.sql
- create mode 100644 sql/TrinityCore-Patches/Reforging/world_npc.sql
+ create mode 100644 sql/TrinityCore-Patches/Reforging/characters.reforging.sql
+ create mode 100644 sql/TrinityCore-Patches/Reforging/world.reforging.sql
  create mode 100644 sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
@@ -174,6 +175,7 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 sql/TrinityCore-Patches/enchant/world.enchant.sql
  create mode 100644 sql/TrinityCore-Patches/npc_buff/world_npc_buff.sql
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
+ create mode 100644 sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/game/Anticheat/AnticheatData.cpp
@@ -228,7 +230,7 @@ index 0000000..015c9c2
 +your world DB. This will setup the DB and you can customize from there.
 diff --git a/Reforging_README.md b/Reforging_README.md
 new file mode 100644
-index 0000000..3fb4d03
+index 0000000..e26d9bf
 --- /dev/null
 +++ b/Reforging_README.md
 @@ -0,0 +1,40 @@
@@ -267,8 +269,8 @@ index 0000000..3fb4d03
 +
 +After compiling:
 +- Navigate to `\src\server\scripts\Custom\Reforging\sql\`
-+- Run `characters.sql` to your characters database
-+ - optionally you can also insert a reforger NPC to your database by running `world_npc.sql` to your world database.
++- Run `characters.reforging.sql` to your characters database
++ - optionally you can also insert a reforger NPC to your database by running `world.reforging.sql` to your world database.
 +
 +####Bugs and Contact
 +Report issues and similar to https://rochet2.github.io/
@@ -1310,32 +1312,11 @@ index 0000000..a0c7eb9
 +UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
 +
 +UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
-diff --git a/sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql b/sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql
-new file mode 100644
-index 0000000..a385585
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Fake_Players/characters.fake-structure.sql
-@@ -0,0 +1,14 @@
-+CREATE TABLE IF NOT EXISTS `characters_fake` (
-+  `name` varchar(36) NOT NULL,
-+  `race` mediumint(3) NOT NULL DEFAULT '0',
-+  `class` mediumint(3) NOT NULL DEFAULT '0',
-+  `level` mediumint(3) NOT NULL DEFAULT '0',
-+  `zone` mediumint(9) NOT NULL DEFAULT '0',
-+  `gender` mediumint(3) NOT NULL DEFAULT '0',
-+  `online` datetime NOT NULL,
-+  `lastup` datetime NOT NULL,
-+  UNIQUE KEY `name` (`name`),
-+  KEY `level` (`level`),
-+  KEY `online` (`online`),
-+  KEY `lastup` (`lastup`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-\ No newline at end of file
-diff --git a/sql/TrinityCore-Patches/Fake_Players/characters.fake_full.sql b/sql/TrinityCore-Patches/Fake_Players/characters.fake_full.sql
+diff --git a/sql/TrinityCore-Patches/Fake_Players/characters.fake_players.sql b/sql/TrinityCore-Patches/Fake_Players/characters.fake_players.sql
 new file mode 100644
 index 0000000..0b4bf14
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Fake_Players/characters.fake_full.sql
++++ b/sql/TrinityCore-Patches/Fake_Players/characters.fake_players.sql
 @@ -0,0 +1,40 @@
 +CREATE TABLE IF NOT EXISTS `characters_fake` (
 +  `name` varchar(36) NOT NULL,
@@ -1379,13 +1360,12 @@ index 0000000..0b4bf14
 +('Jabari', 10, 2, 3, 25, 0, '2014-08-08 09:11:53', '2014-08-08 16:22:37');
 diff --git a/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql b/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
 new file mode 100644
-index 0000000..4db956c
+index 0000000..c1be608
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
 @@ -0,0 +1,2 @@
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".');
-\ No newline at end of file
++INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'РЎРѕРѕР±С‰РµРЅРёРµ: "РќРµ Р±РµСЃРїРѕРєРѕРёС‚СЊ".');
 diff --git a/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql b/sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
 new file mode 100644
 index 0000000..0846910
@@ -1669,11 +1649,11 @@ index 0000000..1e76146
 +-- ----------------------------
 +INSERT INTO `lil_events` VALUES ('0', '0', '0', '0');
 +INSERT INTO `lil_events` VALUES ('1', '1', '1', '1');
-diff --git a/sql/TrinityCore-Patches/Reforging/characters.sql b/sql/TrinityCore-Patches/Reforging/characters.sql
+diff --git a/sql/TrinityCore-Patches/Reforging/characters.reforging.sql b/sql/TrinityCore-Patches/Reforging/characters.reforging.sql
 new file mode 100644
 index 0000000..9ac7bf6
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Reforging/characters.sql
++++ b/sql/TrinityCore-Patches/Reforging/characters.reforging.sql
 @@ -0,0 +1,10 @@
 +CREATE TABLE `custom_reforging` (
 +	`GUID` INT(10) UNSIGNED NOT NULL COMMENT 'item guid low',
@@ -1685,11 +1665,11 @@ index 0000000..9ac7bf6
 +)
 +COLLATE='utf8_general_ci'
 +ENGINE=InnoDB;
-diff --git a/sql/TrinityCore-Patches/Reforging/world_npc.sql b/sql/TrinityCore-Patches/Reforging/world_npc.sql
+diff --git a/sql/TrinityCore-Patches/Reforging/world.reforging.sql b/sql/TrinityCore-Patches/Reforging/world.reforging.sql
 new file mode 100644
 index 0000000..9a91aae
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Reforging/world_npc.sql
++++ b/sql/TrinityCore-Patches/Reforging/world.reforging.sql
 @@ -0,0 +1,6 @@
 +SET
 +@Entry = 190011,
@@ -2164,6 +2144,23 @@ index 0000000..d2141cf
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
 +-- end
+diff --git a/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql b/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
+new file mode 100644
+index 0000000..8cd6a05
+--- /dev/null
++++ b/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
+@@ -0,0 +1,10 @@
++CREATE TABLE `mail_external` (
++  `id` bigint(20) unsigned NOT NULL auto_increment,
++  `receiver` bigint(20) unsigned NOT NULL,
++  `subject` varchar(200) default 'Support Message',
++  `message` varchar(500) default 'Support Message',
++  `money` bigint(20) unsigned NOT NULL default '0',
++  `item` bigint(20) unsigned NOT NULL default '0',
++  `item_count` bigint(20) unsigned NOT NULL default '0',
++  PRIMARY KEY  (`id`)
++) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8;
+\ No newline at end of file
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
 index 0000000..3aed0f7
@@ -2708,7 +2705,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 020ed1a..9b933d3 100644
+index 020ed1a..3055ac57 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -700,6 +700,33 @@ enum RBACPermissions
@@ -2716,7 +2713,7 @@ index 020ed1a..9b933d3 100644
  
      // custom permissions 1000+
 +    // Prepatch by LordPsyan
-+    RBAC_PERM_COMMAND_GUILD_LINFO                             = 1000,
++    RBAC_PERM_COMMAND_GUILD_LINFO                            = 1000,
 +    RBAC_PERM_COMMAND_GUILD_SET_LEVEL                        = 1001,
 +    RBAC_PERM_COMMAND_GUILD_GIVE_XP                          = 1002,
 +    // 02
@@ -4551,7 +4548,7 @@ index ba94a99..8f1312a 100644
          // always save boss respawn time at death to prevent crash cheating
          if (sWorld->getBoolConfig(CONFIG_SAVE_RESPAWN_TIME_IMMEDIATELY) || isWorldBoss())
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 158ff17..ee775e0 100644
+index 0e1e53c..0533600 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -19,6 +19,7 @@
@@ -4669,7 +4666,7 @@ index 158ff17..ee775e0 100644
 +            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +            {
 +                CharacterDatabase.PExecute("UPDATE characters_fake SET zone = (FLOOR(50 * RAND()) + 1)");
-+                CharacterDatabase.PExecute("UPDATE characters_fake SET level = level+1, lastup = NOW() WHERE lastup < (NOW() - INTERVAL 5 HOUR) AND level < 78 AND HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3)");
++                CharacterDatabase.PExecute("UPDATE characters_fake SET level = level+1, lastup = NOW() WHERE level < 80 AND lastup < (NOW() - INTERVAL %u HOUR) AND HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW()) + %u)", sWorld->getIntConfig(CONFIG_FAKE_WHO_LEVELUP_INTERVAL), sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
 +            }
          }
          else
@@ -4749,7 +4746,7 @@ index 158ff17..ee775e0 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -6892,10 +6949,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6890,10 +6947,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -4762,7 +4759,7 @@ index 158ff17..ee775e0 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -6997,6 +7054,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6995,6 +7052,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -4790,7 +4787,7 @@ index 158ff17..ee775e0 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7011,23 +7089,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7009,23 +7087,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -4820,7 +4817,7 @@ index 158ff17..ee775e0 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7122,7 +7200,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7120,7 +7198,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -4829,7 +4826,7 @@ index 158ff17..ee775e0 100644
              return false;
  
          return true;
-@@ -7134,6 +7212,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7132,6 +7210,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -4837,7 +4834,7 @@ index 158ff17..ee775e0 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7176,19 +7255,104 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7174,19 +7253,104 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -4951,7 +4948,7 @@ index 158ff17..ee775e0 100644
              // and those in a lifetime
              ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
-@@ -7217,6 +7381,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7215,6 +7379,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -4968,7 +4965,7 @@ index 158ff17..ee775e0 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7287,6 +7461,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7285,6 +7459,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -4999,7 +4996,7 @@ index 158ff17..ee775e0 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7446,7 +7644,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7444,7 +7642,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -5008,7 +5005,7 @@ index 158ff17..ee775e0 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7787,6 +7985,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7785,6 +7983,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -5029,7 +5026,7 @@ index 158ff17..ee775e0 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7801,10 +8013,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7799,10 +8011,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -5055,7 +5052,7 @@ index 158ff17..ee775e0 100644
          }
  
          if (val == 0)
-@@ -11979,13 +12205,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11977,13 +12203,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
      if (!proto)
          return EQUIP_ERR_ITEM_NOT_FOUND;
  
@@ -5072,7 +5069,7 @@ index 158ff17..ee775e0 100644
          return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
      if (proto->RequiredSkill != 0)
-@@ -12475,7 +12701,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12473,7 +12699,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -5084,7 +5081,7 @@ index 158ff17..ee775e0 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12595,12 +12824,36 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12593,12 +12822,36 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -5122,7 +5119,7 @@ index 158ff17..ee775e0 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15311,13 +15564,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15309,13 +15562,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -5150,7 +5147,7 @@ index 158ff17..ee775e0 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17219,6 +17485,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17217,6 +17483,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -5162,7 +5159,7 @@ index 158ff17..ee775e0 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17265,10 +17536,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17263,10 +17534,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -5173,7 +5170,7 @@ index 158ff17..ee775e0 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19185,7 +19452,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19183,7 +19450,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -5182,7 +5179,7 @@ index 158ff17..ee775e0 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19290,7 +19557,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19288,7 +19555,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -5191,7 +5188,7 @@ index 158ff17..ee775e0 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19444,6 +19711,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19442,6 +19709,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -5204,7 +5201,7 @@ index 158ff17..ee775e0 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20529,6 +20802,19 @@ void Player::StopCastingCharm()
+@@ -20527,6 +20800,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -5224,7 +5221,7 @@ index 158ff17..ee775e0 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22053,6 +22339,8 @@ void Player::AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 ite
+@@ -22051,6 +22337,8 @@ void Player::AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 ite
  
  void Player::AddSpellCooldown(uint32 spellid, uint32 itemid, time_t end_time)
  {
@@ -5233,7 +5230,7 @@ index 158ff17..ee775e0 100644
      SpellCooldown sc;
      sc.end = end_time;
      sc.itemid = itemid;
-@@ -22335,11 +22623,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22333,11 +22621,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -5245,7 +5242,7 @@ index 158ff17..ee775e0 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22415,7 +22698,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22413,7 +22696,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -5254,7 +5251,7 @@ index 158ff17..ee775e0 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -22874,10 +23157,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
+@@ -22872,10 +23155,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
  
      SendEquipmentSetList();
  
@@ -5271,7 +5268,7 @@ index 158ff17..ee775e0 100644
      GetSession()->SendPacket(&data);
  
      GetReputationMgr().SendForceReactions();                // SMSG_SET_FORCED_REACTIONS
-@@ -26854,6 +27140,25 @@ bool Player::IsLoading() const
+@@ -26852,6 +27138,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -5298,7 +5295,7 @@ index 158ff17..ee775e0 100644
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 27ea835..15616f2 100644
+index 27ea835..e933f83 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -28,6 +28,7 @@
@@ -5381,7 +5378,7 @@ index 27ea835..15616f2 100644
  class PlayerTaxi
  {
      public:
-@@ -1100,6 +1148,37 @@ class Player : public Unit, public GridObject<Player>
+@@ -1100,6 +1148,35 @@ class Player : public Unit, public GridObject<Player>
      public:
          explicit Player(WorldSession* session);
          ~Player();
@@ -5414,12 +5411,10 @@ index 27ea835..15616f2 100644
 +        uint32 GetTeam() const { return m_bgData.bgTeam && GetBattleground() ? m_bgData.bgTeam : m_team; }
 +        bool SendRealNameQuery();
 +        FakePlayers m_FakePlayers;
-+
-+        //AnticheatData anticheatData;
  
          void CleanupsBeforeDelete(bool finalCleanup = true) override;
  
-@@ -1154,7 +1233,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1154,7 +1231,7 @@ class Player : public Unit, public GridObject<Player>
          PlayerSocial *GetSocial() { return m_social; }
  
          PlayerTaxi m_taxi;
@@ -5428,7 +5423,7 @@ index 27ea835..15616f2 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1222,6 +1301,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1222,6 +1299,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text);
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, const uint32 language, uint64 receiver);
@@ -5437,7 +5432,7 @@ index 27ea835..15616f2 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1927,8 +2008,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1927,8 +2006,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -5447,7 +5442,7 @@ index 27ea835..15616f2 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -1965,6 +2045,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1965,6 +2043,7 @@ class Player : public Unit, public GridObject<Player>
          void ModifyHonorPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, honor save query will be added to trans
          void ModifyArenaPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, arena point save query will be added to trans
          uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
@@ -5455,7 +5450,7 @@ index 27ea835..15616f2 100644
          void SetHonorPoints(uint32 value);
          void SetArenaPoints(uint32 value);
  
-@@ -2073,7 +2154,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -2073,7 +2152,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -5463,7 +5458,27 @@ index 27ea835..15616f2 100644
  
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
-@@ -2342,6 +2422,18 @@ class Player : public Unit, public GridObject<Player>
+@@ -2312,6 +2390,7 @@ class Player : public Unit, public GridObject<Player>
+         void SetTitle(CharTitlesEntry const* title, bool lost = false);
+ 
+         //bool isActiveObject() const { return true; }
++        ReforgeMapType reforgeMap; // reforgeMap[iGUID] = ReforgeData
+         bool CanSeeSpellClickOn(Creature const* creature) const;
+ 
+         uint32 GetChampioningFaction() const { return m_ChampioningFaction; }
+@@ -2332,6 +2411,11 @@ class Player : public Unit, public GridObject<Player>
+         bool SetFeatherFall(bool apply, bool packetOnly = false) override;
+         bool SetHover(bool enable, bool packetOnly = false) override;
+ 
++        TransmogMapType transmogMap; // transmogMap[iGUID] = entry
++#ifdef PRESETS
++        PresetMapType presetMap; // presetMap[presetId] = presetData
++#endif
++
+         bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
+ 
+         //! Return collision height sent to client
+@@ -2342,6 +2426,11 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsLoading() const;
  
@@ -5472,17 +5487,10 @@ index 27ea835..15616f2 100644
 +        float GetIndividualXpKillRate() { return _individual_kill; };
 +        float GetIndividualXpQuestRate() { return _individual_quest; };
 +
-+        ReforgeMapType reforgeMap; // reforgeMap[iGUID] = ReforgeData
-+
-+        TransmogMapType transmogMap; // transmogMap[iGUID] = entry
-+#ifdef PRESETS
-+        PresetMapType presetMap; // presetMap[presetId] = presetData
-+#endif
-+
      protected:
          // Gamemaster whisper whitelist
          WhisperListContainer WhisperList;
-@@ -2670,6 +2762,10 @@ class Player : public Unit, public GridObject<Player>
+@@ -2670,6 +2759,10 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -5629,7 +5637,7 @@ diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Enti
 old mode 100755
 new mode 100644
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index bace2ec..f5c7d72 100644
+index bace2ec..64fc3f7 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1207,6 +1207,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
@@ -5642,14 +5650,15 @@ index bace2ec..f5c7d72 100644
      return ret;
  }
  
-@@ -1516,6 +1519,30 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
+@@ -1516,6 +1519,31 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
      Player* pInvitee = sObjectAccessor->FindPlayerByName(name);
      if (!pInvitee)
      {
 +        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +        {
 +            PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE);
-+            fake->setString(0, name);
++            fake->setUInt32(0, sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
++            fake->setString(1, name);
 +            PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
 +
 +            if (fakeresult)
@@ -5673,7 +5682,7 @@ index bace2ec..f5c7d72 100644
          SendCommandResult(session, GUILD_COMMAND_INVITE, ERR_GUILD_PLAYER_NOT_FOUND_S, name);
          return;
      }
-@@ -1958,6 +1985,10 @@ bool Guild::LoadFromDB(Field* fields)
+@@ -1958,6 +1986,10 @@ bool Guild::LoadFromDB(Field* fields)
          m_bankTabs[i] = new BankTab(m_id, i);
  
      _CreateLogHolders();
@@ -5684,7 +5693,7 @@ index bace2ec..f5c7d72 100644
      return true;
  }
  
-@@ -2925,3 +2956,140 @@ void Guild::ResetTimes()
+@@ -2925,3 +2957,140 @@ void Guild::ResetTimes()
  
      _BroadcastEvent(GE_BANK_TAB_AND_MONEY_UPDATED, 0);
  }
@@ -6095,7 +6104,7 @@ index 8bc9c5d..4da3961 100644
  
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index b6c508e..43fe66d 100644
+index b6c508e..02550bb 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -192,6 +192,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -6118,18 +6127,19 @@ index b6c508e..43fe66d 100644
          TC_LOG_DEBUG("network", "String %u: %s", i, temp.c_str());
      }
  
-@@ -365,7 +371,44 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+@@ -365,7 +371,45 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
          ++displaycount;
      }
  
 -    data.put(0, displaycount);                            // insert right count, count displayed
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
 +    {
-+        const char fake_players = (searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
-+        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(fake_players);
++        const char fake_players_db = (searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
++        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(fake_players_db);
 +
++        fake->setUInt32(0, sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
 +        if (searchBool)
-+            fake->setString(0, searchName);
++            fake->setString(1, searchName);
 +
 +        PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
 +        if (fakeresult)
@@ -6160,11 +6170,11 @@ index b6c508e..43fe66d 100644
 +        }
 +    }
 +
-+    data.put(0, matchcount);                            // insert right count, count displayed
++    data.put(0, matchcount);
      data.put(4, matchcount);                              // insert right count, count of matches
  
      SendPacket(&data);
-@@ -549,6 +592,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
+@@ -549,6 +593,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to add friend : '%s'",
          GetPlayer()->GetName().c_str(), friendName.c_str());
  
@@ -6191,14 +6201,15 @@ index b6c508e..43fe66d 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
  
      stmt->setString(0, friendName);
-@@ -640,6 +703,19 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
+@@ -640,6 +704,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to Ignore: '%s'",
          GetPlayer()->GetName().c_str(), ignoreName.c_str());
  
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
 +    {
 +        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE);
-+        fake->setString(0, ignoreName.c_str());
++        fake->setUInt32(0, sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
++        fake->setString(1, ignoreName.c_str());
 +        PreparedQueryResult fakeresult = CharacterDatabase.Query(fake);
 +
 +        if (fakeresult)
@@ -6211,7 +6222,7 @@ index b6c508e..43fe66d 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_BY_NAME);
  
      stmt->setString(0, ignoreName);
-@@ -1432,6 +1508,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
+@@ -1432,6 +1510,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
  
  void WorldSession::HandleTimeSyncResp(WorldPacket& recvData)
  {
@@ -6269,7 +6280,7 @@ index dbcfb1c..f3ff127 100644
      data << uint8(nameData->m_class);
  
 diff --git a/src/server/game/Handlers/SpellHandler.cpp b/src/server/game/Handlers/SpellHandler.cpp
-index 13f79fb..bbc0e3c 100644
+index 9cce494..a8bc5a7 100644
 --- a/src/server/game/Handlers/SpellHandler.cpp
 +++ b/src/server/game/Handlers/SpellHandler.cpp
 @@ -29,6 +29,7 @@
@@ -6280,7 +6291,7 @@ index 13f79fb..bbc0e3c 100644
  #include "ScriptMgr.h"
  #include "GameObjectAI.h"
  #include "SpellAuraEffects.h"
-@@ -359,6 +360,9 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
+@@ -360,6 +361,9 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
          return;
      }
  
@@ -6290,7 +6301,7 @@ index 13f79fb..bbc0e3c 100644
      // Client is resending autoshot cast opcode when other spell is cast during shoot rotation
      // Skip it to prevent "interrupt" message
      if (spellInfo->IsAutoRepeatRangedSpell() && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)
-@@ -617,7 +621,12 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
+@@ -637,7 +641,12 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
              else if (*itr == EQUIPMENT_SLOT_BACK && player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
                  data << uint32(0);
              else if (Item const* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, *itr))
@@ -6304,6 +6315,84 @@ index 13f79fb..bbc0e3c 100644
              else
                  data << uint32(0);
          }
+diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
+index 2c65e36..b204180 100644
+--- a/src/server/game/Mails/Mail.cpp
++++ b/src/server/game/Mails/Mail.cpp
+@@ -20,6 +20,7 @@
+ #include "Mail.h"
+ #include "Log.h"
+ #include "World.h"
++#include "WorldSession.h"
+ #include "ObjectMgr.h"
+ #include "Player.h"
+ #include "Unit.h"
+@@ -281,3 +282,64 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+         deleteIncludedItems(temp);
+     }
+ }
++
++void WorldSession::SendExternalMails()
++{
++    TC_LOG_DEBUG("entities.player.character", "External Mail> Sending mails in queue...");
++
++    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_GET_EXTERNAL_MAIL);
++    PreparedQueryResult result = CharacterDatabase.Query(stmt);
++    if (!result)
++    {
++        TC_LOG_DEBUG("entities.player.character", "External Mail> No mails in queue...");
++        return;
++    }
++
++    SQLTransaction trans = CharacterDatabase.BeginTransaction();
++
++    MailDraft* mail = NULL;
++
++    do
++    {
++        Field *fields = result->Fetch();
++        uint32 id = fields[0].GetUInt32();
++        uint32 receiver_guid = fields[1].GetUInt32();
++        std::string subject = fields[2].GetString();
++        std::string body = fields[3].GetString();
++        uint32 money = fields[4].GetUInt32();
++        uint32 itemId = fields[5].GetUInt32();
++        uint32 itemCount = fields[6].GetUInt32();
++
++        Player *receiver = ObjectAccessor::FindPlayer(receiver_guid);
++
++        mail = new MailDraft(subject, body);
++
++        if (money)
++        {
++            TC_LOG_DEBUG("entities.player.character", "External Mail> Adding money");
++            mail->AddMoney(money);
++        }
++
++        if (itemId)
++        {
++             TC_LOG_DEBUG("entities.player.character", "External Mail> Adding %u of item with id %u", itemCount, itemId);
++             if(Item* mailItem = Item::CreateItem(itemId, itemCount))
++             {
++                 mailItem->SaveToDB(trans);
++                 mail->AddItem(mailItem);
++             }
++        }
++
++        mail->SendMailTo(trans, receiver ? receiver : MailReceiver(receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
++        delete mail;
++
++        stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_EXTERNAL_MAIL);
++        stmt->setUInt32(0, id);
++        trans->Append(stmt);
++
++        TC_LOG_DEBUG("entities.player.character", "External Mail> Mail sent");
++   } while (result->NextRow());
++
++   CharacterDatabase.CommitTransaction(trans);
++   TC_LOG_DEBUG("entities.player.character", "External Mail> All Mails Sent...");
++}
+\ No newline at end of file
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
 index e6ff1a0..2312931 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
@@ -6371,7 +6460,7 @@ index e6ff1a0..2312931 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 66cae69..33c715c 100644
+index c1de3aa..dcc7217 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -6394,7 +6483,7 @@ index 66cae69..33c715c 100644
      // Pinfo commands
      LANG_PINFO_PLAYER                   = 453,
      LANG_PINFO_GM_ACTIVE                = 548,
-@@ -1156,6 +1167,8 @@ enum TrinityStrings
+@@ -1178,6 +1189,8 @@ enum TrinityStrings
      LANG_AUTO_BROADCAST                 = 11000,
      LANG_INVALID_REALMID                = 11001,
  
@@ -6403,7 +6492,7 @@ index 66cae69..33c715c 100644
      // Show Kick in world
      LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
  
-@@ -1169,7 +1182,38 @@ enum TrinityStrings
+@@ -1191,7 +1204,38 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -6742,8 +6831,20 @@ index d13c81e..2ed9512 100644
  
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
+diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
+index 2e6a699..bd142a7 100644
+--- a/src/server/game/Server/WorldSession.h
++++ b/src/server/game/Server/WorldSession.h
+@@ -334,6 +334,7 @@ class WorldSession
+             }
+         }
+         //used with item_page table
++        static void SendExternalMails();
+         bool SendItemInfo(uint32 itemid, WorldPacket data);
+         //auction
+         void SendAuctionHello(uint64 guid, Creature* unit);
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index de6effb..2bbb874 100644
+index bb68010..eb35fd5 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -2967,6 +2967,9 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
@@ -6800,7 +6901,7 @@ index 00b7873..4dc96a7 100644
              break;
          }
 diff --git a/src/server/game/Spells/SpellInfo.cpp b/src/server/game/Spells/SpellInfo.cpp
-index 99c3d23..5342846 100644
+index 5ef6acb..a35edfa 100644
 --- a/src/server/game/Spells/SpellInfo.cpp
 +++ b/src/server/game/Spells/SpellInfo.cpp
 @@ -25,6 +25,7 @@
@@ -6811,7 +6912,7 @@ index 99c3d23..5342846 100644
  
  uint32 GetTargetFlagMask(SpellTargetObjectTypes objType)
  {
-@@ -2103,7 +2104,10 @@ uint32 SpellInfo::CalcCastTime(Spell* spell /*= NULL*/) const
+@@ -2104,7 +2105,10 @@ uint32 SpellInfo::CalcCastTime(Spell* spell /*= NULL*/) const
      if (Attributes & SPELL_ATTR0_REQ_AMMO && (!IsAutoRepeatRangedSpell()))
          castTime += 500;
  
@@ -6824,7 +6925,7 @@ index 99c3d23..5342846 100644
  
  uint32 SpellInfo::GetMaxTicks() const
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 79dc565..96c29ee 100644
+index 58e3cff..227c3d4 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -27,6 +27,7 @@
@@ -6835,15 +6936,18 @@ index 79dc565..96c29ee 100644
  #include "CalendarMgr.h"
  #include "Channel.h"
  #include "CharacterDatabaseCleaner.h"
-@@ -670,6 +671,7 @@ void World::LoadConfigSettings(bool reload)
-     m_int_configs[CONFIG_STRICT_PLAYER_NAMES]                 = sConfigMgr->GetIntDefault ("StrictPlayerNames",  0);
+@@ -671,6 +672,10 @@ void World::LoadConfigSettings(bool reload)
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
-+    m_bool_configs[CONFIG_FAKE_WHO_LIST]                      = sConfigMgr->GetBoolDefault("Fake.WHO.List", false);
  
++    m_bool_configs[CONFIG_FAKE_WHO_LIST]                      = sConfigMgr->GetBoolDefault("Fake.WHO.List", false);
++    m_int_configs[CONFIG_FAKE_WHO_ONLINE_INTERVAL]            = sConfigMgr->GetIntDefault("Fake.WHO.Online.Interval", 5);
++    m_int_configs[CONFIG_FAKE_WHO_LEVELUP_INTERVAL]           = sConfigMgr->GetIntDefault("Fake.WHO.LevelUp.Interval", 2);
++
      m_int_configs[CONFIG_MIN_PLAYER_NAME]                     = sConfigMgr->GetIntDefault ("MinPlayerName",  2);
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
-@@ -851,6 +853,18 @@ void World::LoadConfigSettings(bool reload)
+     {
+@@ -851,6 +856,18 @@ void World::LoadConfigSettings(bool reload)
          TC_LOG_ERROR("server.loading", "MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
          m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
      }
@@ -6862,7 +6966,7 @@ index 79dc565..96c29ee 100644
  
      m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfigMgr->GetIntDefault("GM.LoginState", 2);
      m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfigMgr->GetIntDefault("GM.Visible", 2);
-@@ -1045,6 +1059,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1046,6 +1063,8 @@ void World::LoadConfigSettings(bool reload)
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
  
@@ -6871,7 +6975,7 @@ index 79dc565..96c29ee 100644
      if (int32 clientCacheId = sConfigMgr->GetIntDefault("ClientCacheVersion", 0))
      {
          // overwrite DB/old value
-@@ -1106,7 +1122,35 @@ void World::LoadConfigSettings(bool reload)
+@@ -1107,7 +1126,35 @@ void World::LoadConfigSettings(bool reload)
      m_visibility_notify_periodOnContinents = sConfigMgr->GetIntDefault("Visibility.Notify.Period.OnContinents", DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
@@ -6908,7 +7012,16 @@ index 79dc565..96c29ee 100644
      ///- Load the CharDelete related config options
      m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
      m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
-@@ -1228,6 +1272,11 @@ void World::LoadConfigSettings(bool reload)
+@@ -1225,11 +1272,20 @@ void World::LoadConfigSettings(bool reload)
+     // MySQL ping time interval
+     m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
+ 
++     // External Mail
++    m_bool_configs[CONFIG_EXTERNAL_MAIL_ENABLE] = sConfigMgr->GetBoolDefault("External.Mail.Enable", false);
++    m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] = sConfigMgr->GetIntDefault("External.Mail.Interval", 1);
++
+     // misc
+     m_bool_configs[CONFIG_PDUMP_NO_PATHS] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowPaths", true);
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
      m_bool_configs[CONFIG_UI_QUESTLEVELS_IN_DIALOGS] = sConfigMgr->GetBoolDefault("UI.ShowQuestLevelsInDialogs", false);
  
@@ -6920,7 +7033,7 @@ index 79dc565..96c29ee 100644
      // Wintergrasp battlefield
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
-@@ -1259,6 +1308,9 @@ void World::LoadConfigSettings(bool reload)
+@@ -1261,6 +1317,9 @@ void World::LoadConfigSettings(bool reload)
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
  
@@ -6930,7 +7043,36 @@ index 79dc565..96c29ee 100644
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
-@@ -2889,6 +2941,8 @@ void World::ResetDailyQuests()
+@@ -1758,7 +1817,9 @@ void World::SetInitialWorldSettings()
+     tm localTm;
+     localtime_r(&m_gameTime, &localTm);
+     mail_timer = ((((localTm.tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
+-                                                            //1440
++
++    extmail_timer.SetInterval(m_int_configs[CONFIG_EXTERNAL_MAIL_INTERVAL] * MINUTE * IN_MILLISECONDS);
++
+     mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
+     TC_LOG_INFO("server.loading", "Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
+ 
+@@ -1994,6 +2055,17 @@ void World::Update(uint32 diff)
+     if (m_gameTime > m_NextGuildReset)
+         ResetGuildCap();
+ 
++     // Handle external mail
++    if (sWorld->getBoolConfig(CONFIG_EXTERNAL_MAIL_ENABLE))
++    {
++        extmail_timer.Update(diff);
++        if (extmail_timer.Passed())
++        {
++            WorldSession::SendExternalMails();
++            extmail_timer.Reset();
++        }
++    }
++
+     /// <ul><li> Handle auctions when the timer has passed
+     if (m_timers[WUPDATE_AUCTIONS].Passed())
+     {
+@@ -2891,6 +2963,8 @@ void World::ResetDailyQuests()
  
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
@@ -6939,7 +7081,7 @@ index 79dc565..96c29ee 100644
  }
  
  void World::LoadDBAllowedSecurityLevel()
-@@ -3218,3 +3272,87 @@ void World::ReloadRBAC()
+@@ -3220,3 +3294,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -7028,7 +7170,7 @@ index 79dc565..96c29ee 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 8a36a0a..6f00a55 100644
+index cc2078b..c3ddf46 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -85,6 +85,7 @@ enum WorldTimers
@@ -7047,7 +7189,7 @@ index 8a36a0a..6f00a55 100644
      CONFIG_PDUMP_NO_PATHS,
      CONFIG_PDUMP_NO_OVERWRITE,
      CONFIG_QUEST_IGNORE_AUTO_ACCEPT,
-@@ -156,6 +158,34 @@ enum WorldBoolConfigs
+@@ -156,6 +158,33 @@ enum WorldBoolConfigs
      CONFIG_STATS_LIMITS_ENABLE,
      CONFIG_INSTANCES_RESET_ANNOUNCE,
      CONFIG_IP_BASED_ACTION_LOGGING,
@@ -7069,20 +7211,19 @@ index 8a36a0a..6f00a55 100644
 +    // 12
 +    // 13
 +    // 14
-+    // 15
++    CONFIG_FAKE_WHO_LIST,
 +    // 16
 +    // 17
 +    // 18
-+    // 19
++    CONFIG_EXTERNAL_MAIL_ENABLE,
 +    // 20
 +    // Visit http://www.realmsofwarcraft.com/bb for forums and information
 +    //
 +    // End of prepatch
-+    CONFIG_FAKE_WHO_LIST,
+     CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      BOOL_CONFIG_VALUE_COUNT
  };
- 
-@@ -176,6 +206,31 @@ enum WorldFloatConfigs
+@@ -177,6 +206,31 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -7114,7 +7255,14 @@ index 8a36a0a..6f00a55 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -309,7 +364,10 @@ enum WorldIntConfigs
+@@ -306,12 +360,17 @@ enum WorldIntConfigs
+     CONFIG_CHARDELETE_HEROIC_MIN_LEVEL,
+     CONFIG_AUTOBROADCAST_CENTER,
+     CONFIG_AUTOBROADCAST_INTERVAL,
++    CONFIG_FAKE_WHO_ONLINE_INTERVAL,
++    CONFIG_FAKE_WHO_LEVELUP_INTERVAL,
+     CONFIG_MAX_RESULTS_LOOKUP_COMMANDS,
+     CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
      CONFIG_PERSISTENT_CHARACTER_CLEAN_FLAGS,
      CONFIG_LFG_OPTIONSMASK,
@@ -7125,7 +7273,15 @@ index 8a36a0a..6f00a55 100644
      CONFIG_WARDEN_CLIENT_RESPONSE_DELAY,
      CONFIG_WARDEN_CLIENT_CHECK_HOLDOFF,
      CONFIG_WARDEN_CLIENT_FAIL_ACTION,
-@@ -401,12 +459,33 @@ enum Rates
+@@ -337,6 +396,7 @@ enum WorldIntConfigs
+     CONFIG_BIRTHDAY_TIME,
+     CONFIG_CREATURE_PICKPOCKET_REFILL,
+     CONFIG_AHBOT_UPDATE_INTERVAL,
++    CONFIG_EXTERNAL_MAIL_INTERVAL,
+     INT_CONFIG_VALUE_COUNT
+ };
+ 
+@@ -403,12 +463,33 @@ enum Rates
      RATE_DURABILITY_LOSS_PARRY,
      RATE_DURABILITY_LOSS_ABSORB,
      RATE_DURABILITY_LOSS_BLOCK,
@@ -7159,7 +7315,7 @@ index 8a36a0a..6f00a55 100644
  /// Can be used in SMSG_AUTH_RESPONSE packet
  enum BillingPlanFlags
  {
-@@ -634,6 +713,8 @@ class World
+@@ -636,6 +717,8 @@ class World
          bool SendZoneMessage(uint32 zone, WorldPacket* packet, WorldSession* self = nullptr, uint32 team = 0);
          void SendZoneText(uint32 zone, const char *text, WorldSession* self = nullptr, uint32 team = 0);
  
@@ -7168,7 +7324,7 @@ index 8a36a0a..6f00a55 100644
          /// Are we in the middle of a shutdown?
          bool IsShuttingDown() const { return m_ShutdownTimer > 0; }
          uint32 GetShutDownTimeLeft() const { return m_ShutdownTimer; }
-@@ -748,6 +829,11 @@ class World
+@@ -750,6 +833,11 @@ class World
  
          void ReloadRBAC();
  
@@ -7180,7 +7336,15 @@ index 8a36a0a..6f00a55 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -850,6 +936,21 @@ class World
+@@ -781,6 +869,7 @@ class World
+         time_t m_startTime;
+         time_t m_gameTime;
+         IntervalTimer m_timers[WUPDATE_COUNT];
++        IntervalTimer extmail_timer;
+         time_t mail_timer;
+         time_t mail_timer_expires;
+         uint32 m_updateTime, m_updateTimeSum;
+@@ -852,6 +941,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
@@ -17470,7 +17634,7 @@ index 0000000..ce7ea24
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Spells/spell_generic.cpp b/src/server/scripts/Spells/spell_generic.cpp
-index 86ef8bd..5564378 100644
+index e198a6a..40d88be 100644
 --- a/src/server/scripts/Spells/spell_generic.cpp
 +++ b/src/server/scripts/Spells/spell_generic.cpp
 @@ -37,6 +37,7 @@
@@ -17524,7 +17688,7 @@ index 86ef8bd..5564378 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 0669d0b..6b00a18 100644
+index aa584d0..0a8b7cd 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 @@ -22,6 +22,11 @@ void CharacterDatabaseConnection::DoPrepareStatements()
@@ -17532,14 +17696,24 @@ index 0669d0b..6b00a18 100644
          m_stmts.resize(MAX_CHARACTERDATABASE_STATEMENTS);
  
 +    PrepareStatement(FAKE_CHAR_SEL_RACE_BY_NAME, "SELECT race FROM characters_fake WHERE name = ?", CONNECTION_SYNCH);
-+    PrepareStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE, "SELECT race FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3) AND name = ?", CONNECTION_SYNCH);
-+    PrepareStatement(FAKE_CHAR_ONLINE, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3)", CONNECTION_SYNCH);
-+    PrepareStatement(FAKE_CHAR_ONLINE_SEARCH, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW())+3) AND name = ?", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE, "SELECT race FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW()) + ?) AND name = ?", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_ONLINE, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW()) + ?)", CONNECTION_SYNCH);
++    PrepareStatement(FAKE_CHAR_ONLINE_SEARCH, "SELECT name,race,class,level,zone,gender FROM characters_fake WHERE HOUR(online) BETWEEN HOUR(NOW()) AND (HOUR(NOW()) + ?) AND name = ?", CONNECTION_SYNCH);
 +
      PrepareStatement(CHAR_DEL_QUEST_POOL_SAVE, "DELETE FROM pool_quest_save WHERE pool_id = ?", CONNECTION_ASYNC);
      PrepareStatement(CHAR_INS_QUEST_POOL_SAVE, "INSERT INTO pool_quest_save (pool_id, quest_id) VALUES (?, ?)", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM, "DELETE FROM guild_bank_item WHERE guildid = ? AND TabId = ? AND SlotId = ?", CONNECTION_ASYNC);
-@@ -605,5 +610,36 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -142,6 +147,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_UPD_MAIL_RETURNED, "UPDATE mail SET sender = ?, receiver = ?, expire_time = ?, deliver_time = ?, cod = 0, checked = ? WHERE id = ?", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_MAIL_ITEM_RECEIVER, "UPDATE mail_items SET receiver = ? WHERE item_guid = ?", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_ITEM_OWNER, "UPDATE item_instance SET owner_guid = ? WHERE guid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_GET_EXTERNAL_MAIL, "SELECT id, receiver, subject, message, money, item, item_count FROM mail_external ORDER BY id ASC", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_DEL_EXTERNAL_MAIL, "DELETE FROM mail_external WHERE id = ?", CONNECTION_ASYNC);
++
+ 
+     PrepareStatement(CHAR_SEL_ITEM_REFUNDS, "SELECT player_guid, paidMoney, paidExtendedCost FROM item_refund_instance WHERE item_guid = ? AND player_guid = ? LIMIT 1", CONNECTION_SYNCH);
+     PrepareStatement(CHAR_SEL_ITEM_BOP_TRADE, "SELECT allowedPlayers FROM item_soulbound_trade_data WHERE itemGuid = ? LIMIT 1", CONNECTION_SYNCH);
+@@ -605,5 +613,36 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      PrepareStatement(CHAR_SEL_PVPSTATS_MAXID, "SELECT MAX(id) FROM pvpstats_battlegrounds", CONNECTION_SYNCH);
      PrepareStatement(CHAR_INS_PVPSTATS_BATTLEGROUND, "INSERT INTO pvpstats_battlegrounds (id, winner_faction, bracket_id, type, date) VALUES (?, ?, ?, ?, NOW())", CONNECTION_ASYNC);
      PrepareStatement(CHAR_INS_PVPSTATS_PLAYER, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
@@ -17578,10 +17752,10 @@ index 0669d0b..6b00a18 100644
 +    // End of prepatch
  }
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 19b5fef..e5cf703 100644
+index 19b5fef..2a0bfdb 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -42,6 +42,10 @@ enum CharacterDatabaseStatements
+@@ -42,6 +42,11 @@ enum CharacterDatabaseStatements
          name for a suiting suffix.
      */
  
@@ -17589,10 +17763,20 @@ index 19b5fef..e5cf703 100644
 +    FAKE_CHAR_SEL_RACE_BY_NAME_IS_ONLINE,
 +    FAKE_CHAR_ONLINE,
 +    FAKE_CHAR_ONLINE_SEARCH,
++
      CHAR_DEL_QUEST_POOL_SAVE,
      CHAR_INS_QUEST_POOL_SAVE,
      CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM,
-@@ -537,7 +541,35 @@ enum CharacterDatabaseStatements
+@@ -142,6 +147,8 @@ enum CharacterDatabaseStatements
+     CHAR_UPD_MAIL_RETURNED,
+     CHAR_UPD_MAIL_ITEM_RECEIVER,
+     CHAR_UPD_ITEM_OWNER,
++    CHAR_GET_EXTERNAL_MAIL,
++    CHAR_DEL_EXTERNAL_MAIL,
+     CHAR_SEL_ITEM_REFUNDS,
+     CHAR_SEL_ITEM_BOP_TRADE,
+     CHAR_DEL_ITEM_BOP_TRADE,
+@@ -537,7 +544,35 @@ enum CharacterDatabaseStatements
      CHAR_SEL_PVPSTATS_MAXID,
      CHAR_INS_PVPSTATS_BATTLEGROUND,
      CHAR_INS_PVPSTATS_PLAYER,
@@ -17630,10 +17814,10 @@ index 19b5fef..e5cf703 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9a78d74..f3d94d9 100644
+index 3fec136..f9fc0ef 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3,6 +3,36 @@
+@@ -3,6 +3,28 @@
  ################################################
  [worldserver]
  
@@ -17641,14 +17825,6 @@ index 9a78d74..f3d94d9 100644
 +#         Prepatch config by LordPsyan         #
 +#       http://www.realmsofwarcraft.com/       #
 +################################################
-+
-+#    Fake.WHO.List
-+#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
-+#        49 real players online
-+#        Default: 0 (disabled)
-+#                 1 (enabled)
-+
-+Fake.WHO.List = 0
 +
 +###################################################################################################
 +#
@@ -17670,7 +17846,7 @@ index 9a78d74..f3d94d9 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -770,6 +800,13 @@ RecruitAFriend.MaxDifference = 4
+@@ -770,6 +792,13 @@ RecruitAFriend.MaxDifference = 4
  DisableWaterBreath = 4
  
  #
@@ -17684,7 +17860,7 @@ index 9a78d74..f3d94d9 100644
  #    AllFlightPaths
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
-@@ -2606,6 +2643,40 @@ LevelReq.Auction = 1
+@@ -2628,6 +2657,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -17725,7 +17901,45 @@ index 9a78d74..f3d94d9 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
-@@ -3172,3 +3243,479 @@ PacketSpoof.BanDuration = 86400
+@@ -2650,6 +2713,20 @@ PlayerDump.DisallowOverwrite = 1
+ UI.ShowQuestLevelsInDialogs = 0
+ 
+ #
++#    External.Mail.Enable
++#        Enable external mail delivery from mail_external table.
++#        Default: 0 (disabled)
++#                 1 (enabled)
++#
++#    External.Mail.Interval
++#        Mail delivery delay time for item sending from mail_external table, in minutes.
++#        Default: 5 minutes
++#
++
++External.Mail.Enable = 1
++External.Mail.Interval = 5
++
++#
+ ###################################################################################################
+ 
+ ###################################################################################################
+@@ -2952,6 +3029,16 @@ AuctionHouseBot.forceExcludeItems = ""
+ #
+ ###################################################################################################
+ 
++#    Fake.WHO.List
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
++#        49 real players online
++#        Default: 0 (disabled)
++#                 1 (enabled)
++
++Fake.WHO.List = 0
++Fake.WHO.Online.Interval = 5
++Fake.WHO.LevelUp.Interval = 2
++
+ ###################################################################################################
+ #    AHBot Buyer config
+ #
+@@ -3194,3 +3281,479 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
