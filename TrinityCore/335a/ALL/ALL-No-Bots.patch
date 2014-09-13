@@ -1,6 +1,6 @@
-From d6f3b2595ee5245d8202072a43854818db892297 Mon Sep 17 00:00:00 2001
+From 0d3828a9b9943d7d8b86d62806c33c16f45a87b8 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 13 Sep 2014 11:15:46 -0400
+Date: Sat, 13 Sep 2014 12:14:36 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -93,7 +93,7 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/Handlers/ChatHandler.cpp           |   28 +-
  src/server/game/Handlers/GroupHandler.cpp          |   12 +-
  src/server/game/Handlers/LootHandler.cpp           |   11 +
- src/server/game/Handlers/MiscHandler.cpp           |   95 +-
+ src/server/game/Handlers/MiscHandler.cpp           |   98 +-
  src/server/game/Handlers/MovementHandler.cpp       |    4 +
  src/server/game/Handlers/QueryHandler.cpp          |    2 +-
  src/server/game/Handlers/SpellHandler.cpp          |   11 +-
@@ -142,7 +142,7 @@ Subject: [PATCH] ALL-No-Bots
  .../Database/Implementation/LoginDatabase.cpp      |    5 +-
  .../shared/Database/Implementation/LoginDatabase.h |    3 +
  src/server/worldserver/worldserver.conf.dist       |  579 +++++++
- 138 files changed, 17332 insertions(+), 154 deletions(-)
+ 138 files changed, 17334 insertions(+), 155 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Reforging_README.md
  create mode 100644 Transmog_CHANGELOG.md
@@ -7572,7 +7572,7 @@ index 8bc9c5d..4da3961 100644
  
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index b6c508e..02550bb 100644
+index b6c508e..a8d3ce8 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -192,6 +192,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -7595,7 +7595,19 @@ index b6c508e..02550bb 100644
          TC_LOG_DEBUG("network", "String %u: %s", i, temp.c_str());
      }
  
-@@ -365,7 +371,45 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+@@ -274,9 +280,10 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
+             continue;
+ 
+         // check if target is globally visible for player
++        /* Remove check so Level 255 shows up in who list
+         if (!target->IsVisibleGloballyFor(_player))
+             continue;
+-
++*/
+         // check if target's level is in level range
+         uint8 lvl = target->getLevel();
+         if (lvl < level_min || lvl > level_max)
+@@ -365,7 +372,45 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
          ++displaycount;
      }
  
@@ -7642,7 +7654,7 @@ index b6c508e..02550bb 100644
      data.put(4, matchcount);                              // insert right count, count of matches
  
      SendPacket(&data);
-@@ -549,6 +593,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
+@@ -549,6 +594,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to add friend : '%s'",
          GetPlayer()->GetName().c_str(), friendName.c_str());
  
@@ -7669,7 +7681,7 @@ index b6c508e..02550bb 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
  
      stmt->setString(0, friendName);
-@@ -640,6 +704,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
+@@ -640,6 +705,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to Ignore: '%s'",
          GetPlayer()->GetName().c_str(), ignoreName.c_str());
  
@@ -7690,7 +7702,7 @@ index b6c508e..02550bb 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_BY_NAME);
  
      stmt->setString(0, ignoreName);
-@@ -1432,6 +1510,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
+@@ -1432,6 +1511,21 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket& recvData)
  
  void WorldSession::HandleTimeSyncResp(WorldPacket& recvData)
  {
