@@ -1,6 +1,6 @@
-From d93fcd67415487b5387c166eab9119b6b2ac15ab Mon Sep 17 00:00:00 2001
+From d6f3b2595ee5245d8202072a43854818db892297 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 11 Sep 2014 08:05:42 -0400
+Date: Sat, 13 Sep 2014 11:15:46 -0400
 Subject: [PATCH] ALL-No-Bots
 
 ---
@@ -51,6 +51,8 @@ Subject: [PATCH] ALL-No-Bots
  .../Individual/enchant/world.enchant.sql           |    4 +
  .../Individual/npc_buff/world_npc_buff.sql         |   62 +
  .../profession_npc/world_professionnpc.sql         |    4 +
+ sql/patches/account_premium.sql                    |   22 +
+ src/server/authserver/Server/AuthSession.cpp       |    3 +
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  380 +++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++
  src/server/game/Accounts/RBAC.h                    |   27 +
@@ -79,7 +81,7 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/DataStores/DBCStructure.h          |    2 +-
  src/server/game/DataStores/DBCfmt.h                |    2 +-
  src/server/game/Entities/Creature/Creature.cpp     |    2 +-
- src/server/game/Entities/Player/Player.cpp         |  397 ++++-
+ src/server/game/Entities/Player/Player.cpp         |  406 ++++-
  src/server/game/Entities/Player/Player.h           |  101 +-
  src/server/game/Entities/Unit/Unit.cpp             |   52 +-
  src/server/game/Entities/Unit/Unit.h               |    4 +-
@@ -96,17 +98,19 @@ Subject: [PATCH] ALL-No-Bots
  src/server/game/Handlers/QueryHandler.cpp          |    2 +-
  src/server/game/Handlers/SpellHandler.cpp          |   11 +-
  src/server/game/Mails/Mail.cpp                     |   62 +
- src/server/game/Miscellaneous/Formulas.h           |   42 +-
- src/server/game/Miscellaneous/Language.h           |   48 +-
- src/server/game/Reputation/ReputationMgr.cpp       |   10 +
+ src/server/game/Miscellaneous/Formulas.h           |   46 +-
+ src/server/game/Miscellaneous/Language.h           |   50 +-
+ src/server/game/Reputation/ReputationMgr.cpp       |   14 +
  src/server/game/Scripting/ScriptLoader.cpp         |  199 ++-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
- src/server/game/Server/WorldSession.h              |    1 +
+ src/server/game/Server/WorldSession.cpp            |    3 +-
+ src/server/game/Server/WorldSession.h              |    5 +-
+ src/server/game/Server/WorldSocket.cpp             |   14 +-
  src/server/game/Spells/Spell.cpp                   |   10 +-
  src/server/game/Spells/SpellEffects.cpp            |    4 +
  src/server/game/Spells/SpellInfo.cpp               |    6 +-
- src/server/game/World/World.cpp                    |  162 +-
- src/server/game/World/World.h                      |  104 ++
+ src/server/game/World/World.cpp                    |  171 ++-
+ src/server/game/World/World.h                      |  113 ++
  src/server/scripts/CMakeLists.txt                  |    4 +
  src/server/scripts/Commands/cs_anticheat.cpp       |  262 ++++
  src/server/scripts/Commands/cs_guild.cpp           |  121 ++
@@ -122,6 +126,7 @@ Subject: [PATCH] ALL-No-Bots
  src/server/scripts/Custom/all-in-one.cpp           | 1330 ++++++++++++++++
  src/server/scripts/Custom/beastmaster.cpp          |  385 +++++
  src/server/scripts/Custom/bountyhunter.cpp         |  462 ++++++
+ src/server/scripts/Custom/cs_premium.cpp           |   90 ++
  src/server/scripts/Custom/enchant.cpp              | 1621 ++++++++++++++++++++
  src/server/scripts/Custom/event.cpp                |  646 ++++++++
  src/server/scripts/Custom/guildmaster.cpp          |  313 ++++
@@ -134,8 +139,10 @@ Subject: [PATCH] ALL-No-Bots
  src/server/scripts/Spells/spell_generic.cpp        |   22 +-
  .../Database/Implementation/CharacterDatabase.cpp  |   41 +-
  .../Database/Implementation/CharacterDatabase.h    |   37 +-
- src/server/worldserver/worldserver.conf.dist       |  563 +++++++
- 131 files changed, 17139 insertions(+), 150 deletions(-)
+ .../Database/Implementation/LoginDatabase.cpp      |    5 +-
+ .../shared/Database/Implementation/LoginDatabase.h |    3 +
+ src/server/worldserver/worldserver.conf.dist       |  579 +++++++
+ 138 files changed, 17332 insertions(+), 154 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Reforging_README.md
  create mode 100644 Transmog_CHANGELOG.md
@@ -182,6 +189,7 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 sql/TrinityCore-Patches/Individual/enchant/world.enchant.sql
  create mode 100644 sql/TrinityCore-Patches/Individual/npc_buff/world_npc_buff.sql
  create mode 100644 sql/TrinityCore-Patches/Individual/profession_npc/world_professionnpc.sql
+ create mode 100644 sql/patches/account_premium.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/game/Anticheat/AnticheatData.cpp
@@ -204,6 +212,7 @@ Subject: [PATCH] ALL-No-Bots
  create mode 100644 src/server/scripts/Custom/all-in-one.cpp
  create mode 100644 src/server/scripts/Custom/beastmaster.cpp
  create mode 100644 src/server/scripts/Custom/bountyhunter.cpp
+ create mode 100644 src/server/scripts/Custom/cs_premium.cpp
  create mode 100644 src/server/scripts/Custom/enchant.cpp
  create mode 100644 src/server/scripts/Custom/event.cpp
  create mode 100644 src/server/scripts/Custom/guildmaster.cpp
@@ -726,13 +735,13 @@ index 0000000..4090a23
 \ No newline at end of file
 diff --git a/sql/TrinityCore-Patches/Combined/auth/auth.all.sql b/sql/TrinityCore-Patches/Combined/auth/auth.all.sql
 new file mode 100644
-index 0000000..4d6f954
+index 0000000..a9ebad0
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Combined/auth/auth.all.sql
 @@ -0,0 +1,72 @@
-+-- -------------------------------------------------------- 
-+-- auth_AIO.sql 
-+-- -------------------------------------------------------- 
++-- --------------------------------------------------------
++-- auth_AIO.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `hacked`;
 +CREATE TABLE `hacked` (
 + `charname` CHAR( 50) NOT NULL
@@ -744,11 +753,11 @@ index 0000000..4d6f954
 +DROP TABLE IF EXISTS `vipek2`;
 +CREATE TABLE `vipek2` (
 + `account` CHAR( 50) NOT NULL
-+); 
-+ 
-+-- -------------------------------------------------------- 
-+-- auth_guild_level_system.sql 
-+-- -------------------------------------------------------- 
++);
++
++-- --------------------------------------------------------
++-- auth_guild_level_system.sql
++-- --------------------------------------------------------
 +INSERT INTO `rbac_permissions` VALUES ('1000', 'Command: guild info');
 +INSERT INTO `rbac_permissions` VALUES ('1001', 'Command: guild setlevel');
 +INSERT INTO `rbac_permissions` VALUES ('1002', 'Command: guild givexp');
@@ -756,21 +765,21 @@ index 0000000..4d6f954
 +INSERT INTO `rbac_linked_permissions` VALUES ('195', '1000');
 +INSERT INTO `rbac_linked_permissions` VALUES ('192', '1001');
 +INSERT INTO `rbac_linked_permissions` VALUES ('192', '1002');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- auth_individuale_xp_Rate.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- auth_individuale_xp_Rate.sql
++-- --------------------------------------------------------
 +INSERT INTO `rbac_permissions` VALUES ('1010', 'Command: modify xpkill');
 +INSERT INTO `rbac_permissions` VALUES ('1011', 'Command: modify xpquest');
 +
 +INSERT INTO `rbac_linked_permissions` VALUES ('195', '1010');
 +INSERT INTO `rbac_linked_permissions` VALUES ('195', '1011');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- auth_rbac.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- auth_rbac.sql
++-- --------------------------------------------------------
 +SET @NPCB_PERM := '1100';
 +
 +DELETE FROM `rbac_permissions` WHERE `id` BETWEEN @NPCB_PERM AND @NPCB_PERM+11;
@@ -801,16 +810,16 @@ index 0000000..4d6f954
 +('198',@NPCB_PERM+8), -- moderator command .npcbot revive
 +('199',@NPCB_PERM+9), -- player command .bot
 +('199',@NPCB_PERM+10), -- player command .bot add
-+('199',@NPCB_PERM+11); -- player command .bot remove 
++('199',@NPCB_PERM+11); -- player command .bot remove
 diff --git a/sql/TrinityCore-Patches/Combined/characters/characters.all.sql b/sql/TrinityCore-Patches/Combined/characters/characters.all.sql
 new file mode 100644
-index 0000000..6f0f583
+index 0000000..92f8c44
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Combined/characters/characters.all.sql
 @@ -0,0 +1,290 @@
-+-- -------------------------------------------------------- 
-+-- characters.BountyHunter.sql 
-+-- -------------------------------------------------------- 
++-- --------------------------------------------------------
++-- characters.BountyHunter.sql
++-- --------------------------------------------------------
 +-- phpMyAdmin SQL Dump
 +-- version 4.1.12
 +-- http://www.phpmyadmin.net
@@ -849,11 +858,11 @@ index 0000000..6f0f583
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 +/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 +/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- characters.external_mail.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- characters.external_mail.sql
++-- --------------------------------------------------------
 +CREATE TABLE `mail_external` (
 +  `id` bigint(20) unsigned NOT NULL auto_increment,
 +  `receiver` bigint(20) unsigned NOT NULL,
@@ -863,11 +872,11 @@ index 0000000..6f0f583
 +  `item` bigint(20) unsigned NOT NULL default '0',
 +  `item_count` bigint(20) unsigned NOT NULL default '0',
 +  PRIMARY KEY  (`id`)
-+) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8; 
-+ 
-+-- -------------------------------------------------------- 
-+-- characters.fake_full.sql 
-+-- -------------------------------------------------------- 
++) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8;
++
++-- --------------------------------------------------------
++-- characters.fake_full.sql
++-- --------------------------------------------------------
 +CREATE TABLE IF NOT EXISTS `characters_fake` (
 +  `name` varchar(36) NOT NULL,
 +  `race` mediumint(3) NOT NULL DEFAULT '0',
@@ -908,11 +917,11 @@ index 0000000..6f0f583
 +('Melia', 5, 6, 57, 12, 0, '2014-08-08 09:21:15', '2014-08-08 16:22:37'),
 +('Balu', 4, 4, 5, 42, 1, '2014-08-08 08:06:03', '2014-08-08 14:25:07'),
 +('Jabari', 10, 2, 3, 25, 0, '2014-08-08 09:11:53', '2014-08-08 16:22:37');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- characters.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- characters.sql
++-- --------------------------------------------------------
 +/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 +/*!40101 SET NAMES utf8 */;
 +/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
@@ -936,11 +945,11 @@ index 0000000..6f0f583
 +/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 +/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- CharactersDB.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- CharactersDB.sql
++-- --------------------------------------------------------
 +/*
 + * Author: Xees
 + * Description: This file is used to apply the database tables needed for the ArenaGambler
@@ -1000,17 +1009,17 @@ index 0000000..6f0f583
 +    `matchDate` timestamp ,
 +    `matchWinner` int (11)
 +);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- characters_AIO.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- characters_AIO.sql
++-- --------------------------------------------------------
 +REPLACE INTO `mail` (`id`, `messageType`, `stationery`, `mailTemplateId`, `sender`, `receiver`, `subject`, `has_items`, `expire_time`, `deliver_time`, `money`, `cod`, `checked`) VALUES (60003, 0, 41, 0, 0, 0, 'Money For You!', 0, 0, 0, 4294967295, 0, 1);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- characters_guild_level_system.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- characters_guild_level_system.sql
++-- --------------------------------------------------------
 +ALTER TABLE `guild` ADD `xp` INT(10) DEFAULT 0 NOT NULL AFTER `BankMoney`;
 +ALTER TABLE `guild` ADD `level` TINYINT(3) DEFAULT 0 NOT NULL AFTER `xp`;
 +
@@ -1065,11 +1074,11 @@ index 0000000..6f0f583
 +INSERT INTO `guild_xp_for_next_level` VALUES ('4', '40500000');
 +INSERT INTO `guild_xp_for_next_level` VALUES ('5', '60750000');
 +INSERT INTO `guild_xp_for_next_level` VALUES ('6', '91125000');
-+INSERT INTO `guild_xp_for_next_level` VALUES ('7', '136687500'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- character_NPC_bots.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `guild_xp_for_next_level` VALUES ('7', '136687500');
++
++-- --------------------------------------------------------
++-- character_NPC_bots.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `character_npcbot`;
 +CREATE TABLE `character_npcbot` (
 +  `owner` int(10) default NULL,
@@ -1100,13 +1109,13 @@ index 0000000..6f0f583
 +)  ENGINE=InnoDB DEFAULT CHARSET=utf8;
 diff --git a/sql/TrinityCore-Patches/Combined/world/world.all.sql b/sql/TrinityCore-Patches/Combined/world/world.all.sql
 new file mode 100644
-index 0000000..bbbd12b
+index 0000000..4b52811
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Combined/world/world.all.sql
 @@ -0,0 +1,1010 @@
-+-- -------------------------------------------------------- 
-+-- world-beastmaster.sql 
-+-- -------------------------------------------------------- 
++-- --------------------------------------------------------
++-- world-beastmaster.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `beastmaster`;
 +
 +CREATE TABLE `beastmaster` (
@@ -1171,11 +1180,11 @@ index 0000000..bbbd12b
 +('99990','0','4540','0','0','0'),
 +('99990','0','4541','0','0','0'),
 +('99990','0','4542','0','0','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.anticheat.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.anticheat.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `players_reports_status`;
 +
 +CREATE TABLE `players_reports_status` (
@@ -1205,43 +1214,43 @@ index 0000000..bbbd12b
 +  `teleportplane_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
 +  `climb_reports` bigint(20) unsigned NOT NULL DEFAULT '0',
 +  PRIMARY KEY (`guid`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT=''; 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.AVFix.sql 
-+-- -------------------------------------------------------- 
++) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';
++
++-- --------------------------------------------------------
++-- world.AVFix.sql
++-- --------------------------------------------------------
 +UPDATE creature_template SET faction = 1 WHERE entry IN (4255,4257,5134,5135,5139,11948,11949,11997,12050,12096,12127,13086,13096,13138,13216,13257,13296,13298,13299,13317,13318,13319,13320,13326,13327,13331,13422,13437,13438,13439,13442,13443,13447,13546,13576,13577,13598,13617,13797,14187,14188,14284,14762,14763,14765,14766,14768,14769,12047,13396,13358,13080,13078);
 +
 +UPDATE creature_template SET faction = 2 WHERE entry IN (2225,3343,3625,10364,10367,11946,11947,11998,12051,12052,12053,12097,12121,12122,13088,13089,13097,13137,13140,13143,13144,13145,13146,13147,13152,13153,13154,13176,13179,13180,13181,13218,13236,13284,13316,13359,13377,13397,13425,13428,13441,13448,13536,13539,13545,13597,13616,13618,13798,14185,14186,14282,14285,14772,14773,14774,14775,14776,14777,13332,13099,13079);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.enchant.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.enchant.sql
++-- --------------------------------------------------------
 +-- Creature template. Young woman enchantress
 +DELETE FROM `creature_template` WHERE `entry` = 100067;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('100067','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_enchantment','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.fake_players.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.fake_players.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Player wishes to not be disturbed and cannot receive whisper messages.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.levelnpc.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Player wishes to not be disturbed and cannot receive whisper messages.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Сообщение: "Не беспокоить".');
++
++-- --------------------------------------------------------
++-- world.levelnpc.sql
++-- --------------------------------------------------------
 +-- Creature_template entry. Make sure entry number does not conflict.
 +DELETE FROM `creature_template` WHERE `entry` = 60003;
 +
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('60003','0','0','0','0','0','2591','0','0','0','Lucy','Level NPC','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','levelnpc','0'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.npc_teleport.sql 
-+-- -------------------------------------------------------- 
++('60003','0','0','0','0','0','2591','0','0','0','Lucy','Level NPC','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','levelnpc','0');
++
++-- --------------------------------------------------------
++-- world.npc_teleport.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `custom_npc_tele_category`;
 +CREATE TABLE `custom_npc_tele_category` (
 +  `id` int(6) unsigned NOT NULL default '0',
@@ -1362,11 +1371,11 @@ index 0000000..bbbd12b
 +-- `creature_template`
 +REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('100000','0','0','0','0','0','26502','0','0','0','Abisal Vortex','','','0','83','83','0','35','1','1','1.14286','2','1','0','0','0','1','1','1','0','2048','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','2','npc_teleport','1');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.player_events.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.player_events.sql
++-- --------------------------------------------------------
 +/*
 +Navicat MySQL Data Transfer
 +
@@ -1442,20 +1451,20 @@ index 0000000..bbbd12b
 +-- ----------------------------
 +INSERT INTO `lil_events` VALUES ('0', '0', '0', '0');
 +INSERT INTO `lil_events` VALUES ('1', '1', '1', '1');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world.summonnpc-item.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world.summonnpc-item.sql
++-- --------------------------------------------------------
 +-- Example item:
 +DELETE FROM `item_template` WHERE `entry` = 100000;
 +insert into `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `StatsCount`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `flagsCustom`, `VerifiedBuild`) values
 +('100000','15','0','-1','Icerune','46787','4','72','0','1','0','0','0','-1','-1','1','1','0','0','0','0','0','0','6','1','1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','18282','0','0','0','8000','0','-1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','1','|cff00FF00Use: Summons Lithathrad Teleporter.|r','0','0','0','0','0','3','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','-1','0','0','0','0','summon','0','0','0','0','0','-4');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- WorldDB.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- WorldDB.sql
++-- --------------------------------------------------------
 +REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('25266','0','0','0','0','0','24818','3422','24819','24821','Arena Gambler','','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','','1');
 +REPLACE INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `MovementType`, `npcflag`, `unit_flags`, `dynamicflags`, `VerifiedBuild`) VALUES (1118308, 908001, 1, 1, 1, 0, 0, -7207.9, 1056.01, 327.532, 4.59111, 300, 0, 0, 108000, 0, 2, 0, 0, 0, 0);
@@ -1827,11 +1836,11 @@ index 0000000..bbbd12b
 +(72037, 194608, 571, 1, 1, 8368.94, 708.93, 553.772, 2.93164, 0, 0, 0.994495, 0.104784, 30, 0, 1),
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_AIO.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_AIO.sql
++-- --------------------------------------------------------
 +-- Updates
 +-- WARNING! It's changes official blizz data!
 +UPDATE `creature_template` SET `faction`=35 WHERE `entry` IN(28474, 914, 23128, 17204, 5115, 4584, 16655, 28958, 4090, 23534);
@@ -1863,11 +1872,11 @@ index 0000000..bbbd12b
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('80000','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_all','0');
 +-- end
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_creature_template_outfits.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_creature_template_outfits.sql
++-- --------------------------------------------------------
 +
 +
 +    -- --------------------------------------------------------
@@ -1910,11 +1919,11 @@ index 0000000..bbbd12b
 +    /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 +    /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 +    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_guildhouses.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_guildhouses.sql
++-- --------------------------------------------------------
 +-- ----------------------------
 +-- Table structure for guildhouses
 +-- ----------------------------
@@ -1981,22 +1990,22 @@ index 0000000..bbbd12b
 +DELETE FROM creature_template WHERE `entry`=13;
 +
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_guild_level_system.sql 
-+-- -------------------------------------------------------- 
++('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
++
++-- --------------------------------------------------------
++-- world_guild_level_system.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` IN (13000, 13001);
 +INSERT INTO `trinity_string` VALUES ('13000', 'Guild Level: %u.', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('13001', 'Guild Experience: %u/%u.', null, null, null, null, null, null, null, null);
 +DELETE FROM `command` WHERE `permission` IN (1000, 1001, 1002);
 +INSERT INTO `command` VALUES ('guild info', '1000', 'Syntax: .guild info');
 +INSERT INTO `command` VALUES ('guild setlevel', '1001', 'Syntax: .guild setlevel $GuildName $Level');
-+INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_individuale_xp_Rate.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
++
++-- --------------------------------------------------------
++-- world_individuale_xp_Rate.sql
++-- --------------------------------------------------------
 +DELETE FROM `trinity_string` WHERE `entry` IN (15000, 15001, 15002, 15003, 15004);
 +INSERT INTO `trinity_string` VALUES ('15004', 'Current XpKill Rate: %f.$BCurrent XpQuest Rate: %f.', null, null, null, null, null, null, null, null);
 +INSERT INTO `trinity_string` VALUES ('15003', 'The specified value is too low, it should be between 1 and 8.', null, null, null, null, null, null, null, null);
@@ -2005,22 +2014,22 @@ index 0000000..bbbd12b
 +INSERT INTO `trinity_string` VALUES ('15000', 'XpKill Rate set to %f ', null, null, null, null, null, null, null, null);
 +DELETE FROM `command` WHERE `permission` IN (1010, 1011);
 +INSERT INTO `command` VALUES ('modify xpkill', '1010', 'Syntax: .modify xpkill #wert');
-+INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_npc.sql 
-+-- -------------------------------------------------------- 
++INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
++
++-- --------------------------------------------------------
++-- world_npc.sql
++-- --------------------------------------------------------
 +SET
 +@Entry = 190010,
 +@Name = "Warpweaver";
 +DELETE FROM `creature_template` WHERE `entry` = @Entry;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_npc_buff.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_npc_buff.sql
++-- --------------------------------------------------------
 +DROP TABLE IF EXISTS `npc_buff_spells`;
 +
 +CREATE TABLE `npc_buff_spells` (
@@ -2082,20 +2091,20 @@ index 0000000..bbbd12b
 +
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +   (100002, 'Choose your Buff Type.'),
-+   (100003, 'Choose your Buff.'); 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_professionnpc.sql 
-+-- -------------------------------------------------------- 
++   (100003, 'Choose your Buff.');
++
++-- --------------------------------------------------------
++-- world_professionnpc.sql
++-- --------------------------------------------------------
 +DELETE FROM `creature_template` WHERE `entry` = 60001;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
 +-- end
-+ 
-+ 
-+-- -------------------------------------------------------- 
-+-- world_texts.sql 
-+-- -------------------------------------------------------- 
++
++
++-- --------------------------------------------------------
++-- world_texts.sql
++-- --------------------------------------------------------
 +SET @TEXT_ID := 50000;
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
@@ -3557,6 +3566,49 @@ index 0000000..d2141cf
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
 +-- end
+diff --git a/sql/patches/account_premium.sql b/sql/patches/account_premium.sql
+new file mode 100644
+index 0000000..770380c
+--- /dev/null
++++ b/sql/patches/account_premium.sql
+@@ -0,0 +1,22 @@
++CREATE TABLE IF NOT EXISTS `auth`.`account_premium` (
++  `id` int(11) NOT NULL DEFAULT '0' COMMENT 'Account id',
++  `setdate` int(4) NOT NULL DEFAULT '0',
++  `unsetdate` int(4) NOT NULL DEFAULT '0',
++  `premium_type` tinyint(4) unsigned NOT NULL DEFAULT '1',
++  `active` tinyint(4) NOT NULL DEFAULT '1',
++  PRIMARY KEY (`id`),
++  KEY `active` (`active`),
++  KEY `setdate` (`setdate`),
++  KEY `unsetdate` (`unsetdate`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8;
++
++
++INSERT INTO `auth`.`rbac_permissions` (`id`, `name`) VALUES
++(999, 'Command: vip');
++
++INSERT INTO `auth`.`rbac_linked_permissions` (`id`, `linkedId`) VALUES
++(195, 999);
++
++INSERT INTO `world`.`command` (`name`, `permission`, `help`) VALUES
++('vip bank', 999, 'Syntax: .vip bank'),
++('vip mail', 999, 'Syntax: .vip mail');
+\ No newline at end of file
+diff --git a/src/server/authserver/Server/AuthSession.cpp b/src/server/authserver/Server/AuthSession.cpp
+index e8241ac..0d9d2b5 100644
+--- a/src/server/authserver/Server/AuthSession.cpp
++++ b/src/server/authserver/Server/AuthSession.cpp
+@@ -297,6 +297,9 @@ bool AuthSession::HandleLogonChallenge()
+                 //set expired bans to inactive
+                 LoginDatabase.DirectExecute(LoginDatabase.GetPreparedStatement(LOGIN_UPD_EXPIRED_ACCOUNT_BANS));
+ 
++                //set expired premium to inactive
++                LoginDatabase.DirectExecute(LoginDatabase.GetPreparedStatement(LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM));
++
+                 // If the account is banned, reject the logon attempt
+                 stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_BANNED);
+                 stmt->setUInt32(0, fields[1].GetUInt32());
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
 index 0000000..3aed0f7
@@ -4940,7 +4992,7 @@ index cdc6fc3..0830ba1 100644
          if (player->GetTeam() == HORDE)
              player->CastSpell(player, SPELL_HORDE_GOLD_FLAG, true);
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index 6f6d1b6..8e04104 100644
+index f2a112c..22358ee 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
 @@ -288,7 +288,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
@@ -5061,7 +5113,7 @@ index 6f6d1b6..8e04104 100644
  }
  
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index b027019..e30a625 100644
+index b14c18c..2fa9a4f 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
 @@ -354,7 +354,7 @@ class Battleground
@@ -5944,7 +5996,7 @@ index fa1f866..c0f56f9 100644
          // always save boss respawn time at death to prevent crash cheating
          if (sWorld->getBoolConfig(CONFIG_SAVE_RESPAWN_TIME_IMMEDIATELY) || isWorldBoss())
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f7ef9a3..3281041 100644
+index 16a75e5..b7bd512 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -19,6 +19,7 @@
@@ -6094,7 +6146,7 @@ index f7ef9a3..3281041 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -5059,6 +5098,12 @@ void Player::BuildPlayerRepop()
+@@ -5060,6 +5099,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -6107,7 +6159,7 @@ index f7ef9a3..3281041 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5106,6 +5151,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5107,6 +5152,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -6117,7 +6169,7 @@ index f7ef9a3..3281041 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5206,7 +5254,7 @@ void Player::CreateCorpse()
+@@ -5207,7 +5255,7 @@ void Player::CreateCorpse()
          return;
      }
  
@@ -6126,7 +6178,7 @@ index f7ef9a3..3281041 100644
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -5431,6 +5479,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5432,6 +5480,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -6142,7 +6194,17 @@ index f7ef9a3..3281041 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -6890,10 +6947,10 @@ uint32 Player::TeamForRace(uint8 race)
+@@ -6864,6 +6921,9 @@ void Player::CheckAreaExploreAndOutdoor()
+                     XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
+                 }
+ 
++                if(GetSession()->IsPremium())
++                    XP *= sWorld->getRate(RATE_XP_EXPLORE_PREMIUM);
++
+                 GiveXP(XP, NULL);
+                 SendExplorationExperience(area, XP);
+             }
+@@ -6891,10 +6951,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -6155,7 +6217,7 @@ index f7ef9a3..3281041 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -6995,6 +7052,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6996,6 +7056,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -6183,7 +6245,7 @@ index f7ef9a3..3281041 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -7009,23 +7087,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -7010,23 +7091,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -6213,7 +6275,7 @@ index f7ef9a3..3281041 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -7120,7 +7198,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7121,7 +7202,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -6222,7 +6284,7 @@ index f7ef9a3..3281041 100644
              return false;
  
          return true;
-@@ -7132,6 +7210,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7133,6 +7214,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      uint64 victim_guid = 0;
      uint32 victim_rank = 0;
@@ -6230,7 +6292,7 @@ index f7ef9a3..3281041 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -7174,19 +7253,104 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7175,16 +7257,53 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -6286,17 +6348,17 @@ index f7ef9a3..3281041 100644
 +                else if (killer_title < (2*HKRANKMAX-1))
 +                    rank_diff = (victim_rank>(killer_title - (HKRANKMAX-1) +4))? (victim_rank - (killer_title - (HKRANKMAX-1) + 4)) : 0;
 +
-+
+ 
+-            honor_f = std::ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
 +            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
 +            honor *= 1 + sWorld->getRate(RATE_PVP_RANK_EXTRA_HONOR)*(((float)rank_diff) / 10.0f);
-+
-+            // count the number of playerkills in one day
-+            ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
-+            // and those in a lifetime
-+            ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
-+            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
-+            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
-+            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
+ 
+             // count the number of playerkills in one day
+             ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
+@@ -7193,6 +7312,54 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
 +            UpdateKnownTitles();
 +            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
 +            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
@@ -6330,24 +6392,31 @@ index f7ef9a3..3281041 100644
 +            uint8 k_level = getLevel();
 +            uint8 k_grey = Trinity::XP::GetGrayLevel(k_level);
 +            uint8 v_level = victim->getLevel();
- 
--            honor_f = std::ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
++
 +            if (v_level <= k_grey)
 +                return false;
- 
++
 +            uint32 victim_title = 0;
 +            victim_guid = 0;
 +            honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
-             // count the number of playerkills in one day
-             ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
++            // count the number of playerkills in one day
++            ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
 +
-             // and those in a lifetime
-             ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
-             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
-@@ -7215,6 +7379,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
++            // and those in a lifetime
++            ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, victim->getClass());
++            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, victim->getRace());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
+             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
+         }
+@@ -7216,6 +7383,19 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
++
++    if(GetSession()->IsPremium())
++        honor_f *= sWorld->getRate(RATE_HONOR_PREMIUM);
 +
 +    //Guild-Level-System (Bonus: Ehre)
 +    if (Guild* guild = GetGuild())
@@ -6361,7 +6430,7 @@ index f7ef9a3..3281041 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -7285,6 +7459,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -7286,6 +7466,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -6392,7 +6461,7 @@ index f7ef9a3..3281041 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7444,7 +7642,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7445,7 +7649,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -6401,7 +6470,7 @@ index f7ef9a3..3281041 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7785,6 +7983,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7786,6 +7990,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -6422,7 +6491,7 @@ index f7ef9a3..3281041 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7799,10 +8011,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7800,10 +8018,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -6448,7 +6517,7 @@ index f7ef9a3..3281041 100644
          }
  
          if (val == 0)
-@@ -11977,13 +12203,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11978,13 +12210,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
      if (!proto)
          return EQUIP_ERR_ITEM_NOT_FOUND;
  
@@ -6465,7 +6534,7 @@ index f7ef9a3..3281041 100644
          return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
      if (proto->RequiredSkill != 0)
-@@ -12473,7 +12699,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12474,7 +12706,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -6477,7 +6546,7 @@ index f7ef9a3..3281041 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12593,12 +12822,36 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12594,12 +12829,36 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -6515,7 +6584,7 @@ index f7ef9a3..3281041 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15309,13 +15562,26 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15310,13 +15569,29 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -6540,10 +6609,13 @@ index f7ef9a3..3281041 100644
 +            XP += uint32(XP*0.1f);
 +    }
 +
++    if (GetSession()->IsPremium())
++        XP *= sWorld->getRate(RATE_XP_QUEST_PREMIUM);
++
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
-@@ -17217,6 +17483,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17218,6 +17493,11 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -6555,7 +6627,7 @@ index f7ef9a3..3281041 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -17263,10 +17534,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
+@@ -17264,10 +17544,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -6566,7 +6638,7 @@ index f7ef9a3..3281041 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -19183,7 +19450,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19184,7 +19460,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUIDLow());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -6575,7 +6647,7 @@ index f7ef9a3..3281041 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19288,7 +19555,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19289,7 +19565,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -6584,7 +6656,7 @@ index f7ef9a3..3281041 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, getGender());
          stmt->setUInt8(index++, getLevel());
-@@ -19442,6 +19709,12 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19443,6 +19719,12 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
@@ -6597,7 +6669,7 @@ index f7ef9a3..3281041 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -20527,6 +20800,19 @@ void Player::StopCastingCharm()
+@@ -20528,6 +20810,19 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -6617,7 +6689,7 @@ index f7ef9a3..3281041 100644
  void Player::Say(const std::string& text, const uint32 language)
  {
      std::string _text(text);
-@@ -22051,6 +22337,8 @@ void Player::AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 ite
+@@ -22052,6 +22347,8 @@ void Player::AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 ite
  
  void Player::AddSpellCooldown(uint32 spellid, uint32 itemid, time_t end_time)
  {
@@ -6626,7 +6698,7 @@ index f7ef9a3..3281041 100644
      SpellCooldown sc;
      sc.end = end_time;
      sc.itemid = itemid;
-@@ -22333,11 +22621,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -22334,11 +22631,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -6638,7 +6710,7 @@ index f7ef9a3..3281041 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -22413,7 +22696,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -22414,7 +22706,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -6647,7 +6719,7 @@ index f7ef9a3..3281041 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -22872,10 +23155,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
+@@ -22873,10 +23165,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
  
      SendEquipmentSetList();
  
@@ -6664,7 +6736,7 @@ index f7ef9a3..3281041 100644
      GetSession()->SendPacket(&data);
  
      GetReputationMgr().SendForceReactions();                // SMSG_SET_FORCED_REACTIONS
-@@ -26852,6 +27138,25 @@ bool Player::IsLoading() const
+@@ -26855,6 +27150,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -6898,7 +6970,7 @@ index 27ea835..e933f83 100644
  
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 8404187..d978938 100644
+index adf093f..41e0396 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -16,6 +16,7 @@
@@ -7014,7 +7086,7 @@ index 8404187..d978938 100644
      return 0;
  }
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index a18bc3b..ea0328b 100644
+index 20ca614..7b3ab37 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
 @@ -1357,8 +1357,10 @@ class Unit : public WorldObject
@@ -7790,7 +7862,7 @@ index 2c65e36..b204180 100644
 +}
 \ No newline at end of file
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index e6ff1a0..2312931 100644
+index e6ff1a0..fc31f45 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -19,10 +19,13 @@
@@ -7803,11 +7875,11 @@ index e6ff1a0..2312931 100644
  #include "ScriptMgr.h"
  #include "Player.h"
 +#include "Config.h"
-+
++#include "WorldSession.h"
  
  namespace Trinity
  {
-@@ -183,9 +186,46 @@ namespace Trinity
+@@ -183,9 +186,50 @@ namespace Trinity
  
                      xpMod *= creature->GetCreatureTemplate()->ModExperience;
                  }
@@ -7850,13 +7922,17 @@ index e6ff1a0..2312931 100644
 +                    // End of prepatch
 +                } else {
                  xpMod *= sWorld->getRate(RATE_XP_KILL);
++
++                if(player->GetSession()->IsPremium())
++                    xpMod *= sWorld->getRate(RATE_XP_KILL_PREMIUM);
++
                  gain = uint32(gain * xpMod);
 +                }
              }
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index c1de3aa..dcc7217 100644
+index 814deba..ce07fd0 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -7879,16 +7955,18 @@ index c1de3aa..dcc7217 100644
      // Pinfo commands
      LANG_PINFO_PLAYER                   = 453,
      LANG_PINFO_GM_ACTIVE                = 548,
-@@ -1178,6 +1189,8 @@ enum TrinityStrings
+@@ -1178,6 +1189,10 @@ enum TrinityStrings
      LANG_AUTO_BROADCAST                 = 11000,
      LANG_INVALID_REALMID                = 11001,
  
 +    LANG_FAKE_NOT_DISTURB    = 12001,
 +
++    LANG_PREMIUM_CANT_DO = 11009,
++
      // Show Kick in world
      LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
  
-@@ -1191,7 +1204,38 @@ enum TrinityStrings
+@@ -1191,7 +1206,38 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -7927,9 +8005,9 @@ index c1de3aa..dcc7217 100644
 +    // End of prepatch
  
      // NOT RESERVED IDS                   12000-1999999999
-     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // For other tables maybe             2000010000-2147483647 (max index)
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
-index f19d6d7..5690f3e 100644
+index f19d6d7..bd05f1a 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
 +++ b/src/server/game/Reputation/ReputationMgr.cpp
 @@ -25,6 +25,7 @@
@@ -7940,7 +8018,14 @@ index f19d6d7..5690f3e 100644
  
  const int32 ReputationMgr::PointsInRank[MAX_REPUTATION_RANK] = {36000, 3000, 3000, 3000, 6000, 12000, 21000, 1000};
  
-@@ -367,6 +368,15 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
+@@ -364,9 +365,22 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
+         {
+             // int32 *= float cause one point loss?
+             standing = int32(floor((float)standing * sWorld->getRate(RATE_REPUTATION_GAIN) + 0.5f));
++
++            if(_player->GetSession()->IsPremium())
++                 standing *= sWorld->getRate(RATE_REPUTATION_PREMIUM);
++
              standing += itr->second.Standing + BaseRep;
          }
  
@@ -7957,7 +8042,7 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index ed6c543..478774e 100644
+index ed6c543..e0709ac 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -17,6 +17,7 @@
@@ -8085,7 +8170,7 @@ index ed6c543..478774e 100644
 +// start63
 +// start64
 +// start65
-+// start66
++void AddSC_premium_commandscript();
 +// start67
 +// start68
 +// start69
@@ -8188,7 +8273,7 @@ index ed6c543..478774e 100644
 +// end63
 +// end64
 +// end65
-+// end66
++    AddSC_premium_commandscript();
 +// end67
 +// end68
 +// end69
@@ -8227,11 +8312,49 @@ index d13c81e..2ed9512 100644
  
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
+diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
+index 321bc70..fbc69e7 100644
+--- a/src/server/game/Server/WorldSession.cpp
++++ b/src/server/game/Server/WorldSession.cpp
+@@ -97,7 +97,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
+ }
+ 
+ /// WorldSession constructor
+-WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
++WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
+     m_muteTime(mute_time),
+     m_timeOutTime(0),
+     AntiDOS(this),
+@@ -105,6 +105,7 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, Account
+     _player(NULL),
+     m_Socket(sock),
+     _security(sec),
++    _ispremium(ispremium),
+     _accountId(id),
+     m_expansion(expansion),
+     _warden(NULL),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 2e6a699..bd142a7 100644
+index 2e6a699..8129a43 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -334,6 +334,7 @@ class WorldSession
+@@ -209,7 +209,7 @@ struct PacketCounter
+ class WorldSession
+ {
+     public:
+-        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
++        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, bool ispremium, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
+         ~WorldSession();
+ 
+         bool PlayerLoading() const { return m_playerLoading; }
+@@ -241,6 +241,7 @@ class WorldSession
+         void InvalidateRBACData(); // Used to force LoadPermissions at next HasPermission check
+ 
+         AccountTypes GetSecurity() const { return _security; }
++        bool IsPremium() const { return _ispremium; }
+         uint32 GetAccountId() const { return _accountId; }
+         Player* GetPlayer() const { return _player; }
+         std::string const& GetPlayerName() const;
+@@ -334,6 +335,7 @@ class WorldSession
              }
          }
          //used with item_page table
@@ -8239,6 +8362,53 @@ index 2e6a699..bd142a7 100644
          bool SendItemInfo(uint32 itemid, WorldPacket data);
          //auction
          void SendAuctionHello(uint64 guid, Creature* unit);
+@@ -988,6 +990,7 @@ class WorldSession
+         AccountTypes _security;
+         uint32 _accountId;
+         uint8 m_expansion;
++        bool _ispremium;
+ 
+         typedef std::list<AddonInfo> AddonsList;
+ 
+diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
+index ef92a59..7fb648c 100644
+--- a/src/server/game/Server/WorldSocket.cpp
++++ b/src/server/game/Server/WorldSocket.cpp
+@@ -238,6 +238,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+     uint32 id;
+     LocaleConstant locale;
+     std::string account;
++    bool isPremium = false;
+     SHA1Hash sha;
+     uint32 clientBuild;
+     uint32 serverId, loginServerType, region, battlegroup, realmIndex;
+@@ -423,6 +424,16 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+         return;
+     }
+ 
++    // Check premium
++    stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_PREMIUM);
++    stmt->setUInt32(0, id);
++    PreparedQueryResult premresult = LoginDatabase.Query(stmt);
++
++    if (premresult)
++    {
++        isPremium = true;
++    }
++
+     // Check locked state for server
+     AccountTypes allowedAccountType = sWorld->GetPlayerSecurityLimit();
+     TC_LOG_DEBUG("network", "Allowed Level: %u Player Level %u", allowedAccountType, AccountTypes(security));
+@@ -461,7 +472,8 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+     // At this point, we can safely hook a successful login
+     sScriptMgr->OnAccountLogin(id);
+ 
+-    _worldSession = new WorldSession(id, shared_from_this(), AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter);
++    _worldSession = new WorldSession(id, shared_from_this(), AccountTypes(security), isPremium, expansion, mutetime, locale, recruiter, isRecruiter);
++
+     _worldSession->LoadGlobalAccountData();
+     _worldSession->LoadTutorialsData();
+     _worldSession->ReadAddonsInfo(recvPacket);
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
 index bb68010..eb35fd5 100644
 --- a/src/server/game/Spells/Spell.cpp
@@ -8321,7 +8491,7 @@ index 5ef6acb..a35edfa 100644
  
  uint32 SpellInfo::GetMaxTicks() const
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 58e3cff..227c3d4 100644
+index 35ad588..fe6ca01 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -27,6 +27,7 @@
@@ -8332,7 +8502,23 @@ index 58e3cff..227c3d4 100644
  #include "CalendarMgr.h"
  #include "Channel.h"
  #include "CharacterDatabaseCleaner.h"
-@@ -671,6 +672,10 @@ void World::LoadConfigSettings(bool reload)
+@@ -458,6 +459,15 @@ void World::LoadConfigSettings(bool reload)
+     rate_values[RATE_XP_KILL]     = sConfigMgr->GetFloatDefault("Rate.XP.Kill", 1.0f);
+     rate_values[RATE_XP_QUEST]    = sConfigMgr->GetFloatDefault("Rate.XP.Quest", 1.0f);
+     rate_values[RATE_XP_EXPLORE]  = sConfigMgr->GetFloatDefault("Rate.XP.Explore", 1.0f);
++
++    rate_values[RATE_XP_KILL_PREMIUM]    = sConfigMgr->GetFloatDefault("Rate.XP.Kill.Premium", 1.0f);
++    rate_values[RATE_XP_QUEST_PREMIUM]   = sConfigMgr->GetFloatDefault("Rate.XP.Quest.Premium", 1.0f);
++    rate_values[RATE_XP_EXPLORE_PREMIUM] = sConfigMgr->GetFloatDefault("Rate.XP.Explore.Premium", 1.0f);
++    rate_values[RATE_REPUTATION_PREMIUM] = sConfigMgr->GetFloatDefault("Rate.Reputation.Premium", 1.0f);
++    rate_values[RATE_HONOR_PREMIUM]      = sConfigMgr->GetFloatDefault("Rate.Honor.Premium", 1.0f);
++    m_bool_configs[COMMAND_BANK_PREMIUM] = sConfigMgr->GetFloatDefault("Command.Bank.Premium", false);
++    m_bool_configs[COMMAND_MAIL_PREMIUM] = sConfigMgr->GetFloatDefault("Command.Mail.Premium", false);
++
+     rate_values[RATE_REPAIRCOST]  = sConfigMgr->GetFloatDefault("Rate.RepairCost", 1.0f);
+     if (rate_values[RATE_REPAIRCOST] < 0.0f)
+     {
+@@ -671,6 +681,10 @@ void World::LoadConfigSettings(bool reload)
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
  
@@ -8343,7 +8529,7 @@ index 58e3cff..227c3d4 100644
      m_int_configs[CONFIG_MIN_PLAYER_NAME]                     = sConfigMgr->GetIntDefault ("MinPlayerName",  2);
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
      {
-@@ -851,6 +856,18 @@ void World::LoadConfigSettings(bool reload)
+@@ -851,6 +865,18 @@ void World::LoadConfigSettings(bool reload)
          TC_LOG_ERROR("server.loading", "MinPetitionSigns (%i) must be in range 0..9. Set to 9.", m_int_configs[CONFIG_MIN_PETITION_SIGNS]);
          m_int_configs[CONFIG_MIN_PETITION_SIGNS] = 9;
      }
@@ -8362,7 +8548,7 @@ index 58e3cff..227c3d4 100644
  
      m_int_configs[CONFIG_GM_LOGIN_STATE]        = sConfigMgr->GetIntDefault("GM.LoginState", 2);
      m_int_configs[CONFIG_GM_VISIBLE_STATE]      = sConfigMgr->GetIntDefault("GM.Visible", 2);
-@@ -1046,6 +1063,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1046,6 +1072,8 @@ void World::LoadConfigSettings(bool reload)
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
  
@@ -8371,7 +8557,7 @@ index 58e3cff..227c3d4 100644
      if (int32 clientCacheId = sConfigMgr->GetIntDefault("ClientCacheVersion", 0))
      {
          // overwrite DB/old value
-@@ -1107,7 +1126,35 @@ void World::LoadConfigSettings(bool reload)
+@@ -1107,7 +1135,35 @@ void World::LoadConfigSettings(bool reload)
      m_visibility_notify_periodOnContinents = sConfigMgr->GetIntDefault("Visibility.Notify.Period.OnContinents", DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
@@ -8408,7 +8594,7 @@ index 58e3cff..227c3d4 100644
      ///- Load the CharDelete related config options
      m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
      m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
-@@ -1225,11 +1272,20 @@ void World::LoadConfigSettings(bool reload)
+@@ -1225,11 +1281,20 @@ void World::LoadConfigSettings(bool reload)
      // MySQL ping time interval
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
  
@@ -8429,7 +8615,7 @@ index 58e3cff..227c3d4 100644
      // Wintergrasp battlefield
      m_bool_configs[CONFIG_WINTERGRASP_ENABLE] = sConfigMgr->GetBoolDefault("Wintergrasp.Enable", false);
      m_int_configs[CONFIG_WINTERGRASP_PLR_MAX] = sConfigMgr->GetIntDefault("Wintergrasp.PlayerMax", 100);
-@@ -1261,6 +1317,9 @@ void World::LoadConfigSettings(bool reload)
+@@ -1261,6 +1326,9 @@ void World::LoadConfigSettings(bool reload)
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
  
@@ -8439,7 +8625,7 @@ index 58e3cff..227c3d4 100644
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
-@@ -1758,7 +1817,9 @@ void World::SetInitialWorldSettings()
+@@ -1755,7 +1823,9 @@ void World::SetInitialWorldSettings()
      tm localTm;
      localtime_r(&m_gameTime, &localTm);
      mail_timer = ((((localTm.tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
@@ -8450,7 +8636,7 @@ index 58e3cff..227c3d4 100644
      mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
      TC_LOG_INFO("server.loading", "Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
  
-@@ -1994,6 +2055,17 @@ void World::Update(uint32 diff)
+@@ -1991,6 +2061,17 @@ void World::Update(uint32 diff)
      if (m_gameTime > m_NextGuildReset)
          ResetGuildCap();
  
@@ -8468,7 +8654,7 @@ index 58e3cff..227c3d4 100644
      /// <ul><li> Handle auctions when the timer has passed
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
-@@ -2891,6 +2963,8 @@ void World::ResetDailyQuests()
+@@ -2888,6 +2969,8 @@ void World::ResetDailyQuests()
  
      // change available dailies
      sPoolMgr->ChangeDailyQuests();
@@ -8477,7 +8663,7 @@ index 58e3cff..227c3d4 100644
  }
  
  void World::LoadDBAllowedSecurityLevel()
-@@ -3220,3 +3294,87 @@ void World::ReloadRBAC()
+@@ -3217,3 +3300,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -8566,7 +8752,7 @@ index 58e3cff..227c3d4 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index cc2078b..c3ddf46 100644
+index cc2078b..4b4e630 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -85,6 +85,7 @@ enum WorldTimers
@@ -8577,7 +8763,16 @@ index cc2078b..c3ddf46 100644
      CONFIG_ADDON_CHANNEL,
      CONFIG_ALLOW_PLAYER_COMMANDS,
      CONFIG_CLEAN_CHARACTER_DB,
-@@ -144,6 +145,7 @@ enum WorldBoolConfigs
+@@ -96,6 +97,8 @@ enum WorldBoolConfigs
+     CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD,
+     CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION,
+     CONFIG_ALLOW_TWO_SIDE_TRADE,
++    COMMAND_BANK_PREMIUM,
++    COMMAND_MAIL_PREMIUM,
+     CONFIG_ALL_TAXI_PATHS,
+     CONFIG_INSTANT_TAXI,
+     CONFIG_INSTANCE_IGNORE_LEVEL,
+@@ -144,6 +147,7 @@ enum WorldBoolConfigs
      CONFIG_ALLOW_TICKETS,
      CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
      CONFIG_PRESERVE_CUSTOM_CHANNELS,
@@ -8585,7 +8780,7 @@ index cc2078b..c3ddf46 100644
      CONFIG_PDUMP_NO_PATHS,
      CONFIG_PDUMP_NO_OVERWRITE,
      CONFIG_QUEST_IGNORE_AUTO_ACCEPT,
-@@ -156,6 +158,33 @@ enum WorldBoolConfigs
+@@ -156,6 +160,33 @@ enum WorldBoolConfigs
      CONFIG_STATS_LIMITS_ENABLE,
      CONFIG_INSTANCES_RESET_ANNOUNCE,
      CONFIG_IP_BASED_ACTION_LOGGING,
@@ -8619,7 +8814,7 @@ index cc2078b..c3ddf46 100644
      CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      BOOL_CONFIG_VALUE_COUNT
  };
-@@ -177,6 +206,31 @@ enum WorldFloatConfigs
+@@ -177,6 +208,31 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -8651,7 +8846,7 @@ index cc2078b..c3ddf46 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -306,12 +360,17 @@ enum WorldIntConfigs
+@@ -306,12 +362,17 @@ enum WorldIntConfigs
      CONFIG_CHARDELETE_HEROIC_MIN_LEVEL,
      CONFIG_AUTOBROADCAST_CENTER,
      CONFIG_AUTOBROADCAST_INTERVAL,
@@ -8669,7 +8864,7 @@ index cc2078b..c3ddf46 100644
      CONFIG_WARDEN_CLIENT_RESPONSE_DELAY,
      CONFIG_WARDEN_CLIENT_CHECK_HOLDOFF,
      CONFIG_WARDEN_CLIENT_FAIL_ACTION,
-@@ -337,6 +396,7 @@ enum WorldIntConfigs
+@@ -337,6 +398,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -8677,7 +8872,21 @@ index cc2078b..c3ddf46 100644
      INT_CONFIG_VALUE_COUNT
  };
  
-@@ -403,12 +463,33 @@ enum Rates
+@@ -365,6 +427,13 @@ enum Rates
+     RATE_XP_KILL,
+     RATE_XP_QUEST,
+     RATE_XP_EXPLORE,
++
++    RATE_XP_KILL_PREMIUM,
++    RATE_XP_QUEST_PREMIUM,
++    RATE_XP_EXPLORE_PREMIUM,
++    RATE_REPUTATION_PREMIUM,
++    RATE_HONOR_PREMIUM,
++
+     RATE_REPAIRCOST,
+     RATE_REPUTATION_GAIN,
+     RATE_REPUTATION_LOWLEVEL_KILL,
+@@ -403,12 +472,33 @@ enum Rates
      RATE_DURABILITY_LOSS_PARRY,
      RATE_DURABILITY_LOSS_ABSORB,
      RATE_DURABILITY_LOSS_BLOCK,
@@ -8711,7 +8920,7 @@ index cc2078b..c3ddf46 100644
  /// Can be used in SMSG_AUTH_RESPONSE packet
  enum BillingPlanFlags
  {
-@@ -636,6 +717,8 @@ class World
+@@ -636,6 +726,8 @@ class World
          bool SendZoneMessage(uint32 zone, WorldPacket* packet, WorldSession* self = nullptr, uint32 team = 0);
          void SendZoneText(uint32 zone, const char *text, WorldSession* self = nullptr, uint32 team = 0);
  
@@ -8720,7 +8929,7 @@ index cc2078b..c3ddf46 100644
          /// Are we in the middle of a shutdown?
          bool IsShuttingDown() const { return m_ShutdownTimer > 0; }
          uint32 GetShutDownTimeLeft() const { return m_ShutdownTimer; }
-@@ -750,6 +833,11 @@ class World
+@@ -750,6 +842,11 @@ class World
  
          void ReloadRBAC();
  
@@ -8732,7 +8941,7 @@ index cc2078b..c3ddf46 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -781,6 +869,7 @@ class World
+@@ -781,6 +878,7 @@ class World
          time_t m_startTime;
          time_t m_gameTime;
          IntervalTimer m_timers[WUPDATE_COUNT];
@@ -8740,7 +8949,7 @@ index cc2078b..c3ddf46 100644
          time_t mail_timer;
          time_t mail_timer_expires;
          uint32 m_updateTime, m_updateTimeSum;
-@@ -852,6 +941,21 @@ class World
+@@ -852,6 +950,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
@@ -15045,6 +15254,103 @@ index 0000000..389b457
 +    new BountyKills();
 +}
 \ No newline at end of file
+diff --git a/src/server/scripts/Custom/cs_premium.cpp b/src/server/scripts/Custom/cs_premium.cpp
+new file mode 100644
+index 0000000..0a4d01b
+--- /dev/null
++++ b/src/server/scripts/Custom/cs_premium.cpp
+@@ -0,0 +1,90 @@
++#include "Language.h"
++#include "World.h"
++//#include "AuctionHouseMgr.h"
++
++class premium_commandscript : public CommandScript
++{
++public:
++    premium_commandscript() : CommandScript("premium_commandscript") { }
++
++    ChatCommand* GetCommands() const
++    {
++        static ChatCommand premiumCommandTable[] =
++        {
++            { "bank",  SEC_PLAYER, false, &HandlePremiumBankCommand,    "", NULL },
++            { "mail",  SEC_PLAYER, false, &HandlePremiumMailCommand,    "", NULL },
++            //{ "auc",  SEC_PLAYER,  false, &HandlePremiumAuctionCommand, "", NULL },
++            { NULL,    0,          false, NULL,                         "", NULL }
++        };
++
++        static ChatCommand commandTable[] =
++        {
++            { "vip", SEC_PLAYER, false, NULL, "", premiumCommandTable },
++            { NULL,  0,          false, NULL, "", NULL }
++        };
++
++        return commandTable;
++    }
++
++    static bool HandlePremiumBankCommand(ChatHandler* handler, char const* /*args*/)
++    {
++        Player *player = handler->GetSession()->GetPlayer();
++        if (player->GetSession()->IsPremium() && sWorld->getBoolConfig(COMMAND_BANK_PREMIUM))
++        {
++            //Different Checks
++            if (player->IsInCombat() || player->IsInFlight() || player->GetMap()->IsBattlegroundOrArena() || player->HasStealthAura() || player->HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH) || player->isDead())
++            {
++                handler->SendSysMessage(LANG_PREMIUM_CANT_DO);
++                handler->SetSentErrorMessage(true);
++                return false;
++            }
++
++            handler->GetSession()->SendShowBank(handler->GetSession()->GetPlayer()->GetGUID());
++        }
++        return true;
++    }
++
++    static bool HandlePremiumMailCommand(ChatHandler* handler, char const* /*args*/)
++    {
++        Player* player = handler->GetSession()->GetPlayer();
++        if (player->GetSession()->IsPremium() && sWorld->getBoolConfig(COMMAND_MAIL_PREMIUM))
++        {
++            //Different Checks
++            if (player->IsInCombat() || player->IsInFlight() || player->GetMap()->IsBattlegroundOrArena() || player->HasStealthAura() || player->HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH) || player->isDead())
++            {
++                handler->SendSysMessage(LANG_PREMIUM_CANT_DO);
++                handler->SetSentErrorMessage(true);
++                return false;
++            }
++
++            handler->GetSession()->SendShowMailBox(player->GetGUID());
++        }
++        return true;
++    }
++
++    //static bool HandlePremiumAuctionCommand(ChatHandler* handler, char const* /*args*/)
++    //{
++        //Player* player = handler->GetSession()->GetPlayer();
++        //if(player->GetSession()->IsPremium())
++        //{
++            //Different Checks
++            //if(player->IsInCombat() || player->IsInFlight() || player->GetMap()->IsBattlegroundOrArena() || player->HasStealthAura() || player->HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH) || player->isDead())
++            //{
++            //    handler->SendSysMessage(LANG_PREMIUM_CANT_DO);
++            //    handler->SetSentErrorMessage(true);
++            //    return false;
++            //}
++
++            //handler->GetSession()->SendAuctionHello(player->GetGUID());
++            //handler->GetSession()->SendAuctionHello(player->getFaction());
++
++        //}
++        //return true;
++    //}
++
++};
++
++void AddSC_premium_commandscript()
++{
++    new premium_commandscript();
++}
+\ No newline at end of file
 diff --git a/src/server/scripts/Custom/enchant.cpp b/src/server/scripts/Custom/enchant.cpp
 new file mode 100644
 index 0000000..c6a7fdc
@@ -19209,8 +19515,39 @@ index 19b5fef..2a0bfdb 100644
      MAX_CHARACTERDATABASE_STATEMENTS
  };
  
+diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
+index a2b9091..ba50ff0 100644
+--- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
++++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
+@@ -106,8 +106,11 @@ void LoginDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(LOGIN_INS_CHAR_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES (?, ?, ?, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
+     // 0: string, 1: string, 2: string                      // Complete name: "Login_Insert_Failed_Account_Login_due_password_IP_Logging"
+     PrepareStatement(LOGIN_INS_FALP_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES ((SELECT id FROM account WHERE username = ?), 0, 1, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
+-    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
+ 
++    PrepareStatement(LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_SYNCH);
++    PrepareStatement(LOGIN_SEL_PREMIUM, "SELECT 1 FROM account_premium WHERE id = ? AND active = 1", CONNECTION_SYNCH);
++
++    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
+     PrepareStatement(LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS, "SELECT permissionId, granted FROM rbac_account_permissions WHERE accountId = ? AND (realmId = ? OR realmId = -1) ORDER BY permissionId, realmId", CONNECTION_SYNCH);
+     PrepareStatement(LOGIN_INS_RBAC_ACCOUNT_PERMISSION, "INSERT INTO rbac_account_permissions (accountId, permissionId, granted, realmId) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE granted = VALUES(granted)", CONNECTION_ASYNC);
+     PrepareStatement(LOGIN_DEL_RBAC_ACCOUNT_PERMISSION, "DELETE FROM rbac_account_permissions WHERE accountId = ? AND permissionId = ? AND (realmId = ? OR realmId = -1)", CONNECTION_ASYNC);
+diff --git a/src/server/shared/Database/Implementation/LoginDatabase.h b/src/server/shared/Database/Implementation/LoginDatabase.h
+index d37149c..50352de 100644
+--- a/src/server/shared/Database/Implementation/LoginDatabase.h
++++ b/src/server/shared/Database/Implementation/LoginDatabase.h
+@@ -123,6 +123,9 @@ enum LoginDatabaseStatements
+     LOGIN_INS_CHAR_IP_LOGGING,
+     LOGIN_INS_FALP_IP_LOGGING,
+ 
++    LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM,
++    LOGIN_SEL_PREMIUM,
++
+     LOGIN_SEL_ACCOUNT_ACCESS_BY_ID,
+     LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS,
+     LOGIN_INS_RBAC_ACCOUNT_PERMISSION,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 3fec136..f9fc0ef 100644
+index 3fec136..fc6b1e4 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -19256,7 +19593,30 @@ index 3fec136..f9fc0ef 100644
  #    AllFlightPaths
  #        Description: Character knows all flight paths (of both factions) after creation.
  #        Default:     0 - (Disabled)
-@@ -2628,6 +2657,40 @@ LevelReq.Auction = 1
+@@ -2437,6 +2466,22 @@ CharDelete.KeepDays = 30
+ #
+ ###################################################################################################
+ 
++#    Rate.XP.Kill.Premium
++#    Rate.XP.Quest.Premium
++#    Rate.XP.Explore.Premium
++#    Rate.Honor.Premium
++#    Rate.Reputation.Gain.Premium
++#        XP rates Premium modifier
++#        Default: 1
++
++Rate.XP.Kill.Premium     = 1
++Rate.XP.Quest.Premium    = 1
++Rate.XP.Explore.Premium  = 1
++Rate.Honor.Premium       = 1
++Rate.Reputation.Premium  = 1
++Command.Bank.Premium     = 1
++Command.Mail.Premium     = 1
++
+ ###################################################################################################
+ # CUSTOM SERVER OPTIONS
+ #
+@@ -2628,6 +2673,40 @@ LevelReq.Auction = 1
  LevelReq.Mail = 1
  
  #
@@ -19297,7 +19657,7 @@ index 3fec136..f9fc0ef 100644
  #     PlayerDump.DisallowPaths
  #        Description: Disallow using paths in PlayerDump output files
  #        Default:     1
-@@ -2650,6 +2713,20 @@ PlayerDump.DisallowOverwrite = 1
+@@ -2650,6 +2729,20 @@ PlayerDump.DisallowOverwrite = 1
  UI.ShowQuestLevelsInDialogs = 0
  
  #
@@ -19318,7 +19678,7 @@ index 3fec136..f9fc0ef 100644
  ###################################################################################################
  
  ###################################################################################################
-@@ -2952,6 +3029,16 @@ AuctionHouseBot.forceExcludeItems = ""
+@@ -2952,6 +3045,16 @@ AuctionHouseBot.forceExcludeItems = ""
  #
  ###################################################################################################
  
@@ -19335,7 +19695,7 @@ index 3fec136..f9fc0ef 100644
  ###################################################################################################
  #    AHBot Buyer config
  #
-@@ -3194,3 +3281,479 @@ PacketSpoof.BanDuration = 86400
+@@ -3194,3 +3297,479 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################

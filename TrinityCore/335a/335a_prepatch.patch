@@ -1,6 +1,6 @@
-From f76b1ecd5170383d018463bd6654ca0b34f42d83 Mon Sep 17 00:00:00 2001
+From 2065de775fb6347ef85628c7236e54fdfe2ecbf8 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 9 Sep 2014 01:57:47 -0400
+Date: Sat, 13 Sep 2014 10:49:39 -0400
 Subject: [PATCH] 335a_prepatch
 
 ---
@@ -57,7 +57,7 @@ index 020ed1a..c2e38c3 100644
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -700,6 +700,30 @@ enum RBACPermissions
      RBAC_PERM_COMMAND_GUILD_INFO                             = 794,
- 
+
      // custom permissions 1000+
 +    // Prepatch by LordPsyan
 +    // 01
@@ -85,9 +85,9 @@ index 020ed1a..c2e38c3 100644
 +    // End of prepatch
      RBAC_PERM_MAX
  };
- 
+
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 0e1e53c..6b9bd91 100644
+index 16a75e5..b27c35e 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,6 +79,7 @@
@@ -95,10 +95,10 @@ index 0e1e53c..6b9bd91 100644
  #include "WorldSession.h"
  #include "GameObjectAI.h"
 +#include "Config.h"
- 
+
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
- 
-@@ -12599,6 +12600,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+
+@@ -12600,6 +12601,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -135,7 +135,7 @@ index b250787..bfb88bd 100644
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -1041,10 +1041,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
- 
+
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
 -
 +    // Prepatch by LordPsyan
@@ -201,11 +201,11 @@ index e6ff1a0..2970e3a 100644
  #include "ScriptMgr.h"
  #include "Player.h"
 +#include "Config.h"
- 
+
  namespace Trinity
  {
 @@ -183,9 +184,36 @@ namespace Trinity
- 
+
                      xpMod *= creature->GetCreatureTemplate()->ModExperience;
                  }
 -
@@ -240,15 +240,15 @@ index e6ff1a0..2970e3a 100644
                  gain = uint32(gain * xpMod);
 +                }
              }
- 
+
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index c1de3aa..3fc12b3 100644
+index 814deba..dc0ee76 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -1191,7 +1191,31 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
- 
+
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
 -    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
 +    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
@@ -276,15 +276,15 @@ index c1de3aa..3fc12b3 100644
 +    // Visit http://www.realmsofwarcraft.com/bb for forums and information
 +    //
 +    // End of prepatch
- 
+
      // NOT RESERVED IDS                   12000-1999999999
-     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+     // For other tables maybe             2000010000-2147483647 (max index)
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
 index ed6c543..5d120b2 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -1434,13 +1434,171 @@ void AddBattlegroundScripts()
- 
+
  #ifdef SCRIPTS
  /* This is where custom scripts' loading functions should be declared. */
 -
@@ -369,7 +369,7 @@ index ed6c543..5d120b2 100644
 +// start79
 +// start80
  #endif
- 
+
  void AddCustomScripts()
  {
  #ifdef SCRIPTS
@@ -458,7 +458,7 @@ index ed6c543..5d120b2 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 58e3cff..a0c3d1c 100644
+index 35ad588..207b765 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1107,7 +1107,30 @@ void World::LoadConfigSettings(bool reload)
@@ -558,7 +558,7 @@ index cc2078b..9a726fa 100644
 +    // End of prepatch
      FLOAT_CONFIG_VALUE_COUNT
  };
- 
+
 diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
 index 80ebe36..20c2bc9 100644
 --- a/src/server/scripts/Custom/CMakeLists.txt
@@ -566,16 +566,16 @@ index 80ebe36..20c2bc9 100644
 @@ -8,11 +8,11 @@
  # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- 
+
 -# file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
 +file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
+
  set(scripts_STAT_SRCS
    ${scripts_STAT_SRCS}
 -#  ${sources_Custom}
 +  ${sources_Custom}
  )
- 
+
  message("  -> Prepared: Custom")
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 index aa584d0..374711a 100644
@@ -646,7 +646,7 @@ index 19b5fef..b918715 100644
 +    // End of prepatch
      MAX_CHARACTERDATABASE_STATEMENTS
  };
- 
+
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
 index 3fec136..9097e0b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
@@ -654,7 +654,7 @@ index 3fec136..9097e0b 100644
 @@ -3,6 +3,28 @@
  ################################################
  [worldserver]
- 
+
 +################################################
 +#         Prepatch config by LordPsyan         #
 +#       http://www.realmsofwarcraft.com/       #
@@ -681,7 +681,7 @@ index 3fec136..9097e0b 100644
  # SECTION INDEX
  #
 @@ -3194,3 +3216,8 @@ PacketSpoof.BanDuration = 86400
- 
+
  #
  ###################################################################################################
 +
@@ -689,6 +689,6 @@ index 3fec136..9097e0b 100644
 +# Prepatch by LordPsyan.
 +# See http://www.realmsofwarcraft.com/bb for forums and information.
 +#
--- 
+--
 2.1.0.rc1
 
