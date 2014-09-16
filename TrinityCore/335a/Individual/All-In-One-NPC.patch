@@ -1,6 +1,6 @@
-From e13216966df9e61f440f49c190e6ac36c8744386 Mon Sep 17 00:00:00 2001
+From 338c603b782a94320c46d617bd4dbf01b07c2558 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 29 Aug 2014 08:13:03 -0400
+Date: Tue, 16 Sep 2014 08:15:30 -0400
 Subject: [PATCH] All-In-One-NPC
 
 ---
@@ -79,7 +79,7 @@ index 0000000..d3ed99b
 +('80000','0','0','0','0','0','2591','0','0','0','Young Woman','You need it, I got it.','','0','80','80','0','35','1','1','1.14286','1','1','0','1500','0','1','1','1','0','2048','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','EventAI','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_all','0');
 +-- end
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 0d29f91..2eac219 100644
+index dc0ee76..f2981a98 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -796,7 +796,18 @@ enum TrinityStrings
@@ -128,7 +128,7 @@ index 5d120b2..f5f3d9c 100644
  // end04
 diff --git a/src/server/scripts/Custom/all-in-one.cpp b/src/server/scripts/Custom/all-in-one.cpp
 new file mode 100644
-index 0000000..db2b359
+index 0000000..f307199
 --- /dev/null
 +++ b/src/server/scripts/Custom/all-in-one.cpp
 @@ -0,0 +1,1330 @@
@@ -137,7 +137,7 @@ index 0000000..db2b359
 +
 +Full NPC with lots of menus, and options.
 +By: Blue
-+Rewritten by: LordPsyan http://www.flaminglegion.net
++Rewritten by: LordPsyan http://www.realmsofwarcraft.com
 +Version: 4.0a // Will be updated
 +
 +/*-------------------------------------
@@ -222,7 +222,7 @@ index 0000000..db2b359
 +bool OnGossipHello(Player *player, Creature *_Creature)
 +
 +{
-+    _Creature->MonsterWhisper(welcome, player);
++    _Creature->Whisper(welcome, LANG_UNIVERSAL, player);
 +
 +
 +    player->ADD_GOSSIP_ITEM(0, "[Menu]Morph", GOSSIP_SENDER_MAIN, 100);
@@ -244,10 +244,10 @@ index 0000000..db2b359
 +
 +        if (player->GetSession()->GetSecurity() >= 1)
 +        {
-+        _Creature->MonsterWhisper(yesvip, player);
++        _Creature->Whisper(yesvip, LANG_UNIVERSAL, player);
 +        player->ADD_GOSSIP_ITEM(0, "[Menu]Battleground Control", GOSSIP_SENDER_MAIN, 109);
 +        //player->ADD_GOSSIP_ITEM(0, "[Menu]Vip functions", GOSSIP_SENDER_MAIN, 110);// No Data.
-+        } else { _Creature->MonsterWhisper(notvip, player); }
++        } else { _Creature->Whisper(notvip, LANG_UNIVERSAL, player); }
 +
 +
 +    player->SEND_GOSSIP_MENU(1, _Creature->GetGUID());
@@ -261,7 +261,7 @@ index 0000000..db2b359
 +if (player->IsInCombat())
 +{
 +    player->CLOSE_GOSSIP_MENU();
-+    _Creature->MonsterSay("You are in combat!", LANG_UNIVERSAL, NULL);
++    _Creature->Say("You are in combat!", LANG_UNIVERSAL);
 +    return;
 +}
 +
@@ -312,7 +312,7 @@ index 0000000..db2b359
 +    case 102: // Skill maxer
 +        player->CLOSE_GOSSIP_MENU();
 +        player->UpdateSkillsToMaxSkillsForLevel();
-+        _Creature->MonsterWhisper(skillsmaxed, player);
++        _Creature->Whisper(skillsmaxed, LANG_UNIVERSAL, player);
 +        break;
 +
 +    case 103: // Trainers
@@ -384,7 +384,7 @@ index 0000000..db2b359
 +        break;
 +
 +    case 111: // VOte
-+        _Creature->MonsterWhisper(votewhisper, player);
++        _Creature->Whisper(votewhisper, LANG_UNIVERSAL, player);
 +        player->ADD_GOSSIP_ITEM(0, "1 - %VOTE1%", GOSSIP_SENDER_MAIN, 1600);
 +        player->ADD_GOSSIP_ITEM(0, "2 - %VOTE2%", GOSSIP_SENDER_MAIN, 1601);
 +        player->ADD_GOSSIP_ITEM(0, "3 - %VOTE3%", GOSSIP_SENDER_MAIN, 1602);
@@ -492,9 +492,9 @@ index 0000000..db2b359
 +
 +        case 901: // Report lagg
 +        /*player->CLOSE_GOSSIP_MENU();
-+        _Creature->MonsterWhisper(('%s', player->GetSession()->GetAccountId()), player);
++        _Creature->Whisper(('%s', player->GetSession()->GetAccountId()), player);
 +        LoginDatabase.PExecute("INSERT INTO `lagreports` (`account`) VALUES ('%s'", player->GetSession()->GetAccountId());
-+        _Creature->MonsterWhisper("Lagg report done.", player);*/
++        _Creature->Whisper("Lagg report done.", LANG_UNIVERSAL, player);*/
 +        break;
 +
 +        case 902: // Help
@@ -506,17 +506,17 @@ index 0000000..db2b359
 +
 +        case 1700: // Donation Help
 +        player->CLOSE_GOSSIP_MENU();
-+        _Creature->MonsterWhisper("Donations can be done on www.flaminglegion.net", player);
++        _Creature->Whisper("Donations can be done on www.realmsofwarcraft.com", LANG_UNIVERSAL, player);
 +        break;
 +
 +        case 1701: // INGAME HELP
 +        player->CLOSE_GOSSIP_MENU();
-+        _Creature->MonsterWhisper("Contact a GM for help", player);
++        _Creature->Whisper("Contact a GM for help", LANG_UNIVERSAL, player);
 +        break;
 +
 +        case 1702: // Normal Help
 +        player->CLOSE_GOSSIP_MENU();
-+        _Creature->MonsterWhisper("Helpful information can be found on www.flaminglegion.net", player);
++        _Creature->Whisper("Helpful information can be found on www.realmsofwarcraft.com", LANG_UNIVERSAL, player);
 +        break;
 +        /// -- Server Menus part End -- ///
 +
@@ -525,7 +525,7 @@ index 0000000..db2b359
 +        case 1000: // Money
 +        player->CLOSE_GOSSIP_MENU();
 +        player->GetMail(moneymail);
-+        _Creature->MonsterWhisper("Check your mailbox.", player);
++        _Creature->Whisper("Check your mailbox.", LANG_UNIVERSAL, player);
 +        break;
 +
 +        case 1001: // Drunk
@@ -1362,7 +1362,7 @@ index 0000000..db2b359
 +        case 120: //Sickness leszedése
 +        if(!player->HasAura(SPELL_ID_PASSIVE_RESURRECTION_SICKNESS,0))
 +        {
-+            _Creature->MonsterWhisper(nosickness, player);
++            _Creature->Whisper(nosickness, LANG_UNIVERSAL, player);
 +        }
 +        else
 +        {
@@ -1464,5 +1464,5 @@ index 0000000..db2b359
 +}
 \ No newline at end of file
 -- 
-2.1.0.rc1
+2.1.0
 
