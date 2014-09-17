@@ -1,6 +1,6 @@
-From e44395db2a6c38ac993d7e66b789e9d44d74c1a0 Mon Sep 17 00:00:00 2001
+From 612a5970b5906b46ada5358fca5fe88e4a1b4cfc Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 8 Sep 2014 23:10:20 -0400
+Date: Wed, 17 Sep 2014 09:29:31 -0400
 Subject: [PATCH] Fake_Players
 
 ---
@@ -12,13 +12,13 @@ Subject: [PATCH] Fake_Players
  src/server/game/Handlers/ChatHandler.cpp           | 10 ++-
  src/server/game/Handlers/GroupHandler.cpp          | 12 +++-
  src/server/game/Handlers/MiscHandler.cpp           | 80 +++++++++++++++++++++-
- src/server/game/Miscellaneous/Language.h           |  2 +
+ src/server/game/Miscellaneous/Language.h           |  2 +-
  src/server/game/World/World.cpp                    |  4 ++
  src/server/game/World/World.h                      |  4 +-
  .../Database/Implementation/CharacterDatabase.cpp  |  5 ++
  .../Database/Implementation/CharacterDatabase.h    |  5 ++
  src/server/worldserver/worldserver.conf.dist       | 10 +++
- 14 files changed, 202 insertions(+), 4 deletions(-)
+ 14 files changed, 201 insertions(+), 5 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/characters.fake_players.sql
  create mode 100644 sql/TrinityCore-Patches/Fake_Players/world.fake_players.sql
  mode change 100755 => 100644 src/server/game/Entities/Vehicle/Vehicle.cpp
@@ -78,10 +78,10 @@ index 0000000..c1be608
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
 +INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'РЎРѕРѕР±С‰РµРЅРёРµ: "РќРµ Р±РµСЃРїРѕРєРѕРёС‚СЊ".');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 6b9bd91..0f1fe70 100644
+index dbaea7d..751b303 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1785,6 +1785,13 @@ void Player::Update(uint32 p_time)
+@@ -1783,6 +1783,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -99,7 +99,7 @@ diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Enti
 old mode 100755
 new mode 100644
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index bace2ec..b7acde7 100644
+index 19f8d5c..f986b59 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1516,6 +1516,31 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
@@ -135,7 +135,7 @@ index bace2ec..b7acde7 100644
          return;
      }
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index eccf7a6..8be27df 100644
+index b33f236..2458ad2 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -271,7 +271,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
@@ -156,7 +156,7 @@ index eccf7a6..8be27df 100644
              }
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index 5b35da2..62ee828 100644
+index a7ce1f8..292884a 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
 @@ -33,6 +33,9 @@
@@ -186,7 +186,7 @@ index 5b35da2..62ee828 100644
      }
  
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index b6c508e..2e4cf21 100644
+index 7f6b6ae..dcd5c22 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -192,6 +192,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -283,7 +283,7 @@ index b6c508e..2e4cf21 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
  
      stmt->setString(0, friendName);
-@@ -640,6 +704,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
+@@ -639,6 +703,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to Ignore: '%s'",
          GetPlayer()->GetName().c_str(), ignoreName.c_str());
  
@@ -305,20 +305,20 @@ index b6c508e..2e4cf21 100644
  
      stmt->setString(0, ignoreName);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3fc12b3..1b23bb5 100644
+index 374b377..a6036ab 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1178,6 +1178,8 @@ enum TrinityStrings
-     LANG_AUTO_BROADCAST                 = 11000,
-     LANG_INVALID_REALMID                = 11001,
- 
-+    LANG_FAKE_NOT_DISTURB    = 12001,
-+
-     // Show Kick in world
-     LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
- 
+@@ -1222,7 +1222,7 @@ enum TrinityStrings
+     // 24
+     // 25
+     // 26
+-    // 27
++    LANG_FAKE_NOT_DISTURB               = 12001,
+     // 28
+     // 29
+     // 30
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index a0c3d1c..159dfc6 100644
+index 2d2d08c..98a6abb 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -671,6 +671,10 @@ void World::LoadConfigSettings(bool reload)
@@ -333,10 +333,10 @@ index a0c3d1c..159dfc6 100644
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9a726fa..a2916da 100644
+index 79f128b..bb963f7 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -171,7 +171,7 @@ enum WorldBoolConfigs
+@@ -172,7 +172,7 @@ enum WorldBoolConfigs
      // 12
      // 13
      // 14
@@ -345,7 +345,7 @@ index 9a726fa..a2916da 100644
      // 16
      // 17
      // 18
-@@ -385,6 +385,8 @@ enum WorldIntConfigs
+@@ -355,6 +355,8 @@ enum WorldIntConfigs
      CONFIG_CHARDELETE_HEROIC_MIN_LEVEL,
      CONFIG_AUTOBROADCAST_CENTER,
      CONFIG_AUTOBROADCAST_INTERVAL,
@@ -408,5 +408,5 @@ index 9097e0b..a12a770 100644
  #    AHBot Buyer config
  #
 -- 
-2.1.0.rc1
+2.1.0
 

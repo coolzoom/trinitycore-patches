@@ -1,6 +1,6 @@
-From 0543a303010831cb21c9d8ab80ff6958b59d8f0d Mon Sep 17 00:00:00 2001
+From 1805b1a40a48238415ec92be19d8dd4aa459e1ab Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 9 Sep 2014 01:30:50 -0400
+Date: Wed, 17 Sep 2014 10:18:15 -0400
 Subject: [PATCH] GuildLevelSystem
 
 ---
@@ -10,7 +10,7 @@ Subject: [PATCH] GuildLevelSystem
  src/server/game/Accounts/RBAC.h                    |   4 +-
  src/server/game/Conditions/ConditionMgr.cpp        |  22 ++++
  src/server/game/Conditions/ConditionMgr.h          |   3 +-
- src/server/game/Entities/Player/Player.cpp         |  41 ++++++
+ src/server/game/Entities/Player/Player.cpp         |  42 +++++-
  src/server/game/Entities/Unit/Unit.cpp             |  22 +++-
  src/server/game/Guilds/Guild.cpp                   | 144 +++++++++++++++++++++
  src/server/game/Guilds/Guild.h                     |  37 ++++++
@@ -23,7 +23,7 @@ Subject: [PATCH] GuildLevelSystem
  src/server/scripts/Commands/cs_guild.cpp           | 121 +++++++++++++++++
  .../Database/Implementation/CharacterDatabase.cpp  |  10 +-
  .../Database/Implementation/CharacterDatabase.h    |   7 +-
- 19 files changed, 616 insertions(+), 8 deletions(-)
+ 19 files changed, 614 insertions(+), 11 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
@@ -133,7 +133,7 @@ index c2e38c3..f26f935 100644
      // 03
      // 04
 diff --git a/src/server/game/Conditions/ConditionMgr.cpp b/src/server/game/Conditions/ConditionMgr.cpp
-index 0305145..605ec21 100644
+index 094a834..60250e4 100644
 --- a/src/server/game/Conditions/ConditionMgr.cpp
 +++ b/src/server/game/Conditions/ConditionMgr.cpp
 @@ -28,6 +28,7 @@
@@ -144,7 +144,7 @@ index 0305145..605ec21 100644
  
  // Checks if object meets the condition
  // Can have CONDITION_SOURCE_TYPE_NONE && !mReferenceId if called from a special event (ie: eventAI)
-@@ -340,6 +341,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
+@@ -343,6 +344,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
                  condMeets = creature->GetCreatureTemplate()->type == ConditionValue1;
              break;
          }
@@ -158,7 +158,7 @@ index 0305145..605ec21 100644
          default:
              condMeets = false;
              break;
-@@ -504,6 +512,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
+@@ -507,6 +515,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
          case CONDITION_CREATURE_TYPE:
              mask |= GRID_MAP_TYPE_MASK_CREATURE;
              break;
@@ -168,7 +168,7 @@ index 0305145..605ec21 100644
          default:
              ASSERT(false && "Condition::GetSearcherTypeMaskForCondition - missing condition handling!");
              break;
-@@ -2058,6 +2069,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
+@@ -2061,6 +2072,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
              }
              break;
          }
@@ -187,7 +187,7 @@ index 0305145..605ec21 100644
              break;
      }
 diff --git a/src/server/game/Conditions/ConditionMgr.h b/src/server/game/Conditions/ConditionMgr.h
-index ff50821..a1d5fd4 100644
+index 24e44c6..441ac5b 100644
 --- a/src/server/game/Conditions/ConditionMgr.h
 +++ b/src/server/game/Conditions/ConditionMgr.h
 @@ -71,7 +71,8 @@ enum ConditionTypes
@@ -201,10 +201,10 @@ index ff50821..a1d5fd4 100644
  
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 6b9bd91..7dec13a 100644
+index 3fb1a2b..f93b5ee 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -5060,6 +5060,12 @@ void Player::BuildPlayerRepop()
+@@ -5059,6 +5059,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -217,7 +217,7 @@ index 6b9bd91..7dec13a 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5107,6 +5113,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5106,6 +5112,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -227,7 +227,7 @@ index 6b9bd91..7dec13a 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5432,6 +5441,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5431,6 +5440,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -243,10 +243,11 @@ index 6b9bd91..7dec13a 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -7216,6 +7234,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
-     }
- 
-     honor_f *= sWorld->getRate(RATE_HONOR);
+@@ -7219,7 +7237,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+     // 21
+     // 22
+     // 23
+-    // 24
 +
 +    //Guild-Level-System (Bonus: Ehre)
 +    if (Guild* guild = GetGuild())
@@ -257,13 +258,14 @@ index 6b9bd91..7dec13a 100644
 +            honor_f *= 0.1f;
 +    }
 +
-     // Back to int now
-     honor = int32(honor_f);
-     // honor - for show honor points in log
-@@ -15341,6 +15369,19 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
-     for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
-         AddPct(XP, (*i)->GetAmount());
- 
+     // 25
+     // 26
+     // 27
+@@ -15366,7 +15393,18 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+     // Prepatch by LordPsyan
+     // 41
+     // 42
+-    // 43
 +    //Guild-Level-System (Bonus: QuestXP)
 +    if (Guild* guild = GetGuild())
 +    {
@@ -276,15 +278,14 @@ index 6b9bd91..7dec13a 100644
 +        if (guild->HasLevelForBonus(GUILD_BONUS_XP_2))
 +            XP += uint32(XP*0.1f);
 +    }
-+
-     int32 moneyRew = 0;
-     if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
-         GiveXP(XP, NULL);
+     // 44
+     // 45
+     // 46
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index bfa57ef..e75633b 100644
+index 0431a2b..16efc21 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -61,6 +61,7 @@
+@@ -62,6 +62,7 @@
  #include "World.h"
  #include "WorldPacket.h"
  #include "WorldSession.h"
@@ -292,7 +293,7 @@ index bfa57ef..e75633b 100644
  
  #include <cmath>
  
-@@ -12175,6 +12176,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12167,6 +12168,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
      float stack_bonus     = 1.0f;
      float non_stack_bonus = 1.0f;
  
@@ -316,7 +317,7 @@ index bfa57ef..e75633b 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12188,7 +12206,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12180,7 +12198,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -325,7 +326,7 @@ index bfa57ef..e75633b 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12222,7 +12240,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12214,7 +12232,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -335,7 +336,7 @@ index bfa57ef..e75633b 100644
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index bace2ec..63f7308 100644
+index 19f8d5c..5258d26 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1207,6 +1207,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
@@ -361,7 +362,7 @@ index bace2ec..63f7308 100644
  
 @@ -2925,3 +2932,140 @@ void Guild::ResetTimes()
  
-     _BroadcastEvent(GE_BANK_TAB_AND_MONEY_UPDATED, 0);
+     _BroadcastEvent(GE_BANK_TAB_AND_MONEY_UPDATED, ObjectGuid::Empty);
  }
 +
 +//Guild-Level-System [Start]
@@ -501,7 +502,7 @@ index bace2ec..63f7308 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/Guilds/Guild.h b/src/server/game/Guilds/Guild.h
-index 375d39c..0316511 100644
+index f0daa25..c3c7be4 100644
 --- a/src/server/game/Guilds/Guild.h
 +++ b/src/server/game/Guilds/Guild.h
 @@ -222,6 +222,29 @@ enum GuildMemberFlags
@@ -563,7 +564,7 @@ index 375d39c..0316511 100644
      inline uint8 _GetRanksSize() const { return uint8(m_ranks.size()); }
      inline const RankInfo* GetRankInfo(uint8 rankId) const { return rankId < _GetRanksSize() ? &m_ranks[rankId] : NULL; }
 diff --git a/src/server/game/Handlers/LootHandler.cpp b/src/server/game/Handlers/LootHandler.cpp
-index 8bc9c5d..4da3961 100644
+index 64c0107..7e60a3b 100644
 --- a/src/server/game/Handlers/LootHandler.cpp
 +++ b/src/server/game/Handlers/LootHandler.cpp
 @@ -30,6 +30,7 @@
@@ -592,48 +593,42 @@ index 8bc9c5d..4da3961 100644
  
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 2970e3a..10b78b8 100644
+index b922932..826148f 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
-@@ -19,12 +19,14 @@
- #ifndef TRINITY_FORMULAS_H
- #define TRINITY_FORMULAS_H
- 
+@@ -31,7 +31,7 @@
+ // 04
+ // 05
+ // 06
+-// 07
 +#include "Guild.h"
- #include "World.h"
- #include "SharedDefines.h"
- #include "ScriptMgr.h"
- #include "Player.h"
- #include "Config.h"
- 
-+
- namespace Trinity
- {
-     namespace Honor
-@@ -187,7 +189,15 @@ namespace Trinity
-             if(sConfigMgr->GetBoolDefault("PrepatchGI.Added", false))
-                 {
-                     // Prepatch by LordPsyan
--                    // 01
-+                //Guild-Level-System (Bonus: MonsterKillXp)
-+                if (Guild* guild = player->GetGuild())
-+                {
-+                    //GildenXP-Bonus
-+                    if (guild->HasLevelForBonus(GUILD_BONUS_XP_1))
-+                        gain += uint32(gain*0.05f);
-+                    if (guild->HasLevelForBonus(GUILD_BONUS_XP_2))
-+                        gain += uint32(gain*0.1f);
-+                }
-                     // 02
-                     // 03
-                     // 04
+ // 08
+ // 09
+ // 10
+@@ -221,7 +221,15 @@ namespace Trinity
+                     // 29
+                     // 30
+                     // 31
+-                    // 32
++                    //Guild-Level-System (Bonus: MonsterKillXp)
++                    if (Guild* guild = player->GetGuild())
++                    {
++                        //GuildXP-Bonus
++                        if (guild->HasLevelForBonus(GUILD_BONUS_XP_1))
++                            gain += uint32(gain*0.05f);
++                        if (guild->HasLevelForBonus(GUILD_BONUS_XP_2))
++                            gain += uint32(gain*0.1f);
++                    }
+                     // 33
+                     // 34
+                     // 35
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3fc12b3..47d50de 100644
+index 374b377..39e52da 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1193,7 +1193,9 @@ enum TrinityStrings
-     LANG_NPCINFO_INHABIT_TYPE                     = 11008,
-     LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
+@@ -1178,7 +1178,9 @@ enum TrinityStrings
+     LANG_AUTO_BROADCAST                 = 11000,
+     LANG_INVALID_REALMID                = 11001,
      // Prepatch by LordPsyan
 -    // 01
 +    //Guild-Level-System
@@ -671,7 +666,7 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index a0c3d1c..dfc2bfe 100644
+index 2d2d08c..00e2a2c 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1284,6 +1284,9 @@ void World::LoadConfigSettings(bool reload)
@@ -684,7 +679,7 @@ index a0c3d1c..dfc2bfe 100644
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
-@@ -3243,3 +3246,87 @@ void World::ReloadRBAC()
+@@ -3240,3 +3243,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -773,10 +768,10 @@ index a0c3d1c..dfc2bfe 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9a726fa..6eea682 100644
+index 79f128b..15181ce 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -798,6 +798,11 @@ class World
+@@ -799,6 +799,11 @@ class World
  
          void ReloadRBAC();
  
@@ -788,7 +783,7 @@ index 9a726fa..6eea682 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -900,6 +905,21 @@ class World
+@@ -901,6 +906,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
@@ -811,7 +806,7 @@ index 9a726fa..6eea682 100644
  
  extern uint32 realmID;
 diff --git a/src/server/scripts/Commands/cs_guild.cpp b/src/server/scripts/Commands/cs_guild.cpp
-index 7b07408..a329975 100644
+index f03be6e..12a03d5 100644
 --- a/src/server/scripts/Commands/cs_guild.cpp
 +++ b/src/server/scripts/Commands/cs_guild.cpp
 @@ -45,6 +45,9 @@ public:
@@ -989,5 +984,5 @@ index b918715..2e6c8f2 100644
      // 05
      // 06
 -- 
-2.1.0.rc1
+2.1.0
 

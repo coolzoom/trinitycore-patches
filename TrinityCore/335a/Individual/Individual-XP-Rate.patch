@@ -1,7 +1,7 @@
-From a2ae54335e0ae171e8e2db8583ed3aea4ce5a4ad Mon Sep 17 00:00:00 2001
+From 11bce46a065a68536548ee66064cd1f3931c135f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 9 Sep 2014 01:31:39 -0400
-Subject: [PATCH] Individual_XP-Rate
+Date: Wed, 17 Sep 2014 09:39:02 -0400
+Subject: [PATCH] Individual-XP-Rate
 
 ---
  .../auth_individuale_xp_Rate.sql                   |  5 ++
@@ -58,10 +58,10 @@ index c2e38c3..4e3521e 100644
      // 07
      // 08
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 6b9bd91..4e92fb5 100644
+index dbaea7d..9110e26 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -903,6 +903,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -901,6 +901,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -72,7 +72,7 @@ index 6b9bd91..4e92fb5 100644
  }
  
  Player::~Player()
-@@ -15334,7 +15338,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15333,7 +15337,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -81,7 +81,7 @@ index 6b9bd91..4e92fb5 100644
  
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
-@@ -26877,6 +26881,25 @@ bool Player::IsLoading() const
+@@ -26881,6 +26885,25 @@ bool Player::IsLoading() const
      return GetSession()->PlayerLoading();
  }
  
@@ -108,10 +108,10 @@ index 6b9bd91..4e92fb5 100644
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 27ea835..eddaf94 100644
+index bb3fcca..23032c9 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -917,6 +917,13 @@ enum PlayerCommandStates
+@@ -915,6 +915,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
  
@@ -125,7 +125,7 @@ index 27ea835..eddaf94 100644
  class PlayerTaxi
  {
      public:
-@@ -2342,6 +2349,11 @@ class Player : public Unit, public GridObject<Player>
+@@ -2339,6 +2346,11 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsLoading() const;
  
@@ -136,8 +136,8 @@ index 27ea835..eddaf94 100644
 +
      protected:
          // Gamemaster whisper whitelist
-         WhisperListContainer WhisperList;
-@@ -2670,6 +2682,10 @@ class Player : public Unit, public GridObject<Player>
+         GuidList WhisperList;
+@@ -2667,6 +2679,10 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -149,40 +149,40 @@ index 27ea835..eddaf94 100644
  
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 2970e3a..8edb90f 100644
+index b922932..41443bf 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
-@@ -191,7 +191,9 @@ namespace Trinity
-                     // 02
-                     // 03
-                     // 04
--                    // 05
-+                //Individuale_XP-Rate
-+                float individualXpKill = player->GetIndividualXpKillRate();
-+                gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
-                     // 06
-                     // 07
-                     // 08
+@@ -214,7 +214,9 @@ namespace Trinity
+                     // 22
+                     // 23
+                     // 24
+-                    // 25
++                    //Individuale_XP-Rate
++                    float individualXpKill = player->GetIndividualXpKillRate();
++                    gain = uint32(gain * (individualXpKill > 0 ? individualXpKill : sWorld->getRate(RATE_XP_KILL)));
+                     // 26
+                     // 27
+                     // 28
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 3fc12b3..cf7afc6 100644
+index 374b377..0003b3f 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1197,7 +1197,12 @@ enum TrinityStrings
-     // 02
-     // 03
-     // 04
--    // 05
+@@ -1188,7 +1188,12 @@ enum TrinityStrings
+     // 08
+     // 09
+     // 10
+-    // 11
 +    //Individuale_XP-Rate
 +    LANG_INDIVIDUAL_KILLRATE_SET                  = 15000,
 +    LANG_INDIVIDUAL_QUESTRATE_SET                 = 15001,
 +    LANG_INDIVIDUAL_RATE_TO_HIGH                  = 15002,
 +    LANG_INDIVIDUAL_RATE_TO_LOW                   = 15003,
 +    LANG_INDIVIDUAL_RATES_INFO                    = 15004,
-     // 06
-     // 07
-     // 08
+     // 12
+     // 13
+     // 14
 diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
-index f70f172..7781ca3 100644
+index 3c2f122..2e48919 100644
 --- a/src/server/scripts/Commands/cs_modify.cpp
 +++ b/src/server/scripts/Commands/cs_modify.cpp
 @@ -70,6 +70,8 @@ public:
@@ -264,5 +264,5 @@ index f70f172..7781ca3 100644
  
  void AddSC_modify_commandscript()
 -- 
-2.1.0.rc1
+2.1.0
 

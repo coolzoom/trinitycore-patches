@@ -1,6 +1,6 @@
-From 7c2fd80012372072f7389510a5c1b5e91e4654ea Mon Sep 17 00:00:00 2001
+From 6bf51918648bcc710dbe02d96b865d0d0e183d7d Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 8 Sep 2014 22:26:51 -0400
+Date: Wed, 17 Sep 2014 08:07:39 -0400
 Subject: [PATCH] External_Mail
 
 ---
@@ -13,13 +13,13 @@ Subject: [PATCH] External_Mail
  .../Database/Implementation/CharacterDatabase.h    |  2 +
  src/server/worldserver/worldserver.conf.dist       | 14 +++++
  8 files changed, 113 insertions(+), 2 deletions(-)
- create mode 100644 sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
+ create mode 100644 sql/TrinityCore-Patches/External_Mail/characters.external_mail.sql
 
-diff --git a/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql b/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
+diff --git a/sql/TrinityCore-Patches/External_Mail/characters.external_mail.sql b/sql/TrinityCore-Patches/External_Mail/characters.external_mail.sql
 new file mode 100644
 index 0000000..8cd6a05
 --- /dev/null
-+++ b/sql/TrinityCore-patches/External_Mail/characters.external_mail.sql
++++ b/sql/TrinityCore-Patches/External_Mail/characters.external_mail.sql
 @@ -0,0 +1,10 @@
 +CREATE TABLE `mail_external` (
 +  `id` bigint(20) unsigned NOT NULL auto_increment,
@@ -33,7 +33,7 @@ index 0000000..8cd6a05
 +) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8;
 \ No newline at end of file
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 2c65e36..b204180 100644
+index 2459e46..df3be65 100644
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -20,6 +20,7 @@
@@ -44,7 +44,7 @@ index 2c65e36..b204180 100644
  #include "ObjectMgr.h"
  #include "Player.h"
  #include "Unit.h"
-@@ -281,3 +282,64 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+@@ -282,3 +283,64 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
          deleteIncludedItems(temp);
      }
  }
@@ -111,19 +111,19 @@ index 2c65e36..b204180 100644
 +}
 \ No newline at end of file
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 2e6a699..fafa565 100644
+index e46a58d..3573c90 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -334,6 +334,7 @@ class WorldSession
+@@ -333,6 +333,7 @@ class WorldSession
              }
          }
          //used with item_page table
 +        static void SendExternalMails();
          bool SendItemInfo(uint32 itemid, WorldPacket data);
          //auction
-         void SendAuctionHello(uint64 guid, Creature* unit);
+         void SendAuctionHello(ObjectGuid guid, Creature* unit);
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index a0c3d1c..cfd88f4 100644
+index 2d2d08c..e8f0d11 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1248,6 +1248,10 @@ void World::LoadConfigSettings(bool reload)
@@ -137,7 +137,7 @@ index a0c3d1c..cfd88f4 100644
      // misc
      m_bool_configs[CONFIG_PDUMP_NO_PATHS] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowPaths", true);
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
-@@ -1781,7 +1785,9 @@ void World::SetInitialWorldSettings()
+@@ -1778,7 +1782,9 @@ void World::SetInitialWorldSettings()
      tm localTm;
      localtime_r(&m_gameTime, &localTm);
      mail_timer = ((((localTm.tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
@@ -148,7 +148,7 @@ index a0c3d1c..cfd88f4 100644
      mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
      TC_LOG_INFO("server.loading", "Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
  
-@@ -2017,6 +2023,17 @@ void World::Update(uint32 diff)
+@@ -2014,6 +2020,17 @@ void World::Update(uint32 diff)
      if (m_gameTime > m_NextGuildReset)
          ResetGuildCap();
  
@@ -167,10 +167,10 @@ index a0c3d1c..cfd88f4 100644
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 9a726fa..eef10c3 100644
+index 79f128b..aaf9f98 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -175,7 +175,7 @@ enum WorldBoolConfigs
+@@ -176,7 +176,7 @@ enum WorldBoolConfigs
      // 16
      // 17
      // 18
@@ -179,7 +179,7 @@ index 9a726fa..eef10c3 100644
      // 20
      // Visit http://www.realmsofwarcraft.com/bb for forums and information
      //
-@@ -385,6 +385,7 @@ enum WorldIntConfigs
+@@ -386,6 +386,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -187,7 +187,7 @@ index 9a726fa..eef10c3 100644
      INT_CONFIG_VALUE_COUNT
  };
  
-@@ -829,6 +830,7 @@ class World
+@@ -830,6 +831,7 @@ class World
          time_t m_startTime;
          time_t m_gameTime;
          IntervalTimer m_timers[WUPDATE_COUNT];
@@ -248,5 +248,5 @@ index 9097e0b..5f7af52 100644
  
  ###################################################################################################
 -- 
-2.1.0.rc1
+2.1.0
 
