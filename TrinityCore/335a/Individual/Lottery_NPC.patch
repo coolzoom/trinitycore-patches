@@ -1,22 +1,29 @@
-From f7ecdbb6c619dc778f9f05ce8f0f6bafa5c7d7b0 Mon Sep 17 00:00:00 2001
+From 47fe8834716ecaeb617a469984a5bd54b04e2155 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 20 Sep 2014 12:33:06 -0400
+Date: Tue, 23 Sep 2014 08:10:19 -0400
 Subject: [PATCH] Lottery_NPC
 
 ---
- .../NPC_Lottery/world.npc_lottery.sql              |  45 ++++
- src/server/game/Scripting/ScriptLoader.cpp         |   4 +-
- src/server/scripts/Custom/npc_lottery.cpp          | 295 +++++++++++++++++++++
- 3 files changed, 342 insertions(+), 2 deletions(-)
- create mode 100644 sql/TrinityCore-Patches/NPC_Lottery/world.npc_lottery.sql
+ sql/TrinityCore-Patches/Lotto/world.lottery.sql |  44 +++
+ src/server/game/Miscellaneous/Language.h        |   6 +-
+ src/server/game/Scripting/ScriptLoader.cpp      |   6 +-
+ src/server/scripts/Custom/CMakeLists.txt        |   1 +
+ src/server/scripts/Custom/npc_lottery.cpp       | 362 ++++++++++++++++++++++++
+ 5 files changed, 414 insertions(+), 5 deletions(-)
+ create mode 100644 sql/TrinityCore-Patches/Lotto/world.lottery.sql
  create mode 100644 src/server/scripts/Custom/npc_lottery.cpp
 
-diff --git a/sql/TrinityCore-Patches/NPC_Lottery/world.npc_lottery.sql b/sql/TrinityCore-Patches/NPC_Lottery/world.npc_lottery.sql
+diff --git a/sql/TrinityCore-Patches/Lotto/world.lottery.sql b/sql/TrinityCore-Patches/Lotto/world.lottery.sql
 new file mode 100644
-index 0000000..5db9be6
+index 0000000..0e89d15
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/NPC_Lottery/world.npc_lottery.sql
-@@ -0,0 +1,45 @@
++++ b/sql/TrinityCore-Patches/Lotto/world.lottery.sql
+@@ -0,0 +1,44 @@
++DELETE FROM `trinity_string` where `entry` IN ('11010', '11011', '11012');
++INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES ('11010', '|cffff0000[Lottery]: The contest is over! Total bets involved: %u. The winning numbers: %s. The Jackpot contains %u gold and was not paid.|r');
++INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES ('11011', '|cffff0000[Lottery]: The contest is over! Total bets involved: %u. The winning numbers: %s.  %s hit the Jackpot and wins %u gold! Congratulations!|r');
++INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES ('11012', '|cffff0000[Lottery]: The contest is over! Total bets involved: %u. The winning numbers: %s.  %u players hit the Jackpot and everyone wins %u gold. Congratulations!|r');
++
 +DROP TABLE IF EXISTS `lottery_winners`;
 +CREATE TABLE `lottery_winners` (
 +  `id` int(10) unsigned NOT NULL,
@@ -26,6 +33,7 @@ index 0000000..5db9be6
 +  `betPoints` int(10) unsigned NOT NULL DEFAULT '0',
 +  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8;
++
 +
 +DROP TABLE IF EXISTS `lottery_bets`;
 +CREATE TABLE `lottery_bets` (
@@ -37,162 +45,208 @@ index 0000000..5db9be6
 +  PRIMARY KEY (`id`)
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 +
++
 +DROP TABLE IF EXISTS `lottery`;
 +CREATE TABLE `lottery` (
 +  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-+  `number_1` int(10) unsigned NOT NULL DEFAULT '0',
-+  `number_2` int(10) unsigned NOT NULL DEFAULT '0',
-+  `number_3` int(10) unsigned NOT NULL DEFAULT '0',
-+  `number_4` int(10) unsigned NOT NULL DEFAULT '0',
-+  `number_5` int(10) unsigned NOT NULL DEFAULT '0',
++  `numbers` longtext NOT NULL,
 +  `jackpot` int(10) unsigned NOT NULL DEFAULT '0',
 +  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 +  PRIMARY KEY (`id`)
 +) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 +
-+DELETE FROM game_event WHERE eventEntry = 132;
-+INSERT INTO game_event VALUES
-+(132, "2011-01-31 20:00:00", "2020-12-31 06:00:00", 1440, 1, 0, "Lottery", 0, 1);
 +
-+DELETE FROM `creature_template` WHERE (`entry`=99013);
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
-+('99013','0','0','0','0','0','24818','3422','24819','24821','"Lucky" Bob','Lottery','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_lottery','1');
++REPLACE INTO `game_event` (`eventEntry`, `start_time`, `end_time`, `occurence`, `length`, `holiday`, `description`, `world_event`, `announce`) VALUES 
++(132, '2013-08-21 20:00:00', '2020-12-31 06:00:00', 1440, 1, 0, 'Lottery', 0, 2);
 +
-+DELETE FROM `trinity_string` where `entry` IN ('11005', '11006', '11007');
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc8`) VALUES ('11005', '', '|cffff0000[Lottery Announcement]:Lottery Drawing Results! Total Rates Involved: %u. The winning numbers are %u %u %u %u %u. Jackpot is currently %f Gold. There was no winner.|r');
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc8`) VALUES ('11006', '', '|cffff0000[Lottery Announcement]:Lottery Drawing Results! Total Rates Involved: %u. The winning numbers are %u %u %u %u %u. Jackpot is %f Gold. The winner is %s.|r');
-+INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc8`) VALUES ('11007', '', '|cffff0000[Lottery Announcement]:Lottery Drawing Results! Total Rates Involved: %u. The winning numbers are %u %u %u %u %u. Jackpot is %f Gold. Won by %u players.|r');
++
++DELETE FROM `creature_template` WHERE (`entry`=900010);
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES 
++('900010', '0', '0', '0', '0', '0', '7993', '0', '0', '0', 'Lotty', '- by GoN -', NULL, '0', '80', '80', '0', '35', '1', '1', '1.14286', '0.75', '0', '0', '1400', '1900', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'npc_lottery', '12340');
+diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
+index 327a7a7..a473447 100644
+--- a/src/server/game/Miscellaneous/Language.h
++++ b/src/server/game/Miscellaneous/Language.h
+@@ -1233,9 +1233,9 @@ enum TrinityStrings
+     // 35
+     // 36
+     // 37
+-    // 38
+-    // 39
+-    // 40
++	LANG_LOTTERY_ANNOUNCE_JACKPOT = 11010,
++	LANG_LOTTERY_ANNOUNCE_JACKPOT_M_PLAYERS = 11011,
++	LANG_LOTTERY_ANNOUNCE = 11012
+     // Visit http://www.realmsofwarcraft.com/bb for forums and information
+     //
+     // End of prepatch
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..13edeb3 100644
+index 8d5350b..99380f6 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1512,7 +1512,7 @@ void AddBattlegroundScripts()
- // start76
- // start77
- // start78
--// start79
-+void AddSC_npc_lottery();
- // start80
- #endif
-
-@@ -1598,7 +1598,7 @@ void AddCustomScripts()
- // end76
- // end77
- // end78
--// end79
-+    AddSC_npc_lottery();
- // end80
- #endif
- }
+@@ -1443,7 +1443,8 @@ void AddBattlegroundScripts()
+ // start26
+ // start27
+ // start28
+-// start29
++    // Lottery NPC
++    void AddSC_npc_lottery();
+ // start30
+ // start31
+ // start32
+@@ -1529,7 +1530,8 @@ void AddCustomScripts()
+ // end26
+ // end27
+ // end28
+-// end29
++// Lottery NPC
++AddSC_npc_lottery();
+ // end30
+ // end31
+ // end32
+diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
+index 20c2bc9..e9452e6 100644
+--- a/src/server/scripts/Custom/CMakeLists.txt
++++ b/src/server/scripts/Custom/CMakeLists.txt
+@@ -12,6 +12,7 @@ file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
+ 
+ set(scripts_STAT_SRCS
+   ${scripts_STAT_SRCS}
++  Custom/npc_lottery.cpp
+   ${sources_Custom}
+ )
+ 
 diff --git a/src/server/scripts/Custom/npc_lottery.cpp b/src/server/scripts/Custom/npc_lottery.cpp
 new file mode 100644
-index 0000000..ffef9e0
+index 0000000..486758f
 --- /dev/null
 +++ b/src/server/scripts/Custom/npc_lottery.cpp
-@@ -0,0 +1,295 @@
+@@ -0,0 +1,362 @@
++/*
++ *
++ * Copyright (C) 2013 Emu-Devstore <http://emu-devstore.com/>
++ * Written by Teiby <http://www.teiby.de/>
++ *
++ */
++ 
++
 +#include "ScriptPCH.h"
 +#include "Config.h"
++#include "Language.h"
 +
-+#define GOSSIP_BUY_TICKET                                     "I would like to buy a ticket."
-+#define EVENT_LOTTERY                                         132
-+#define LANG_LOTTERY_ANNOUNCE                                 11005
-+#define LANG_LOTTERY_ANNOUNCE_JACKPOT                         11006
-+#define LANG_LOTTERY_ANNOUNCE_JACKPOT_M_PLAYERS               11007
++#define EVENT_LOTTERY		132 // Use '.event start 132' or '.event stop 132' to start and stop manually. Event will start automatically every 24h (08:00pm)
++
++#define LOTTERY_ENABLE		true
++#define LOTTERY_MINLVL		1
++#define LOTTERY_BETCOST		10	* 10000 // 10 Gold
++#define LOTTERY_MAXNUMBER	30	// 1 - 30
++#define LOTTERY_FIELDS		5	// how many numbers? (e.g. '5 10 22 3 25')
++#define LOTTERY_BETCOUNT	1	// how many bets each player?
++
 +
 +class npc_lottery : public CreatureScript
 +{
 +public:
 +    npc_lottery() : CreatureScript("npc_lottery") { }
 +
-+    bool OnGossipHello(Player* pPlayer, Creature* pCreature)
++    bool OnGossipHello(Player* player, Creature* pCreature)
 +    {
-+        if (pPlayer && !pPlayer->IsGameMaster() && sConfigMgr->GetBoolDefault("Lottery.Enable", false))
++        if (player && LOTTERY_ENABLE)
 +        {
-+            if (pPlayer->getLevel() >= uint32(sConfigMgr->GetIntDefault("Lottery.MinUserLVL", 60)) && pPlayer->GetMoney() >= uint32(sConfigMgr->GetIntDefault("Lottery.BetCost", 500000)))
++            if (player->getLevel() >= uint32(LOTTERY_MINLVL) && player->GetMoney() >= uint32(LOTTERY_BETCOST))
 +            {
-+                std::string wh = ("Hello, stranger. Do you want to try your luck? Oh yeah, by the look in your eyes I can tell you want to. Pick 5 numbers ranging from 1 to " +
-+                                    std::string(sConfigMgr->GetStringDefault("Lottery.MaxNumber", "30")) + " (separated by spaces), pay the cost of rates and wait for the draw. It's very simple.");
-+                pCreature->Whisper(wh.c_str(), LANG_UNIVERSAL, pPlayer);
-+                pPlayer->PrepareGossipMenu(pCreature);
-+                pPlayer->ADD_GOSSIP_ITEM_EXTENDED(0, GOSSIP_BUY_TICKET, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF, "", 0, true);
-+                pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
++				std::stringstream str;
++				str << "Willst du dein Glück versuchen? " << LOTTERY_FIELDS << " Nummern zwischen 1 und " << LOTTERY_MAXNUMBER << " (durch Leerzeichen trennen), bezahle " << (uint32)(LOTTERY_BETCOST*0.0001f) << " Gold und warte auf die Auslosung (20:00).";
++				str << " Du kannst nur " << LOTTERY_BETCOUNT << " Los kaufen" << (LOTTERY_BETCOUNT > 1 ? "s." : ".");
++
++
++				pCreature->Whisper(str.str().c_str(), LANG_UNIVERSAL, player);
++                player->ADD_GOSSIP_ITEM_EXTENDED(0, "Kaufe ein Los", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF, "", 0, true);
++				player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Script Info", GOSSIP_SENDER_MAIN, 9998);
++                player->SEND_GOSSIP_MENU(player->GetGossipTextId(pCreature), pCreature->GetGUID());
 +            }
 +            else
-+            {
-+                std::string wh = ("You do not have enough money (requires " + std::string(sConfigMgr->GetStringDefault("Lottery.BetCost", "500000"))+ "units in copper), or your level is not high enough (requires Level " + std::string(sConfigMgr->GetStringDefault("Lottery.MinUserLVL", "60")) + ").");
-+                pCreature->Whisper(wh.c_str(), LANG_UNIVERSAL, pPlayer);
++           {
++                std::stringstream str;
++				str << "Du brauchst " << LOTTERY_MINLVL << " Gold and Level " << (uint32)(LOTTERY_BETCOST*0.0001f) << "+ um ein Los zu kaufen.";
++				pCreature->Whisper(str.str().c_str(), LANG_UNIVERSAL, player);
 +            }
 +        }
 +        return true;
 +    }
 +
-+    bool OnGossipSelectCode(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char* code)
++    bool OnGossipSelectCode(Player* player, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char* code)
 +    {
-+        pPlayer->PlayerTalkClass->ClearMenus();
-+        if (uiSender == GOSSIP_SENDER_MAIN)
++        player->PlayerTalkClass->ClearMenus();
++       if (uiSender == GOSSIP_SENDER_MAIN)
 +        {
 +            switch (uiAction)
-+            {
++           {
 +                case GOSSIP_ACTION_INFO_DEF:
 +                {
-+                    char * charCode = (char*)code;
++                   char * charCode = (char*)code;
 +                    std::string strCode = (char*)code;
 +                    char * tmp;
-+                    int32 number[5];
-+                    std::string error = ("You have entered an invalid number. Your bid must be in the range of 1 to " + std::string(sConfigMgr->GetStringDefault("Lottery.MaxNumber", "30")));
-+                    std::string errordub = ("You have already picked your numbers. Good luck and may Elune Bless you.");
-+                    std::string numbers = ("You bet on the numbers:" + std::string(strCode));
++                   int32 number[LOTTERY_FIELDS];
++                    std::stringstream error;
++					error << "Du hast eine falsche Nummer eingegeben. Du musst " << LOTTERY_FIELDS << " Nummer (durch Leerzeichen trennen) zwischen 1 - " << LOTTERY_MAXNUMBER << "eingeben.";
++                    std::string errordub = ("Du hast schon getipt");
++                    std::string sNumbers;
++
++
++					QueryResult pBetGuid = WorldDatabase.PQuery("SELECT COUNT(*) FROM lottery_bets WHERE guid = %u", player->GetGUIDLow());
++                    if (pBetGuid && pBetGuid->Fetch()->GetUInt32() >= LOTTERY_BETCOUNT)
++                    {
++                        pCreature->Whisper(errordub.c_str(), LANG_UNIVERSAL, player);
++                        player->CLOSE_GOSSIP_MENU();
++                        return false;
++                    }
++
 +
 +                    tmp = strtok (charCode," ");
-+                    for (int8 n = 0; n < 5; ++n)
++                    for (int8 n = 0; n < LOTTERY_FIELDS; n++)
 +                    {
 +                        if (tmp != NULL)
 +                        {
 +                            number[n] = atoi(tmp);
-+                            if (number[n] < 0 || number[n] > sConfigMgr->GetIntDefault("Lottery.MaxNumber", 30))
++                            if (number[n] <= 0 || number[n] > LOTTERY_MAXNUMBER)
 +                            {
-+                                pCreature->Whisper(error.c_str(), LANG_UNIVERSAL, pPlayer);
-+                                pPlayer->CLOSE_GOSSIP_MENU();
++								pCreature->Whisper(error.str().c_str(), LANG_UNIVERSAL, player);
++                                player->CLOSE_GOSSIP_MENU();
 +                                return false;
 +                            }
 +                            tmp = strtok (NULL, " ");
 +                        }
 +                        else
 +                        {
-+                            pCreature->Whisper(error.c_str(), LANG_UNIVERSAL, pPlayer);
-+                            pPlayer->CLOSE_GOSSIP_MENU();
++                            pCreature->Whisper(error.str().c_str(), LANG_UNIVERSAL, player);
++                            player->CLOSE_GOSSIP_MENU();
 +                            return false;
 +                        }
 +                    }
 +
-+                    uint32 betMaxID;
++					std::stringstream ssNumber;
++					for(int i = 0; i < LOTTERY_FIELDS; i++)
++					{
++						ssNumber << number[i];
++
++						if(i < LOTTERY_FIELDS-1)
++							ssNumber << " ";
++					}
++
++					sNumbers = "Du hast folgende Zahlen getipt: " + ssNumber.str();
++
++					uint32 betMaxID = 0;
 +                    QueryResult qbetMaxID = WorldDatabase.Query("SELECT MAX(id) FROM lottery_bets");
 +
 +                    if (qbetMaxID)
 +                        betMaxID = qbetMaxID->Fetch()->GetUInt32();
-+                    else
-+                        betMaxID = 0;
 +
-+                    uint32 rBetGuid;
-+                    QueryResult pBetGuid = WorldDatabase.Query("SELECT guid FROM lottery_bets");
++					WorldDatabase.PExecute("INSERT INTO lottery_bets (id, name, guid, bet) VALUES ('%u', '%s', '%u', '%s');", betMaxID+1, player->GetName().c_str(), player->GetGUIDLow(), ssNumber.str().c_str());
++                    pCreature->Whisper(sNumbers.c_str(), LANG_UNIVERSAL, player);
++                    player->ModifyMoney(-LOTTERY_BETCOST);
 +
-+                    if (pBetGuid)
-+                        rBetGuid = pBetGuid->Fetch()->GetUInt32();
-+                    else
-+                        rBetGuid = 0;
-+
-+                    if (rBetGuid == pPlayer->GetGUID())
-+                    {
-+                        pCreature->Whisper(errordub.c_str(), LANG_UNIVERSAL, pPlayer);
-+                        pPlayer->CLOSE_GOSSIP_MENU();
-+                        return false;
-+                    }
-+
-+                    WorldDatabase.PExecute("INSERT INTO lottery_bets (id, name, guid, bet) VALUES ('%u', '%s', '%u', '%s')", betMaxID+1, GetName().c_str(), pPlayer, strCode.c_str());
-+                    pCreature->Whisper(numbers.c_str(), LANG_UNIVERSAL, pPlayer);
-+                    pPlayer->ModifyMoney(-sConfigMgr->GetIntDefault("Lottery.BetCost", 500000));
-+
-+                    pPlayer->CLOSE_GOSSIP_MENU();
++                    player->CLOSE_GOSSIP_MENU();
 +
 +                    return true;
 +                }
@@ -200,7 +254,26 @@ index 0000000..ffef9e0
 +        }
 +
 +        return false;
-+        }
++	}
++
++	bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
++	{
++		if(uiAction == 9998) // Script Info
++		{
++			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Entwickelt von: Teiby", GOSSIP_SENDER_MAIN, uiAction);
++			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Website: www.teiby.de", GOSSIP_SENDER_MAIN, uiAction);
++			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Version: 1.2", GOSSIP_SENDER_MAIN, uiAction);
++			pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<-- Zurück", GOSSIP_SENDER_MAIN, 9999);
++			pPlayer->SEND_GOSSIP_MENU(68, pCreature->GetGUID());
++		}
++		else if(uiAction == 9999)
++		{
++			pPlayer->PlayerTalkClass->ClearMenus();
++			OnGossipHello(pPlayer, pCreature);
++		}
++
++		return true;
++	}
 +
 +    CreatureAI* GetAI(Creature* pCreature) const
 +    {
@@ -211,7 +284,15 @@ index 0000000..ffef9e0
 +    {
 +        npc_lotteryAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 +
-+        void UpdateAI(const uint32 diff)
++		struct sWinner
++		{
++			uint32 guid;
++			std::string name;
++			std::string bets;
++			uint32 points;
++		};
++
++        void UpdateAI(uint32 diff)
 +        {
 +            if (IsEventActive(EVENT_LOTTERY))
 +            {
@@ -219,12 +300,28 @@ index 0000000..ffef9e0
 +                {
 +                    QueryResult qMaxID = WorldDatabase.Query("SELECT MAX(id) FROM lottery_bets");
 +                    if (!qMaxID)
++					{
++						me->SetVisible(false);
 +                        return;
-+
++					}
++					
 +                    uint32 betMaxID = qMaxID->Fetch()->GetUInt32();
-+                    uint32 luckyNumber[5];
++                    uint32 luckyNumber[LOTTERY_FIELDS];
++					std::stringstream sLuckyNumber;
 +                    uint32 lotteryID;
-+                    uint32 jackpotWinners = 0;
++					const uint32 stakes = betMaxID * LOTTERY_BETCOST * 0.7f; // 70% (rest is added to the jackpot)
++
++					uint32 winnerCount[LOTTERY_FIELDS];
++
++					typedef std::list<sWinner> tdJW;
++					tdJW lJackpotWinners;
++					tdJW lWinners;
++
++					SQLTransaction ctrans = CharacterDatabase.BeginTransaction();
++					SQLTransaction wtrans = WorldDatabase.BeginTransaction();
++
++					for(int i = 0; i < LOTTERY_FIELDS; i++)
++						winnerCount[i] = 0;
 +
 +                    QueryResult qlotteryID = WorldDatabase.Query("SELECT MAX(id) FROM lottery");
 +                    if (!qlotteryID)
@@ -235,27 +332,32 @@ index 0000000..ffef9e0
 +                    QueryResult qBets  = WorldDatabase.Query("SELECT guid, bet, name FROM lottery_bets");
 +                    if (qBets)
 +                    {
-+                        for (int8 n = 0; n < 5; ++n)
-+                        {
-+                            luckyNumber[n] = urand(1, sConfigMgr->GetIntDefault("Lottery.MaxNumber", 30));
-+                        }
++                        for (int8 n = 0; n < LOTTERY_FIELDS; n++)
++                            luckyNumber[n] = urand(1, LOTTERY_MAXNUMBER);
++
++						for(int i = 0; i < LOTTERY_FIELDS; i++)
++						{
++							sLuckyNumber << luckyNumber[i];
++
++							if(i < LOTTERY_FIELDS-1)
++								sLuckyNumber << " ";
++						}
 +
 +                        do
 +                        {
 +                            Field *fBets = qBets->Fetch();
 +                            uint32 guid = fBets[0].GetUInt32();
 +                            std::string bet = fBets[1].GetString();
-+                            std::string rBet = bet;
++                            std::string rBet = bet; 
 +                            std::string name = fBets[2].GetString();
 +                            uint32 points = 0;
-+                            uint32 cash;
 +
-+                            int32 number[5];
++                            int32 number[LOTTERY_FIELDS];
 +                            char * tmp;
 +
 +                            tmp = strtok ((char*)bet.c_str()," ");
 +
-+                            for (int8 n = 0; n < 5; ++n)
++                            for (int8 n = 0; n < LOTTERY_FIELDS; ++n)
 +                            {
 +                                if (tmp != NULL)
 +                                {
@@ -264,107 +366,104 @@ index 0000000..ffef9e0
 +                                }
 +                            }
 +
-+                            for (int8 n = 0; n < 5; ++n)
-+                            {
-+                                for (int8 i = 0; i < 5; ++i)
-+                                {
-+                                    if (number[n] == luckyNumber[i])
-+                                        ++points;
-+                                }
-+                            }
++                            for (int8 n = 0; n < LOTTERY_FIELDS; ++n)
++                                for (int8 i = 0; i < LOTTERY_FIELDS; ++i)
++                                    if (number[i] == luckyNumber[n])
++									{
++                                        points++;
++										number[i] = 0;
++										break;
++									}
 +
-+                            switch (points)
-+                            {
-+                                case 1:
-+                                {
-+                                    cash = uint32(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.005f);
-+                                    break;
-+                                }
-+                                case 2:
-+                                {
-+                                    cash = uint32(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.01f);
-+                                    break;
-+                                }
-+                                case 3:
-+                                {
-+                                    cash = uint32(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.05f);
-+                                    break;
-+                                }
-+                                case 4:
-+                                {
-+                                    cash = uint32(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.2f);
-+                                    break;
-+                                }
-+                                case 5:
-+                                {
-+                                    WorldDatabase.PExecute("INSERT INTO lottery_winners (id, name, guid, bet, betPoints) VALUES ('%u', '%s', '%u', '%s', '%u')", lotteryID+1, name.c_str(), guid, rBet.c_str(), points);
-+                                    ++jackpotWinners;
-+                                    continue;
-+                                }
-+                                default:
-+                                    continue;
-+                            }
++							if(points == 0)
++								continue;
 +
-+                            Player *pWinner = sObjectMgr->GetPlayerByLowGUID(guid);
-+                            SQLTransaction trans = CharacterDatabase.BeginTransaction();
-+                            MailDraft("Prize", "Congratulations, Your number combination was a winner!")
++							sWinner winner;
++							winner.guid = guid;
++							winner.bets = rBet;
++							winner.name = name;
++							winner.points = points;
++
++							if(points == LOTTERY_FIELDS)
++								lJackpotWinners.push_back(winner);
++							else
++								lWinners.push_back(winner);
++							
++							winnerCount[points-1]++;
++
++						} while (qBets->NextRow());
++
++
++						for(tdJW::const_iterator itr = lWinners.begin(); itr != lWinners.end(); itr++)
++						{
++							uint32 cash = stakes / pow(2, LOTTERY_FIELDS - itr->points) / winnerCount[itr->points-1];
++							
++							std::stringstream text;
++							text << "Gratulation du hast die Richtigen Zahlen getipt!\n\n";
++							text << "Dein Los: " << itr->bets.c_str() << "\n";
++							text << "Lotto Resultat: " << sLuckyNumber.str().c_str() << "\n\n";
++							text << "Hits: " << itr->points << "\n";
++							text << "Sum of bets with " << itr->points << " hits: " << winnerCount[itr->points-1];
++							
++							Player *pWinner = sObjectMgr->GetPlayerByLowGUID(itr->guid);
++							MailDraft("Won", text.str())
 +                                .AddMoney(cash)
-+                                .SendMailTo(trans, MailReceiver(pWinner), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM));
-+                            CharacterDatabase.CommitTransaction(trans);
++								.SendMailTo(ctrans, MailReceiver(pWinner, itr->guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM));
++                            
++							wtrans->PAppend("INSERT INTO lottery_winners (id, name, guid, bet, betPoints) VALUES ('%u', '%s', '%u', '%s', '%u')", lotteryID+1, itr->name.c_str(), itr->guid, itr->bets.c_str(), itr->points);
++						}
 +
-+                            WorldDatabase.PExecute("INSERT INTO lottery_winners (id, name, guid, bet, betPoints) VALUES ('%u', '%s', '%u', '%s', '%u')", lotteryID+1, name.c_str(), guid, rBet.c_str(), points);
-+                        } while (qBets->NextRow());
-+                        uint64 jackpot;
-+                        uint64 rJackpot;
-+                        uint64 defJackpot = uint64(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.7f);
++                        uint32 jackpot;
 +                        QueryResult qJackpot  = WorldDatabase.PQuery("SELECT jackpot FROM lottery WHERE id = '%u'", lotteryID);
 +                        if (qJackpot)
 +                            jackpot = qJackpot->Fetch()->GetUInt32();
 +                        else
 +                            jackpot = 0;
 +
-+                        rJackpot = jackpot;
++						jackpot += betMaxID * LOTTERY_BETCOST * 0.3f; // 30%
 +
-+                        if (jackpotWinners > 0)
++						for(int i = 0; i < LOTTERY_FIELDS-1; i++)
++						{
++							if(winnerCount[i] == 0)
++								jackpot += stakes / pow(2, LOTTERY_FIELDS-i-1); // Add money to jackpot if there are no winners
++						}
++
++                        if (winnerCount[LOTTERY_FIELDS-1] > 0)
 +                        {
-+                            QueryResult qJackpotWinners = WorldDatabase.PQuery("SELECT guid FROM lottery_winners WHERE betPoints = '5' and id = '%u'", lotteryID+1);
-+                            QueryResult qJackpotWinnersName;
-+                            if (jackpotWinners == 1)
-+                                qJackpotWinnersName = WorldDatabase.PQuery("SELECT name FROM lottery_winners WHERE betPoints = '5' and id = '%u'", lotteryID+1);
++							jackpot /= winnerCount[LOTTERY_FIELDS-1];
 +
-+                            if (qJackpotWinners)
-+                            {
-+                                jackpot = uint64(jackpot / jackpotWinners);
-+                                do
-+                                {
-+                                    Field *fJackpotWinners = qJackpotWinners->Fetch();
-+                                    uint32 JPguid = fJackpotWinners[0].GetUInt32();
++							for(tdJW::const_iterator itr = lJackpotWinners.begin(); itr != lJackpotWinners.end(); itr++)
++							{
++								std::stringstream text;
++								text << "Glückwunsch du hast den Jackpot geknackt\n\n";
++								text << "Dein Los: " << itr->bets.c_str() << "\n";
++								text << "Lotto Resultat: " << sLuckyNumber.str().c_str() << "\n\n";
++								text << "Hits: " << itr->points << "\n";
++								text << "Sum of bets with " << itr->points << " hits: " << winnerCount[itr->points-1];
 +
-+                                    Player *pJPWinner = sObjectMgr->GetPlayerByLowGUID(JPguid);
-+                                    SQLTransaction trans = CharacterDatabase.BeginTransaction();
-+                                    MailDraft("Jackpot,", "Wow, Yes You just won! You managed to hit the jackpot! Greetings from the organizers of Realms of Warcraft.com")
-+                                        .AddMoney(jackpot = 0 ? uint64(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.7f) : jackpot)
-+                                        .SendMailTo(trans, MailReceiver(pJPWinner), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM));
-+                                    CharacterDatabase.CommitTransaction(trans);
-+                                } while (qJackpotWinners->NextRow());
-+                            }
++                                Player *pJPWinner = sObjectMgr->GetPlayerByLowGUID(itr->guid);
++								MailDraft("Jackpot!", text.str())
++                                    .AddMoney(jackpot)
++                                    .SendMailTo(ctrans, MailReceiver(pJPWinner, itr->guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM));
++							}
 +
-+                            if (jackpotWinners == 1 && qJackpotWinnersName)
-+                            {
-+                                std::string wName = qJackpotWinnersName->Fetch()->GetString();
-+                                sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT, betMaxID, luckyNumber[0], luckyNumber[1], luckyNumber[2], luckyNumber[3], luckyNumber[4], ((jackpot = 0 ? uint64(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.7f) : rJackpot) * 0.0001f), wName.c_str());
-+                            }
++                            if (winnerCount[LOTTERY_FIELDS-1] == 1)
++								sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT, betMaxID, sLuckyNumber.str().c_str(), lJackpotWinners.begin()->name.c_str(), uint32(jackpot * 0.0001f));
 +                            else
-+                                sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT_M_PLAYERS, betMaxID, luckyNumber[0], luckyNumber[1], luckyNumber[2], luckyNumber[3], luckyNumber[4], ((jackpot = 0 ? uint64(betMaxID * sConfigMgr->GetIntDefault("Lottery.BetCost", 500000) * 0.7f) : rJackpot) * 0.0001f), jackpotWinners);
-+
-+                            WorldDatabase.PExecute("INSERT INTO lottery (number_1, number_2, number_3, number_4, number_5, jackpot) VALUES ('%u', '%u', '%u', '%u', '%u', '%u')", luckyNumber[0], luckyNumber[1], luckyNumber[2], luckyNumber[3], luckyNumber[4], defJackpot);
-+                        }
++                                sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT_M_PLAYERS, betMaxID, sLuckyNumber.str().c_str(), winnerCount[LOTTERY_FIELDS-1], uint32(jackpot * 0.0001f));
++                        
++							jackpot = 0;
++						}
 +                        else
 +                        {
-+                            sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE, betMaxID, luckyNumber[0], luckyNumber[1], luckyNumber[2], luckyNumber[3], luckyNumber[4], ((jackpot + defJackpot) * 0.0001f));
-+                            WorldDatabase.PExecute("INSERT INTO lottery (number_1, number_2, number_3, number_4, number_5, jackpot) VALUES ('%u', '%u', '%u', '%u', '%u', '%u')", luckyNumber[0], luckyNumber[1], luckyNumber[2], luckyNumber[3], luckyNumber[4], (jackpot + defJackpot));
++                            sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE, betMaxID, sLuckyNumber.str().c_str(), uint32(jackpot * 0.0001f));
 +                        }
-+                        WorldDatabase.PExecute("DELETE FROM lottery_bets");
++
++						wtrans->PAppend("INSERT INTO lottery (numbers, jackpot) VALUES ('%s', '%u')", sLuckyNumber.str().c_str(), jackpot);
++                        wtrans->PAppend("DELETE FROM lottery_bets");
++
++						WorldDatabase.CommitTransaction(wtrans);
++						CharacterDatabase.CommitTransaction(ctrans);
 +
 +                        me->SetVisible(false);
 +                    }
@@ -385,7 +484,6 @@ index 0000000..ffef9e0
 +{
 +    new npc_lottery;
 +}
-\ No newline at end of file
---
+-- 
 2.1.0
 
