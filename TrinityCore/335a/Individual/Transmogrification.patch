@@ -1,26 +1,18 @@
-From 0a5647c507f42f1c8fd7bfbbfcffad02e7e944a7 Mon Sep 17 00:00:00 2001
+From f4c3fb769b3f3c3c9798b5fa2acf5bd0f2f0c07c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 9 Sep 2014 02:25:51 -0400
+Date: Tue, 23 Sep 2014 09:00:48 -0400
 Subject: [PATCH] Transmogrification
 
 ---
- Transmog_CHANGELOG.md                              | 122 +++
- Transmog_README.md                                 |  50 ++
- .../Transmogrification/characters.sql              |  23 +
- .../Transmogrification/updates/_README.md          |   1 +
- .../updates/characters_update_2_1_to_2_2.sql       |  12 +
- .../updates/characters_update_2_2_to_3_0.sql       |   2 +
- .../updates/characters_update_4_x_to_5_0.sql       |  16 +
- .../updates/world_update_3_5_to_3_6.sql            |   1 +
- .../updates/world_update_4_x_to_5_0.sql            |  27 +
- .../updates/world_update_5_0_to_5_1.sql            |   6 +
- .../Transmogrification/world_NPC.sql               |   6 +
- .../Transmogrification/world_texts.sql             |  18 +
+ CHANGELOG_Transmogrification.md                    | 122 +++
+ README_Transmogrification.md                       |  50 ++
+ .../characters.transmogrification.sql              |  23 +
+ .../world.transmogrification.sql                   |  25 +
  src/server/game/DataStores/DBCStores.cpp           |   4 +-
  src/server/game/DataStores/DBCStores.h             |   2 +-
  src/server/game/DataStores/DBCStructure.h          |   2 +-
  src/server/game/DataStores/DBCfmt.h                |   2 +-
- src/server/game/Entities/Player/Player.cpp         |   8 +-
+ src/server/game/Entities/Player/Player.cpp         |   6 +-
  src/server/game/Entities/Player/Player.h           |  18 +
  src/server/game/Handlers/SpellHandler.cpp          |   8 +-
  src/server/game/Scripting/ScriptLoader.cpp         |   8 +-
@@ -29,28 +21,20 @@ Subject: [PATCH] Transmogrification
  src/server/scripts/Custom/Transmogrifier.cpp       | 399 ++++++++++
  src/server/scripts/Spells/spell_generic.cpp        |  22 +-
  src/server/worldserver/worldserver.conf.dist       | 206 +++++
- 25 files changed, 1928 insertions(+), 13 deletions(-)
- create mode 100644 Transmog_CHANGELOG.md
- create mode 100644 Transmog_README.md
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/_README.md
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
- create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_texts.sql
+ 17 files changed, 1863 insertions(+), 12 deletions(-)
+ create mode 100644 CHANGELOG_Transmogrification.md
+ create mode 100644 README_Transmogrification.md
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql
+ create mode 100644 sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
  create mode 100644 src/server/scripts/Custom/Transmogrification.cpp
  create mode 100644 src/server/scripts/Custom/Transmogrification.h
  create mode 100644 src/server/scripts/Custom/Transmogrifier.cpp
 
-diff --git a/Transmog_CHANGELOG.md b/Transmog_CHANGELOG.md
+diff --git a/CHANGELOG_Transmogrification.md b/CHANGELOG_Transmogrification.md
 new file mode 100644
 index 0000000..d5c97ec
 --- /dev/null
-+++ b/Transmog_CHANGELOG.md
++++ b/CHANGELOG_Transmogrification.md
 @@ -0,0 +1,122 @@
 +####6.0
 +- Removed mutex locks - Different code style, works with ACE and boost, probably more efficient
@@ -175,11 +159,11 @@ index 0000000..d5c97ec
 +####1.0
 +- Added DB saving and remove transmogrifications option -> patch, sql and script needed
 \ No newline at end of file
-diff --git a/Transmog_README.md b/Transmog_README.md
+diff --git a/README_Transmogrification.md b/README_Transmogrification.md
 new file mode 100644
 index 0000000..663f2fc
 --- /dev/null
-+++ b/Transmog_README.md
++++ b/README_Transmogrification.md
 @@ -0,0 +1,50 @@
 +#Transmogrification [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=transmog)](https://travis-ci.org/Rochet2/TrinityCore)
 +
@@ -231,11 +215,11 @@ index 0000000..663f2fc
 +
 +####Bugs and Contact
 +Report issues and similar to http://rochet2.github.io/
-diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.sql b/sql/TrinityCore-Patches/Transmogrification/characters.sql
+diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql b/sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql
 new file mode 100644
 index 0000000..815c4d3
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/characters.sql
++++ b/sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql
 @@ -0,0 +1,23 @@
 +/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 +/*!40101 SET NAMES utf8 */;
@@ -260,131 +244,12 @@ index 0000000..815c4d3
 +/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 +/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/_README.md b/sql/TrinityCore-Patches/Transmogrification/updates/_README.md
+diff --git a/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql b/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
 new file mode 100644
-index 0000000..2632510
+index 0000000..8a66061
 --- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/_README.md
-@@ -0,0 +1 @@
-+DO NOT RUN THE UPDATES WHEN MAKING A CLEAN INSTALL
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
-new file mode 100644
-index 0000000..ee57844
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_1_to_2_2.sql
-@@ -0,0 +1,12 @@
-+CREATE TABLE IF NOT EXISTS `custom_transmogrification` (
-+	`GUID` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeOwner` INT(10) UNSIGNED NOT NULL DEFAULT '0',
-+	`FakeEntry` INT(10) UNSIGNED NOT NULL DEFAULT '0'
-+)
-+COLLATE='latin1_swedish_ci'
-+ENGINE=InnoDB;
-+
-+REPLACE INTO custom_transmogrification (GUID, FakeOwner, FakeEntry) SELECT guid, FakeOwner, FakeEntry FROM item_instance WHERE FakeOwner != 0 AND FakeEntry != 0;
-+ALTER TABLE `item_instance`
-+	DROP COLUMN `FakeEntry`,
-+	DROP COLUMN `FakeOwner`;
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
-new file mode 100644
-index 0000000..63059ee
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_2_2_to_3_0.sql
-@@ -0,0 +1,2 @@
-+ALTER TABLE `custom_transmogrification`
-+	DROP COLUMN `FakeOwner`;
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
-new file mode 100644
-index 0000000..89c91ac
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/characters_update_4_x_to_5_0.sql
-@@ -0,0 +1,16 @@
-+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-+/*!40101 SET NAMES utf8 */;
-+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-+
-+CREATE TABLE `custom_transmogrification_sets` (
-+  `Owner` int(10) unsigned NOT NULL COMMENT 'Player guidlow',
-+  `PresetID` tinyint(3) unsigned NOT NULL COMMENT 'Preset identifier',
-+  `SetName` text COMMENT 'SetName',
-+  `SetData` text COMMENT 'Slot1 Entry1 Slot2 Entry2',
-+  PRIMARY KEY (`Owner`,`PresetID`)
-+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-+
-+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
-+/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
-+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
-new file mode 100644
-index 0000000..03cc6d2
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_3_5_to_3_6.sql
-@@ -0,0 +1 @@
-+REPLACE INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (11129, 'You don\'t have enough %ss', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
-new file mode 100644
-index 0000000..8723683
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_4_x_to_5_0.sql
-@@ -0,0 +1,27 @@
-+DELETE FROM `trinity_string` WHERE `entry` BETWEEN 11100 AND 11129;
-+
-+SET @TEXT_ID := 50000;
-+INSERT INTO `npc_text` (`ID`, `text0_0`, `WDBVerified`) VALUES
-+(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.', 1),
-+(@TEXT_ID+1, 'You can save your own transmogrification sets.\r\n\r\nTo save, first you must transmogrify your equipped items.\r\nThen when you go to the set management menu and go to save set menu,\r\nall items you have transmogrified are displayed so you see what you are saving.\r\nIf you think the set is fine, you can click to save the set and name it as you wish.\r\n\r\nTo use a set you can click the saved set in the set management menu and then select use set.\r\nIf the set has a transmogrification for an item that is already transmogrified, the old transmogrification is lost.\r\nNote that same transmogrification restrictions apply when trying to use a set as in normal transmogrification.\r\n\r\nTo delete a set you can go to the set\'s menu and select delete set.', 1);
-+
-+SET @STRING_ENTRY := 11100;
-+INSERT INTO `trinity_string` (`entry`, `content_default`) VALUES
-+(@STRING_ENTRY+0, 'Item transmogrified'),
-+(@STRING_ENTRY+1, 'Equipment slot is empty'),
-+(@STRING_ENTRY+2, 'Invalid source item selected'),
-+(@STRING_ENTRY+3, 'Source item does not exist'),
-+(@STRING_ENTRY+4, 'Destination item does not exist'),
-+(@STRING_ENTRY+5, 'Selected items are invalid'),
-+(@STRING_ENTRY+6, 'Not enough money'),
-+(@STRING_ENTRY+7, 'You don\'t have enough tokens'),
-+(@STRING_ENTRY+8, 'Transmogrifications removed'),
-+(@STRING_ENTRY+9, 'There are no transmogrifications'),
-+(@STRING_ENTRY+10, 'Invalid name inserted');
-+
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+
-+REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 0, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
-diff --git a/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
-new file mode 100644
-index 0000000..2a5e854
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/updates/world_update_5_0_to_5_1.sql
-@@ -0,0 +1,6 @@
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+
-+REPLACE INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction_A`, `faction_H`, `npcflag`, `scale`, `rank`, `mindmg`, `maxdmg`, `dmgschool`, `attackpower`, `dmg_multiplier`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `minrangedmg`, `maxrangedmg`, `rangedattackpower`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `Health_mod`, `Mana_mod`, `Armor_mod`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `WDBVerified`) VALUES
-+(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 35, 1, 1, 0, 500, 500, 0, 350, 1, 2000, 0, 1, 0, 0, 0, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 1, 1, 1, 0, 0, 1, 0, 0, 'Creature_Transmogrify', 0);
-diff --git a/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
-new file mode 100644
-index 0000000..62207a0
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
-@@ -0,0 +1,6 @@
-+SET
-+@Entry = 190010,
-+@Name = "Warpweaver";
-+DELETE FROM `creature_template` WHERE `entry` = @Entry;
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
-diff --git a/sql/TrinityCore-Patches/Transmogrification/world_texts.sql b/sql/TrinityCore-Patches/Transmogrification/world_texts.sql
-new file mode 100644
-index 0000000..082b631
---- /dev/null
-+++ b/sql/TrinityCore-Patches/Transmogrification/world_texts.sql
-@@ -0,0 +1,18 @@
++++ b/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
+@@ -0,0 +1,25 @@
 +SET @TEXT_ID := 50000;
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
@@ -403,6 +268,13 @@ index 0000000..082b631
 +(@STRING_ENTRY+8, 'Transmogrifications removed'),
 +(@STRING_ENTRY+9, 'There are no transmogrifications'),
 +(@STRING_ENTRY+10, 'Invalid name inserted');
++
++SET
++@Entry = 190010,
++@Name = "Warpweaver";
++DELETE FROM `creature_template` WHERE `entry` = @Entry;
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
 index e960422..84151cb 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
@@ -439,7 +311,7 @@ index 8b89a86..ec9817e 100644
  extern DBCStorage <ItemLimitCategoryEntry>       sItemLimitCategoryStore;
  extern DBCStorage <ItemRandomPropertiesEntry>    sItemRandomPropertiesStore;
 diff --git a/src/server/game/DataStores/DBCStructure.h b/src/server/game/DataStores/DBCStructure.h
-index 1e1cd6d..39ee140 100644
+index a0d1d77..81d43b2 100644
 --- a/src/server/game/DataStores/DBCStructure.h
 +++ b/src/server/game/DataStores/DBCStructure.h
 @@ -1151,7 +1151,7 @@ struct ItemDisplayInfoEntry
@@ -452,7 +324,7 @@ index 1e1cd6d..39ee140 100644
                                                              // 5        m_flags
                                                              // 6        m_spellVisualID
 diff --git a/src/server/game/DataStores/DBCfmt.h b/src/server/game/DataStores/DBCfmt.h
-index a90cc48..ab97153 100644
+index b664798..a3f9706 100644
 --- a/src/server/game/DataStores/DBCfmt.h
 +++ b/src/server/game/DataStores/DBCfmt.h
 @@ -72,7 +72,7 @@ char const GtRegenMPPerSptfmt[] = "f";
@@ -465,7 +337,7 @@ index a90cc48..ab97153 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 6b9bd91..333a00f 100644
+index f8f569d..006f22c 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -80,6 +80,7 @@
@@ -476,7 +348,7 @@ index 6b9bd91..333a00f 100644
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12474,7 +12475,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12524,7 +12525,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -488,17 +360,8 @@ index 6b9bd91..333a00f 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12607,7 +12611,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
-     // 04
-     // 05
-     // 06
--    // 07
-+        sTransmogrification->DeleteFakeEntry(this, it);
-     // 08
-     // 09
-     // 10
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 27ea835..7eadd9c 100644
+index 8ed561b..d53c9e0 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -28,6 +28,7 @@
@@ -513,7 +376,7 @@ index 27ea835..7eadd9c 100644
      Aura* const ownerAura;
  };
  
-+typedef std::unordered_map<uint64, uint32> TransmogMapType;
++typedef std::unordered_map<ObjectGuid, uint32> TransmogMapType;
 +
 +#ifdef PRESETS
 +typedef std::map<uint8, uint32> PresetslotMapType;
@@ -528,20 +391,20 @@ index 27ea835..7eadd9c 100644
  typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
  typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
  typedef std::list<SpellModifier*> SpellModList;
-@@ -2332,6 +2345,11 @@ class Player : public Unit, public GridObject<Player>
-         bool SetFeatherFall(bool apply, bool packetOnly = false) override;
-         bool SetHover(bool enable, bool packetOnly = false) override;
+@@ -2341,6 +2354,11 @@ class Player : public Unit, public GridObject<Player>
+         std::string GetMapAreaAndZoneString();
+         std::string GetCoordsMapAreaAndZoneString();
  
 +        TransmogMapType transmogMap; // transmogMap[iGUID] = entry
 +#ifdef PRESETS
 +        PresetMapType presetMap; // presetMap[presetId] = presetData
 +#endif
 +
-         bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
- 
-         //! Return collision height sent to client
+     protected:
+         // Gamemaster whisper whitelist
+         GuidList WhisperList;
 diff --git a/src/server/game/Handlers/SpellHandler.cpp b/src/server/game/Handlers/SpellHandler.cpp
-index 9cce494..20cae1a 100644
+index d07e13e..559765f 100644
 --- a/src/server/game/Handlers/SpellHandler.cpp
 +++ b/src/server/game/Handlers/SpellHandler.cpp
 @@ -29,6 +29,7 @@
@@ -567,10 +430,10 @@ index 9cce494..20cae1a 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..ec10f81 100644
+index 8d5350b..5ffa0ae 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1490,7 +1490,9 @@ void AddBattlegroundScripts()
+@@ -1471,7 +1471,9 @@ void AddBattlegroundScripts()
  // start54
  // start55
  // start56
@@ -581,7 +444,7 @@ index 5d120b2..ec10f81 100644
  // start58
  // start59
  // start60
-@@ -1576,7 +1578,9 @@ void AddCustomScripts()
+@@ -1557,7 +1559,9 @@ void AddCustomScripts()
  // end54
  // end55
  // end56
@@ -594,7 +457,7 @@ index 5d120b2..ec10f81 100644
  // end60
 diff --git a/src/server/scripts/Custom/Transmogrification.cpp b/src/server/scripts/Custom/Transmogrification.cpp
 new file mode 100644
-index 0000000..ce95786
+index 0000000..caf0245
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrification.cpp
 @@ -0,0 +1,838 @@
@@ -861,14 +724,14 @@ index 0000000..ce95786
 +    UpdateItem(player, item);
 +}
 +
-+TransmogTrinityStrings Transmogrification::Transmogrify(Player* player, uint64 itemGUID, uint8 slot, bool no_cost)
++TransmogTrinityStrings Transmogrification::Transmogrify(Player* player, ObjectGuid itemGUID, uint8 slot, bool no_cost)
 +{
 +    TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify");
 +
 +    // slot of the transmogrified item
 +    if (slot >= EQUIPMENT_SLOT_END)
 +    {
-+        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify an item (lowguid: %u) with a wrong slot (%u) when transmogrifying items.", player->GetGUIDLow(), player->GetName().c_str(), GUID_LOPART(itemGUID), slot);
++        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify an item (lowguid: %u) with a wrong slot (%u) when transmogrifying items.", player->GetGUIDLow(), player->GetName().c_str(), itemGUID.GetCounter(), slot);
 +        return LANG_ERR_TRANSMOG_INVALID_SLOT;
 +    }
 +
@@ -879,7 +742,7 @@ index 0000000..ce95786
 +        itemTransmogrifier = player->GetItemByGuid(itemGUID);
 +        if (!itemTransmogrifier)
 +        {
-+            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify with an invalid item (lowguid: %u).", player->GetGUIDLow(), player->GetName().c_str(), GUID_LOPART(itemGUID));
++            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify with an invalid item (lowguid: %u).", player->GetGUIDLow(), player->GetName().c_str(), itemGUID.GetCounter());
 +            return LANG_ERR_TRANSMOG_MISSING_SRC_ITEM;
 +        }
 +    }
@@ -1280,9 +1143,9 @@ index 0000000..ce95786
 +    }
 +}
 +
-+std::vector<uint64> Transmogrification::GetItemList(const Player* player) const
++std::vector<ObjectGuid> Transmogrification::GetItemList(const Player* player) const
 +{
-+    std::vector<uint64> itemlist;
++    std::vector<ObjectGuid> itemlist;
 +
 +    // Copy paste from Player::GetItemByGuid(guid)
 +
@@ -1332,14 +1195,14 @@ index 0000000..ce95786
 +            if (!player->transmogMap.empty())
 +            {
 +                // Only save items that are in inventory / bank / etc
-+                std::vector<uint64> items = sTransmogrification->GetItemList(player);
-+                for (std::vector<uint64>::const_iterator it = items.begin(); it != items.end(); ++it)
++                std::vector<ObjectGuid> items = sTransmogrification->GetItemList(player);
++                for (std::vector<ObjectGuid>::const_iterator it = items.begin(); it != items.end(); ++it)
 +                {
 +                    TransmogMapType::const_iterator it2 = player->transmogMap.find(*it);
 +                    if (it2 == player->transmogMap.end())
 +                        continue;
 +
-+                    trans->PAppend("REPLACE INTO custom_transmogrification (GUID, FakeEntry, Owner) VALUES (%u, %u, %u)", GUID_LOPART(it2->first), it2->second, lowguid);
++                    trans->PAppend("REPLACE INTO custom_transmogrification (GUID, FakeEntry, Owner) VALUES (%u, %u, %u)", it2->first.GetCounter(), it2->second, lowguid);
 +                }
 +            }
 +
@@ -1369,7 +1232,7 @@ index 0000000..ce95786
 +                do
 +                {
 +                    Field* field = result->Fetch();
-+                    uint64 itemGUID = MAKE_NEW_GUID(field[0].GetUInt32(), 0, HIGHGUID_ITEM);
++                    ObjectGuid itemGUID(HIGHGUID_ITEM, (field[0].GetUInt32()));
 +                    uint32 fakeEntry = field[1].GetUInt32();
 +                    // Only load items that are in inventory / bank / etc
 +                    if (sObjectMgr->GetItemTemplate(fakeEntry) && player->GetItemByGuid(itemGUID))
@@ -1380,7 +1243,7 @@ index 0000000..ce95786
 +                    {
 +                        // Ignore, will be erased on next save.
 +                        // Additionally this can happen if an item was deleted from DB but still exists for the player
-+                        // TC_LOG_ERROR("custom.transmog", "Item entry (Entry: %u, itemGUID: %u, playerGUID: %u) does not exist, ignoring.", fakeEntry, GUID_LOPART(itemGUID), player->GetGUIDLow());
++                        // TC_LOG_ERROR("custom.transmog", "Item entry (Entry: %u, itemGUID: %u, playerGUID: %u) does not exist, ignoring.", fakeEntry, itemGUID.GetCounter(), player->GetGUIDLow());
 +                        // CharacterDatabase.PExecute("DELETE FROM custom_transmogrification WHERE FakeEntry = %u", fakeEntry);
 +                    }
 +                } while (result->NextRow());
@@ -1438,7 +1301,7 @@ index 0000000..ce95786
 +}
 diff --git a/src/server/scripts/Custom/Transmogrification.h b/src/server/scripts/Custom/Transmogrification.h
 new file mode 100644
-index 0000000..23f17be
+index 0000000..1d22726
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrification.h
 @@ -0,0 +1,140 @@
@@ -1496,7 +1359,7 @@ index 0000000..23f17be
 +    //    presetslotMap slotMap;
 +    //};
 +    //typedef std::map<uint8, presetData> presetIdMap; // remember to lock
-+    // typedef KVRWHashMap<uint64, presetIdMap> presetPlayers;
++    // typedef KVRWHashMap<ObjectGuid, presetIdMap> presetPlayers;
 +    // presetPlayers presetMap; // presetByName[pGUID][presetID] = presetData
 +
 +    bool EnableSetInfo;
@@ -1512,9 +1375,9 @@ index 0000000..23f17be
 +    void PresetTransmog(Player* player, Item* itemTransmogrified, uint32 fakeEntry, uint8 slot);
 +#endif
 +
-+    //typedef std::unordered_map<uint64, uint32> transmogData; // remember to lock
-+    //typedef KVRWHashMap<uint64, transmogData> transmogMap;
-+    //// typedef KVRWHashMap<uint64, uint64> transmogPlayers;
++    //typedef std::unordered_map<ObjectGuid, uint32> transmogData; // remember to lock
++    //typedef KVRWHashMap<ObjectGuid, transmogData> transmogMap;
++    //// typedef KVRWHashMap<ObjectGuid, ObjectGuid> transmogPlayers;
 +    //transmogMap entryMap; // entryMap[pGUID][iGUID] = entry
 +    //// transmogPlayers playerMap; // dataMap[iGUID] = pGUID
 +
@@ -1571,20 +1434,20 @@ index 0000000..23f17be
 +    void DeleteFakeEntry(Player* player, Item* item);
 +    void SetFakeEntry(Player* player, Item* item, uint32 entry);
 +
-+    TransmogTrinityStrings Transmogrify(Player* player, uint64 itemGUID, uint8 slot, bool no_cost = false);
++    TransmogTrinityStrings Transmogrify(Player* player, ObjectGuid itemGUID, uint8 slot, bool no_cost = false);
 +    bool CanTransmogrifyItemWithItem(Player* player, ItemTemplate const* destination, ItemTemplate const* source) const;
 +    bool SuitableForTransmogrification(Player* player, ItemTemplate const* proto) const;
 +    // bool CanBeTransmogrified(Item const* item);
 +    // bool CanTransmogrify(Item const* item);
 +    uint32 GetSpecialPrice(ItemTemplate const* proto) const;
-+    std::vector<uint64> GetItemList(const Player* player) const;
++    std::vector<ObjectGuid> GetItemList(const Player* player) const;
 +};
 +#define sTransmogrification Transmogrification::instance()
 +
 +#endif
 diff --git a/src/server/scripts/Custom/Transmogrifier.cpp b/src/server/scripts/Custom/Transmogrifier.cpp
 new file mode 100644
-index 0000000..a608f4e
+index 0000000..940eee8
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrifier.cpp
 @@ -0,0 +1,399 @@
@@ -1827,7 +1690,7 @@ index 0000000..a608f4e
 +                    return true;
 +                }
 +                // sender = slot, action = display
-+                TransmogTrinityStrings res = sTransmogrification->Transmogrify(player, MAKE_NEW_GUID(action, 0, HIGHGUID_ITEM), sender);
++               TransmogTrinityStrings res = sTransmogrification->Transmogrify(player, ObjectGuid(HIGHGUID_ITEM, sObjectMgr->GenerateLowGuid(HIGHGUID_ITEM)), sender);
 +                if (res == LANG_ERR_TRANSMOG_OK)
 +                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_TRANSMOG_OK));
 +                else
@@ -1860,63 +1723,63 @@ index 0000000..a608f4e
 +                return true;
 +            }
 +
-+            int32 cost = 0;
-+            PresetslotMapType items;
-+            for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
-+            {
-+                if (!sTransmogrification->GetSlotName(slot, player->GetSession()))
-+                    continue;
-+                if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++                int32 cost = 0;
++                PresetslotMapType items;
++                for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
 +                {
-+                    uint32 entry = sTransmogrification->GetFakeEntry(newItem);
-+                    if (!entry)
++                    if (!sTransmogrification->GetSlotName(slot, player->GetSession()))
 +                        continue;
-+                    const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
-+                    if (!temp)
-+                        continue;
-+                    if (!sTransmogrification->SuitableForTransmogrification(player, temp))
-+                        continue;
-+                    cost += sTransmogrification->GetSpecialPrice(temp);
-+                    items[slot] = entry;
-+                }
-+            }
-+
-+            if (!items.empty())
-+            {
-+                // transmogrified items were found to be saved
-+                cost *= sTransmogrification->SetCostModifier;
-+                cost += sTransmogrification->SetCopperCost;
-+
-+                if (!player->HasEnoughMoney(cost))
-+                {
-+                    player->GetSession()->SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
-+                }
-+                else
-+                {
-+                    uint8 presetID = sTransmogrification->MaxSets;
-+                    if (player->presetMap.size() < sTransmogrification->MaxSets)
++                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
 +                    {
-+                        for (uint8 i = 0; i < sTransmogrification->MaxSets; ++i) // should never reach over max
++                        uint32 entry = sTransmogrification->GetFakeEntry(newItem);
++                        if (!entry)
++                            continue;
++                        const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
++                        if (!temp)
++                            continue;
++                        if (!sTransmogrification->SuitableForTransmogrification(player, temp))
++                            continue;
++                        cost += sTransmogrification->GetSpecialPrice(temp);
++                        items[slot] = entry;
++                    }
++                }
++
++                if (!items.empty())
++                {
++                    // transmogrified items were found to be saved
++                    cost *= sTransmogrification->SetCostModifier;
++                    cost += sTransmogrification->SetCopperCost;
++
++                    if (!player->HasEnoughMoney(cost))
++                    {
++                        player->GetSession()->SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
++                    }
++                    else
++                    {
++                        uint8 presetID = sTransmogrification->MaxSets;
++                        if (player->presetMap.size() < sTransmogrification->MaxSets)
 +                        {
-+                            if (player->presetMap.find(i) == player->presetMap.end())
++                        for (uint8 i = 0; i < sTransmogrification->MaxSets; ++i) // should never reach over max
 +                            {
-+                                presetID = i;
-+                                break;
++                                if (player->presetMap.find(i) == player->presetMap.end())
++                                {
++                                    presetID = i;
++                                    break;
++                                }
 +                            }
 +                        }
-+                    }
 +
-+                    if (presetID < sTransmogrification->MaxSets)
-+                    {
-+                        // Make sure code doesnt mess up SQL!
-+                        player->presetMap[presetID].name = name;
-+                        player->presetMap[presetID].slotMap = items;
++                        if (presetID < sTransmogrification->MaxSets)
++                        {
++                            // Make sure code doesnt mess up SQL!
++                            player->presetMap[presetID].name = name;
++                            player->presetMap[presetID].slotMap = items;
 +
-+                        if (cost)
-+                            player->ModifyMoney(-cost);
++                            if (cost)
++                                player->ModifyMoney(-cost);
++                        }
 +                    }
 +                }
-+            }
 +
 +            OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
 +            return true;
@@ -1988,7 +1851,7 @@ index 0000000..a608f4e
 +    new CS_Transmogrification();
 +}
 diff --git a/src/server/scripts/Spells/spell_generic.cpp b/src/server/scripts/Spells/spell_generic.cpp
-index e198a6a..40d88be 100644
+index e5ef3d5..4707ddd 100644
 --- a/src/server/scripts/Spells/spell_generic.cpp
 +++ b/src/server/scripts/Spells/spell_generic.cpp
 @@ -37,6 +37,7 @@
@@ -2259,5 +2122,5 @@ index 9097e0b..d1b7842 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-2.1.0.rc1
+2.1.0
 
