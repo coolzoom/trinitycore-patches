@@ -1,15 +1,14 @@
-From 47fe8834716ecaeb617a469984a5bd54b04e2155 Mon Sep 17 00:00:00 2001
+From 9f8f7ce11e49f044f8ba328cb83196da0d7606cb Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 23 Sep 2014 08:10:19 -0400
+Date: Wed, 24 Sep 2014 07:43:48 -0400
 Subject: [PATCH] Lottery_NPC
 
 ---
  sql/TrinityCore-Patches/Lotto/world.lottery.sql |  44 +++
  src/server/game/Miscellaneous/Language.h        |   6 +-
  src/server/game/Scripting/ScriptLoader.cpp      |   6 +-
- src/server/scripts/Custom/CMakeLists.txt        |   1 +
  src/server/scripts/Custom/npc_lottery.cpp       | 362 ++++++++++++++++++++++++
- 5 files changed, 414 insertions(+), 5 deletions(-)
+ 4 files changed, 413 insertions(+), 5 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Lotto/world.lottery.sql
  create mode 100644 src/server/scripts/Custom/npc_lottery.cpp
 
@@ -56,12 +55,12 @@ index 0000000..0e89d15
 +) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 +
 +
-+REPLACE INTO `game_event` (`eventEntry`, `start_time`, `end_time`, `occurence`, `length`, `holiday`, `description`, `world_event`, `announce`) VALUES 
++REPLACE INTO `game_event` (`eventEntry`, `start_time`, `end_time`, `occurence`, `length`, `holiday`, `description`, `world_event`, `announce`) VALUES
 +(132, '2013-08-21 20:00:00', '2020-12-31 06:00:00', 1440, 1, 0, 'Lottery', 0, 2);
 +
 +
 +DELETE FROM `creature_template` WHERE (`entry`=900010);
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES 
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('900010', '0', '0', '0', '0', '0', '7993', '0', '0', '0', 'Lotty', '- by GoN -', NULL, '0', '80', '80', '0', '35', '1', '1', '1.14286', '0.75', '0', '0', '1400', '1900', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '', '1', '3', '1', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', 'npc_lottery', '12340');
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 327a7a7..a473447 100644
@@ -104,18 +103,6 @@ index 8d5350b..99380f6 100644
  // end30
  // end31
  // end32
-diff --git a/src/server/scripts/Custom/CMakeLists.txt b/src/server/scripts/Custom/CMakeLists.txt
-index 20c2bc9..e9452e6 100644
---- a/src/server/scripts/Custom/CMakeLists.txt
-+++ b/src/server/scripts/Custom/CMakeLists.txt
-@@ -12,6 +12,7 @@ file(GLOB_RECURSE sources_Custom Custom/*.cpp Custom/*.h)
- 
- set(scripts_STAT_SRCS
-   ${scripts_STAT_SRCS}
-+  Custom/npc_lottery.cpp
-   ${sources_Custom}
- )
- 
 diff --git a/src/server/scripts/Custom/npc_lottery.cpp b/src/server/scripts/Custom/npc_lottery.cpp
 new file mode 100644
 index 0000000..486758f
@@ -128,7 +115,7 @@ index 0000000..486758f
 + * Written by Teiby <http://www.teiby.de/>
 + *
 + */
-+ 
++
 +
 +#include "ScriptPCH.h"
 +#include "Config.h"
@@ -304,7 +291,7 @@ index 0000000..486758f
 +						me->SetVisible(false);
 +                        return;
 +					}
-+					
++
 +                    uint32 betMaxID = qMaxID->Fetch()->GetUInt32();
 +                    uint32 luckyNumber[LOTTERY_FIELDS];
 +					std::stringstream sLuckyNumber;
@@ -348,7 +335,7 @@ index 0000000..486758f
 +                            Field *fBets = qBets->Fetch();
 +                            uint32 guid = fBets[0].GetUInt32();
 +                            std::string bet = fBets[1].GetString();
-+                            std::string rBet = bet; 
++                            std::string rBet = bet;
 +                            std::string name = fBets[2].GetString();
 +                            uint32 points = 0;
 +
@@ -388,7 +375,7 @@ index 0000000..486758f
 +								lJackpotWinners.push_back(winner);
 +							else
 +								lWinners.push_back(winner);
-+							
++
 +							winnerCount[points-1]++;
 +
 +						} while (qBets->NextRow());
@@ -397,19 +384,19 @@ index 0000000..486758f
 +						for(tdJW::const_iterator itr = lWinners.begin(); itr != lWinners.end(); itr++)
 +						{
 +							uint32 cash = stakes / pow(2, LOTTERY_FIELDS - itr->points) / winnerCount[itr->points-1];
-+							
++
 +							std::stringstream text;
 +							text << "Gratulation du hast die Richtigen Zahlen getipt!\n\n";
 +							text << "Dein Los: " << itr->bets.c_str() << "\n";
 +							text << "Lotto Resultat: " << sLuckyNumber.str().c_str() << "\n\n";
 +							text << "Hits: " << itr->points << "\n";
 +							text << "Sum of bets with " << itr->points << " hits: " << winnerCount[itr->points-1];
-+							
++
 +							Player *pWinner = sObjectMgr->GetPlayerByLowGUID(itr->guid);
 +							MailDraft("Won", text.str())
 +                                .AddMoney(cash)
 +								.SendMailTo(ctrans, MailReceiver(pWinner, itr->guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM));
-+                            
++
 +							wtrans->PAppend("INSERT INTO lottery_winners (id, name, guid, bet, betPoints) VALUES ('%u', '%s', '%u', '%s', '%u')", lotteryID+1, itr->name.c_str(), itr->guid, itr->bets.c_str(), itr->points);
 +						}
 +
@@ -451,7 +438,7 @@ index 0000000..486758f
 +								sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT, betMaxID, sLuckyNumber.str().c_str(), lJackpotWinners.begin()->name.c_str(), uint32(jackpot * 0.0001f));
 +                            else
 +                                sWorld->SendWorldText(LANG_LOTTERY_ANNOUNCE_JACKPOT_M_PLAYERS, betMaxID, sLuckyNumber.str().c_str(), winnerCount[LOTTERY_FIELDS-1], uint32(jackpot * 0.0001f));
-+                        
++
 +							jackpot = 0;
 +						}
 +                        else
@@ -484,6 +471,6 @@ index 0000000..486758f
 +{
 +    new npc_lottery;
 +}
--- 
+--
 2.1.0
 
