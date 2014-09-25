@@ -1,13 +1,11 @@
-From f4c3fb769b3f3c3c9798b5fa2acf5bd0f2f0c07c Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 23 Sep 2014 09:00:48 -0400
+From 6cecbd73f3d15f3d2f20371231d117e66cce1459 Mon Sep 17 00:00:00 2001
+From: DarkBrain2580 <streetracer1@hotmail.de>
+Date: Thu, 25 Sep 2014 18:48:24 +0200
 Subject: [PATCH] Transmogrification
 
 ---
- CHANGELOG_Transmogrification.md                    | 122 +++
- README_Transmogrification.md                       |  50 ++
  .../characters.transmogrification.sql              |  23 +
- .../world.transmogrification.sql                   |  25 +
+ .../world.transmogrification.sql                   |  26 +
  src/server/game/DataStores/DBCStores.cpp           |   4 +-
  src/server/game/DataStores/DBCStores.h             |   2 +-
  src/server/game/DataStores/DBCStructure.h          |   2 +-
@@ -17,204 +15,17 @@ Subject: [PATCH] Transmogrification
  src/server/game/Handlers/SpellHandler.cpp          |   8 +-
  src/server/game/Scripting/ScriptLoader.cpp         |   8 +-
  src/server/scripts/Custom/Transmogrification.cpp   | 838 +++++++++++++++++++++
- src/server/scripts/Custom/Transmogrification.h     | 140 ++++
+ src/server/scripts/Custom/Transmogrification.h     | 125 +++
  src/server/scripts/Custom/Transmogrifier.cpp       | 399 ++++++++++
  src/server/scripts/Spells/spell_generic.cpp        |  22 +-
  src/server/worldserver/worldserver.conf.dist       | 206 +++++
- 17 files changed, 1863 insertions(+), 12 deletions(-)
- create mode 100644 CHANGELOG_Transmogrification.md
- create mode 100644 README_Transmogrification.md
+ 15 files changed, 1677 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
  create mode 100644 src/server/scripts/Custom/Transmogrification.cpp
  create mode 100644 src/server/scripts/Custom/Transmogrification.h
  create mode 100644 src/server/scripts/Custom/Transmogrifier.cpp
 
-diff --git a/CHANGELOG_Transmogrification.md b/CHANGELOG_Transmogrification.md
-new file mode 100644
-index 0000000..d5c97ec
---- /dev/null
-+++ b/CHANGELOG_Transmogrification.md
-@@ -0,0 +1,122 @@
-+####6.0
-+- Removed mutex locks - Different code style, works with ACE and boost, probably more efficient
-+- Added regex checking for preset name
-+- Fixed random properties not registering as item stats (Thanks Aokromes)
-+- Made the code / patch compatible with herbs+veins patch (Thanks Aokromes)
-+- Moved to bithub - Allows autogenerate patch and diff and management is easier:
-+- https://github.com/Rochet2/TrinityCore/tree/transmog
-+- Gist was at: https://gist.github.com/Rochet2/2c8765b53f8dda1e296a
-+
-+####5.6
-+- Fixed few linux compile warnings
-+- Moved to GIST
-+- Old versions etc still available from:
-+https://drive.google.com/folderview?id=0Bx5knS2IsjatTlVtWHRwbUN3VlE&usp=sharing
-+
-+####5.5
-+- Updated to latest TC  rev
-+- Fixed some tabs to spaces
-+- Fixed a warning on gcc
-+
-+####5.4
-+- Updated to latest TC rev
-+
-+####5.3
-+- Rewrote transmogrification logic to be blizzlike.
-+- Implemented multithread support.
-+- Tweaked saving to work so that your data is saved whenever the player is saved.
-+- This means that crashes can not be abused and DB wont have SQL executing and querying all the time.
-+
-+####5.2
-+- Some logic fixes and other
-+
-+####5.1
-+- Config options should now work properly. Please notify here if some still bug
-+- Can transmog bows with guns and crossbows
-+- Can transmog cloth to leather with config settings set
-+- Can transmog robes with chest pieces
-+- You should now be able to view the info menus with the new NPC
-+- Allow shirt's to be transmogrified (were shown in menu but you weren't able to before)
-+- Mirror image (mage spell) should now correctly copy the transmogrified outfit. Before it still got your old item displays.
-+- Added new config options:
-+
-+####5.0
-+- Ripped cata branch functions and thus altered how everything is coded pretty much.
-+- Dropped translation support
-+- Added colored item links as well as icons all over the place
-+- Added new feature: Sets
-+- Added many config options, for example to allow cloth and plate to be transmogrified with each other
-+
-+####4.0
-+- I changed all the methods to normal functions and moved them to Transmogrification.cpp
-+- I also updated the way transmogrifications are stored
-+
-+####3.9
-+- Nothing was added
-+- Now supporting latest TDB: 0d3554d4bf
-+- Also tested and works on latest
-+- Changed diff to patch for better compability
-+
-+####3.8
-+- Nothing was added
-+- Now supporting latest TDB: da9865b683
-+
-+####3.7
-+- Quick update to the patch for latest trinitycore version
-+
-+####3.6
-+- Updated the code to work with the new trinitycore changes
-+- Added config (See the bottom of worldserver.conf)
-+- Added token cost possibility -- in config
-+- Added cost modification possibility -- in config
-+- Added quality requirement modification possibility -- in config
-+
-+####3.5
-+- Fixed a crash on item deletion from guild deleting and more
-+
-+####3.4
-+- Added localization possibilities, even though I am not quite sure if it works and if it is good or good enough. Only tested that english works
-+- Added possibility to disable gold cost before compiling
-+- Cleaned all the code I could find to TrinityCore standards .. I think
-+
-+####3.3
-+- Transformed the script into a full coremod instead of having some code in the gossip script. This allows the transmogrification methods to be used on any item anywhere.
-+- Changed the way fake display entries are stored in the core. Instead of having a new variable for the item class, I am now having a contained, much like locales have.
-+- Changed the files into one patch file like Aokromes suggested. You can find the DB table creation SQLs from sql/characters_transmogrification/
-+- Removed prepared statements
-+- Fake display entries are now loaded when the server starts up. All nonexistant item guids will be deleted before loading and when loading, all invalid item entries are deleted (deleted some custom items aye?
-+
-+####3.2
-+- Fixed an issue with DB saving not taking action on login or server restart.
-+
-+####3.1
-+- Corrected the quality check, which was left to return true in any case
-+- Fixed invisible item entries from newly created items (.additem for example)
-+
-+####3.0
-+- It will have mailing and auction etc restrictions properly coded (yay, no more Fake owner!)
-+- Having its own prepared statement now
-+- Moved loading transmogs to the item loading part.
-+- The script should now be added to scriptloader by the patch. So you just need to add it to solution.
-+- Included an NPC sql for everyone with NPC problems :3
-+
-+####2.2
-+- Added a few sounds, altered to use switch instead of an IF block
-+- Modified to have a separate table
-+- And more?
-+
-+####2.1
-+- Fixed a crash when getting item template of item entry 0
-+
-+####2.0
-+- Possibly more ..
-+- Implemented cost
-+- Changed quality checks
-+- Fixed few problems
-+- Changed some messages for more blizzlike feeling
-+- After trying to transmogrify or remove a transmogrification, you get to the item selection screen instead of main menu
-+- Added Remove Transmogrification buttons and update main menu button (removed nevermind)
-+- Added more checks for safety and blizzlike feeling
-+
-+####1.0
-+- Added DB saving and remove transmogrifications option -> patch, sql and script needed
-\ No newline at end of file
-diff --git a/README_Transmogrification.md b/README_Transmogrification.md
-new file mode 100644
-index 0000000..663f2fc
---- /dev/null
-+++ b/README_Transmogrification.md
-@@ -0,0 +1,50 @@
-+#Transmogrification [![Build Status](https://travis-ci.org/Rochet2/TrinityCore.svg?branch=transmog)](https://travis-ci.org/Rochet2/TrinityCore)
-+
-+####About
-+Transmogrification allows you to change the display of an item to something else.
-+You can use any item in your bags as source of display, as long as it fits the requirements.
-+Requirements can be tweaked in the server configuration file.
-+Basically any item should work with transmogrification. Custom items as well. No item is hardcoded to the system.
-+Has a feature to store sets of displays. This can be removed before compiling or in the configuration file.
-+Made for 3.3.5a.<br />
-+Source: http://rochet2.github.io/?page=Transmogrification
-+
-+Video: http://youtu.be/xtH4ogz12iM
-+
-+####Installation
-+
-+Available as:
-+- Direct merge: https://github.com/Rochet2/TrinityCore/tree/transmog
-+- Diff: https://github.com/Rochet2/TrinityCore/compare/transmog.diff
-+- Patch: https://github.com/Rochet2/TrinityCore/compare/transmog.patch
-+
-+Using direct merge:
-+- open git bash to source location
-+- do `git remote add rochet2 https://github.com/Rochet2/TrinityCore.git`
-+- do `git pull rochet2 transmog`
-+- use cmake and compile
-+
-+Using diff:
-+- download the diff by __right clicking__ the link and select __save as__
-+- place the downloaded `transmog.diff` to the source root folder
-+- open git bash to source location
-+- do `git apply transmog.diff`
-+- use cmake and compile
-+
-+After compiling:
-+- Navigate to `\src\server\scripts\Custom\Transmog\sql\`
-+- Run `characters.sql` to your characters database
-+- Run `world_texts.sql` to your world database
-+ - optionally you can also insert a transmogrifier NPC to your database by running `world_NPC.sql` to your world database.
-+- Change the settings to your liking in `worldserver.conf` (Note that you should copy over the new config created)
-+
-+####Usage
-+Equip an item that is suitable for transmogrification.
-+Have an item in your bags that is suitable to be used to transmogrify the equipped item
-+Talk to Transmogrifier and select the item slot. Then select the item you want to transmogrify to.
-+Click to proceed when prompted and your items are transmogrified.
-+
-+####Changelog: [Changelog](https://github.com/Rochet2/TrinityCore/blob/transmog/src/server/scripts/Custom/Transmog/CHANGELOG.md)
-+
-+####Bugs and Contact
-+Report issues and similar to http://rochet2.github.io/
 diff --git a/sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql b/sql/TrinityCore-Patches/Transmogrification/characters.transmogrification.sql
 new file mode 100644
 index 0000000..815c4d3
@@ -246,10 +57,10 @@ index 0000000..815c4d3
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 diff --git a/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql b/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
 new file mode 100644
-index 0000000..8a66061
+index 0000000..d25695c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Transmogrification/world.transmogrification.sql
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,26 @@
 +SET @TEXT_ID := 50000;
 +REPLACE INTO `npc_text` (`ID`, `text0_0`) VALUES
 +(@TEXT_ID, 'Transmogrification allows you to change how your items look like without changing the stats of the items.\r\nItems used in transmogrification are no longer refundable, tradeable and are bound to you.\r\nUpdating a menu updates the view and prices.\r\n\r\nNot everything can be transmogrified with eachother.\r\nRestrictions include but are not limited to:\r\nOnly armor and weapons can be transmogrified\r\nGuns, bows and crossbows can be transmogrified with eachother\r\nFishing poles can not be transmogrified\r\nYou must be able to equip both items used in the process.\r\n\r\nTransmogrifications stay on your items as long as you own them.\r\nIf you try to put the item in guild bank or mail it to someone else, the transmogrification is stripped.\r\n\r\nYou can also remove transmogrifications for free at the transmogrifier.'),
@@ -275,8 +86,9 @@ index 0000000..8a66061
 +DELETE FROM `creature_template` WHERE `entry` = @Entry;
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
 +(@Entry,'0','0','0','0','0','19646','0','0','0',@Name,'Transmogrifier',NULL,'0','80','80','2','35','1','1','1.14286','1','0','0','2000','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','Creature_Transmogrify','0');
++
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index e960422..84151cb 100644
+index e960422..ee9a134 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -116,7 +116,7 @@ DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
@@ -288,15 +100,15 @@ index e960422..84151cb 100644
  DBCStorage <ItemExtendedCostEntry> sItemExtendedCostStore(ItemExtendedCostEntryfmt);
  DBCStorage <ItemLimitCategoryEntry> sItemLimitCategoryStore(ItemLimitCategoryEntryfmt);
  DBCStorage <ItemRandomPropertiesEntry> sItemRandomPropertiesStore(ItemRandomPropertiesfmt);
-@@ -369,7 +369,7 @@ void LoadDBCStores(const std::string& dataPath)
- 
-     LoadDBC(availableDbcLocales, bad_dbc_files, sItemStore,                   dbcPath, "Item.dbc");
-     LoadDBC(availableDbcLocales, bad_dbc_files, sItemBagFamilyStore,          dbcPath, "ItemBagFamily.dbc");
--    //LoadDBC(dbcCount, availableDbcLocales, bad_dbc_files, sItemDisplayInfoStore,        dbcPath, "ItemDisplayInfo.dbc");     -- not used currently
+@@ -361,7 +361,7 @@ void LoadDBCStores(const std::string& dataPath)
+     LoadDBC(availableDbcLocales, bad_dbc_files, sGtNPCManaCostScalerStore,    dbcPath, "gtNPCManaCostScaler.dbc");
+     LoadDBC(availableDbcLocales, bad_dbc_files, sGtOCTClassCombatRatingScalarStore,    dbcPath, "gtOCTClassCombatRatingScalar.dbc");
+     LoadDBC(availableDbcLocales, bad_dbc_files, sGtOCTRegenHPStore,           dbcPath, "gtOCTRegenHP.dbc");
+-    //LoadDBC(dbcCount, availableDbcLocales, bad_dbc_files, sGtOCTRegenMPStore,           dbcPath, "gtOCTRegenMP.dbc");       -- not used currently
 +    LoadDBC(availableDbcLocales, bad_dbc_files, sItemDisplayInfoStore,        dbcPath, "ItemDisplayInfo.dbc");
-     //LoadDBC(dbcCount, availableDbcLocales, bad_dbc_files, sItemCondExtCostsStore,       dbcPath, "ItemCondExtCosts.dbc");
-     LoadDBC(availableDbcLocales, bad_dbc_files, sItemExtendedCostStore,       dbcPath, "ItemExtendedCost.dbc");
-     LoadDBC(availableDbcLocales, bad_dbc_files, sItemLimitCategoryStore,      dbcPath, "ItemLimitCategory.dbc");
+     LoadDBC(availableDbcLocales, bad_dbc_files, sGtRegenHPPerSptStore,        dbcPath, "gtRegenHPPerSpt.dbc");
+     LoadDBC(availableDbcLocales, bad_dbc_files, sGtRegenMPPerSptStore,        dbcPath, "gtRegenMPPerSpt.dbc");
+ 
 diff --git a/src/server/game/DataStores/DBCStores.h b/src/server/game/DataStores/DBCStores.h
 index 8b89a86..ec9817e 100644
 --- a/src/server/game/DataStores/DBCStores.h
@@ -337,10 +149,10 @@ index b664798..a3f9706 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f8f569d..006f22c 100644
+index b14a58c..0c2c464 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -80,6 +80,7 @@
+@@ -81,6 +81,7 @@
  #include "WorldSession.h"
  #include "GameObjectAI.h"
  #include "Config.h"
@@ -348,7 +160,7 @@ index f8f569d..006f22c 100644
  
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -12524,7 +12525,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12525,7 +12526,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -430,10 +242,10 @@ index d07e13e..559765f 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 8d5350b..5ffa0ae 100644
+index 0499c57..ce58b65 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1471,7 +1471,9 @@ void AddBattlegroundScripts()
+@@ -1476,7 +1476,9 @@ void AddBattlegroundScripts()
  // start54
  // start55
  // start56
@@ -444,7 +256,7 @@ index 8d5350b..5ffa0ae 100644
  // start58
  // start59
  // start60
-@@ -1557,7 +1559,9 @@ void AddCustomScripts()
+@@ -1603,7 +1605,9 @@ void AddCustomScripts()
  // end54
  // end55
  // end56
@@ -457,7 +269,7 @@ index 8d5350b..5ffa0ae 100644
  // end60
 diff --git a/src/server/scripts/Custom/Transmogrification.cpp b/src/server/scripts/Custom/Transmogrification.cpp
 new file mode 100644
-index 0000000..caf0245
+index 0000000..e166534
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrification.cpp
 @@ -0,0 +1,838 @@
@@ -546,21 +358,21 @@ index 0000000..caf0245
 +
 +    switch (slot)
 +    {
-+    case EQUIPMENT_SLOT_HEAD: return  "Head";// session->GetTrinityString(LANG_SLOT_NAME_HEAD);
-+    case EQUIPMENT_SLOT_SHOULDERS: return  "Shoulders";// session->GetTrinityString(LANG_SLOT_NAME_SHOULDERS);
-+    case EQUIPMENT_SLOT_BODY: return  "Shirt";// session->GetTrinityString(LANG_SLOT_NAME_BODY);
-+    case EQUIPMENT_SLOT_CHEST: return  "Chest";// session->GetTrinityString(LANG_SLOT_NAME_CHEST);
-+    case EQUIPMENT_SLOT_WAIST: return  "Waist";// session->GetTrinityString(LANG_SLOT_NAME_WAIST);
-+    case EQUIPMENT_SLOT_LEGS: return  "Legs";// session->GetTrinityString(LANG_SLOT_NAME_LEGS);
-+    case EQUIPMENT_SLOT_FEET: return  "Feet";// session->GetTrinityString(LANG_SLOT_NAME_FEET);
-+    case EQUIPMENT_SLOT_WRISTS: return  "Wrists";// session->GetTrinityString(LANG_SLOT_NAME_WRISTS);
-+    case EQUIPMENT_SLOT_HANDS: return  "Hands";// session->GetTrinityString(LANG_SLOT_NAME_HANDS);
-+    case EQUIPMENT_SLOT_BACK: return  "Back";// session->GetTrinityString(LANG_SLOT_NAME_BACK);
-+    case EQUIPMENT_SLOT_MAINHAND: return  "Main hand";// session->GetTrinityString(LANG_SLOT_NAME_MAINHAND);
-+    case EQUIPMENT_SLOT_OFFHAND: return  "Off hand";// session->GetTrinityString(LANG_SLOT_NAME_OFFHAND);
-+    case EQUIPMENT_SLOT_RANGED: return  "Ranged";// session->GetTrinityString(LANG_SLOT_NAME_RANGED);
-+    case EQUIPMENT_SLOT_TABARD: return  "Tabard";// session->GetTrinityString(LANG_SLOT_NAME_TABARD);
-+    default: return NULL;
++        case EQUIPMENT_SLOT_HEAD: return  "Head";// session->GetTrinityString(LANG_SLOT_NAME_HEAD);
++        case EQUIPMENT_SLOT_SHOULDERS: return  "Shoulders";// session->GetTrinityString(LANG_SLOT_NAME_SHOULDERS);
++        case EQUIPMENT_SLOT_BODY: return  "Shirt";// session->GetTrinityString(LANG_SLOT_NAME_BODY);
++        case EQUIPMENT_SLOT_CHEST: return  "Chest";// session->GetTrinityString(LANG_SLOT_NAME_CHEST);
++        case EQUIPMENT_SLOT_WAIST: return  "Waist";// session->GetTrinityString(LANG_SLOT_NAME_WAIST);
++        case EQUIPMENT_SLOT_LEGS: return  "Legs";// session->GetTrinityString(LANG_SLOT_NAME_LEGS);
++        case EQUIPMENT_SLOT_FEET: return  "Feet";// session->GetTrinityString(LANG_SLOT_NAME_FEET);
++        case EQUIPMENT_SLOT_WRISTS: return  "Wrists";// session->GetTrinityString(LANG_SLOT_NAME_WRISTS);
++        case EQUIPMENT_SLOT_HANDS: return  "Hands";// session->GetTrinityString(LANG_SLOT_NAME_HANDS);
++        case EQUIPMENT_SLOT_BACK: return  "Back";// session->GetTrinityString(LANG_SLOT_NAME_BACK);
++        case EQUIPMENT_SLOT_MAINHAND: return  "Main hand";// session->GetTrinityString(LANG_SLOT_NAME_MAINHAND);
++        case EQUIPMENT_SLOT_OFFHAND: return  "Off hand";// session->GetTrinityString(LANG_SLOT_NAME_OFFHAND);
++        case EQUIPMENT_SLOT_RANGED: return  "Ranged";// session->GetTrinityString(LANG_SLOT_NAME_RANGED);
++        case EQUIPMENT_SLOT_TABARD: return  "Tabard";// session->GetTrinityString(LANG_SLOT_NAME_TABARD);
++        default: return NULL;
 +    }
 +}
 +
@@ -592,21 +404,21 @@ index 0000000..caf0245
 +    ss << "|TInterface/PaperDoll/";
 +    switch (slot)
 +    {
-+    case EQUIPMENT_SLOT_HEAD: ss << "UI-PaperDoll-Slot-Head"; break;
-+    case EQUIPMENT_SLOT_SHOULDERS: ss << "UI-PaperDoll-Slot-Shoulder"; break;
-+    case EQUIPMENT_SLOT_BODY: ss << "UI-PaperDoll-Slot-Shirt"; break;
-+    case EQUIPMENT_SLOT_CHEST: ss << "UI-PaperDoll-Slot-Chest"; break;
-+    case EQUIPMENT_SLOT_WAIST: ss << "UI-PaperDoll-Slot-Waist"; break;
-+    case EQUIPMENT_SLOT_LEGS: ss << "UI-PaperDoll-Slot-Legs"; break;
-+    case EQUIPMENT_SLOT_FEET: ss << "UI-PaperDoll-Slot-Feet"; break;
-+    case EQUIPMENT_SLOT_WRISTS: ss << "UI-PaperDoll-Slot-Wrists"; break;
-+    case EQUIPMENT_SLOT_HANDS: ss << "UI-PaperDoll-Slot-Hands"; break;
-+    case EQUIPMENT_SLOT_BACK: ss << "UI-PaperDoll-Slot-Chest"; break;
-+    case EQUIPMENT_SLOT_MAINHAND: ss << "UI-PaperDoll-Slot-MainHand"; break;
-+    case EQUIPMENT_SLOT_OFFHAND: ss << "UI-PaperDoll-Slot-SecondaryHand"; break;
-+    case EQUIPMENT_SLOT_RANGED: ss << "UI-PaperDoll-Slot-Ranged"; break;
-+    case EQUIPMENT_SLOT_TABARD: ss << "UI-PaperDoll-Slot-Tabard"; break;
-+    default: ss << "UI-Backpack-EmptySlot";
++        case EQUIPMENT_SLOT_HEAD: ss << "UI-PaperDoll-Slot-Head"; break;
++        case EQUIPMENT_SLOT_SHOULDERS: ss << "UI-PaperDoll-Slot-Shoulder"; break;
++        case EQUIPMENT_SLOT_BODY: ss << "UI-PaperDoll-Slot-Shirt"; break;
++        case EQUIPMENT_SLOT_CHEST: ss << "UI-PaperDoll-Slot-Chest"; break;
++        case EQUIPMENT_SLOT_WAIST: ss << "UI-PaperDoll-Slot-Waist"; break;
++        case EQUIPMENT_SLOT_LEGS: ss << "UI-PaperDoll-Slot-Legs"; break;
++        case EQUIPMENT_SLOT_FEET: ss << "UI-PaperDoll-Slot-Feet"; break;
++        case EQUIPMENT_SLOT_WRISTS: ss << "UI-PaperDoll-Slot-Wrists"; break;
++        case EQUIPMENT_SLOT_HANDS: ss << "UI-PaperDoll-Slot-Hands"; break;
++        case EQUIPMENT_SLOT_BACK: ss << "UI-PaperDoll-Slot-Chest"; break;
++        case EQUIPMENT_SLOT_MAINHAND: ss << "UI-PaperDoll-Slot-MainHand"; break;
++        case EQUIPMENT_SLOT_OFFHAND: ss << "UI-PaperDoll-Slot-SecondaryHand"; break;
++        case EQUIPMENT_SLOT_RANGED: ss << "UI-PaperDoll-Slot-Ranged"; break;
++        case EQUIPMENT_SLOT_TABARD: ss << "UI-PaperDoll-Slot-Tabard"; break;
++        default: ss << "UI-Backpack-EmptySlot";
 +    }
 +    ss << ":" << width << ":" << height << ":" << x << ":" << y << "|t";
 +    return ss.str();
@@ -731,18 +543,18 @@ index 0000000..caf0245
 +    // slot of the transmogrified item
 +    if (slot >= EQUIPMENT_SLOT_END)
 +    {
-+        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify an item (lowguid: %u) with a wrong slot (%u) when transmogrifying items.", player->GetGUIDLow(), player->GetName().c_str(), itemGUID.GetCounter(), slot);
++        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - %s (%s) tried to transmogrify an %s with a wrong slot (%u) when transmogrifying items.", player->GetName().c_str(), player->GetGUID().ToString().c_str(), itemGUID.ToString().c_str(), slot);
 +        return LANG_ERR_TRANSMOG_INVALID_SLOT;
 +    }
 +
 +    Item* itemTransmogrifier = NULL;
 +    // guid of the transmogrifier item, if it's not 0
-+    if (itemGUID)
++    if (!itemGUID.IsEmpty())
 +    {
 +        itemTransmogrifier = player->GetItemByGuid(itemGUID);
 +        if (!itemTransmogrifier)
 +        {
-+            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify with an invalid item (lowguid: %u).", player->GetGUIDLow(), player->GetName().c_str(), itemGUID.GetCounter());
++            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - %s (%s) tried to transmogrify with an invalid %s.", player->GetName().c_str(), player->GetGUID().ToString().c_str(), itemGUID.ToString().c_str());
 +            return LANG_ERR_TRANSMOG_MISSING_SRC_ITEM;
 +        }
 +    }
@@ -751,7 +563,7 @@ index 0000000..caf0245
 +    Item* itemTransmogrified = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 +    if (!itemTransmogrified)
 +    {
-+        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) tried to transmogrify an invalid item in a valid slot (slot: %u).", player->GetGUIDLow(), player->GetName().c_str(), slot);
++        TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - %s (%s) tried to transmogrify an invalid item in a valid slot (slot: %u).", player->GetName().c_str(), player->GetGUID().ToString().c_str(), slot);
 +        return LANG_ERR_TRANSMOG_MISSING_DEST_ITEM;
 +    }
 +
@@ -763,7 +575,7 @@ index 0000000..caf0245
 +    {
 +        if (!CanTransmogrifyItemWithItem(player, itemTransmogrified->GetTemplate(), itemTransmogrifier->GetTemplate()))
 +        {
-+            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) failed CanTransmogrifyItemWithItem (%u with %u).", player->GetGUIDLow(), player->GetName().c_str(), itemTransmogrified->GetEntry(), itemTransmogrifier->GetEntry());
++            TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - %s (%s) failed CanTransmogrifyItemWithItem (%u with %u).", player->GetName().c_str(), player->GetGUID().ToString().c_str(), itemTransmogrified->GetEntry(), itemTransmogrifier->GetEntry());
 +            return LANG_ERR_TRANSMOG_INVALID_ITEMS;
 +        }
 +
@@ -785,7 +597,7 @@ index 0000000..caf0245
 +            if (cost) // 0 cost if reverting look
 +            {
 +                if (cost < 0)
-+                    TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - Player (GUID: %u, name: %s) transmogrification invalid cost (non negative, amount %i). Transmogrified %u with %u", player->GetGUIDLow(), player->GetName().c_str(), -cost, itemTransmogrified->GetEntry(), itemTransmogrifier->GetEntry());
++                    TC_LOG_DEBUG("custom.transmog", "Transmogrification::Transmogrify - %s (%s) transmogrification invalid cost (non negative, amount %i). Transmogrified %u with %u", player->GetName().c_str(), player->GetGUID().ToString().c_str(), -cost, itemTransmogrified->GetEntry(), itemTransmogrifier->GetEntry());
 +                else
 +                {
 +                    if (!player->HasEnoughMoney(cost))
@@ -1042,15 +854,15 @@ index 0000000..caf0245
 +
 +    switch (quality)
 +    {
-+    case ITEM_QUALITY_POOR: return AllowPoor;
-+    case ITEM_QUALITY_NORMAL: return AllowCommon;
-+    case ITEM_QUALITY_UNCOMMON: return AllowUncommon;
-+    case ITEM_QUALITY_RARE: return AllowRare;
-+    case ITEM_QUALITY_EPIC: return AllowEpic;
-+    case ITEM_QUALITY_LEGENDARY: return AllowLegendary;
-+    case ITEM_QUALITY_ARTIFACT: return AllowArtifact;
-+    case ITEM_QUALITY_HEIRLOOM: return AllowHeirloom;
-+    default: return false;
++        case ITEM_QUALITY_POOR: return AllowPoor;
++        case ITEM_QUALITY_NORMAL: return AllowCommon;
++        case ITEM_QUALITY_UNCOMMON: return AllowUncommon;
++        case ITEM_QUALITY_RARE: return AllowRare;
++        case ITEM_QUALITY_EPIC: return AllowEpic;
++        case ITEM_QUALITY_LEGENDARY: return AllowLegendary;
++        case ITEM_QUALITY_ARTIFACT: return AllowArtifact;
++        case ITEM_QUALITY_HEIRLOOM: return AllowHeirloom;
++        default: return false;
 +    }
 +}
 +
@@ -1181,7 +993,7 @@ index 0000000..caf0245
 +    class PS_Transmogrification : public PlayerScript
 +    {
 +    public:
-+        PS_Transmogrification(): PlayerScript("PS_Transmogrification") {}
++        PS_Transmogrification() : PlayerScript("PS_Transmogrification") { }
 +
 +        void OnSave(Player* player) override
 +        {
@@ -1232,7 +1044,7 @@ index 0000000..caf0245
 +                do
 +                {
 +                    Field* field = result->Fetch();
-+                    ObjectGuid itemGUID(HIGHGUID_ITEM, (field[0].GetUInt32()));
++                    ObjectGuid itemGUID(HIGHGUID_ITEM, 0, field[0].GetUInt32());
 +                    uint32 fakeEntry = field[1].GetUInt32();
 +                    // Only load items that are in inventory / bank / etc
 +                    if (sObjectMgr->GetItemTemplate(fakeEntry) && player->GetItemByGuid(itemGUID))
@@ -1243,7 +1055,7 @@ index 0000000..caf0245
 +                    {
 +                        // Ignore, will be erased on next save.
 +                        // Additionally this can happen if an item was deleted from DB but still exists for the player
-+                        // TC_LOG_ERROR("custom.transmog", "Item entry (Entry: %u, itemGUID: %u, playerGUID: %u) does not exist, ignoring.", fakeEntry, itemGUID.GetCounter(), player->GetGUIDLow());
++                        // TC_LOG_ERROR("custom.transmog", "Item entry (Entry: %u, itemGUID: %u, playerGUID: %u) does not exist, ignoring.", fakeEntry, GUID_LOPART(itemGUID), player->GetGUIDLow());
 +                        // CharacterDatabase.PExecute("DELETE FROM custom_transmogrification WHERE FakeEntry = %u", fakeEntry);
 +                    }
 +                } while (result->NextRow());
@@ -1272,7 +1084,7 @@ index 0000000..caf0245
 +    class WS_Transmogrification : public WorldScript
 +    {
 +    public:
-+        WS_Transmogrification(): WorldScript("WS_Transmogrification") {}
++        WS_Transmogrification() : WorldScript("WS_Transmogrification") { }
 +
 +        void OnConfigLoad(bool reload) override
 +        {
@@ -1301,10 +1113,10 @@ index 0000000..caf0245
 +}
 diff --git a/src/server/scripts/Custom/Transmogrification.h b/src/server/scripts/Custom/Transmogrification.h
 new file mode 100644
-index 0000000..1d22726
+index 0000000..85e6283
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrification.h
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,125 @@
 +#ifndef DEF_TRANSMOGRIFICATION_H
 +#define DEF_TRANSMOGRIFICATION_H
 +
@@ -1338,8 +1150,8 @@ index 0000000..1d22726
 +class Transmogrification
 +{
 +private:
-+    Transmogrification() {};
-+    ~Transmogrification() {};
++    Transmogrification() { };
++    ~Transmogrification() { };
 +    Transmogrification(const Transmogrification&);
 +    Transmogrification& operator=(const Transmogrification&);
 +
@@ -1352,15 +1164,6 @@ index 0000000..1d22726
 +    }
 +
 +#ifdef PRESETS
-+    //typedef std::map<uint8, uint32> presetslotMap;
-+    //struct presetData
-+    //{
-+    //    std::string name;
-+    //    presetslotMap slotMap;
-+    //};
-+    //typedef std::map<uint8, presetData> presetIdMap; // remember to lock
-+    // typedef KVRWHashMap<ObjectGuid, presetIdMap> presetPlayers;
-+    // presetPlayers presetMap; // presetByName[pGUID][presetID] = presetData
 +
 +    bool EnableSetInfo;
 +    uint32 SetNpcText;
@@ -1374,12 +1177,6 @@ index 0000000..1d22726
 +
 +    void PresetTransmog(Player* player, Item* itemTransmogrified, uint32 fakeEntry, uint8 slot);
 +#endif
-+
-+    //typedef std::unordered_map<ObjectGuid, uint32> transmogData; // remember to lock
-+    //typedef KVRWHashMap<ObjectGuid, transmogData> transmogMap;
-+    //// typedef KVRWHashMap<ObjectGuid, ObjectGuid> transmogPlayers;
-+    //transmogMap entryMap; // entryMap[pGUID][iGUID] = entry
-+    //// transmogPlayers playerMap; // dataMap[iGUID] = pGUID
 +
 +    bool EnableTransmogInfo;
 +    uint32 TransmogNpcText;
@@ -1447,12 +1244,12 @@ index 0000000..1d22726
 +#endif
 diff --git a/src/server/scripts/Custom/Transmogrifier.cpp b/src/server/scripts/Custom/Transmogrifier.cpp
 new file mode 100644
-index 0000000..940eee8
+index 0000000..a97cfab
 --- /dev/null
 +++ b/src/server/scripts/Custom/Transmogrifier.cpp
 @@ -0,0 +1,399 @@
 +/*
-+6.0
++6.1
 +Transmogrification 3.3.5a - Gossip menu
 +By Rochet2
 +
@@ -1479,7 +1276,7 @@ index 0000000..940eee8
 +    class CS_Transmogrification : public CreatureScript
 +    {
 +    public:
-+        CS_Transmogrification(): CreatureScript("Creature_Transmogrify") {}
++        CS_Transmogrification() : CreatureScript("Creature_Transmogrify") { }
 +
 +        bool OnGossipHello(Player* player, Creature* creature) override
 +        {
@@ -1512,191 +1309,191 @@ index 0000000..940eee8
 +            WorldSession* session = player->GetSession();
 +            switch (sender)
 +            {
-+            case EQUIPMENT_SLOT_END: // Show items you can use
-+                ShowTransmogItems(player, creature, action);
-+                break;
-+            case EQUIPMENT_SLOT_END + 1: // Main menu
-+                OnGossipHello(player, creature);
-+                break;
-+            case EQUIPMENT_SLOT_END + 2: // Remove Transmogrifications
-+            {
-+                bool removed = false;
-+                for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
++                case EQUIPMENT_SLOT_END: // Show items you can use
++                    ShowTransmogItems(player, creature, action);
++                    break;
++                case EQUIPMENT_SLOT_END + 1: // Main menu
++                    OnGossipHello(player, creature);
++                    break;
++                case EQUIPMENT_SLOT_END + 2: // Remove Transmogrifications
 +                {
-+                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++                    bool removed = false;
++                    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
 +                    {
-+                        if (!sTransmogrification->GetFakeEntry(newItem))
-+                            continue;
-+                        sTransmogrification->DeleteFakeEntry(player, newItem);
-+                        removed = true;
++                        if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++                        {
++                            if (!sTransmogrification->GetFakeEntry(newItem))
++                                continue;
++                            sTransmogrification->DeleteFakeEntry(player, newItem);
++                            removed = true;
++                        }
 +                    }
-+                }
-+                if (removed)
-+                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
-+                else
-+                    session->SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
-+                OnGossipHello(player, creature);
-+            } break;
-+            case EQUIPMENT_SLOT_END + 3: // Remove Transmogrification from single item
-+            {
-+                if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, action))
-+                {
-+                    if (sTransmogrification->GetFakeEntry(newItem))
-+                    {
-+                        sTransmogrification->DeleteFakeEntry(player, newItem);
++                    if (removed)
 +                        session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
-+                    }
 +                    else
 +                        session->SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
-+                }
-+                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, action);
-+            } break;
-+#ifdef PRESETS
-+            case EQUIPMENT_SLOT_END + 4: // Presets menu
-+            {
-+                if (!sTransmogrification->EnableSets)
-+                {
 +                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+                if (sTransmogrification->EnableSetInfo)
-+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Book_11:30:30:-18:0|tHow sets work", EQUIPMENT_SLOT_END + 10, 0);
-+
-+                if (!player->presetMap.empty())
++                } break;
++                case EQUIPMENT_SLOT_END + 3: // Remove Transmogrification from single item
 +                {
-+                    for (PresetMapType::const_iterator it = player->presetMap.begin(); it != player->presetMap.end(); ++it)
-+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|t" + it->second.name, EQUIPMENT_SLOT_END + 6, it->first);
-+
-+                    if (player->presetMap.size() < sTransmogrification->MaxSets)
-+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", EQUIPMENT_SLOT_END + 8, 0);
-+                }
-+                else
-+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", EQUIPMENT_SLOT_END + 8, 0);
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 1, 0);
-+                player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-+            } break;
-+            case EQUIPMENT_SLOT_END + 5: // Use preset
-+            {
-+                if (!sTransmogrification->EnableSets)
-+                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+                // action = presetID
-+
-+                PresetMapType::const_iterator it = player->presetMap.find(action);
-+                if (it != player->presetMap.end())
-+                {
-+                    for (PresetslotMapType::const_iterator it2 = it->second.slotMap.begin(); it2 != it->second.slotMap.end(); ++it2)
-+                        if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, it2->first))
-+                            sTransmogrification->PresetTransmog(player, item, it2->second, it2->first);
-+                }
-+                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 6, action);
-+            } break;
-+            case EQUIPMENT_SLOT_END + 6: // view preset
-+            {
-+                if (!sTransmogrification->EnableSets)
-+                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+                // action = presetID
-+
-+                PresetMapType::const_iterator it = player->presetMap.find(action);
-+                if (it == player->presetMap.end())
-+                {
-+                    OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
-+                    return true;
-+                }
-+
-+                for (PresetslotMapType::const_iterator it2 = it->second.slotMap.begin(); it2 != it->second.slotMap.end(); ++it2)
-+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, sTransmogrification->GetItemIcon(it2->second, 30, 30, -18, 0) + sTransmogrification->GetItemLink(it2->second, session), sender, action);
-+
-+                player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|tUse set", EQUIPMENT_SLOT_END + 5, action, "Using this set for transmogrify will bind transmogrified items to you and make them non-refundable and non-tradeable.\nDo you wish to continue?\n\n" + it->second.name, 0, false);
-+                player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-LeaveItem-Opaque:30:30:-18:0|tDelete set", EQUIPMENT_SLOT_END + 7, action, "Are you sure you want to delete " + it->second.name + "?", 0, false);
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
-+                player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-+            } break;
-+            case EQUIPMENT_SLOT_END + 7: // Delete preset
-+            {
-+                if (!sTransmogrification->EnableSets)
-+                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+                // action = presetID
-+
-+                player->presetMap.erase(action);
-+
-+                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
-+            } break;
-+            case EQUIPMENT_SLOT_END + 8: // Save preset
-+            {
-+                if (!sTransmogrification->EnableSets)
-+                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+
-+                if (player->presetMap.size() >= sTransmogrification->MaxSets)
-+                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+
-+                uint32 cost = 0;
-+                bool canSave = false;
-+                for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
-+                {
-+                    if (!sTransmogrification->GetSlotName(slot, session))
-+                        continue;
-+                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, action))
 +                    {
-+                        uint32 entry = sTransmogrification->GetFakeEntry(newItem);
-+                        if (!entry)
-+                            continue;
-+                        const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
-+                        if (!temp)
-+                            continue;
-+                        if (!sTransmogrification->SuitableForTransmogrification(player, temp)) // no need to check?
-+                            continue;
-+                        cost += sTransmogrification->GetSpecialPrice(temp);
-+                        canSave = true;
-+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, sTransmogrification->GetItemIcon(entry, 30, 30, -18, 0) + sTransmogrification->GetItemLink(entry, session), EQUIPMENT_SLOT_END + 8, 0);
++                        if (sTransmogrification->GetFakeEntry(newItem))
++                        {
++                            sTransmogrification->DeleteFakeEntry(player, newItem);
++                            session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
++                        }
++                        else
++                            session->SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
 +                    }
-+                }
-+                if (canSave)
-+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", 0, 0, "Insert set name", cost*sTransmogrification->SetCostModifier + sTransmogrification->SetCopperCost, true);
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-Undo:30:30:-18:0|tUpdate menu", sender, action);
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
-+                player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-+            } break;
-+            case EQUIPMENT_SLOT_END + 10: // Set info
-+            {
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
-+                player->SEND_GOSSIP_MENU(sTransmogrification->SetNpcText, creature->GetGUID());
-+            } break;
-+#endif
-+            case EQUIPMENT_SLOT_END + 9: // Transmog info
-+            {
-+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 1, 0);
-+                player->SEND_GOSSIP_MENU(sTransmogrification->TransmogNpcText, creature->GetGUID());
-+            } break;
-+            default: // Transmogrify
-+            {
-+                if (!sender && !action)
++                    OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, action);
++                } break;
++#ifdef PRESETS
++                case EQUIPMENT_SLOT_END + 4: // Presets menu
 +                {
-+                    OnGossipHello(player, creature);
-+                    return true;
-+                }
-+                // sender = slot, action = display
-+               TransmogTrinityStrings res = sTransmogrification->Transmogrify(player, ObjectGuid(HIGHGUID_ITEM, sObjectMgr->GenerateLowGuid(HIGHGUID_ITEM)), sender);
-+                if (res == LANG_ERR_TRANSMOG_OK)
-+                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_TRANSMOG_OK));
-+                else
-+                    session->SendNotification(res);
-+                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, sender);
-+            } break;
++                    if (!sTransmogrification->EnableSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++                    if (sTransmogrification->EnableSetInfo)
++                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Book_11:30:30:-18:0|tHow sets work", EQUIPMENT_SLOT_END + 10, 0);
++
++                    if (!player->presetMap.empty())
++                    {
++                        for (PresetMapType::const_iterator it = player->presetMap.begin(); it != player->presetMap.end(); ++it)
++                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|t" + it->second.name, EQUIPMENT_SLOT_END + 6, it->first);
++
++                        if (player->presetMap.size() < sTransmogrification->MaxSets)
++                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", EQUIPMENT_SLOT_END + 8, 0);
++                    }
++                    else
++                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", EQUIPMENT_SLOT_END + 8, 0);
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 1, 0);
++                    player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
++                } break;
++                case EQUIPMENT_SLOT_END + 5: // Use preset
++                {
++                    if (!sTransmogrification->EnableSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++                    // action = presetID
++
++                    PresetMapType::const_iterator it = player->presetMap.find(action);
++                    if (it != player->presetMap.end())
++                    {
++                        for (PresetslotMapType::const_iterator it2 = it->second.slotMap.begin(); it2 != it->second.slotMap.end(); ++it2)
++                            if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, it2->first))
++                                sTransmogrification->PresetTransmog(player, item, it2->second, it2->first);
++                    }
++                    OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 6, action);
++                } break;
++                case EQUIPMENT_SLOT_END + 6: // view preset
++                {
++                    if (!sTransmogrification->EnableSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++                    // action = presetID
++
++                    PresetMapType::const_iterator it = player->presetMap.find(action);
++                    if (it == player->presetMap.end())
++                    {
++                        OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
++                        return true;
++                    }
++
++                    for (PresetslotMapType::const_iterator it2 = it->second.slotMap.begin(); it2 != it->second.slotMap.end(); ++it2)
++                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, sTransmogrification->GetItemIcon(it2->second, 30, 30, -18, 0) + sTransmogrification->GetItemLink(it2->second, session), sender, action);
++
++                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|tUse set", EQUIPMENT_SLOT_END + 5, action, "Using this set for transmogrify will bind transmogrified items to you and make them non-refundable and non-tradeable.\nDo you wish to continue?\n\n" + it->second.name, 0, false);
++                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-LeaveItem-Opaque:30:30:-18:0|tDelete set", EQUIPMENT_SLOT_END + 7, action, "Are you sure you want to delete " + it->second.name + "?", 0, false);
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
++                    player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
++                } break;
++                case EQUIPMENT_SLOT_END + 7: // Delete preset
++                {
++                    if (!sTransmogrification->EnableSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++                    // action = presetID
++
++                    player->presetMap.erase(action);
++
++                    OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
++                } break;
++                case EQUIPMENT_SLOT_END + 8: // Save preset
++                {
++                    if (!sTransmogrification->EnableSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++
++                    if (player->presetMap.size() >= sTransmogrification->MaxSets)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++
++                    uint32 cost = 0;
++                    bool canSave = false;
++                    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
++                    {
++                        if (!sTransmogrification->GetSlotName(slot, session))
++                            continue;
++                        if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
++                        {
++                            uint32 entry = sTransmogrification->GetFakeEntry(newItem);
++                            if (!entry)
++                                continue;
++                            const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
++                            if (!temp)
++                                continue;
++                            if (!sTransmogrification->SuitableForTransmogrification(player, temp)) // no need to check?
++                                continue;
++                            cost += sTransmogrification->GetSpecialPrice(temp);
++                            canSave = true;
++                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, sTransmogrification->GetItemIcon(entry, 30, 30, -18, 0) + sTransmogrification->GetItemLink(entry, session), EQUIPMENT_SLOT_END + 8, 0);
++                        }
++                    }
++                    if (canSave)
++                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_MONEY_BAG, "|TInterface/GuildBankFrame/UI-GuildBankFrame-NewTab:30:30:-18:0|tSave set", 0, 0, "Insert set name", cost*sTransmogrification->SetCostModifier + sTransmogrification->SetCopperCost, true);
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-Undo:30:30:-18:0|tUpdate menu", sender, action);
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
++                    player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
++                } break;
++                case EQUIPMENT_SLOT_END + 10: // Set info
++                {
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 4, 0);
++                    player->SEND_GOSSIP_MENU(sTransmogrification->SetNpcText, creature->GetGUID());
++                } break;
++#endif
++                case EQUIPMENT_SLOT_END + 9: // Transmog info
++                {
++                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack..", EQUIPMENT_SLOT_END + 1, 0);
++                    player->SEND_GOSSIP_MENU(sTransmogrification->TransmogNpcText, creature->GetGUID());
++                } break;
++                default: // Transmogrify
++                {
++                    if (!sender && !action)
++                    {
++                        OnGossipHello(player, creature);
++                        return true;
++                    }
++                    // sender = slot, action = display
++                    TransmogTrinityStrings res = sTransmogrification->Transmogrify(player, ObjectGuid(HIGHGUID_ITEM, 0, action), sender);
++                    if (res == LANG_ERR_TRANSMOG_OK)
++                        session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_TRANSMOG_OK));
++                    else
++                        session->SendNotification(res);
++                    OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, sender);
++                } break;
 +            }
 +            return true;
 +        }
@@ -1716,70 +1513,70 @@ index 0000000..940eee8
 +            // Allow only alnum
 +            std::string name = code;
 +            static const char* allowedcharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz _.,'1234567890";
-+            if (name.length() && name.find_first_not_of(allowedcharacters) != std::string::npos)
++            if (!name.length() || name.find_first_not_of(allowedcharacters) != std::string::npos)
 +            {
 +                player->GetSession()->SendNotification(LANG_PRESET_ERR_INVALID_NAME);
 +                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
 +                return true;
 +            }
 +
-+                int32 cost = 0;
-+                PresetslotMapType items;
-+                for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
++            int32 cost = 0;
++            PresetslotMapType items;
++            for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
++            {
++                if (!sTransmogrification->GetSlotName(slot, player->GetSession()))
++                    continue;
++                if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
 +                {
-+                    if (!sTransmogrification->GetSlotName(slot, player->GetSession()))
++                    uint32 entry = sTransmogrification->GetFakeEntry(newItem);
++                    if (!entry)
 +                        continue;
-+                    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
-+                    {
-+                        uint32 entry = sTransmogrification->GetFakeEntry(newItem);
-+                        if (!entry)
-+                            continue;
-+                        const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
-+                        if (!temp)
-+                            continue;
-+                        if (!sTransmogrification->SuitableForTransmogrification(player, temp))
-+                            continue;
-+                        cost += sTransmogrification->GetSpecialPrice(temp);
-+                        items[slot] = entry;
-+                    }
++                    const ItemTemplate* temp = sObjectMgr->GetItemTemplate(entry);
++                    if (!temp)
++                        continue;
++                    if (!sTransmogrification->SuitableForTransmogrification(player, temp))
++                        continue;
++                    cost += sTransmogrification->GetSpecialPrice(temp);
++                    items[slot] = entry;
 +                }
++            }
 +
-+                if (!items.empty())
++            if (!items.empty())
++            {
++                // transmogrified items were found to be saved
++                cost *= sTransmogrification->SetCostModifier;
++                cost += sTransmogrification->SetCopperCost;
++
++                if (!player->HasEnoughMoney(cost))
 +                {
-+                    // transmogrified items were found to be saved
-+                    cost *= sTransmogrification->SetCostModifier;
-+                    cost += sTransmogrification->SetCopperCost;
-+
-+                    if (!player->HasEnoughMoney(cost))
++                    player->GetSession()->SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
++                }
++                else
++                {
++                    uint8 presetID = sTransmogrification->MaxSets;
++                    if (player->presetMap.size() < sTransmogrification->MaxSets)
 +                    {
-+                        player->GetSession()->SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
-+                    }
-+                    else
-+                    {
-+                        uint8 presetID = sTransmogrification->MaxSets;
-+                        if (player->presetMap.size() < sTransmogrification->MaxSets)
-+                        {
 +                        for (uint8 i = 0; i < sTransmogrification->MaxSets; ++i) // should never reach over max
++                        {
++                            if (player->presetMap.find(i) == player->presetMap.end())
 +                            {
-+                                if (player->presetMap.find(i) == player->presetMap.end())
-+                                {
-+                                    presetID = i;
-+                                    break;
-+                                }
++                                presetID = i;
++                                break;
 +                            }
 +                        }
++                    }
 +
-+                        if (presetID < sTransmogrification->MaxSets)
-+                        {
-+                            // Make sure code doesnt mess up SQL!
-+                            player->presetMap[presetID].name = name;
-+                            player->presetMap[presetID].slotMap = items;
++                    if (presetID < sTransmogrification->MaxSets)
++                    {
++                        // Make sure code doesnt mess up SQL!
++                        player->presetMap[presetID].name = name;
++                        player->presetMap[presetID].slotMap = items;
 +
-+                            if (cost)
-+                                player->ModifyMoney(-cost);
-+                        }
++                        if (cost)
++                            player->ModifyMoney(-cost);
 +                    }
 +                }
++            }
 +
 +            OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
 +            return true;
@@ -1905,10 +1702,10 @@ index e5ef3d5..4707ddd 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..d1b7842 100644
+index 07e45ed..a154eaf 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,212 @@ PacketSpoof.BanDuration = 86400
+@@ -3281,6 +3281,212 @@ Guildhouse.SellCost = 500
  #
  ###################################################################################################
  
@@ -2122,5 +1919,4 @@ index 9097e0b..d1b7842 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-2.1.0
-
+1.9.4.msysgit.0
