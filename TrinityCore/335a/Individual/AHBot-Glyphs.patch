@@ -1,10 +1,10 @@
-From a3f1d2930729c8e7e53a9994d63fc3e18eab1c35 Mon Sep 17 00:00:00 2001
+From 18da17b139cd04ba8308fa74525aa4e84b615896 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 22 Sep 2014 09:43:08 -0400
+Date: Fri, 3 Oct 2014 08:01:29 -0400
 Subject: [PATCH] AHBot-Glyphs
 
 ---
- src/server/game/AuctionHouse/AuctionHouseMgr.cpp   | 15 +++++--
+ src/server/game/AuctionHouse/AuctionHouseMgr.cpp   |  8 +++-
  .../game/AuctionHouseBot/AuctionHouseBot.cpp       |  6 +++
  src/server/game/AuctionHouseBot/AuctionHouseBot.h  |  5 +++
  .../game/AuctionHouseBot/AuctionHouseBotSeller.cpp | 24 +++++++++--
@@ -12,13 +12,13 @@ Subject: [PATCH] AHBot-Glyphs
  src/server/game/World/World.cpp                    |  2 +
  src/server/game/World/World.h                      |  1 +
  src/server/worldserver/worldserver.conf.dist       | 33 ++++++++++++++
- 8 files changed, 107 insertions(+), 29 deletions(-)
+ 8 files changed, 102 insertions(+), 27 deletions(-)
 
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index 7b1dda8..7e6238e 100644
+index 8955fc9..979febb 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-@@ -457,7 +457,9 @@ void AuctionHouseObject::Update()
+@@ -474,7 +474,9 @@ void AuctionHouseObject::Update()
          ///- Either cancel the auction if there was no bidder
          if (auction->bidder == 0)
          {
@@ -29,7 +29,7 @@ index 7b1dda8..7e6238e 100644
              sScriptMgr->OnAuctionExpire(this, auction);
          }
          ///- Or perform the transaction
-@@ -466,7 +468,9 @@ void AuctionHouseObject::Update()
+@@ -483,7 +485,9 @@ void AuctionHouseObject::Update()
              //we should send an "item sold" message if the seller is online
              //we send the item to the winner
              //we send the money to the seller
@@ -40,26 +40,8 @@ index 7b1dda8..7e6238e 100644
              sAuctionMgr->SendAuctionWonMail(auction, trans);
              sScriptMgr->OnAuctionSuccessful(this, auction);
          }
-@@ -764,12 +768,15 @@ void AuctionHouseMgr::DeleteExpiredAuctionsAtStartup()
-         if (auction->bidder==0)
-         {
-             // Cancel the auction, there was no bidder
--            sAuctionMgr->SendAuctionExpiredMail(auction, trans);
-+            if (auction->owner != sWorld->getIntConfig(CONFIG_AHBOT_SELL_OWNER))
-+                sAuctionMgr->SendAuctionExpiredMail(auction, trans);
-         }
-         else
-         {
-             // Send the item to the winner and money to seller
--            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-+            if (auction->owner != sWorld->getIntConfig(CONFIG_AHBOT_SELL_OWNER))
-+                sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-+
-             sAuctionMgr->SendAuctionWonMail(auction, trans);
-         }
-
 diff --git a/src/server/game/AuctionHouseBot/AuctionHouseBot.cpp b/src/server/game/AuctionHouseBot/AuctionHouseBot.cpp
-index 6bf5fa0..7f08b20 100644
+index 6bf5fa0..911f235 100644
 --- a/src/server/game/AuctionHouseBot/AuctionHouseBot.cpp
 +++ b/src/server/game/AuctionHouseBot/AuctionHouseBot.cpp
 @@ -225,6 +225,12 @@ void AuctionBotConfig::GetConfigFromFile()
@@ -73,7 +55,7 @@ index 6bf5fa0..7f08b20 100644
 +    SetConfig(CONFIG_AHBOT_MAX_BLUE_STACK, "AuctionHouseBot.Max.Blue.Stack", 0);
 +    SetConfig(CONFIG_AHBOT_MAX_EPIC_STACK, "AuctionHouseBot.Max.Epic.Stack", 0);
  }
-
+ 
  char const* AuctionBotConfig::GetHouseTypeName(AuctionHouseType houseType)
 diff --git a/src/server/game/AuctionHouseBot/AuctionHouseBot.h b/src/server/game/AuctionHouseBot/AuctionHouseBot.h
 index 04ca96d..36519c3 100644
@@ -90,12 +72,12 @@ index 04ca96d..36519c3 100644
 +    CONFIG_AHBOT_MAX_EPIC_STACK,
      CONFIG_UINT32_AHBOT_UINT32_COUNT
  };
-
+ 
 diff --git a/src/server/game/AuctionHouseBot/AuctionHouseBotSeller.cpp b/src/server/game/AuctionHouseBot/AuctionHouseBotSeller.cpp
-index 13aa1f2..003b2d3 100644
+index 00e1a35..0b6dc01 100644
 --- a/src/server/game/AuctionHouseBot/AuctionHouseBotSeller.cpp
 +++ b/src/server/game/AuctionHouseBot/AuctionHouseBotSeller.cpp
-@@ -622,7 +622,7 @@ uint32 AuctionBotSeller::SetStat(SellerConfiguration& config)
+@@ -623,7 +623,7 @@ uint32 AuctionBotSeller::SetStat(SellerConfiguration& config)
          {
              ItemTemplate const* prototype = item->GetTemplate();
              if (prototype)
@@ -104,10 +86,10 @@ index 13aa1f2..003b2d3 100644
                      ++itemsSaved[prototype->Quality][prototype->Class];
          }
      }
-@@ -949,7 +949,25 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
+@@ -950,7 +950,25 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
              continue;
          }
-
+ 
 -        uint32 stackCount = urand(1, prototype->GetMaxStackSize());
 +        uint32 mStack;
 +        switch (prototype->Quality) {
@@ -128,11 +110,11 @@ index 13aa1f2..003b2d3 100644
 +        }
 +
 +        uint32 stackCount = urand(1, mStack ? mStack : prototype->GetMaxStackSize());
-
+ 
          Item* item = Item::CreateItem(itemId, stackCount);
          if (!item)
-@@ -989,7 +1007,7 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
-
+@@ -990,7 +1008,7 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
+ 
          AuctionEntry* auctionEntry = new AuctionEntry();
          auctionEntry->Id = sObjectMgr->GenerateAuctionID();
 -        auctionEntry->owner = 0;
@@ -146,7 +128,7 @@ index 9f227bd..b792bfd 100644
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -493,8 +493,11 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recvData)
          GetPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_BID, auction->buyout);
-
+ 
          //- Mails must be under transaction control too to prevent data loss
 -        sAuctionMgr->SendAuctionSalePendingMail(auction, trans);
 -        sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
@@ -156,7 +138,7 @@ index 9f227bd..b792bfd 100644
 +            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
 +        }
          sAuctionMgr->SendAuctionWonMail(auction, trans);
-
+ 
          SendAuctionCommandResult(auction->Id, AUCTION_PLACE_BID, ERR_AUCTION_OK);
 @@ -539,29 +542,32 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recvData)
      SQLTransaction trans = CharacterDatabase.BeginTransaction();
@@ -212,30 +194,30 @@ index 9f227bd..b792bfd 100644
      }
      else
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index d204f0c..64d7995 100644
+index 7348677..e2c11ce 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1284,6 +1284,8 @@ void World::LoadConfigSettings(bool reload)
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
-
+ 
 +    m_int_configs[CONFIG_AHBOT_SELL_OWNER] = sConfigMgr->GetIntDefault("AuctionHouseBot.Owner", 0);
 +
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 48414d0..2f1763e 100644
+index e53d6e1..8ed4c06 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -386,6 +386,7 @@ enum WorldIntConfigs
+@@ -406,6 +406,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
 +    CONFIG_AHBOT_SELL_OWNER,
      INT_CONFIG_VALUE_COUNT
  };
-
+ 
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
 index 9097e0b..aab80f3 100644
 --- a/src/server/worldserver/worldserver.conf.dist
@@ -243,7 +225,7 @@ index 9097e0b..aab80f3 100644
 @@ -2982,6 +2982,39 @@ AuctionHouseBot.forceExcludeItems = ""
  #       Default:     0 - (Disabled)
  #                    1 - (Enabled)
-
+ 
 +# Glyphs Stuffs
 +
 +AuctionHouseBot.Owner = 0
@@ -278,8 +260,8 @@ index 9097e0b..aab80f3 100644
 +AuctionHouseBot.Class.Glyph.Price.Ratio      = 100
 +
  AuctionHouseBot.Buyer.Enabled = 0
-
+ 
  #
---
+-- 
 2.1.0
 
