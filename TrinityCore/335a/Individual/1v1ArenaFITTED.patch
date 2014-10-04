@@ -1,6 +1,6 @@
-From 22b4376e40c0e948b2ffcd3e5c3654597f866558 Mon Sep 17 00:00:00 2001
+From 2d2aa6749a9fad5354422ea69da549b95d83a2d3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 1 Oct 2014 08:25:31 -0400
+Date: Sat, 4 Oct 2014 09:53:41 -0400
 Subject: [PATCH] 1v1ArenaFITTED
 
 ---
@@ -13,7 +13,7 @@ Subject: [PATCH] 1v1ArenaFITTED
  src/server/game/Battlegrounds/BattlegroundMgr.cpp  |   2 +-
  .../game/Battlegrounds/BattlegroundQueue.cpp       |   2 +
  src/server/game/Entities/Player/Player.cpp         |   1 +
- src/server/game/Handlers/BattleGroundHandler.cpp   |   5 +
+ src/server/game/Handlers/BattleGroundHandler.cpp   |   6 +-
  src/server/game/Handlers/PetitionsHandler.cpp      |   4 +-
  src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
  src/server/game/World/World.cpp                    |   8 +
@@ -21,7 +21,7 @@ Subject: [PATCH] 1v1ArenaFITTED
  src/server/scripts/Custom/npc_arena1v1.cpp         | 309 +++++++++++++++++++++
  src/server/scripts/Custom/npc_arena1v1.h           |  69 +++++
  src/server/worldserver/worldserver.conf.dist       |  65 +++++
- 17 files changed, 488 insertions(+), 8 deletions(-)
+ 17 files changed, 488 insertions(+), 9 deletions(-)
  create mode 100644 sql/arena1v1/character_v2.0.sql
  create mode 100644 sql/arena1v1/world_v1.0.sql
  create mode 100644 src/server/scripts/Custom/npc_arena1v1.cpp
@@ -153,18 +153,19 @@ index f8f569d..c574307 100644
          {
              uint32 p_rating = GetArenaPersonalRating(i);
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
-index ccea6f6..6675461 100644
+index ce8ae92..14db7f1 100644
 --- a/src/server/game/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Handlers/BattleGroundHandler.cpp
-@@ -34,6 +34,7 @@
- #include "Opcodes.h"
- #include "DisableMgr.h"
- #include "Group.h"
+@@ -37,7 +37,7 @@
+ // Prepatch by LordPsyan
+ // 01
+ // 02
+-// 03
 +#include "../../scripts/Custom/npc_arena1v1.h"
- 
- void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recvData)
- {
-@@ -437,6 +438,10 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket &recvData)
+ // 04
+ // 05
+ // 06
+@@ -460,6 +460,10 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket &recvData)
          if (!_player->IsInvitedForBattlegroundQueueType(bgQueueTypeId))
              return;                                 // cheating?
  
@@ -281,7 +282,7 @@ index e53d6e1..38d03b0 100644
      CONFIG_PVP_TOKEN_MAP_TYPE,
 diff --git a/src/server/scripts/Custom/npc_arena1v1.cpp b/src/server/scripts/Custom/npc_arena1v1.cpp
 new file mode 100644
-index 0000000..f23a1e7
+index 0000000..c2f6792
 --- /dev/null
 +++ b/src/server/scripts/Custom/npc_arena1v1.cpp
 @@ -0,0 +1,309 @@
@@ -306,7 +307,7 @@ index 0000000..f23a1e7
 +class npc_1v1arena : public CreatureScript
 +{
 +public:
-+    npc_1v1arena() : CreatureScript("npc_1v1arena") 
++    npc_1v1arena() : CreatureScript("npc_1v1arena")
 +    {
 +    }
 +
@@ -515,7 +516,7 @@ index 0000000..f23a1e7
 +            {
 +                if(Arena1v1CheckTalents(player) && JoinQueueArena(player, me, true) == false)
 +                    ChatHandler(player->GetSession()).SendSysMessage("Something went wrong while join queue.");
-+                
++
 +                player->CLOSE_GOSSIP_MENU();
 +                return true;
 +            }
@@ -525,7 +526,7 @@ index 0000000..f23a1e7
 +            {
 +                if(Arena1v1CheckTalents(player) && JoinQueueArena(player, me, false) == false)
 +                    ChatHandler(player->GetSession()).SendSysMessage("Something went wrong while join queue.");
-+                
++
 +                player->CLOSE_GOSSIP_MENU();
 +                return true;
 +            }
@@ -597,7 +598,7 @@ index 0000000..f23a1e7
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/npc_arena1v1.h b/src/server/scripts/Custom/npc_arena1v1.h
 new file mode 100644
-index 0000000..51609af
+index 0000000..caa75a2
 --- /dev/null
 +++ b/src/server/scripts/Custom/npc_arena1v1.h
 @@ -0,0 +1,69 @@
@@ -612,7 +613,7 @@ index 0000000..51609af
 +#define ARENA_1V1_H
 +
 +// TalentTab.dbc -> TalentTabID
-+const uint32 FORBIDDEN_TALENTS_IN_1V1_ARENA[] = 
++const uint32 FORBIDDEN_TALENTS_IN_1V1_ARENA[] =
 +{
 +    // Healer
 +    201, // PriestDiscipline
@@ -650,7 +651,7 @@ index 0000000..51609af
 +        {
 +            if (talentInfo->RankID[rank] == 0)
 +                continue;
-+                        
++
 +            if (player->HasTalent(talentInfo->RankID[rank], player->GetActiveSpec()))
 +            {
 +                for(int8 i = 0; FORBIDDEN_TALENTS_IN_1V1_ARENA[i] != 0; i++)
@@ -672,7 +673,7 @@ index 0000000..51609af
 +#endif
 \ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..eeeb5ed 100644
+index 9097e0b..a0e434e 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2320,6 +2320,71 @@ ArenaLog.ExtendedInfo = 0
@@ -722,7 +723,7 @@ index 9097e0b..eeeb5ed 100644
 +
 +#
 +#    Arena.1v1.ArenaPointsMulti
-+#        Description: An 5v5 arena team with 1500 rating will gain 344 points per week (blizzlike). 
++#        Description: An 5v5 arena team with 1500 rating will gain 344 points per week (blizzlike).
 +#                      3v3 with same rating will gain 302 points (5v5points * 0.88)
 +#                      2v2 will gain 261 points (5v5points * 0.76)
 +#                      and 1v1 will gain 167 points (5v5points * 0.64)
@@ -743,7 +744,7 @@ index 9097e0b..eeeb5ed 100644
 +#
 +###################################################################################################
 +
-+################################################################################################### 
++###################################################################################################
  
  ###################################################################################################
  # NETWORK CONFIG
