@@ -1,6 +1,6 @@
-From 92a6c92c738d6b3c53f9c6f353bb71f42c6989a4 Mon Sep 17 00:00:00 2001
+From a1bedf6c0872e999beae469a4b9b46ad97bc742f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 17 Sep 2014 08:18:54 -0400
+Date: Sun, 5 Oct 2014 10:51:50 -0400
 Subject: [PATCH] Reforging
 
 ---
@@ -92,10 +92,10 @@ index 0000000..9a91aae
 +INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
 +(@Entry, 20988, 0, @Name, "Arcane Reforger", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index dbaea7d..9de4423 100644
+index f8f569d..8483984 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -7785,6 +7785,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7836,6 +7836,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -116,7 +116,7 @@ index dbaea7d..9de4423 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7799,10 +7813,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7850,10 +7864,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -142,7 +142,7 @@ index dbaea7d..9de4423 100644
          }
  
          if (val == 0)
-@@ -12593,14 +12621,14 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12644,14 +12672,14 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -160,7 +160,7 @@ index dbaea7d..9de4423 100644
      // 03
      // 04
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index bb3fcca..7d27ef8 100644
+index 8ed561b..1962fff 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -126,6 +126,14 @@ typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
@@ -178,7 +178,7 @@ index bb3fcca..7d27ef8 100644
  struct SpellCooldown
  {
      time_t end;
-@@ -2309,6 +2317,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -2313,6 +2321,7 @@ class Player : public Unit, public GridObject<Player>
          void SetTitle(CharTitlesEntry const* title, bool lost = false);
  
          //bool isActiveObject() const { return true; }
@@ -187,10 +187,10 @@ index bb3fcca..7d27ef8 100644
  
          uint32 GetChampioningFaction() const { return m_ChampioningFaction; }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..9368799 100644
+index bd43fbe..dc07462 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1511,7 +1511,8 @@ void AddBattlegroundScripts()
+@@ -1487,7 +1487,8 @@ void AddBattlegroundScripts()
  // start70
  // start71
  // start72
@@ -199,8 +199,8 @@ index 5d120b2..9368799 100644
 +void AddSC_REFORGER_NPC();
  // start74
  // start75
- #endif
-@@ -1597,7 +1598,8 @@ void AddCustomScripts()
+ // start76
+@@ -1613,7 +1614,8 @@ void AddCustomScripts()
  // end70
  // end71
  // end72
@@ -209,10 +209,10 @@ index 5d120b2..9368799 100644
 +    AddSC_REFORGER_NPC();
  // end74
  // end75
- #endif
+ // end76
 diff --git a/src/server/scripts/Custom/Reforging.cpp b/src/server/scripts/Custom/Reforging.cpp
 new file mode 100644
-index 0000000..ff16b5e
+index 0000000..ef147d2
 --- /dev/null
 +++ b/src/server/scripts/Custom/Reforging.cpp
 @@ -0,0 +1,646 @@
@@ -526,7 +526,7 @@ index 0000000..ff16b5e
 +        return;
 +
 +    player->reforgeMap.erase(itemguid);
-+    Item* invItem = update ? player->GetItemByGuid(MAKE_NEW_GUID(itemguid, 0, HIGHGUID_ITEM)) : NULL;
++    Item* invItem = update ? player->GetItemByGuid(ObjectGuid(HIGHGUID_ITEM, itemguid)) : NULL;
 +    if (invItem)
 +        player->_ApplyItemMods(invItem, invItem->GetSlot(), false);
 +    player->reforgeMap.erase(itemguid);
@@ -628,7 +628,7 @@ index 0000000..ff16b5e
 +            do
 +            {
 +                uint32 lowGUID = (*result)[0].GetUInt32();
-+                Item* invItem = player->GetItemByGuid(MAKE_NEW_GUID(lowGUID, 0, HIGHGUID_ITEM));
++                Item* invItem = player->GetItemByGuid(ObjectGuid(HIGHGUID_ITEM, lowGUID));
 +                if (invItem)
 +                    player->_ApplyItemMods(invItem, invItem->GetSlot(), false);
 +                ReforgeData& data = player->reforgeMap[lowGUID];
@@ -808,7 +808,7 @@ index 0000000..ff16b5e
 +        case RESTORE:
 +            // sender = item guidlow
 +            {
-+                if (Item* invItem = player->GetItemByGuid(MAKE_NEW_GUID(sender, 0, HIGHGUID_ITEM)))
++                if (Item* invItem = player->GetItemByGuid(ObjectGuid(HIGHGUID_ITEM, sender)))
 +                {
 +                    if (!player->reforgeMap.empty() && player->reforgeMap.find(sender) != player->reforgeMap.end())
 +                        RemoveReforge(player, sender, true);
