@@ -1,6 +1,6 @@
-From 536cc325af6c598459ca9e5fe7df92d30963be4a Mon Sep 17 00:00:00 2001
+From 2b46cee2628f10d968d71ac2dd20948ac749b3ae Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 5 Oct 2014 11:52:54 -0400
+Date: Mon, 6 Oct 2014 08:42:07 -0400
 Subject: [PATCH] GuildLevelSystem
 
 ---
@@ -18,12 +18,12 @@ Subject: [PATCH] GuildLevelSystem
  src/server/game/Miscellaneous/Formulas.h           |  12 +-
  src/server/game/Miscellaneous/Language.h           |   4 +-
  src/server/game/Reputation/ReputationMgr.cpp       |  10 ++
- src/server/game/World/World.cpp                    |  87 +++++++++++++
+ src/server/game/World/World.cpp                    |  87 ++++++++++++-
  src/server/game/World/World.h                      |  20 +++
  src/server/scripts/Commands/cs_guild.cpp           | 121 +++++++++++++++++
  .../Database/Implementation/CharacterDatabase.cpp  |  10 +-
  .../Database/Implementation/CharacterDatabase.h    |   7 +-
- 19 files changed, 614 insertions(+), 11 deletions(-)
+ 19 files changed, 613 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/world_guild_level_system.sql
@@ -666,20 +666,20 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 0b6a1ac..9329aa9 100644
+index e1bd35b..7cf9d78 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1287,6 +1287,9 @@ void World::LoadConfigSettings(bool reload)
-     m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
-     m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
- 
+@@ -1293,7 +1293,8 @@ void World::LoadConfigSettings(bool reload)
+ // 04
+ // 05
+ // 06
+-// 07
 +    //Guild-Level-System
 +    LoadGuildBonusInfo();
-+
-     // call ScriptMgr if we're reloading the configuration
-     if (reload)
-         sScriptMgr->OnConfigLoad(reload);
-@@ -3239,3 +3242,87 @@ void World::ReloadRBAC()
+ // 08
+ // 09
+ // 10
+@@ -3262,3 +3263,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
