@@ -1,6 +1,6 @@
-From b927fba630da7ba8b6ddef979e07e55c0a4d40e0 Mon Sep 17 00:00:00 2001
+From c41d7bccf54b13f55d37917b5a634637698ffc6c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 27 Sep 2014 13:07:49 -0400
+Date: Mon, 6 Oct 2014 08:00:08 -0400
 Subject: [PATCH] New_NPCBots
 
 ---
@@ -27520,10 +27520,10 @@ index 63a984f..52ddcc6 100644
          explicit Unit (bool isWorldObject);
  
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 15c55a1..e5faaad 100644
+index 0fc8bcc..b15c2fa 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7849,6 +7849,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+@@ -7879,6 +7879,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
      return SKILL_RANGE_LEVEL;
  }
  
@@ -27945,7 +27945,7 @@ index 87a2b7d..7bbe31f 100644
  
  void MapManager::InitializeVisibilityDistanceInfo()
 diff --git a/src/server/game/Movement/MotionMaster.cpp b/src/server/game/Movement/MotionMaster.cpp
-index 7e6a2a3..de4aad7 100644
+index 3278c64..cd12f48 100644
 --- a/src/server/game/Movement/MotionMaster.cpp
 +++ b/src/server/game/Movement/MotionMaster.cpp
 @@ -364,6 +364,20 @@ void MotionMaster::MoveJumpTo(float angle, float speedXY, float speedZ)
@@ -28133,10 +28133,10 @@ index 5ef6acb..691d874 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index d204f0c..83b4015 100644
+index e1bd35b..7ecc84b 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1468,6 +1468,9 @@ void World::SetInitialWorldSettings()
+@@ -1494,6 +1494,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -28375,10 +28375,10 @@ index d70d7b0..19ad3f9 100644
              }
  
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 99c23af..f46ce9e 100644
+index 13d590d..38c7b8b 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -612,7 +612,25 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -609,7 +609,25 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // 04
      // 05
      // 06
@@ -28406,10 +28406,10 @@ index 99c23af..f46ce9e 100644
      // 09
      // 10
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index b918715..c860996 100644
+index 1460e5c..de280c5 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -544,7 +544,20 @@ enum CharacterDatabaseStatements
+@@ -542,7 +542,20 @@ enum CharacterDatabaseStatements
      // 04
      // 05
      // 06
@@ -28432,13 +28432,13 @@ index b918715..c860996 100644
      // 09
      // 10
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-index e83901c..ac5cb5c 100644
+index 2adb575..5fea452 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-@@ -89,4 +89,9 @@ void WorldDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(WORLD_INS_DISABLES, "INSERT INTO disables (entry, sourceType, flags, comment) VALUES (?, ?, ?, ?)", CONNECTION_ASYNC);
-     PrepareStatement(WORLD_SEL_DISABLES, "SELECT entry FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_SYNCH);
+@@ -91,4 +91,9 @@ void WorldDatabaseConnection::DoPrepareStatements()
      PrepareStatement(WORLD_DEL_DISABLES, "DELETE FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_ASYNC);
+     PrepareStatement(WORLD_UPD_CREATURE_ZONE_AREA_DATA, "UPDATE creature SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
+     PrepareStatement(WORLD_UPD_GAMEOBJECT_ZONE_AREA_DATA, "UPDATE gameobject SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
 +
 +    // Bot
 +    PrepareStatement(WORLD_SEL_NPCBOT_INFO, "SELECT guid, map, position_x, position_y, position_z, orientation FROM creature WHERE id = ?", CONNECTION_SYNCH);
@@ -28446,12 +28446,12 @@ index e83901c..ac5cb5c 100644
 +    PrepareStatement(WORLD_UPD_NPCBOT_POSITION, "UPDATE creature SET map = ?, position_x = ?, position_y = ?, position_z = ?, orientation = ? WHERE guid = ?", CONNECTION_ASYNC);
  }
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.h b/src/server/shared/Database/Implementation/WorldDatabase.h
-index 8a5bd20..c516fb7 100644
+index a398b41..e0c8fa1 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.h
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.h
-@@ -111,6 +111,11 @@ enum WorldDatabaseStatements
-     WORLD_INS_DISABLES,
-     WORLD_DEL_DISABLES,
+@@ -113,6 +113,11 @@ enum WorldDatabaseStatements
+     WORLD_UPD_CREATURE_ZONE_AREA_DATA,
+     WORLD_UPD_GAMEOBJECT_ZONE_AREA_DATA,
  
 +    // Bot
 +    WORLD_SEL_NPCBOT_INFO,
@@ -28462,10 +28462,10 @@ index 8a5bd20..c516fb7 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..a92035c 100644
+index 2c516ca..8a00f6a 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,120 @@ PacketSpoof.BanDuration = 86400
+@@ -3231,6 +3231,120 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  

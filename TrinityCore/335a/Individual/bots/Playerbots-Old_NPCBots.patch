@@ -1,7 +1,7 @@
-From 5a76f71cdbf0fdff5f54d72a7531e4e9e5d88fa4 Mon Sep 17 00:00:00 2001
+From 531cf972aa44952f714894120bbc2ca2884785f6 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 27 Sep 2014 12:35:28 -0400
-Subject: [PATCH] Playerbots-Old_NPCBots
+Date: Mon, 6 Oct 2014 07:57:56 -0400
+Subject: [PATCH] Playerbots_OldNPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |    31 +
@@ -79,10 +79,10 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  .../Database/Implementation/CharacterDatabase.cpp  |    14 +-
  .../Database/Implementation/CharacterDatabase.h    |    10 +-
- .../Database/Implementation/WorldDatabase.cpp      |     4 +
+ .../Database/Implementation/WorldDatabase.cpp      |     3 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42777 insertions(+), 10 deletions(-)
+ 78 files changed, 42776 insertions(+), 10 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -42670,10 +42670,10 @@ index a3b8adf..083e762 100644
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 15c55a1..e5faaad 100644
+index 0fc8bcc..b15c2fa 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7849,6 +7849,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+@@ -7879,6 +7879,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
      return SKILL_RANGE_LEVEL;
  }
  
@@ -43678,10 +43678,10 @@ index 789bd5a..c3124a6 100644
      private:
          void InitializeQueryCallbackParameters();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index d204f0c..83b4015 100644
+index e1bd35b..7ecc84b 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1468,6 +1468,9 @@ void World::SetInitialWorldSettings()
+@@ -1494,6 +1494,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -43721,10 +43721,10 @@ index d70d7b0..d3527ee 100644
              }
  
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 99c23af..823fed0 100644
+index 13d590d..32cf941 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -612,7 +612,19 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -609,7 +609,19 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // 04
      // 05
      // 06
@@ -43746,10 +43746,10 @@ index 99c23af..823fed0 100644
      // 09
      // 10
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index b918715..1454dbb 100644
+index 1460e5c..b49397a 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -544,7 +544,15 @@ enum CharacterDatabaseStatements
+@@ -542,7 +542,15 @@ enum CharacterDatabaseStatements
      // 04
      // 05
      // 06
@@ -43767,25 +43767,24 @@ index b918715..1454dbb 100644
      // 09
      // 10
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.cpp b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-index e83901c..4832f91 100644
+index 2adb575..d554872 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.cpp
-@@ -89,4 +89,8 @@ void WorldDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(WORLD_INS_DISABLES, "INSERT INTO disables (entry, sourceType, flags, comment) VALUES (?, ?, ?, ?)", CONNECTION_ASYNC);
-     PrepareStatement(WORLD_SEL_DISABLES, "SELECT entry FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_SYNCH);
+@@ -91,4 +91,7 @@ void WorldDatabaseConnection::DoPrepareStatements()
      PrepareStatement(WORLD_DEL_DISABLES, "DELETE FROM disables WHERE entry = ? AND sourceType = ?", CONNECTION_ASYNC);
-+
+     PrepareStatement(WORLD_UPD_CREATURE_ZONE_AREA_DATA, "UPDATE creature SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
+     PrepareStatement(WORLD_UPD_GAMEOBJECT_ZONE_AREA_DATA, "UPDATE gameobject SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
 +    // Bot
 +    PrepareStatement(WORLD_SEL_NPCBOT_TEMPLATE, "SELECT entry, trainer_race FROM creature_template WHERE scriptname = ? and trainer_class = ? and trainer_race IN (?, ?, ?, ?, ?)", CONNECTION_SYNCH);
 +    PrepareStatement(WORLD_SEL_NPCBOT_PET_LEVELSTATS, "SELECT hp, mana, armor, str, agi, sta, inte, spi FROM pet_levelstats WHERE creature_entry = ? AND level = ?", CONNECTION_SYNCH);
  }
 diff --git a/src/server/shared/Database/Implementation/WorldDatabase.h b/src/server/shared/Database/Implementation/WorldDatabase.h
-index 8a5bd20..c5b45a4 100644
+index a398b41..821d959 100644
 --- a/src/server/shared/Database/Implementation/WorldDatabase.h
 +++ b/src/server/shared/Database/Implementation/WorldDatabase.h
-@@ -111,6 +111,10 @@ enum WorldDatabaseStatements
-     WORLD_INS_DISABLES,
-     WORLD_DEL_DISABLES,
+@@ -113,6 +113,10 @@ enum WorldDatabaseStatements
+     WORLD_UPD_CREATURE_ZONE_AREA_DATA,
+     WORLD_UPD_GAMEOBJECT_ZONE_AREA_DATA,
  
 +    // Bot
 +    WORLD_SEL_NPCBOT_TEMPLATE,
@@ -43795,10 +43794,10 @@ index 8a5bd20..c5b45a4 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..403d3b4 100644
+index 2c516ca..8a0178d 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,214 @@ PacketSpoof.BanDuration = 86400
+@@ -3231,6 +3231,214 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
