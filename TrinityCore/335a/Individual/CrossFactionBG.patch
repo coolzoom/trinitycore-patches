@@ -1,6 +1,6 @@
-From 7dcae31fe669f16d59f2026ce9cb2c2e7595f688 Mon Sep 17 00:00:00 2001
+From fe7b08e08916075947493beb85c408d160800ca7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 4 Oct 2014 09:56:46 -0400
+Date: Mon, 6 Oct 2014 07:50:39 -0400
 Subject: [PATCH] CrossFactionBG
 
 ---
@@ -18,7 +18,7 @@ Subject: [PATCH] CrossFactionBG
  src/server/game/CMakeLists.txt                     |   2 +
  src/server/game/Cfbg/Cfbg.cpp                      | 326 +++++++++++++++++++++
  src/server/game/Cfbg/Cfbg.h                        |  35 +++
- src/server/game/Entities/Player/Player.cpp         |  97 ++++--
+ src/server/game/Entities/Player/Player.cpp         |  99 +++++--
  src/server/game/Entities/Player/Player.h           |  37 ++-
  src/server/game/Entities/Unit/Unit.cpp             |  17 +-
  src/server/game/Entities/Unit/Unit.h               |   4 +-
@@ -30,7 +30,7 @@ Subject: [PATCH] CrossFactionBG
  src/server/game/World/World.cpp                    |   2 +
  src/server/game/World/World.h                      |   1 +
  src/server/worldserver/worldserver.conf.dist       |  12 +
- 26 files changed, 657 insertions(+), 98 deletions(-)
+ 26 files changed, 658 insertions(+), 99 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/CrossFactionBG/world.AVFix.sql
  create mode 100644 src/server/game/Cfbg/Cfbg.cpp
  create mode 100644 src/server/game/Cfbg/Cfbg.h
@@ -913,7 +913,7 @@ index 0000000..45567f8
 +#define LIMIT_UINT32 2147483647
 +#endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f8f569d..a4d1824 100644
+index f8f569d..afc5e7c 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -659,6 +659,12 @@ void KillRewarder::Reward()
@@ -1156,6 +1156,15 @@ index f8f569d..a4d1824 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
+@@ -23215,7 +23256,7 @@ void Player::LearnCustomSpells()
+ void Player::LearnDefaultSkills()
+ {
+     // learn default race/class skills
+-    PlayerInfo const* info = sObjectMgr->GetPlayerInfo(getRace(), getClass());
++    PlayerInfo const* info = sObjectMgr->GetPlayerInfo(getRace(true), getClass());
+     for (PlayerCreateInfoSkills::const_iterator itr = info->skills.begin(); itr != info->skills.end(); ++itr)
+     {
+         uint32 skillId = itr->SkillId;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index 8ed561b..ade04b5 100644
 --- a/src/server/game/Entities/Player/Player.h
@@ -1402,7 +1411,7 @@ index 661ecf4..fd9f356 100644
      data << uint8(nameData->m_class);
  
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 7348677..702c575 100644
+index e1bd35b..984ce3e 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1046,6 +1046,8 @@ void World::LoadConfigSettings(bool reload)
@@ -1415,7 +1424,7 @@ index 7348677..702c575 100644
      {
          // overwrite DB/old value
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index e53d6e1..ac7c648 100644
+index 05d0fcc..a667dca 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -86,6 +86,7 @@ enum WorldTimers
@@ -1427,10 +1436,10 @@ index e53d6e1..ac7c648 100644
      CONFIG_ALLOW_PLAYER_COMMANDS,
      CONFIG_CLEAN_CHARACTER_DB,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..0e8fb44 100644
+index 2c516ca..c2ebd16 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,18 @@ PacketSpoof.BanDuration = 86400
+@@ -3231,6 +3231,18 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
