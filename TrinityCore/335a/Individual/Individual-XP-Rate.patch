@@ -1,6 +1,6 @@
-From d9488c1cacf842ef8a0d14c574877338e1cd955f Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 25 Sep 2014 09:30:01 -0400
+From a845daa2f900ae423f3a2b38b04925e1ebf57d05 Mon Sep 17 00:00:00 2001
+From: Lord Psyan <realmsofwarcraft@gmail.com>
+Date: Tue, 14 Oct 2014 09:55:11 -0400
 Subject: [PATCH] Individual-XP-Rate
 
 ---
@@ -8,11 +8,11 @@ Subject: [PATCH] Individual-XP-Rate
  .../world_individuale_xp_Rate.sql                  |  9 +++
  src/server/game/Accounts/RBAC.h                    |  3 +-
  src/server/game/Entities/Player/Player.cpp         | 25 ++++++++-
- src/server/game/Entities/Player/Player.h           | 16 ++++++
+ src/server/game/Entities/Player/Player.h           | 16 +++++-
  src/server/game/Miscellaneous/Formulas.h           |  4 +-
  src/server/game/Miscellaneous/Language.h           |  7 ++-
  src/server/scripts/Commands/cs_modify.cpp          | 64 ++++++++++++++++++++++
- 8 files changed, 129 insertions(+), 4 deletions(-)
+ 8 files changed, 128 insertions(+), 5 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 
@@ -58,10 +58,10 @@ index c2e38c3..4e3521e 100644
      // 07
      // 08
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f8f569d..9a78f67 100644
+index 4c74672..290df13 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -908,6 +908,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -931,6 +931,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -72,7 +72,7 @@ index f8f569d..9a78f67 100644
  }
  
  Player::~Player()
-@@ -15384,7 +15388,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15407,7 +15411,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -81,7 +81,7 @@ index f8f569d..9a78f67 100644
  
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
-@@ -26966,6 +26970,25 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
+@@ -26989,6 +26993,25 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
      return pet;
  }
  
@@ -108,7 +108,7 @@ index f8f569d..9a78f67 100644
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 8ed561b..7b7237e 100644
+index 08a02df..ad4012c 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -915,6 +915,13 @@ enum PlayerCommandStates
@@ -125,19 +125,19 @@ index 8ed561b..7b7237e 100644
  class PlayerTaxi
  {
      public:
-@@ -2341,6 +2348,11 @@ class Player : public Unit, public GridObject<Player>
-         std::string GetMapAreaAndZoneString();
-         std::string GetCoordsMapAreaAndZoneString();
- 
+@@ -2343,7 +2350,10 @@ class Player : public Unit, public GridObject<Player>
+     // Prepatch by LordPsyan
+     // 01
+     // 02
+-    // 03
 +        //Individuale_XP-Rate
 +        void SetIndividualRate(IndividualXpRate rate, float value);
 +        float GetIndividualXpKillRate() { return _individual_kill; };
 +        float GetIndividualXpQuestRate() { return _individual_quest; };
-+
-     protected:
-         // Gamemaster whisper whitelist
-         GuidList WhisperList;
-@@ -2673,6 +2685,10 @@ class Player : public Unit, public GridObject<Player>
+     // 04
+     // 05
+     // 06
+@@ -2696,6 +2706,10 @@ class Player : public Unit, public GridObject<Player>
          uint32 _pendingBindTimer;
  
          uint32 _activeCheats;
@@ -264,5 +264,5 @@ index 3c2f122..2e48919 100644
  
  void AddSC_modify_commandscript()
 -- 
-2.1.0
+2.1.1
 

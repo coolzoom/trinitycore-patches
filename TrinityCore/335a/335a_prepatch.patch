@@ -1,12 +1,13 @@
-From a7610d8b6aa75170f2950bac1156fc8bcf52fc19 Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 5 Oct 2014 13:22:51 -0400
+From 9f21b9cc5568dbe6bf637e35840c10f20df2bf67 Mon Sep 17 00:00:00 2001
+From: Lord Psyan <realmsofwarcraft@gmail.com>
+Date: Tue, 14 Oct 2014 09:52:41 -0400
 Subject: [PATCH] 335a_prepatch
 
 ---
  npc-entry-list.txt                                 |  30 +++
  src/server/game/Accounts/RBAC.h                    |  24 ++
- src/server/game/Entities/Player/Player.cpp         |  74 ++++++-
+ src/server/game/Entities/Player/Player.cpp         |  99 ++++++++-
+ src/server/game/Entities/Player/Player.h           |  25 ++-
  src/server/game/Handlers/BattleGroundHandler.cpp   |  25 ++-
  src/server/game/Handlers/CharacterHandler.cpp      |  50 ++++-
  src/server/game/Miscellaneous/Formulas.h           |  55 ++++-
@@ -18,7 +19,7 @@ Subject: [PATCH] 335a_prepatch
  .../Database/Implementation/CharacterDatabase.cpp  |  25 ++-
  .../Database/Implementation/CharacterDatabase.h    |  25 ++-
  src/server/worldserver/worldserver.conf.dist       |  27 +++
- 14 files changed, 758 insertions(+), 16 deletions(-)
+ 15 files changed, 806 insertions(+), 18 deletions(-)
  create mode 100644 npc-entry-list.txt
 
 diff --git a/npc-entry-list.txt b/npc-entry-list.txt
@@ -94,18 +95,43 @@ index 020ed1a..c2e38c3 100644
  };
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 0a2dc33..f8f569d 100644
+index 0a2dc33..4c74672 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -79,6 +79,7 @@
+@@ -79,7 +79,31 @@
  #include "WorldPacket.h"
  #include "WorldSession.h"
  #include "GameObjectAI.h"
+-
 +#include "Config.h"
- 
++// Prepatch by LordPsyan
++// 61
++// 62
++// 63
++// 64
++// 65
++// 66
++// 67
++// 68
++// 69
++// 70
++// 71
++// 72
++// 73
++// 74
++// 75
++// 76
++// 77
++// 78
++// 79
++// 80
++// Visit http://www.realmsofwarcraft.com/bb for forums and information
++//
++// End of prepatch
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
-@@ -7241,6 +7242,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+ #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
+@@ -7241,6 +7265,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -136,7 +162,7 @@ index 0a2dc33..f8f569d 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12625,6 +12650,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12625,6 +12673,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -167,7 +193,7 @@ index 0a2dc33..f8f569d 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15341,7 +15390,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15341,7 +15413,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -199,6 +225,42 @@ index 0a2dc33..f8f569d 100644
      int32 moneyRew = 0;
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
+diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
+index 8ed561b..08a02df 100644
+--- a/src/server/game/Entities/Player/Player.h
++++ b/src/server/game/Entities/Player/Player.h
+@@ -2340,7 +2340,30 @@ class Player : public Unit, public GridObject<Player>
+ 
+         std::string GetMapAreaAndZoneString();
+         std::string GetCoordsMapAreaAndZoneString();
+-
++    // Prepatch by LordPsyan
++    // 01
++    // 02
++    // 03
++    // 04
++    // 05
++    // 06
++    // 07
++    // 08
++    // 09
++    // 10
++    // 11
++    // 12
++    // 13
++    // 14
++    // 15
++    // 16
++    // 17
++    // 18
++    // 19
++    // 20
++    // Visit http://www.realmsofwarcraft.com/bb for forums and information
++    //
++    // End of prepatch
+     protected:
+         // Gamemaster whisper whitelist
+         GuidList WhisperList;
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
 index ccea6f6..ce8ae92 100644
 --- a/src/server/game/Handlers/BattleGroundHandler.cpp
@@ -236,7 +298,7 @@ index ccea6f6..ce8ae92 100644
  {
      ObjectGuid guid;
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index be8c491..56f4216 100644
+index 3ad355b..31553e4 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -1041,10 +1041,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
@@ -700,7 +762,7 @@ index d3a43b3..bd43fbe 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 903e14f..e1bd35b 100644
+index fae6137..c1c5398 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1107,7 +1107,30 @@ void World::LoadConfigSettings(bool reload)
@@ -973,7 +1035,7 @@ index 9bc11e3..1460e5c 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c09d451..43ea962 100644
+index ac307a2..2c516ca 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -1015,5 +1077,5 @@ index c09d451..43ea962 100644
 +# See http://www.realmsofwarcraft.com/bb for forums and information.
 +#
 -- 
-2.1.0
+2.1.1
 

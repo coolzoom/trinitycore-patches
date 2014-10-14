@@ -1,6 +1,6 @@
-From c24c7ac6086dbd50ffca9db149991e3351f9591c Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 8 Oct 2014 08:06:37 -0400
+From f27821ed184a1902fd486b831ffddefb1fee88f2 Mon Sep 17 00:00:00 2001
+From: Lord Psyan <realmsofwarcraft@gmail.com>
+Date: Tue, 14 Oct 2014 10:14:57 -0400
 Subject: [PATCH] New_NPCBots
 
 ---
@@ -31,8 +31,8 @@ Subject: [PATCH] New_NPCBots
  src/server/game/Entities/Creature/Creature.h       |   85 +-
  .../game/Entities/Creature/TemporarySummon.cpp     |   10 +
  src/server/game/Entities/Object/Object.cpp         |   16 +
- src/server/game/Entities/Player/Player.cpp         |  122 +
- src/server/game/Entities/Player/Player.h           |   27 +
+ src/server/game/Entities/Player/Player.cpp         |  122 +-
+ src/server/game/Entities/Player/Player.h           |   27 +-
  src/server/game/Entities/Totem/Totem.cpp           |    7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |    4 +
  src/server/game/Entities/Unit/Unit.cpp             |  566 ++
@@ -60,7 +60,7 @@ Subject: [PATCH] New_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |    5 +
  .../shared/Database/Implementation/WorldDatabase.h |    5 +
  src/server/worldserver/worldserver.conf.dist       |  114 +
- 56 files changed, 27254 insertions(+), 6 deletions(-)
+ 56 files changed, 27252 insertions(+), 8 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_bots.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
@@ -25333,7 +25333,7 @@ index d748be4..bb591aa 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 diff --git a/src/server/game/DungeonFinding/LFGMgr.cpp b/src/server/game/DungeonFinding/LFGMgr.cpp
-index ac6de07..c28be84 100644
+index 7d662c2..82c8fa2 100644
 --- a/src/server/game/DungeonFinding/LFGMgr.cpp
 +++ b/src/server/game/DungeonFinding/LFGMgr.cpp
 @@ -34,6 +34,12 @@
@@ -25542,7 +25542,7 @@ index ac6de07..c28be84 100644
      player.accept = LfgAnswer(accept);
  
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 8b33835..e19b479 100644
+index b8fd019..64cc776 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,10 @@
@@ -25694,7 +25694,7 @@ index 8b33835..e19b479 100644
              AI()->Reset();
              TriggerJustRespawned = true;//delay event to next tick so all creatures are created on the map before processing
          }
-@@ -2133,6 +2203,16 @@ void Creature::SetInCombatWithZone()
+@@ -2136,6 +2206,16 @@ void Creature::SetInCombatWithZone()
  
  uint32 Creature::GetShieldBlockValue() const                  //dunno mob block value
  {
@@ -25711,7 +25711,7 @@ index 8b33835..e19b479 100644
      return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
  }
  
-@@ -2182,6 +2262,11 @@ uint32 Creature::GetCreatureSpellCooldownDelay(uint32 spellId) const
+@@ -2185,6 +2265,11 @@ uint32 Creature::GetCreatureSpellCooldownDelay(uint32 spellId) const
  
  bool Creature::HasSpellCooldown(uint32 spell_id) const
  {
@@ -25723,7 +25723,7 @@ index 8b33835..e19b479 100644
      CreatureSpellCooldowns::const_iterator itr = m_CreatureSpellCooldowns.find(spell_id);
      return (itr != m_CreatureSpellCooldowns.end() && itr->second > time(NULL)) || HasCategoryCooldown(spell_id);
  }
-@@ -2216,6 +2301,11 @@ void Creature::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs
+@@ -2219,6 +2304,11 @@ void Creature::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs
                  ai->SpellInterrupted(unSpellId, unTimeMs);
          }
      }
@@ -25735,7 +25735,7 @@ index 8b33835..e19b479 100644
  }
  
  bool Creature::HasSpell(uint32 spellID) const
-@@ -2712,3 +2802,388 @@ void Creature::StartPickPocketRefillTimer()
+@@ -2705,3 +2795,388 @@ void Creature::StartPickPocketRefillTimer()
      _pickpocketLootRestore = time(NULL) + sWorld->getIntConfig(CONFIG_CREATURE_PICKPOCKET_REFILL);
  }
  
@@ -26125,7 +26125,7 @@ index 8b33835..e19b479 100644
 +}
 +//END NPCBOT
 diff --git a/src/server/game/Entities/Creature/Creature.h b/src/server/game/Entities/Creature/Creature.h
-index 4cebe5b..f3e5afb 100644
+index 43ae3d8..df2bb6b 100644
 --- a/src/server/game/Entities/Creature/Creature.h
 +++ b/src/server/game/Entities/Creature/Creature.h
 @@ -37,6 +37,11 @@ class Player;
@@ -26157,7 +26157,7 @@ index 4cebe5b..f3e5afb 100644
  
  #define CREATURE_REGEN_INTERVAL 2 * IN_MILLISECONDS
  
-@@ -680,6 +686,76 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -678,6 +684,76 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          void FocusTarget(Spell const* focusSpell, WorldObject const* target);
          void ReleaseFocus(Spell const* focusSpell);
  
@@ -26234,7 +26234,7 @@ index 4cebe5b..f3e5afb 100644
      protected:
          bool CreateFromProto(uint32 guidlow, uint32 entry, CreatureData const* data = nullptr, uint32 vehId = 0);
          bool InitEntry(uint32 entry, CreatureData const* data = nullptr);
-@@ -732,6 +808,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
+@@ -730,6 +806,13 @@ class Creature : public Unit, public GridObject<Creature>, public MapObject
          bool CanAlwaysSee(WorldObject const* obj) const override;
  
      private:
@@ -26311,21 +26311,21 @@ index badf0d9..ea7ea98 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f8f569d..5bb6a7a 100644
+index 4c74672..bfba6f8 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -81,6 +81,10 @@
- #include "GameObjectAI.h"
- #include "Config.h"
- 
+@@ -87,7 +87,9 @@
+ // 64
+ // 65
+ // 66
+-// 67
 +//npcbot
 +#include "botmgr.h"
 +//end npcbot
-+
- #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
- 
- #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
-@@ -538,6 +542,17 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+ // 68
+ // 69
+ // 70
+@@ -561,6 +563,17 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
  
@@ -26343,7 +26343,7 @@ index f8f569d..5bb6a7a 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -892,6 +907,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -915,6 +928,10 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -26354,7 +26354,7 @@ index f8f569d..5bb6a7a 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -946,6 +965,14 @@ Player::~Player()
+@@ -969,6 +986,14 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -26369,7 +26369,7 @@ index f8f569d..5bb6a7a 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1886,6 +1913,11 @@ void Player::Update(uint32 p_time)
+@@ -1909,6 +1934,11 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -26381,7 +26381,7 @@ index f8f569d..5bb6a7a 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2307,6 +2339,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2330,6 +2360,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
              if (pet)
                  UnsummonPetTemporaryIfAny();
  
@@ -26393,7 +26393,7 @@ index f8f569d..5bb6a7a 100644
              // remove all dyn objects
              RemoveAllDynObjects();
  
-@@ -2490,6 +2527,38 @@ void Player::RemoveFromWorld()
+@@ -2513,6 +2548,38 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -26432,7 +26432,7 @@ index f8f569d..5bb6a7a 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2765,6 +2834,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2788,6 +2855,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
      if (creature->GetCharmerGUID())
          return NULL;
  
@@ -26444,7 +26444,7 @@ index f8f569d..5bb6a7a 100644
      // not enemy
      if (creature->IsHostileTo(this))
          return NULL;
-@@ -2956,6 +3030,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -2979,6 +3051,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
      if (!group)
          return;
  
@@ -26487,7 +26487,7 @@ index f8f569d..5bb6a7a 100644
      group->RemoveMember(guid, method, kicker, reason);
  }
  
-@@ -4965,6 +5075,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4988,6 +5096,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -26502,7 +26502,7 @@ index f8f569d..5bb6a7a 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -7224,6 +7342,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7247,6 +7363,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
          else
          {
@@ -26514,7 +26514,7 @@ index f8f569d..5bb6a7a 100644
                  return false;
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 8ed561b..33d67a9 100644
+index 08a02df..78a64f2 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -53,6 +53,10 @@ class PlayerSocial;
@@ -26528,10 +26528,11 @@ index 8ed561b..33d67a9 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2341,6 +2345,21 @@ class Player : public Unit, public GridObject<Player>
-         std::string GetMapAreaAndZoneString();
-         std::string GetCoordsMapAreaAndZoneString();
- 
+@@ -2351,7 +2355,20 @@ class Player : public Unit, public GridObject<Player>
+     // 08
+     // 09
+     // 10
+-    // 11
 +        /*********************************************************/
 +        /***                     BOT SYSTEM                    ***/
 +        /*********************************************************/
@@ -26546,11 +26547,10 @@ index 8ed561b..33d67a9 100644
 +        /*********************************************************/
 +        /***                 END BOT SYSTEM                    ***/
 +        /*********************************************************/
-+
-     protected:
-         // Gamemaster whisper whitelist
-         GuidList WhisperList;
-@@ -2604,6 +2623,14 @@ class Player : public Unit, public GridObject<Player>
+     // 12
+     // 13
+     // 14
+@@ -2627,6 +2644,14 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -27784,10 +27784,10 @@ index d07e13e..6bcd107 100644
      // Get creator of the unit (SPELL_AURA_CLONE_CASTER does not stack)
      Unit* creator = unit->GetAuraEffectsByType(SPELL_AURA_CLONE_CASTER).front()->GetCaster();
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index 904e2f5..4f423b1 100644
+index 7f350df..f73e5f7 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
-@@ -36,6 +36,10 @@
+@@ -37,6 +37,10 @@
  #include "Vehicle.h"
  #include "VMapFactory.h"
  
@@ -27798,7 +27798,7 @@ index 904e2f5..4f423b1 100644
  u_map_magic MapMagic        = { {'M','A','P','S'} };
  u_map_magic MapVersionMagic = { {'v','1','.','3'} };
  u_map_magic MapAreaMagic    = { {'A','R','E','A'} };
-@@ -2677,8 +2681,24 @@ uint32 Map::GetPlayersCountExceptGMs() const
+@@ -2678,8 +2682,24 @@ uint32 Map::GetPlayersCountExceptGMs() const
  {
      uint32 count = 0;
      for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
@@ -27824,7 +27824,7 @@ index 904e2f5..4f423b1 100644
      return count;
  }
  
-@@ -2744,6 +2764,10 @@ void Map::AddToActive(Creature* c)
+@@ -2745,6 +2765,10 @@ void Map::AddToActive(Creature* c)
          GridCoord p = Trinity::ComputeGridCoord(x, y);
          if (getNGrid(p.x_coord, p.y_coord))
              getNGrid(p.x_coord, p.y_coord)->incUnloadActiveLock();
@@ -27835,7 +27835,7 @@ index 904e2f5..4f423b1 100644
          else
          {
              GridCoord p2 = Trinity::ComputeGridCoord(c->GetPositionX(), c->GetPositionY());
-@@ -2775,6 +2799,10 @@ void Map::RemoveFromActive(Creature* c)
+@@ -2776,6 +2800,10 @@ void Map::RemoveFromActive(Creature* c)
          GridCoord p = Trinity::ComputeGridCoord(x, y);
          if (getNGrid(p.x_coord, p.y_coord))
              getNGrid(p.x_coord, p.y_coord)->decUnloadActiveLock();
@@ -28133,10 +28133,10 @@ index 5ef6acb..691d874 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e1bd35b..7ecc84b 100644
+index c1c5398..faf3d1b 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1494,6 +1494,9 @@ void World::SetInitialWorldSettings()
+@@ -1501,6 +1501,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -28587,5 +28587,5 @@ index 2c516ca..d8e3338 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-2.1.0
+2.1.1
 
