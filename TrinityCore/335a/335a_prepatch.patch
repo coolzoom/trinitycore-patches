@@ -1,6 +1,6 @@
-From 9f21b9cc5568dbe6bf637e35840c10f20df2bf67 Mon Sep 17 00:00:00 2001
+From dbfc9a0a7452da911790a7c1262f03d6643b5835 Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Tue, 14 Oct 2014 09:52:41 -0400
+Date: Sun, 26 Oct 2014 10:54:45 -0400
 Subject: [PATCH] 335a_prepatch
 
 ---
@@ -16,10 +16,10 @@ Subject: [PATCH] 335a_prepatch
  src/server/game/World/World.cpp                    |  50 ++++-
  src/server/game/World/World.h                      |  92 ++++++++
  src/server/scripts/Custom/CMakeLists.txt           |   4 +-
- .../Database/Implementation/CharacterDatabase.cpp  |  25 ++-
+ .../Database/Implementation/CharacterDatabase.cpp  |  24 ++
  .../Database/Implementation/CharacterDatabase.h    |  25 ++-
  src/server/worldserver/worldserver.conf.dist       |  27 +++
- 15 files changed, 806 insertions(+), 18 deletions(-)
+ 15 files changed, 806 insertions(+), 17 deletions(-)
  create mode 100644 npc-entry-list.txt
 
 diff --git a/npc-entry-list.txt b/npc-entry-list.txt
@@ -60,11 +60,11 @@ index 0000000..4df8044
 +190010        Warpweaver               Transmogrification
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index 020ed1a..c2e38c3 100644
+index efbbf61..2add04c 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -700,6 +700,30 @@ enum RBACPermissions
-     RBAC_PERM_COMMAND_GUILD_INFO                             = 794,
+@@ -702,6 +702,30 @@ enum RBACPermissions
+     RBAC_PERM_COMMAND_INSTANCE_GET_BOSS_STATE                = 796,
  
      // custom permissions 1000+
 +    // Prepatch by LordPsyan
@@ -95,10 +95,10 @@ index 020ed1a..c2e38c3 100644
  };
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 0a2dc33..4c74672 100644
+index 7a237dd..4a50a3a 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -79,7 +79,31 @@
+@@ -80,7 +80,31 @@
  #include "WorldPacket.h"
  #include "WorldSession.h"
  #include "GameObjectAI.h"
@@ -131,7 +131,7 @@ index 0a2dc33..4c74672 100644
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
  #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
-@@ -7241,6 +7265,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7239,6 +7263,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -162,7 +162,7 @@ index 0a2dc33..4c74672 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12625,6 +12673,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12623,6 +12671,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -193,7 +193,7 @@ index 0a2dc33..4c74672 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15341,7 +15413,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15363,7 +15435,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -226,10 +226,10 @@ index 0a2dc33..4c74672 100644
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 8ed561b..08a02df 100644
+index a714353..821b5cd 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2340,7 +2340,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2342,7 +2342,30 @@ class Player : public Unit, public GridObject<Player>
  
          std::string GetMapAreaAndZoneString();
          std::string GetCoordsMapAreaAndZoneString();
@@ -298,10 +298,10 @@ index ccea6f6..ce8ae92 100644
  {
      ObjectGuid guid;
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 3ad355b..31553e4 100644
+index 18cd5d5..6361e91 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -1041,10 +1041,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -993,10 +993,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
@@ -436,10 +436,10 @@ index e6ff1a0..b922932 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index ae8221e..327a7a7 100644
+index 33abd7a..18b1a38 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1177,7 +1177,30 @@ enum TrinityStrings
+@@ -1184,7 +1184,30 @@ enum TrinityStrings
      // Use for custom patches             11000-11999
      LANG_AUTO_BROADCAST                 = 11000,
      LANG_INVALID_REALMID                = 11001,
@@ -471,7 +471,7 @@ index ae8221e..327a7a7 100644
      // Show Kick in world
      LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
  
-@@ -1191,6 +1214,30 @@ enum TrinityStrings
+@@ -1198,6 +1221,30 @@ enum TrinityStrings
      LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
  
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
@@ -762,10 +762,10 @@ index d3a43b3..bd43fbe 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index fae6137..c1c5398 100644
+index 05eb108..a740393 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1107,7 +1107,30 @@ void World::LoadConfigSettings(bool reload)
+@@ -1109,7 +1109,30 @@ void World::LoadConfigSettings(bool reload)
      m_visibility_notify_periodOnContinents = sConfigMgr->GetIntDefault("Visibility.Notify.Period.OnContinents", DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
@@ -797,7 +797,7 @@ index fae6137..c1c5398 100644
      ///- Load the CharDelete related config options
      m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
      m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
-@@ -1263,7 +1286,30 @@ void World::LoadConfigSettings(bool reload)
+@@ -1265,7 +1288,30 @@ void World::LoadConfigSettings(bool reload)
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
@@ -830,10 +830,10 @@ index fae6137..c1c5398 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index b9c3030..05d0fcc 100644
+index 5c97b8f..2f13051 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -157,6 +157,30 @@ enum WorldBoolConfigs
+@@ -158,6 +158,30 @@ enum WorldBoolConfigs
      CONFIG_STATS_LIMITS_ENABLE,
      CONFIG_INSTANCES_RESET_ANNOUNCE,
      CONFIG_IP_BASED_ACTION_LOGGING,
@@ -864,7 +864,7 @@ index b9c3030..05d0fcc 100644
      CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA,
      CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA,
-@@ -180,6 +204,50 @@ enum WorldFloatConfigs
+@@ -181,6 +205,50 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -915,7 +915,7 @@ index b9c3030..05d0fcc 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -340,6 +408,30 @@ enum WorldIntConfigs
+@@ -341,6 +409,30 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -965,14 +965,13 @@ index 80ebe36..20c2bc9 100644
  
  message("  -> Prepared: Custom")
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index e5e5630..13d590d 100644
+index 010ceb1..b0a612e 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -602,5 +602,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(CHAR_SEL_PVPSTATS_MAXID, "SELECT MAX(id) FROM pvpstats_battlegrounds", CONNECTION_SYNCH);
-     PrepareStatement(CHAR_INS_PVPSTATS_BATTLEGROUND, "INSERT INTO pvpstats_battlegrounds (id, winner_faction, bracket_id, type, date) VALUES (?, ?, ?, ?, NOW())", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_INS_PVPSTATS_PLAYER, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
--
+@@ -608,4 +608,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_UPD_QUEST_TRACK_GM_COMPLETE, "UPDATE quest_tracker SET completed_by_gm = 1 WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_QUEST_TRACK_COMPLETE_TIME, "UPDATE quest_tracker SET quest_complete_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_QUEST_TRACK_ABANDON_TIME, "UPDATE quest_tracker SET quest_abandon_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
 +    // Prepatch by LordPsyan
 +    // 01
 +    // 02
@@ -999,13 +998,13 @@ index e5e5630..13d590d 100644
 +    // End of prepatch
  }
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 9bc11e3..1460e5c 100644
+index 7305568..d6a2cd4 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -535,7 +535,30 @@ enum CharacterDatabaseStatements
-     CHAR_SEL_PVPSTATS_MAXID,
-     CHAR_INS_PVPSTATS_BATTLEGROUND,
-     CHAR_INS_PVPSTATS_PLAYER,
+@@ -540,7 +540,30 @@ enum CharacterDatabaseStatements
+     CHAR_UPD_QUEST_TRACK_GM_COMPLETE,
+     CHAR_UPD_QUEST_TRACK_COMPLETE_TIME,
+     CHAR_UPD_QUEST_TRACK_ABANDON_TIME,
 -
 +    // Prepatch by LordPsyan
 +    // 01
@@ -1035,7 +1034,7 @@ index 9bc11e3..1460e5c 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index ac307a2..2c516ca 100644
+index 992ae4f..2e66dc7 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -1067,7 +1066,7 @@ index ac307a2..2c516ca 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -3208,3 +3230,8 @@ PacketSpoof.BanDuration = 86400
+@@ -3216,3 +3238,8 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
