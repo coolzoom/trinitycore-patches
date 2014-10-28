@@ -1,6 +1,6 @@
-From ecf0a5589cd0f7214df0588b2189e22177cb9c90 Mon Sep 17 00:00:00 2001
+From 415ac077cfe35bc9bae6554e064ee7582ce02028 Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Tue, 14 Oct 2014 10:17:11 -0400
+Date: Tue, 28 Oct 2014 13:10:44 -0400
 Subject: [PATCH] Playerbots-Old_NPCBots
 
 ---
@@ -27,7 +27,7 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  src/server/game/AI/NpcBots/botgiver.cpp            |   340 +
  src/server/game/AI/NpcBots/bothelper.cpp           |   421 +
  src/server/game/AI/NpcBots/bothelper.h             |    32 +
- src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 11895 +++++++++++++++++++
+ src/server/game/AI/PlayerBots/PlayerbotAI.cpp      | 11898 +++++++++++++++++++
  src/server/game/AI/PlayerBots/PlayerbotAI.h        |  2130 ++++
  .../game/AI/PlayerBots/PlayerbotDeathKnightAI.cpp  |   501 +
  .../game/AI/PlayerBots/PlayerbotDeathKnightAI.h    |   100 +
@@ -64,7 +64,7 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  src/server/game/Globals/ObjectMgr.h                |    20 +
  src/server/game/Groups/Group.cpp                   |    16 +
  src/server/game/Groups/Group.h                     |     3 +
- src/server/game/Handlers/CharacterHandler.cpp      |   152 +-
+ src/server/game/Handlers/CharacterHandler.cpp      |   156 +-
  src/server/game/Handlers/ChatHandler.cpp           |    32 +-
  src/server/game/Handlers/GroupHandler.cpp          |    14 +
  src/server/game/Handlers/MiscHandler.cpp           |    35 +
@@ -82,7 +82,7 @@ Subject: [PATCH] Playerbots-Old_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |     3 +
  .../shared/Database/Implementation/WorldDatabase.h |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42775 insertions(+), 11 deletions(-)
+ 78 files changed, 42777 insertions(+), 16 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -20024,10 +20024,10 @@ index 0000000..1310b4d
 +#endif
 diff --git a/src/server/game/AI/PlayerBots/PlayerbotAI.cpp b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
 new file mode 100644
-index 0000000..e0e4e4a
+index 0000000..7397fff
 --- /dev/null
 +++ b/src/server/game/AI/PlayerBots/PlayerbotAI.cpp
-@@ -0,0 +1,11895 @@
+@@ -0,0 +1,11898 @@
 +/*
 +Name:       PlayerBot AI Core by Graff (onlysuffering@gmail.com)
 +Converted:  from original blueboy's Playerbots: https://github.com/blueboy/portal/
@@ -20165,17 +20165,20 @@ index 0000000..e0e4e4a
 +    else
 +    {
 +        //std::string nameLink = handler->playerLink(targetName);
-+
++        WorldLocation loc;
++        uint16 zoneId = 0;
++        SQLTransaction trans = CharacterDatabase.BeginTransaction();
++        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER_POSITION);
 +        //handler->PSendSysMessage(LANG_SUMMONING, nameLink.c_str(), handler->GetTrinityString(LANG_OFFLINE));
-+
++        stmt->setUInt16(1, handler->GetSession()->GetPlayer()->GetMapId());
++        stmt->setUInt16(2, handler->GetSession()->GetPlayer()->GetZoneId());
++        stmt->setFloat(3, handler->GetSession()->GetPlayer()->GetPositionX());
++        stmt->setFloat(4, handler->GetSession()->GetPlayer()->GetPositionY());
++        stmt->setFloat(5, handler->GetSession()->GetPlayer()->GetPositionZ());
++        trans->Append(stmt);
 +        // in point where GM stay
-+        Player::SavePositionInDB(handler->GetSession()->GetPlayer()->GetMapId(),
-+            handler->GetSession()->GetPlayer()->GetPositionX(),
-+            handler->GetSession()->GetPlayer()->GetPositionY(),
-+            handler->GetSession()->GetPlayer()->GetPositionZ(),
-+            handler->GetSession()->GetPlayer()->GetOrientation(),
-+            handler->GetSession()->GetPlayer()->GetZoneId(),
-+            targetGuid);
++
++        Player::SavePositionInDB(loc, zoneId, targetGuid, trans);
 +    }
 +
 +    return true;
@@ -40693,10 +40696,10 @@ index 0000000..5c003d7
 +
 +#endif
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index c2e38c3..b3174a6 100644
+index 2add04c..100a23e 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -709,7 +709,17 @@ enum RBACPermissions
+@@ -711,7 +711,17 @@ enum RBACPermissions
      // 06
      // 07
      // 08
@@ -40729,7 +40732,7 @@ index d748be4..e639dcd 100644
    ${CMAKE_CURRENT_SOURCE_DIR}/AI/SmartScripts
    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index b8fd019..39c9682 100644
+index 8adc98b..507483b 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -54,6 +54,9 @@
@@ -41070,10 +41073,10 @@ index 31d4de2..1359eb6 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index badf0d9..710390e 100644
+index 4ffddde..74920de 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
-@@ -2039,6 +2039,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2046,6 +2046,11 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
              summon = new Puppet(properties, summoner);
              break;
          case UNIT_MASK_TOTEM:
@@ -41085,7 +41088,7 @@ index badf0d9..710390e 100644
              summon = new Totem(properties, summoner);
              break;
          case UNIT_MASK_MINION:
-@@ -2060,6 +2065,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
+@@ -2067,6 +2072,12 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
      AddToMap(summon->ToCreature());
      summon->InitSummon();
  
@@ -41099,7 +41102,7 @@ index badf0d9..710390e 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 4c74672..fb2bb1f 100644
+index 4a50a3a..7d3a499 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -16,6 +16,12 @@
@@ -41115,7 +41118,7 @@ index 4c74672..fb2bb1f 100644
  #include "Player.h"
  #include "AccountMgr.h"
  #include "AchievementMgr.h"
-@@ -561,6 +567,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+@@ -562,6 +568,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
  
@@ -41134,7 +41137,7 @@ index 4c74672..fb2bb1f 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -915,6 +933,31 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -916,6 +934,31 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -41166,7 +41169,7 @@ index 4c74672..fb2bb1f 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -969,6 +1012,23 @@ Player::~Player()
+@@ -970,6 +1013,23 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -41190,7 +41193,7 @@ index 4c74672..fb2bb1f 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1909,6 +1969,21 @@ void Player::Update(uint32 p_time)
+@@ -1910,6 +1970,21 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -41212,7 +41215,7 @@ index 4c74672..fb2bb1f 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2172,6 +2247,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2173,6 +2248,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -41225,7 +41228,7 @@ index 4c74672..fb2bb1f 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2280,6 +2361,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2281,6 +2362,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -41239,7 +41242,7 @@ index 4c74672..fb2bb1f 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2513,6 +2601,935 @@ void Player::RemoveFromWorld()
+@@ -2514,6 +2602,935 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -42175,7 +42178,7 @@ index 4c74672..fb2bb1f 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2790,6 +3807,9 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2791,6 +3808,9 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
  
      // not enemy
      if (creature->IsHostileTo(this))
@@ -42185,7 +42188,7 @@ index 4c74672..fb2bb1f 100644
          return NULL;
  
      // not unfriendly
-@@ -2978,8 +3998,31 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -2979,8 +3999,31 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
  {
      if (!group)
          return;
@@ -42218,7 +42221,7 @@ index 4c74672..fb2bb1f 100644
  }
  
  void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
-@@ -3151,6 +4194,9 @@ void Player::GiveLevel(uint8 level)
+@@ -3152,6 +4195,9 @@ void Player::GiveLevel(uint8 level)
              }
  
      sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
@@ -42228,7 +42231,7 @@ index 4c74672..fb2bb1f 100644
  }
  
  void Player::InitTalentForLevel()
-@@ -4988,6 +6034,13 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4986,6 +6032,13 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
              stmt->setUInt32(0, guid);
              trans->Append(stmt);
  
@@ -42243,12 +42246,12 @@ index 4c74672..fb2bb1f 100644
              break;
          }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 08a02df..4be359e 100644
+index 821b5cd..e70bb1f 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -53,6 +53,14 @@ class PlayerSocial;
- class SpellCastTargets;
- class UpdateMask;
+@@ -55,6 +55,14 @@ class UpdateMask;
+ 
+ struct CharacterCustomizeInfo;
  
 +// Playerbot mod
 +class PlayerbotAI;
@@ -42261,7 +42264,7 @@ index 08a02df..4be359e 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2351,7 +2359,57 @@ class Player : public Unit, public GridObject<Player>
+@@ -2353,7 +2361,57 @@ class Player : public Unit, public GridObject<Player>
      // 08
      // 09
      // 10
@@ -42320,7 +42323,7 @@ index 08a02df..4be359e 100644
      // 12
      // 13
      // 14
-@@ -2627,6 +2685,33 @@ class Player : public Unit, public GridObject<Player>
+@@ -2629,6 +2687,33 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -42396,7 +42399,7 @@ index 94f0a90..3f245f7 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index a3b8adf..083e762 100644
+index 9a4b7a3..de39616 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -339,6 +339,17 @@ void Unit::Update(uint32 p_time)
@@ -42466,7 +42469,7 @@ index a3b8adf..083e762 100644
      // Calculate armor reduction
      if (IsDamageReducedByArmor((SpellSchoolMask)(damageInfo->damageSchoolMask)))
      {
-@@ -10423,6 +10455,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
+@@ -10445,6 +10477,7 @@ float Unit::GetUnitSpellCriticalChance(Unit* victim, SpellInfo const* spellProto
      //! Mobs can't crit with spells. Player Totems can
      //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
      if (GetGUID().IsCreatureOrVehicle() && !(IsTotem() && GetOwnerGUID().IsPlayer()) && GetEntry() != 15438)
@@ -42474,7 +42477,7 @@ index a3b8adf..083e762 100644
          return 0.0f;
  
      // not critting spell
-@@ -13188,6 +13221,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
+@@ -13210,6 +13243,11 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
              break;
      }
  
@@ -42486,7 +42489,7 @@ index a3b8adf..083e762 100644
      return true;
  }
  
-@@ -16648,6 +16686,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16670,6 +16708,182 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                  break;
          }
      }
@@ -42670,10 +42673,10 @@ index a3b8adf..083e762 100644
      uint32 modelid = 0;
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 0fc8bcc..b15c2fa 100644
+index 9e31e90..4268ec2 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7879,6 +7879,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+@@ -7876,6 +7876,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
      return SKILL_RANGE_LEVEL;
  }
  
@@ -42757,7 +42760,7 @@ index 0fc8bcc..b15c2fa 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index f7e555d..88b1665 100644
+index 6230314..0e78524 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -143,6 +143,21 @@ struct GameTele
@@ -42809,7 +42812,7 @@ index f7e555d..88b1665 100644
          void LoadScripts(ScriptsType type);
          void LoadQuestRelationsHelper(QuestRelations& map, QuestRelationsReverse* reverseMap, std::string const& table, bool starter, bool go);
 diff --git a/src/server/game/Groups/Group.cpp b/src/server/game/Groups/Group.cpp
-index b203ccb..9273909 100644
+index 9854fea..dbcddce 100644
 --- a/src/server/game/Groups/Group.cpp
 +++ b/src/server/game/Groups/Group.cpp
 @@ -105,6 +105,9 @@ bool Group::Create(Player* leader)
@@ -42899,7 +42902,7 @@ index 519e073..d1639f4 100644
          bool _setMembersGroup(ObjectGuid guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 31553e4..cb3a338 100644
+index 6361e91..2d59086 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -48,6 +48,10 @@
@@ -42913,12 +42916,11 @@ index 31553e4..cb3a338 100644
  class LoginQueryHolder : public SQLQueryHolder
  {
      private:
-@@ -1045,7 +1049,34 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -996,7 +1000,32 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     // Prepatch by LordPsyan
      // 01
      // 02
-     // 03
--    // 04
-+    //the only place where we check if it has NPC bots
+-    // 03
 +    if (sConfigMgr->GetBoolDefault("Bot.EnableNpcBots", true))
 +    {
 +        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_NPCBOTS);
@@ -42945,15 +42947,20 @@ index 31553e4..cb3a338 100644
 +            } while (result->NextRow());
 +        }
 +    }
-+
+     // 04
      // 05
      // 06
-     // 07
-@@ -1072,7 +1103,73 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
-     // 02
-     // 03
-     // 04
+@@ -1019,12 +1048,74 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+     // End of prepatch
+     delete holder;
+ }
+-    // Prepatch by LordPsyan
+-    // 01
+-    // 02
+-    // 03
+-    // 04
 -    // 05
++
 +//Playerbot mod: is different from the normal
 +//HandlePlayerLoginCallback in that it sets up the bot's
 +//world session and also stores the pointer to the bot player
@@ -43024,7 +43031,7 @@ index 31553e4..cb3a338 100644
      // 06
      // 07
      // 08
-@@ -1111,6 +1208,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket & /*recvData*/)
+@@ -1063,6 +1154,57 @@ void WorldSession::HandleSetFactionCheat(WorldPacket& /*recvData*/)
      GetPlayer()->GetReputationMgr().SendStates();
  }
  
@@ -43083,7 +43090,7 @@ index 31553e4..cb3a338 100644
  {
      uint32 data;
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index b33f236..db66e84 100644
+index 288bb82..5f82c76 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -39,6 +39,8 @@
@@ -43098,7 +43105,7 @@ index b33f236..db66e84 100644
 @@ -269,7 +271,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
              }
  
-             Player* receiver = sObjectAccessor->FindPlayerByName(to);
+             Player* receiver = ObjectAccessor::FindConnectedPlayerByName(to);
 -            if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
 +            if (!receiver)
              {
@@ -43147,7 +43154,7 @@ index b33f236..db66e84 100644
              ChatHandler::BuildChatPacket(data, ChatMsg(type), Language(lang), sender, NULL, msg);
              group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetGUID()));
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index a7ce1f8..977757f 100644
+index f429194..0f5b8f5 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
 @@ -307,6 +307,13 @@ void WorldSession::HandleGroupUninviteGuidOpcode(WorldPacket& recvData)
@@ -43179,7 +43186,7 @@ index a7ce1f8..977757f 100644
          return;
      }
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 50fde10..d269721 100644
+index c365236..7c4e3d6 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -56,6 +56,9 @@
@@ -43297,7 +43304,7 @@ index d402cdd..3d8b8ec 100644
      if (!unit)
      {
 diff --git a/src/server/game/Handlers/QuestHandler.cpp b/src/server/game/Handlers/QuestHandler.cpp
-index e4e1c99..88a6a96 100644
+index 7872ac6..5ff6950 100644
 --- a/src/server/game/Handlers/QuestHandler.cpp
 +++ b/src/server/game/Handlers/QuestHandler.cpp
 @@ -31,6 +31,8 @@
@@ -43309,7 +43316,7 @@ index e4e1c99..88a6a96 100644
  
  void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recvData)
  {
-@@ -572,8 +574,13 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
+@@ -583,8 +585,13 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
              receiver->PlayerTalkClass->SendQuestGiverRequestItems(quest, sender->GetGUID(), receiver->CanCompleteRepeatableQuest(quest), true);
          else
          {
@@ -43433,7 +43440,7 @@ index bd43fbe..612b44a 100644
  // end102
  // end103
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index 84bb906..0c48db3 100644
+index 69297d3..82e8a62 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -47,6 +47,8 @@
@@ -43605,10 +43612,10 @@ index 84bb906..0c48db3 100644
      if (_addFriendCallback.IsReady())
      {
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index 789bd5a..c3124a6 100644
+index 0510900..c2fd66c 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -205,6 +205,34 @@ struct PacketCounter
+@@ -245,6 +245,34 @@ struct PacketCounter
      uint32 amountCounter;
  };
  
@@ -43643,7 +43650,7 @@ index 789bd5a..c3124a6 100644
  /// Player session in the World
  class WorldSession
  {
-@@ -212,6 +240,16 @@ class WorldSession
+@@ -252,6 +280,16 @@ class WorldSession
          WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
          ~WorldSession();
  
@@ -43660,15 +43667,15 @@ index 789bd5a..c3124a6 100644
          bool PlayerLoading() const { return m_playerLoading; }
          bool PlayerLogout() const { return m_playerLogout; }
          bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
-@@ -407,6 +445,7 @@ class WorldSession
+@@ -447,6 +485,7 @@ class WorldSession
          void HandlePlayerLoginOpcode(WorldPacket& recvPacket);
          void HandleCharEnum(PreparedQueryResult result);
          void HandlePlayerLogin(LoginQueryHolder * holder);
 +        void HandlePlayerBotLogin(SQLQueryHolder * holder);
          void HandleCharFactionOrRaceChange(WorldPacket& recvData);
- 
-         // played time
-@@ -912,6 +951,8 @@ class WorldSession
+         void SendCharCreate(ResponseCodes result);
+         void SendCharDelete(ResponseCodes result);
+@@ -959,6 +998,8 @@ class WorldSession
          void HandleEnterPlayerVehicle(WorldPacket& data);
          void HandleUpdateProjectilePosition(WorldPacket& recvPacket);
          void HandleUpdateMissileTrajectory(WorldPacket& recvPacket);
@@ -43678,10 +43685,10 @@ index 789bd5a..c3124a6 100644
      private:
          void InitializeQueryCallbackParameters();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index c1c5398..faf3d1b 100644
+index a740393..81dedf8 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1501,6 +1501,9 @@ void World::SetInitialWorldSettings()
+@@ -1503,6 +1503,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -43721,10 +43728,10 @@ index d70d7b0..d3527ee 100644
              }
  
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 13d590d..32cf941 100644
+index 2e078f6..c517f89 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -609,7 +609,19 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -614,7 +614,19 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // 04
      // 05
      // 06
@@ -43746,10 +43753,10 @@ index 13d590d..32cf941 100644
      // 09
      // 10
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 1460e5c..b49397a 100644
+index 09cf640..e6851c4 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -542,7 +542,15 @@ enum CharacterDatabaseStatements
+@@ -546,7 +546,15 @@ enum CharacterDatabaseStatements
      // 04
      // 05
      // 06
@@ -43794,10 +43801,10 @@ index a398b41..821d959 100644
  };
  
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 2c516ca..8a0178d 100644
+index 2e66dc7..3905d4b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3231,6 +3231,214 @@ PacketSpoof.BanDuration = 86400
+@@ -3239,6 +3239,214 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
