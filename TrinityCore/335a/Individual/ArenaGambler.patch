@@ -1,6 +1,6 @@
-From 5366eddbcc9f01e8e1d56479e85e34b75724b8cd Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 3 Oct 2014 08:02:37 -0400
+From 460daf6240903ddef1d131010633ac0ea0916262 Mon Sep 17 00:00:00 2001
+From: Lord Psyan <realmsofwarcraft@gmail.com>
+Date: Wed, 19 Nov 2014 09:41:22 -0500
 Subject: [PATCH] ArenaGambler
 
 ---
@@ -800,7 +800,7 @@ index 0000000..3c2abc5
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.cpp b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 new file mode 100644
-index 0000000..114e1f0
+index 0000000..fda4f74
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 @@ -0,0 +1,723 @@
@@ -866,12 +866,12 @@ index 0000000..114e1f0
 +        if(Itr->second->GetMatchStatus() != GAMBLER_MATCH_STATUS_TELEPORT)
 +            continue;
 +
-+        Player *pChallenger = ObjectAccessor::FindPlayer(Itr->second->GetChallengerGUID());
-+        Player *pDefender    = ObjectAccessor::FindPlayer(Itr->second->GetDefenderGUID());
++        Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, Itr->second->GetChallengerGUID()));
++        Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,Itr->second->GetDefenderGUID()));
 +
 +        if(pChallenger == NULL || pDefender == NULL)
 +            continue;
-+        if(pChallenger->IsBeingTeleported() || pChallenger->isBeingLoaded() || pDefender->IsBeingTeleported() || pDefender->isBeingLoaded())
++        if(pChallenger->IsBeingTeleported() || pChallenger->IsLoading() || pDefender->IsBeingTeleported() || pDefender->IsLoading())
 +            continue;
 +
 +        pChallenger->CastSpell(pDefender, 7266, true);
@@ -1167,9 +1167,9 @@ index 0000000..114e1f0
 +
 +        Player *secondPlayer = NULL;
 +        if(matchData->IsChallenger(pPlayer))
-+            secondPlayer = ObjectAccessor::FindPlayer(matchData->GetDefenderGUID());
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, matchData->GetDefenderGUID()));
 +        else
-+            secondPlayer = ObjectAccessor::FindPlayer(matchData->GetChallengerGUID());
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, matchData->GetChallengerGUID()));
 +        if(secondPlayer)
 +            ChatHandler(secondPlayer->GetSession()).PSendSysMessage("|cffffffffThe player |cff00ccff%s |cffffffffhas bet |cff00ccff%u|cffffffffx of the item |%s|Hitem:%u:0:0:0:0:0:0:0:%u|h[%s]|h|r", pPlayer, amount, GetQualityColor(itemProto->Quality).c_str(),  pItem->GetEntry(), pPlayer->getLevel(),  itemProto->Name1.c_str());
 +        return true;
@@ -1191,9 +1191,9 @@ index 0000000..114e1f0
 +        Player *secondPlayer = NULL;
 +
 +        if(matchData->IsChallenger(pPlayer)){
-+            secondPlayer = ObjectAccessor::FindPlayer(matchData->GetDefenderGUID());}
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetDefenderGUID()));}
 +        else{
-+            secondPlayer = ObjectAccessor::FindPlayer(matchData->GetChallengerGUID());}
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetChallengerGUID()));}
 +
 +        // Don't start the duel if there is no second player
 +        if(secondPlayer == NULL)
@@ -1399,8 +1399,8 @@ index 0000000..114e1f0
 +// Messaging
 +void GamblingSystem::SendMessageToPlayers(GamblerMatchData *matchData, const char *msgToSend, ...)
 +{
-+    Player *pChallenger = ObjectAccessor::FindPlayer(matchData->GetChallengerGUID());
-+    Player *pDefender    = ObjectAccessor::FindPlayer(matchData->GetDefenderGUID());
++    Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetChallengerGUID()));
++    Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetDefenderGUID()));
 +
 +    char Result[1024];
 +    va_list List;
@@ -1482,12 +1482,12 @@ index 0000000..114e1f0
 +            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +        // if challenger has no item id set, or defender has no item id set!
-+        if(ChallengerMatchData->GetChallengerItemId() == NULL || ChallengerMatchData->GetDefenderItemId() == NULL){
++        if(ChallengerMatchData->GetChallengerItemId() == 0 || ChallengerMatchData->GetDefenderItemId() == 0){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NO_ITEM);
 +            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
 +        // if challenger has not set item count yet, or defender has not set item count yet!
-+        if(ChallengerMatchData->GetChallengerItemCount() == NULL || ChallengerMatchData->GetDefenderItemCount() == NULL){
++        if(ChallengerMatchData->GetChallengerItemCount() == 0 || ChallengerMatchData->GetDefenderItemCount() == 0){
 +            ChatHandler(pChallenger->GetSession()).SendSysMessage(ARENA_GAMBLER_MSG_NO_AMOUNT);
 +            sGamblingSystem->CancelChallenge(pChallenger);
 +        }
@@ -1994,5 +1994,5 @@ index 0000000..1c256d3
 +#endif
 \ No newline at end of file
 -- 
-2.1.0
+2.1.1
 
