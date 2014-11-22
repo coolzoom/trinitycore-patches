@@ -1,6 +1,6 @@
-From 7352b793227266a0836100c9e72c0cc62890f78b Mon Sep 17 00:00:00 2001
-From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 3 Oct 2014 08:04:49 -0400
+From fb7f472139ddccb2913dedbbac627bd563ccd282 Mon Sep 17 00:00:00 2001
+From: Lord Psyan <realmsofwarcraft@gmail.com>
+Date: Sat, 22 Nov 2014 13:41:21 -0500
 Subject: [PATCH] Fake_Players
 
 ---
@@ -78,10 +78,10 @@ index 0000000..c1be608
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
 +INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'РЎРѕРѕР±С‰РµРЅРёРµ: "РќРµ Р±РµСЃРїРѕРєРѕРёС‚СЊ".');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f8f569d..b1bd8e0 100644
+index cff45c2..c01fbf8 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1790,6 +1790,13 @@ void Player::Update(uint32 p_time)
+@@ -1814,6 +1814,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUIDLow());
@@ -99,11 +99,11 @@ diff --git a/src/server/game/Entities/Vehicle/Vehicle.cpp b/src/server/game/Enti
 old mode 100755
 new mode 100644
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index 8261811..1db309e 100644
+index 5180c9f..33a43eb 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1516,6 +1516,31 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
-     Player* pInvitee = sObjectAccessor->FindPlayerByName(name);
+     Player* pInvitee = ObjectAccessor::FindPlayerByName(name);
      if (!pInvitee)
      {
 +        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
@@ -135,11 +135,11 @@ index 8261811..1db309e 100644
          return;
      }
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index b33f236..2458ad2 100644
+index 288bb82..47b7ffd 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
 @@ -271,7 +271,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
-             Player* receiver = sObjectAccessor->FindPlayerByName(to);
+             Player* receiver = ObjectAccessor::FindConnectedPlayerByName(to);
              if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
              {
 -                SendPlayerNotFoundNotice(to);
@@ -156,7 +156,7 @@ index b33f236..2458ad2 100644
              }
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
 diff --git a/src/server/game/Handlers/GroupHandler.cpp b/src/server/game/Handlers/GroupHandler.cpp
-index a7ce1f8..292884a 100644
+index b9433b7..a611ef1 100644
 --- a/src/server/game/Handlers/GroupHandler.cpp
 +++ b/src/server/game/Handlers/GroupHandler.cpp
 @@ -33,6 +33,9 @@
@@ -186,7 +186,7 @@ index a7ce1f8..292884a 100644
      }
  
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index bede3b4..fd64152 100644
+index c365236..e17a169 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -192,6 +192,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -256,7 +256,7 @@ index bede3b4..fd64152 100644
      data.put(4, matchcount);                              // insert right count, count of matches
  
      SendPacket(&data);
-@@ -549,6 +593,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
+@@ -550,6 +594,26 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to add friend : '%s'",
          GetPlayer()->GetName().c_str(), friendName.c_str());
  
@@ -283,7 +283,7 @@ index bede3b4..fd64152 100644
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
  
      stmt->setString(0, friendName);
-@@ -639,6 +703,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
+@@ -640,6 +704,20 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recvData)
      TC_LOG_DEBUG("network", "WORLD: %s asked to Ignore: '%s'",
          GetPlayer()->GetName().c_str(), ignoreName.c_str());
  
@@ -305,10 +305,10 @@ index bede3b4..fd64152 100644
  
      stmt->setString(0, ignoreName);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 327a7a7..1419c1c 100644
+index 4be1a2f..05159e1 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1222,7 +1222,7 @@ enum TrinityStrings
+@@ -1231,7 +1231,7 @@ enum TrinityStrings
      // 24
      // 25
      // 26
@@ -318,7 +318,7 @@ index 327a7a7..1419c1c 100644
      // 29
      // 30
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 7348677..4a5f865 100644
+index afd87b8..a391cca 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -671,6 +671,10 @@ void World::LoadConfigSettings(bool reload)
@@ -333,10 +333,10 @@ index 7348677..4a5f865 100644
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index e53d6e1..bba7959 100644
+index 2f13051..7c05acd 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -172,7 +172,7 @@ enum WorldBoolConfigs
+@@ -173,7 +173,7 @@ enum WorldBoolConfigs
      // 12
      // 13
      // 14
@@ -345,7 +345,7 @@ index e53d6e1..bba7959 100644
      // 16
      // 17
      // 18
-@@ -375,6 +375,8 @@ enum WorldIntConfigs
+@@ -378,6 +378,8 @@ enum WorldIntConfigs
      CONFIG_CHARDELETE_HEROIC_MIN_LEVEL,
      CONFIG_AUTOBROADCAST_CENTER,
      CONFIG_AUTOBROADCAST_INTERVAL,
@@ -355,7 +355,7 @@ index e53d6e1..bba7959 100644
      CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 13d590d..aa713e2 100644
+index 12e367c..26d6509 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 @@ -22,6 +22,11 @@ void CharacterDatabaseConnection::DoPrepareStatements()
@@ -371,7 +371,7 @@ index 13d590d..aa713e2 100644
      PrepareStatement(CHAR_INS_QUEST_POOL_SAVE, "INSERT INTO pool_quest_save (pool_id, quest_id) VALUES (?, ?)", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM, "DELETE FROM guild_bank_item WHERE guildid = ? AND TabId = ? AND SlotId = ?", CONNECTION_ASYNC);
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 1460e5c..5e5f07a 100644
+index f8a7c24..a5cd8ef 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
 @@ -42,6 +42,11 @@ enum CharacterDatabaseStatements
@@ -387,10 +387,10 @@ index 1460e5c..5e5f07a 100644
      CHAR_INS_QUEST_POOL_SAVE,
      CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..a12a770 100644
+index c40da51..2f7bfc7 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2974,6 +2974,16 @@ AuctionHouseBot.forceExcludeItems = ""
+@@ -2999,6 +2999,16 @@ AuctionHouseBot.forceExcludeItems = ""
  #
  ###################################################################################################
  
@@ -405,8 +405,8 @@ index 9097e0b..a12a770 100644
 +Fake.WHO.LevelUp.Interval = 2
 +
  ###################################################################################################
- #    AHBot Buyer config
+ # AUCTION HOUSE BOT BUYER CONFIG
  #
 -- 
-2.1.0
+2.1.3
 

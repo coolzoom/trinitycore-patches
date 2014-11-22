@@ -1,6 +1,6 @@
-From a845daa2f900ae423f3a2b38b04925e1ebf57d05 Mon Sep 17 00:00:00 2001
+From a4d066f50520ee09ebd917aecca40ed8cb60485e Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Tue, 14 Oct 2014 09:55:11 -0400
+Date: Sat, 22 Nov 2014 14:35:55 -0500
 Subject: [PATCH] Individual-XP-Rate
 
 ---
@@ -12,7 +12,7 @@ Subject: [PATCH] Individual-XP-Rate
  src/server/game/Miscellaneous/Formulas.h           |  4 +-
  src/server/game/Miscellaneous/Language.h           |  7 ++-
  src/server/scripts/Commands/cs_modify.cpp          | 64 ++++++++++++++++++++++
- 8 files changed, 128 insertions(+), 5 deletions(-)
+ 8 files changed, 127 insertions(+), 6 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/auth_individuale_xp_Rate.sql
  create mode 100644 sql/TrinityCore-Patches/Individuale_XP-Rate/world_individuale_xp_Rate.sql
 
@@ -44,10 +44,10 @@ index 0000000..5a757bf
 +INSERT INTO `command` VALUES ('modify xpquest', '1011', 'Syntax: .modify xpquest #wert');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index c2e38c3..4e3521e 100644
+index a16586a..07ab939 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -705,7 +705,8 @@ enum RBACPermissions
+@@ -700,7 +700,8 @@ enum RBACPermissions
      // 02
      // 03
      // 04
@@ -58,10 +58,10 @@ index c2e38c3..4e3521e 100644
      // 07
      // 08
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 4c74672..290df13 100644
+index cff45c2..86194b1 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -931,6 +931,10 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -932,6 +932,10 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -72,7 +72,7 @@ index 4c74672..290df13 100644
  }
  
  Player::~Player()
-@@ -15407,7 +15411,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15429,7 +15433,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -81,7 +81,7 @@ index 4c74672..290df13 100644
  
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
-@@ -26989,6 +26993,25 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
+@@ -27010,6 +27014,25 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
      return pet;
  }
  
@@ -108,10 +108,10 @@ index 4c74672..290df13 100644
  {
      WorldPacket data(SMSG_SUPERCEDED_SPELL, 8);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 08a02df..ad4012c 100644
+index 28b592f..b661b86 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -915,6 +915,13 @@ enum PlayerCommandStates
+@@ -917,6 +917,13 @@ enum PlayerCommandStates
      CHEAT_WATERWALK = 0x10
  };
  
@@ -125,7 +125,7 @@ index 08a02df..ad4012c 100644
  class PlayerTaxi
  {
      public:
-@@ -2343,7 +2350,10 @@ class Player : public Unit, public GridObject<Player>
+@@ -2345,7 +2352,10 @@ class Player : public Unit, public GridObject<Player>
      // Prepatch by LordPsyan
      // 01
      // 02
@@ -137,17 +137,17 @@ index 08a02df..ad4012c 100644
      // 04
      // 05
      // 06
-@@ -2696,6 +2706,10 @@ class Player : public Unit, public GridObject<Player>
-         uint32 _pendingBindTimer;
- 
-         uint32 _activeCheats;
-+
+@@ -2701,7 +2711,9 @@ class Player : public Unit, public GridObject<Player>
+         // Prepatch by LordPsyan
+         // 21
+         // 22
+-        // 23
 +        //Individuale_XP-Rate
 +        float _individual_kill;
 +        float _individual_quest;
- };
- 
- void AddItemsSetItem(Player* player, Item* item);
+         // 24
+         // 25
+         // 26
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
 index b922932..41443bf 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
@@ -164,10 +164,10 @@ index b922932..41443bf 100644
                      // 27
                      // 28
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 327a7a7..9b7ff45 100644
+index 4be1a2f..5089049 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1188,7 +1188,12 @@ enum TrinityStrings
+@@ -1197,7 +1197,12 @@ enum TrinityStrings
      // 08
      // 09
      // 10
@@ -182,20 +182,20 @@ index 327a7a7..9b7ff45 100644
      // 13
      // 14
 diff --git a/src/server/scripts/Commands/cs_modify.cpp b/src/server/scripts/Commands/cs_modify.cpp
-index 3c2f122..2e48919 100644
+index a8b839d..aa4b7d2 100644
 --- a/src/server/scripts/Commands/cs_modify.cpp
 +++ b/src/server/scripts/Commands/cs_modify.cpp
-@@ -70,6 +70,8 @@ public:
-             { "spell",        rbac::RBAC_PERM_COMMAND_MODIFY_SPELL,        false, &HandleModifySpellCommand,         "", NULL },
+@@ -71,6 +71,8 @@ public:
              { "standstate",   rbac::RBAC_PERM_COMMAND_MODIFY_STANDSTATE,   false, &HandleModifyStandStateCommand,    "", NULL },
              { "talentpoints", rbac::RBAC_PERM_COMMAND_MODIFY_TALENTPOINTS, false, &HandleModifyTalentCommand,        "", NULL },
-+            { "xpkill",       rbac::RBAC_PERM_COMMAND_MODIFY_XP_KILL,      false, &HandleModifyXpKillCommand, "", NULL },
-+            { "xpquest",      rbac::RBAC_PERM_COMMAND_MODIFY_XP_QUEST,     false, &HandleModifyXpQuestCommand, "", NULL },
+             { "xp",           rbac::RBAC_PERM_COMMAND_MODIFY_XP,           false, &HandleModifyXPCommand,            "", NULL },
++            { "xpkill",       rbac::RBAC_PERM_COMMAND_MODIFY_XP_KILL,      false, &HandleModifyXpKillCommand,        "", NULL },
++            { "xpquest",      rbac::RBAC_PERM_COMMAND_MODIFY_XP_QUEST,     false, &HandleModifyXpQuestCommand,       "", NULL },
              { NULL,           0,                                     false, NULL,                              "", NULL }
          };
          static ChatCommand commandTable[] =
-@@ -1393,6 +1395,68 @@ public:
- 
+@@ -1425,6 +1427,68 @@ public:
+         target->GiveXP(xp, nullptr);
          return true;
      }
 +
@@ -264,5 +264,5 @@ index 3c2f122..2e48919 100644
  
  void AddSC_modify_commandscript()
 -- 
-2.1.1
+2.1.3
 
