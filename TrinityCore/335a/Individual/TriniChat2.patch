@@ -1,6 +1,6 @@
-From e85b662284d80e995cb052f0e315d7b3f383ddd2 Mon Sep 17 00:00:00 2001
+From cb125e8ea34b8bc669bba4c114b280e59c90efde Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Sun, 23 Nov 2014 01:24:17 -0500
+Date: Sun, 23 Nov 2014 02:00:55 -0500
 Subject: [PATCH] TriniChat2
 
 ---
@@ -25,14 +25,14 @@ Subject: [PATCH] TriniChat2
  src/server/game/TriniChat/IRCSock.cpp              |  160 ++
  src/server/game/TriniChat/MCS_OnlinePlayers.cpp    |   94 +
  src/server/game/TriniChat/MCS_OnlinePlayers.h      |   38 +
- src/server/game/World/World.cpp                    |  201 +-
+ src/server/game/World/World.cpp                    |  162 ++
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_message.cpp         |   21 +
  src/server/worldserver/CMakeLists.txt              |    1 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |   10 +
  src/server/worldserver/Main.cpp                    |   20 +
- src/server/worldserver/worldserver.conf.dist       |  276 +++
- 28 files changed, 5670 insertions(+), 12 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  279 +++
+ 28 files changed, 5645 insertions(+), 1 deletion(-)
  create mode 100644 sql/TrinityCore-Patches/TriniChat2/world.TriniChat2.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -5423,7 +5423,7 @@ index 0000000..700d730
 +
 +#endif
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..5d682da 100644
+index afd87b8..9cf7539 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -64,6 +64,7 @@
@@ -5434,24 +5434,6 @@ index afd87b8..5d682da 100644
  
  
  std::atomic<bool> World::m_stopEvent(false);
-@@ -963,8 +964,6 @@ void World::LoadConfigSettings(bool reload)
- 
-     m_int_configs[CONFIG_WORLD_BOSS_LEVEL_DIFF] = sConfigMgr->GetIntDefault("WorldBossLevelDiff", 3);
- 
--    m_bool_configs[CONFIG_QUEST_ENABLE_QUEST_TRACKER] = sConfigMgr->GetBoolDefault("Quests.EnableQuestTracker", false);
--
-     // note: disable value (-1) will assigned as 0xFFFFFFF, to prevent overflow at calculations limit it to max possible player level MAX_LEVEL(100)
-     m_int_configs[CONFIG_QUEST_LOW_LEVEL_HIDE_DIFF] = sConfigMgr->GetIntDefault("Quests.LowLevelHideDiff", 4);
-     if (m_int_configs[CONFIG_QUEST_LOW_LEVEL_HIDE_DIFF] > MAX_LEVEL)
-@@ -1182,6 +1181,8 @@ void World::LoadConfigSettings(bool reload)
- 
-     m_int_configs[CONFIG_MAX_WHO] = sConfigMgr->GetIntDefault("MaxWhoListReturns", 49);
-     m_bool_configs[CONFIG_START_ALL_SPELLS] = sConfigMgr->GetBoolDefault("PlayerStart.AllSpells", false);
-+    if (m_bool_configs[CONFIG_START_ALL_SPELLS])
-+        TC_LOG_WARN("server.loading", "PlayerStart.AllSpells enabled - may not function as intended!");
-     m_int_configs[CONFIG_HONOR_AFTER_DUEL] = sConfigMgr->GetIntDefault("HonorPointsAfterDuel", 0);
-     m_bool_configs[CONFIG_START_ALL_EXPLORED] = sConfigMgr->GetBoolDefault("PlayerStart.MapsExplored", false);
-     m_bool_configs[CONFIG_START_ALL_REP] = sConfigMgr->GetBoolDefault("PlayerStart.AllReputation", false);
 @@ -1311,6 +1312,167 @@ void World::LoadConfigSettings(bool reload)
  //
  // End of prepatch
@@ -5620,92 +5602,6 @@ index afd87b8..5d682da 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
  }
-@@ -1329,15 +1491,9 @@ void World::SetInitialWorldSettings()
-     ///- Initialize detour memory management
-     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
- 
--    ///- Initialize VMapManager function pointers (to untangle game/collision circular deps)
--    if (VMAP::VMapManager2* vmmgr2 = dynamic_cast<VMAP::VMapManager2*>(VMAP::VMapFactory::createOrGetVMapManager()))
--    {
--        vmmgr2->GetLiquidFlagsPtr = &GetLiquidFlags;
--        vmmgr2->IsVMAPDisabledForPtr = &DisableMgr::IsVMAPDisabledFor;
--    }
--
-     ///- Initialize config settings
-     LoadConfigSettings();
-+        TC_LOG_ERROR("misc", "Loading TrinityCore configuration settings...");
- 
-     ///- Initialize Allowed Security Level
-     LoadDBAllowedSecurityLevel();
-@@ -1784,6 +1940,8 @@ void World::SetInitialWorldSettings()
-     LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
-                             realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
- 
-+    static uint32 autoanc = 1;
-+    autoanc = sIRC->autoanc;
-     m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
-     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
-     m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1800,6 +1958,7 @@ void World::SetInitialWorldSettings()
- 
-     m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
- 
-+    m_timers[WUPDATE_AUTOANC].SetInterval(autoanc*MINUTE*1000);
-     //to set mailtimer to return mails every day between 4 and 5 am
-     //mailtimer is increased when updating auctions
-     //one second is 1000 -(tested on win system)
-@@ -2177,6 +2336,12 @@ void World::Update(uint32 diff)
-         WorldDatabase.KeepAlive();
-     }
- 
-+    if (m_timers[WUPDATE_AUTOANC].Passed())
-+    {
-+        m_timers[WUPDATE_AUTOANC].Reset();
-+            SendRNDBroadcastIRC();
-+    }
-+
-     // update the instance reset times
-     sInstanceSaveMgr->Update();
- 
-@@ -2505,7 +2670,7 @@ bool World::RemoveBanAccount(BanMode mode, std::string const& nameOrIP)
- /// Ban an account or ban an IP address, duration will be parsed using TimeStringToSecs if it is positive, otherwise permban
- BanReturn World::BanCharacter(std::string const& name, std::string const& duration, std::string const& reason, std::string const& author)
- {
--    Player* pBanned = ObjectAccessor::FindConnectedPlayerByName(name);
-+    Player* pBanned = sObjectAccessor->FindPlayerByName(name);
-     uint32 guid = 0;
- 
-     uint32 duration_secs = TimeStringToSecs(duration);
-@@ -2546,7 +2711,7 @@ BanReturn World::BanCharacter(std::string const& name, std::string const& durati
- /// Remove a ban from a character
- bool World::RemoveBanCharacter(std::string const& name)
- {
--    Player* pBanned = ObjectAccessor::FindConnectedPlayerByName(name);
-+    Player* pBanned = sObjectAccessor->FindPlayerByName(name);
-     uint32 guid = 0;
- 
-     /// Pick a player to ban if not online
-@@ -2794,6 +2959,20 @@ void World::SendAutoBroadcast()
-     TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
- }
- 
-+void World::SendRNDBroadcastIRC()
-+{
-+    std::string msg;
-+    QueryResult result = WorldDatabase.PQuery("SELECT `message` FROM `irc_autoannounce` ORDER BY RAND() LIMIT 1");
-+    if (!result)
-+        return;
-+    msg = result->Fetch()[0].GetString();
-+
-+    sWorld->SendWorldText(6612,msg.c_str());
-+    std::string ircchan = "#";
-+    ircchan += sIRC->anchn;
-+    sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("\00304,08\037/!\\\037\017\00304 Automatic System Message \00304,08\037/!\\\037\017 %s", "%s", msg.c_str()), true);
-+}
-+
- void World::UpdateRealmCharCount(uint32 accountId)
- {
-     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index f11791e..1280111 100644
 --- a/src/server/scripts/CMakeLists.txt
@@ -5857,10 +5753,10 @@ index 6c93343..e83a824 100644
  
      ///- Clean database before leaving
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c40da51..504da83 100644
+index c40da51..6a9845d 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3242,6 +3242,282 @@ PacketSpoof.BanDuration = 86400
+@@ -3242,6 +3242,285 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -6139,6 +6035,9 @@ index c40da51..504da83 100644
 +irc.gm2 = "[GameMaster]"
 +irc.gm3 = "[Developer]"
 +irc.gm4 = "[Owner]"
++
++#
++###################################################################################################
 +
  #
  # Prepatch by LordPsyan.
