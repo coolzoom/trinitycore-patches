@@ -1,6 +1,6 @@
-From cb125e8ea34b8bc669bba4c114b280e59c90efde Mon Sep 17 00:00:00 2001
+From e3ff956ffd666ab5c40458f609bc7d45b562a07c Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Sun, 23 Nov 2014 02:00:55 -0500
+Date: Sun, 23 Nov 2014 03:28:09 -0500
 Subject: [PATCH] TriniChat2
 
 ---
@@ -25,14 +25,14 @@ Subject: [PATCH] TriniChat2
  src/server/game/TriniChat/IRCSock.cpp              |  160 ++
  src/server/game/TriniChat/MCS_OnlinePlayers.cpp    |   94 +
  src/server/game/TriniChat/MCS_OnlinePlayers.h      |   38 +
- src/server/game/World/World.cpp                    |  162 ++
+ src/server/game/World/World.cpp                    |  177 ++
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_message.cpp         |   21 +
  src/server/worldserver/CMakeLists.txt              |    1 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |   10 +
  src/server/worldserver/Main.cpp                    |   20 +
  src/server/worldserver/worldserver.conf.dist       |  279 +++
- 28 files changed, 5645 insertions(+), 1 deletion(-)
+ 28 files changed, 5660 insertions(+), 1 deletion(-)
  create mode 100644 sql/TrinityCore-Patches/TriniChat2/world.TriniChat2.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -5423,7 +5423,7 @@ index 0000000..700d730
 +
 +#endif
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..9cf7539 100644
+index afd87b8..ef66630 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -64,6 +64,7 @@
@@ -5434,10 +5434,11 @@ index afd87b8..9cf7539 100644
  
  
  std::atomic<bool> World::m_stopEvent(false);
-@@ -1311,6 +1312,167 @@ void World::LoadConfigSettings(bool reload)
- //
- // End of prepatch
+@@ -1313,6 +1314,168 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
+     if (reload)
+         sScriptMgr->OnConfigLoad(reload);
++
 +    // IRC Configurations.
 +    int ConfCnt = 0;
 +    sIRC->_chan_count = 0;
@@ -5599,9 +5600,30 @@ index afd87b8..9cf7539 100644
 +        sIRC->CTOP      = 3;
 +        sIRC->CWHO      = 3;
 +    }
-     if (reload)
-         sScriptMgr->OnConfigLoad(reload);
  }
+ 
+ extern void LoadGameObjectModelList();
+@@ -2794,6 +2957,20 @@ void World::SendAutoBroadcast()
+     TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
+ }
+ 
++void World::SendRNDBroadcastIRC()
++{
++    std::string msg;
++    QueryResult result = WorldDatabase.PQuery("SELECT `message` FROM `irc_autoannounce` ORDER BY RAND() LIMIT 1");
++    if (!result)
++        return;
++    msg = result->Fetch()[0].GetString();
++
++    sWorld->SendWorldText(6612,msg.c_str());
++    std::string ircchan = "#";
++    ircchan += sIRC->anchn;
++    sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("\00304,08\037/!\\\037\017\00304 Automatic System Message \00304,08\037/!\\\037\017 %s", "%s", msg.c_str()), true);
++}
++
+ void World::UpdateRealmCharCount(uint32 accountId)
+ {
+     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index f11791e..1280111 100644
 --- a/src/server/scripts/CMakeLists.txt
