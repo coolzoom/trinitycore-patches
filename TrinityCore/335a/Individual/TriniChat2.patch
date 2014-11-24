@@ -1,6 +1,6 @@
-From e3ff956ffd666ab5c40458f609bc7d45b562a07c Mon Sep 17 00:00:00 2001
+From b54598c0c64efa9354791594153eee8e2462e599 Mon Sep 17 00:00:00 2001
 From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Sun, 23 Nov 2014 03:28:09 -0500
+Date: Sun, 23 Nov 2014 16:07:38 -0500
 Subject: [PATCH] TriniChat2
 
 ---
@@ -10,9 +10,10 @@ Subject: [PATCH] TriniChat2
  src/server/game/Chat/Chat.cpp                      |    9 +
  src/server/game/Chat/Chat.h                        |    1 +
  src/server/game/Entities/Player/Player.cpp         |   21 +
- src/server/game/Entities/Player/Player.h           |    3 +-
+ src/server/game/Entities/Player/Player.h           |    2 +
  src/server/game/Events/GameEventMgr.cpp            |    7 +
  src/server/game/Handlers/ChatHandler.cpp           |    1 +
+ src/server/game/Handlers/TicketHandler.cpp         |   91 +
  src/server/game/TriniChat/IRCClient.cpp            |  135 ++
  src/server/game/TriniChat/IRCClient.h              |  292 +++
  src/server/game/TriniChat/IRCCmd.cpp               |  857 +++++++
@@ -25,14 +26,18 @@ Subject: [PATCH] TriniChat2
  src/server/game/TriniChat/IRCSock.cpp              |  160 ++
  src/server/game/TriniChat/MCS_OnlinePlayers.cpp    |   94 +
  src/server/game/TriniChat/MCS_OnlinePlayers.h      |   38 +
- src/server/game/World/World.cpp                    |  177 ++
+ src/server/game/World/World.cpp                    |  187 ++
+ src/server/game/World/World.h                      |    2 +
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_message.cpp         |   21 +
+ src/server/scripts/Commands/cs_misc.cpp            |   29 +
+ src/server/scripts/Commands/cs_ticket.cpp          |   64 +
+ src/server/shared/Logging/Log.h                    |    2 +-
  src/server/worldserver/CMakeLists.txt              |    1 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |   10 +
  src/server/worldserver/Main.cpp                    |   20 +
  src/server/worldserver/worldserver.conf.dist       |  279 +++
- 28 files changed, 5660 insertions(+), 1 deletion(-)
+ 33 files changed, 5857 insertions(+), 1 deletion(-)
  create mode 100644 sql/TrinityCore-Patches/TriniChat2/world.TriniChat2.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -171,13 +176,13 @@ index 6d984ab..2040b92 100644
  #include "AccountMgr.h"
  #include "Player.h"
 +#include "IRCClient.h"
- 
+
  Channel::Channel(std::string const& name, uint32 channelId, uint32 team):
      _announce(true),
 @@ -209,6 +210,8 @@ void Channel::JoinChannel(Player* player, std::string const& pass)
- 
+
      JoinNotify(guid);
- 
+
 +    sIRC->Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_JOIN);
 +
      // Custom channel handling
@@ -186,11 +191,11 @@ index 6d984ab..2040b92 100644
 @@ -259,6 +262,8 @@ void Channel::LeaveChannel(Player* player, bool send)
          SendToAll(&data);
      }
- 
+
 +    sIRC->Handle_WoW_Channel(_name, ObjectAccessor::FindPlayer(guid), CHANNEL_LEAVE);
 +
      LeaveNotify(guid);
- 
+
      if (!IsConstant())
 diff --git a/src/server/game/Chat/Chat.cpp b/src/server/game/Chat/Chat.cpp
 index 6f61499..926bb34 100644
@@ -201,9 +206,9 @@ index 6f61499..926bb34 100644
  #include "ScriptMgr.h"
  #include "ChatLink.h"
 +#include "IRCClient.h"
- 
+
  bool ChatHandler::load_command_table = true;
- 
+
 @@ -365,6 +366,14 @@ bool ChatHandler::ExecuteCommandInTable(ChatCommand* table, const char* text, st
                      areaId, areaName.c_str(), zoneName.c_str(),
                      (player->GetSelectedUnit()) ? player->GetSelectedUnit()->GetName().c_str() : "",
@@ -225,12 +230,12 @@ index 9e7dcc8..ad80a2f 100644
 +++ b/src/server/game/Chat/Chat.h
 @@ -20,6 +20,7 @@
  #define TRINITYCORE_CHAT_H
- 
+
  #include "SharedDefines.h"
 +#include "../TriniChat/IRCClient.h"
  #include "WorldSession.h"
  #include "RBAC.h"
- 
+
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
 index cff45c2..74396b9 100644
 --- a/src/server/game/Entities/Player/Player.cpp
@@ -257,12 +262,12 @@ index cff45c2..74396b9 100644
 +        }
 +    }
  }
- 
+
  void Player::RegenerateAll()
 @@ -3110,6 +3120,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
- 
+
 +    if ((sIRC->BOTMASK & 64) != 0 && sIRC->Status.size() > 0)
 +    {
 +        char  temp [5];
@@ -275,24 +280,23 @@ index cff45c2..74396b9 100644
 +    }
 +
      UpdateAllStats();
- 
+
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 28b592f..0960fae 100644
+index 28b592f..13df86a 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2718,7 +2718,8 @@ class Player : public Unit, public GridObject<Player>
-         // 37
-         // 38
-         // 39
--        // 40
-+    public:
-+        QuestStatusSaveMap m_RewardedQuestsSave2;
+@@ -2722,6 +2722,8 @@ class Player : public Unit, public GridObject<Player>
          // Visit http://www.realmsofwarcraft.com/bb for forums and information
          //
          // End of prepatch
++    public:
++        QuestStatusSaveMap m_RewardedQuestsSave2;
+ };
+
+ void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
-index ea50b2d..a92cac2 100644
+index ea50b2d..8853b07 100644
 --- a/src/server/game/Events/GameEventMgr.cpp
 +++ b/src/server/game/Events/GameEventMgr.cpp
 @@ -29,6 +29,7 @@
@@ -300,7 +304,7 @@ index ea50b2d..a92cac2 100644
  #include "UnitAI.h"
  #include "GameObjectAI.h"
 +#include "IRCClient.h"
- 
+
  bool GameEventMgr::CheckOneGameEvent(uint16 entry) const
  {
 @@ -1088,6 +1089,12 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id)
@@ -313,9 +317,9 @@ index ea50b2d..a92cac2 100644
 +                ircchan += sIRC->anchn;
 +                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("\00304,08\037/!\\\037\017\00304 Game Event \00304,08\037/!\\\037\017 %s", "%s", mGameEvent[event_id].description.c_str()), true);
 +            }
- 
+
      TC_LOG_INFO("gameevent", "GameEvent %u \"%s\" started.", event_id, mGameEvent[event_id].description.c_str());
- 
+
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
 index 288bb82..d4e209c 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
@@ -328,6 +332,136 @@ index 288bb82..d4e209c 100644
                  }
              }
          } break;
+diff --git a/src/server/game/Handlers/TicketHandler.cpp b/src/server/game/Handlers/TicketHandler.cpp
+index 9c18123..6d11986 100644
+--- a/src/server/game/Handlers/TicketHandler.cpp
++++ b/src/server/game/Handlers/TicketHandler.cpp
+@@ -27,6 +27,7 @@
+ #include "World.h"
+ #include "WorldPacket.h"
+ #include "WorldSession.h"
++#include "IRCClient.h"
+
+ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recvData)
+ {
+@@ -112,6 +113,31 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recvData)
+         sWorld->SendGMText(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName().c_str(), ticket->GetId());
+
+         response = GMTICKET_RESPONSE_CREATE_SUCCESS;
++
++        if ((sIRC->BOTMASK & 1024) != 0 && (sIRC->TICMASK & 1) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            ircchan += sIRC->ticann;
++            smsg << "[By: \00304" << GetPlayer()->GetName().c_str() << "\003 ][ID: \00304" << ticket->GetId() << "\003 ]";
++            sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Created\003] %s", " %s", smsg.str().c_str()), true);
++            //begin // because newlines don't show on irc
++            std::string tmsg = ticket->GetMessage().c_str();
++            int position = tmsg.find( "\n" ); // find first newline
++            while ( position != int(string::npos) )
++            {
++                tmsg.replace( position, 1, "|" );
++                position = tmsg.find( "\n", position + 1 );
++            }
++            //end
++            if (tmsg.size() <= 400)
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message\003]: %s ", " %s", tmsg.c_str()), true);
++            else
++            {
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message(1/2)\003]: %s ", " %s", tmsg.substr(0, 399).c_str()), true);
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message(2/2)\003]: %s ", " %s", tmsg.substr(399, 800).c_str()), true);
++            }
++        }
+     }
+
+     WorldPacket data(SMSG_GMTICKET_CREATE, 4);
+@@ -134,6 +160,32 @@ void WorldSession::HandleGMTicketUpdateOpcode(WorldPacket& recvData)
+         sWorld->SendGMText(LANG_COMMAND_TICKETUPDATED, GetPlayer()->GetName().c_str(), ticket->GetId());
+
+         response = GMTICKET_RESPONSE_UPDATE_SUCCESS;
++
++        if ((sIRC->TICMASK & 2) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            ircchan += sIRC->ticann;
++            smsg << "[By: \00304" << GetPlayer()->GetName().c_str() << "\003 ][ID: \00304" << ticket->GetId() << "\003 ]";
++            sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Updated\003] %s", " %s" , smsg.str().c_str()) , true);
++            // begin
++            // because newlines don't show on irc
++            std::string tmsg = ticket->GetMessage().c_str();
++            int position = tmsg.find( "\n" ); // find first newline
++            while ( position != int(string::npos) )
++            {
++                tmsg.replace( position, 1, "|" );
++                position = tmsg.find( "\n", position + 1 );
++            }
++            // end
++            if (tmsg.size() <= 400)
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message\003]: %s ", " %s", tmsg.c_str()), true);
++            else
++            {
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message(1/2)\003]: %s ", " %s", tmsg.substr(0, 399).c_str()), true);
++                sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00304Ticket Message(2/2)\003]: %s ", " %s", tmsg.substr(399, 800).c_str()), true);
++            }
++        }
+     }
+
+     WorldPacket data(SMSG_GMTICKET_UPDATETEXT, 4);
+@@ -153,6 +205,15 @@ void WorldSession::HandleGMTicketDeleteOpcode(WorldPacket & /*recvData*/)
+
+         sTicketMgr->CloseTicket(ticket->GetId(), GetPlayer()->GetGUID());
+         sTicketMgr->SendTicket(this, NULL);
++
++        if ((sIRC->TICMASK & 4) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            ircchan += sIRC->ticann;
++            smsg << "[By: \00304" << GetPlayer()->GetName().c_str() << " \003][ID: \00304" << ticket->GetId() << "\003 ]";
++            sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00311Ticket Abandoned\003] %s", " %s" , smsg.str().c_str()) , true);
++        }
+     }
+ }
+
+@@ -250,6 +311,36 @@ void WorldSession::HandleReportLag(WorldPacket& recvData)
+     stmt->setUInt32(6, GetLatency());
+     stmt->setUInt32(7, time(NULL));
+     CharacterDatabase.Execute(stmt);
++
++    if ((sIRC->TICMASK & 8) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++    {
++        std::string ircchan = "#";
++        std::ostringstream lmsg;
++        std::ostringstream ltype;
++        ircchan += sIRC->ticann;
++        lmsg << "[By: \00310" << GetPlayer()->GetName().c_str() << "\003]";
++        sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("[\00310Lag Report\003] %s", " %s" , lmsg.str().c_str()) , true);
++        lmsg.str("");
++        lmsg.clear();
++        if (lagType == 0)
++            ltype << "Loot";
++        else if (lagType == 1)
++            ltype << "Auction House";
++        else if (lagType == 2)
++            ltype << "Mail";
++        else if (lagType == 3)
++            ltype << "Chat";
++        else if (lagType == 4)
++            ltype << "Movement";
++        else if (lagType == 5)
++            ltype << "Spells and Abilites";
++        else
++            ltype << "unknown";
++        lmsg << "[Type: \00310" << ltype.str().c_str() << " \003][mapid: \00310" << mapId << " \003][ X: \00310" << x << " \003][ Y: \00310" << y << " \003][ Z: \00310" << z
++            << " \003][Latancy: \00310" << GetLatency() << " \003][Time: \00310" << sLog->GetTimestampStr() << "\003]";
++        sIRC->Send_IRC_Channel(ircchan, sIRC->MakeMsg("\003 %s", " %s" , lmsg.str().c_str()) , true);
++
++    }
+ }
+
+ void WorldSession::HandleGMResponseResolve(WorldPacket& /*recvPacket*/)
 diff --git a/src/server/game/TriniChat/IRCClient.cpp b/src/server/game/TriniChat/IRCClient.cpp
 new file mode 100644
 index 0000000..9cd9426
@@ -5423,17 +5557,17 @@ index 0000000..700d730
 +
 +#endif
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..ef66630 100644
+index afd87b8..b595b3a 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -64,6 +64,7 @@
- #include "WaypointMovementGenerator.h"
- #include "WeatherMgr.h"
- #include "WorldSession.h"
+@@ -42,6 +42,7 @@
+ #include "GroupMgr.h"
+ #include "GuildMgr.h"
+ #include "InstanceSaveMgr.h"
 +#include "IRCClient.h"
- 
- 
- std::atomic<bool> World::m_stopEvent(false);
+ #include "Language.h"
+ #include "LFGMgr.h"
+ #include "MapManager.h"
 @@ -1313,6 +1314,168 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
      if (reload)
@@ -5601,12 +5735,50 @@ index afd87b8..ef66630 100644
 +        sIRC->CWHO      = 3;
 +    }
  }
- 
+
  extern void LoadGameObjectModelList();
-@@ -2794,6 +2957,20 @@ void World::SendAutoBroadcast()
+@@ -1338,6 +1501,7 @@ void World::SetInitialWorldSettings()
+
+     ///- Initialize config settings
+     LoadConfigSettings();
++        TC_LOG_ERROR("misc", "Loading TrinityCore configuration settings...");
+
+     ///- Initialize Allowed Security Level
+     LoadDBAllowedSecurityLevel();
+@@ -1784,6 +1948,8 @@ void World::SetInitialWorldSettings()
+     LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
+                             realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
+
++    static uint32 autoanc = 1;
++    autoanc = sIRC->autoanc;
+     m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
+     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
+     m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
+@@ -1800,6 +1966,7 @@ void World::SetInitialWorldSettings()
+
+     m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
+
++    m_timers[WUPDATE_AUTOANC].SetInterval(autoanc*MINUTE*1000);
+     //to set mailtimer to return mails every day between 4 and 5 am
+     //mailtimer is increased when updating auctions
+     //one second is 1000 -(tested on win system)
+@@ -2177,6 +2344,12 @@ void World::Update(uint32 diff)
+         WorldDatabase.KeepAlive();
+     }
+
++    if (m_timers[WUPDATE_AUTOANC].Passed())
++    {
++        m_timers[WUPDATE_AUTOANC].Reset();
++            SendRNDBroadcastIRC();
++    }
++
+     // update the instance reset times
+     sInstanceSaveMgr->Update();
+
+@@ -2794,6 +2967,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
- 
+
 +void World::SendRNDBroadcastIRC()
 +{
 +    std::string msg;
@@ -5624,6 +5796,26 @@ index afd87b8..ef66630 100644
  void World::UpdateRealmCharCount(uint32 accountId)
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
+diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
+index 2f13051..e5858d2 100644
+--- a/src/server/game/World/World.h
++++ b/src/server/game/World/World.h
+@@ -75,6 +75,7 @@ enum WorldTimers
+     WUPDATE_EVENTS,
+     WUPDATE_CLEANDB,
+     WUPDATE_AUTOBROADCAST,
++    WUPDATE_AUTOANC,
+     WUPDATE_MAILBOXQUEUE,
+     WUPDATE_DELETECHARS,
+     WUPDATE_AHBOT,
+@@ -633,6 +634,7 @@ class World
+         void AddSession(WorldSession* s);
+         void SendAutoBroadcast();
+         bool RemoveSession(uint32 id);
++        void SendRNDBroadcastIRC();
+         /// Get the number of current active sessions
+         void UpdateMaxSessionCounters();
+         const SessionMap& GetAllSessions() const { return m_sessions; }
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
 index f11791e..1280111 100644
 --- a/src/server/scripts/CMakeLists.txt
@@ -5637,7 +5829,7 @@ index f11791e..1280111 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/Tools
    ${CMAKE_SOURCE_DIR}/src/server/game/Warden
 diff --git a/src/server/scripts/Commands/cs_message.cpp b/src/server/scripts/Commands/cs_message.cpp
-index 715487e..da4cf74 100644
+index 715487e..ed8fcb4 100644
 --- a/src/server/scripts/Commands/cs_message.cpp
 +++ b/src/server/scripts/Commands/cs_message.cpp
 @@ -28,6 +28,7 @@ EndScriptData */
@@ -5645,12 +5837,12 @@ index 715487e..da4cf74 100644
  #include "Player.h"
  #include "ObjectMgr.h"
 +#include "IRCClient.h"
- 
+
  class message_commandscript : public CommandScript
  {
 @@ -126,6 +127,12 @@ public:
              name = session->GetPlayer()->GetName();
- 
+
          sWorld->SendGMText(LANG_GM_ANNOUNCE_COLOR, name.c_str(), args);
 +        //send to irc
 +        if(sIRC->_staffLink == 1)
@@ -5664,7 +5856,7 @@ index 715487e..da4cf74 100644
 @@ -134,6 +141,13 @@ public:
          if (!*args)
              return false;
- 
+
 +        if ((sIRC->BOTMASK & 256) != 0 && sIRC->anchn.size() > 0)
 +        {
 +            std::string ircchan = "#";
@@ -5678,7 +5870,7 @@ index 715487e..da4cf74 100644
 @@ -154,6 +168,13 @@ public:
          if (!*args)
              return false;
- 
+
 +        if ((sIRC->BOTMASK & 256) != 0 && sIRC->anchn.size() > 0)
 +        {
 +            std::string ircchan = "#";
@@ -5688,7 +5880,193 @@ index 715487e..da4cf74 100644
 +
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
- 
+
+diff --git a/src/server/scripts/Commands/cs_misc.cpp b/src/server/scripts/Commands/cs_misc.cpp
+index a853a02..7dfa7cd 100644
+--- a/src/server/scripts/Commands/cs_misc.cpp
++++ b/src/server/scripts/Commands/cs_misc.cpp
+@@ -33,6 +33,7 @@
+ #include "Player.h"
+ #include "Pet.h"
+ #include "LFG.h"
++#include "IRCClient.h"
+ #include "GroupMgr.h"
+ #include "MMapFactory.h"
+ #include "DisableMgr.h"
+@@ -97,6 +98,7 @@ public:
+             { "unstuck",          rbac::RBAC_PERM_COMMAND_UNSTUCK,           true, &HandleUnstuckCommand,          "", NULL },
+             { "wchange",          rbac::RBAC_PERM_COMMAND_WCHANGE,          false, &HandleChangeWeather,           "", NULL },
+             { "mailbox",          rbac::RBAC_PERM_COMMAND_MAILBOX,          false, &HandleMailBoxCommand,          "", NULL },
++            { "tccrecon",         SEC_MODERATOR,                            false, HandleIRCRelogCommand,          "", NULL },
+             { NULL,               0,                                  false, NULL,                           "", NULL }
+         };
+         return commandTable;
+@@ -553,6 +555,25 @@ public:
+         return true;
+     }
+
++    static bool HandleIRCpmCommand(ChatHandler* handler, const char* args)
++    {
++        std::string Msg = args;
++        if (Msg.find(" ") == std::string::npos)
++            return false;
++        std::string To = Msg.substr(0, Msg.find(" "));
++        Msg = Msg.substr(Msg.find(" ") + 1);
++        std::size_t pos;
++        while ((pos = To.find("||")) != std::string::npos)
++        {
++            std::size_t find1 = To.find("||", pos);
++            To.replace(pos, find1 - pos + 2, "|");
++        }
++        sIRC->SendIRC("PRIVMSG "+To+" : <WoW>["+handler->GetSession()->GetPlayerName()+"] : " + Msg);
++        sIRC->Send_WoW_Player(handler->GetSession()->GetPlayer(), "|cffCC4ACCTo ["+To+"]: "+Msg);
++        return true;
++    }
++
++
+     static bool HandleCommandsCommand(ChatHandler* handler, char const* /*args*/)
+     {
+         handler->ShowHelpForCommand(handler->getCommandTable(), "");
+@@ -2560,6 +2581,14 @@ public:
+         return true;
+     }
+
++    static bool HandleIRCRelogCommand(ChatHandler* handler, char const* /*args*/)
++    {
++        handler->SendSysMessage("TriniChat is dropping from IRC Server");
++        sIRC->ResetIRC();
++        handler->SendSysMessage("TriniChat is reconnecting to IRC Server");
++        return true;
++    }
++
+     static bool HandlePossessCommand(ChatHandler* handler, char const* /*args*/)
+     {
+         Unit* unit = handler->getSelectedUnit();
+diff --git a/src/server/scripts/Commands/cs_ticket.cpp b/src/server/scripts/Commands/cs_ticket.cpp
+index facc760..5f93cfd 100644
+--- a/src/server/scripts/Commands/cs_ticket.cpp
++++ b/src/server/scripts/Commands/cs_ticket.cpp
+@@ -30,6 +30,7 @@ EndScriptData */
+ #include "Player.h"
+ #include "TicketMgr.h"
+ #include "ScriptMgr.h"
++#include "IRCClient.h"
+
+ class ticket_commandscript : public CommandScript
+ {
+@@ -128,6 +129,14 @@ public:
+
+         std::string msg = ticket->FormatMessageString(*handler, NULL, target.c_str(), NULL, NULL, NULL);
+         handler->SendGlobalGMSysMessage(msg.c_str());
++        if ((sIRC->TICMASK & 16) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            ircchan += sIRC->ticann;
++            smsg << "[\00304Ticket Assigned\003][By:\00304 " << ticket->GetPlayerName().c_str() << " \003][ID: \00304" << ticket->GetId() << " \003][Assigned To: \00304" << target.c_str() << " \003]";
++            sIRC->Send_IRC_Channel(ircchan, smsg.str().c_str() , true);
++        }
+         return true;
+     }
+
+@@ -159,6 +168,20 @@ public:
+         std::string msg = ticket->FormatMessageString(*handler, player ? player->GetName().c_str() : "Console", NULL, NULL, NULL, NULL);
+         handler->SendGlobalGMSysMessage(msg.c_str());
+
++        if ((sIRC->TICMASK & 16) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            std::string assignedto;
++            // If closed from console,there is no player,so we assign to Console.
++            if (player)
++                assignedto = player->GetName().c_str();
++            else assignedto = "Console";
++            ircchan += sIRC->ticann;
++            smsg << "[\00304Ticket Closed\003][By:\00304 " << ticket->GetPlayerName().c_str() << " \003][ID: \00304" << ticket->GetId() << " \003][Closed By: \00304" << assignedto << " \003]";
++            sIRC->Send_IRC_Channel(ircchan, smsg.str().c_str() , true);
++        }
++
+         // Inform player, who submitted this ticket, that it is closed
+         if (Player* submitter = ticket->GetPlayer())
+         {
+@@ -231,6 +254,21 @@ public:
+         if (Player* player = ticket->GetPlayer())
+             ticket->SendResponse(player->GetSession());
+
++        if ((sIRC->TICMASK & 16) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            std::string respondedby;
++            // If responded from console,there is no player,so we assign to Console.
++            Player* player = handler->GetSession() ? handler->GetSession()->GetPlayer() : NULL;
++            if (player)
++                respondedby = player->GetName().c_str();
++            else respondedby = "Console";
++            ircchan += sIRC->ticann;
++            smsg << "[\00304Ticket Completed\003][By:\00304 " << ticket->GetPlayerName().c_str() << " \003][ID: \00304" << ticket->GetId() << " \003][Responded By: \00304" << respondedby << " \003]";
++            sIRC->Send_IRC_Channel(ircchan, smsg.str().c_str() , true);
++        }
++
+         SQLTransaction trans = SQLTransaction(NULL);
+         ticket->SetCompleted();
+         ticket->SaveToDB(trans);
+@@ -264,6 +302,21 @@ public:
+         std::string msg = ticket->FormatMessageString(*handler, NULL, NULL, NULL, handler->GetSession() ? handler->GetSession()->GetPlayer()->GetName().c_str() : "Console", NULL);
+         handler->SendGlobalGMSysMessage(msg.c_str());
+
++        if ((sIRC->TICMASK & 16) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            std::string deletedby;
++            // If deleted from console,there is no player,so we assign to Console.
++            Player* player = handler->GetSession() ? handler->GetSession()->GetPlayer() : NULL;
++            if (player)
++                deletedby = player->GetName().c_str();
++            else deletedby = "Console";
++            ircchan += sIRC->ticann;
++            smsg << "[\00304Ticket Deleted\003][By:\00304 " << ticket->GetPlayerName().c_str() << " \003][ID: \00304" << ticket->GetId() << " \003][Deleted By: \00304" << deletedby << " \003]";
++            sIRC->Send_IRC_Channel(ircchan, smsg.str().c_str() , true);
++        }
++
+         sTicketMgr->RemoveTicket(ticket->GetId());
+         sTicketMgr->UpdateLastChange();
+
+@@ -392,6 +445,17 @@ public:
+             handler->GetSession() ? handler->GetSession()->GetPlayer()->GetName().c_str() : "Console", NULL, NULL);
+         handler->SendGlobalGMSysMessage(msg.c_str());
+
++        if ((sIRC->TICMASK & 16) != 0 && (sIRC->BOTMASK & 1024) != 0 && sIRC->ticann.size() > 0)
++        {
++            std::string ircchan = "#";
++            std::ostringstream smsg;
++            ircchan += sIRC->ticann;
++            smsg << "[\00304Ticket Assigned\003][By:\00304 " << ticket->GetPlayerName().c_str() << " \003][ID: \00304" << ticket->GetId() << " \003][Unssigned From: \00304"
++                << assignedTo.c_str() << " \003][By: \00304" << handler->GetSession()->GetPlayer()->GetName().c_str() << " \003]";
++            sIRC->Send_IRC_Channel(ircchan, smsg.str().c_str() , true);
++        }
++
++
+         return true;
+     }
+
+diff --git a/src/server/shared/Logging/Log.h b/src/server/shared/Logging/Log.h
+index e2d4baa..586a21c 100644
+--- a/src/server/shared/Logging/Log.h
++++ b/src/server/shared/Logging/Log.h
+@@ -65,9 +65,9 @@ class Log
+         void outCharDump(char const* str, uint32 account_id, uint64 guid, char const* name);
+
+         void SetRealmId(uint32 id);
++        static std::string GetTimestampStr();
+
+     private:
+-        static std::string GetTimestampStr();
+         void vlog(std::string const& f, LogLevel level, char const* str, va_list argptr);
+         void write(LogMessage* msg) const;
+
 diff --git a/src/server/worldserver/CMakeLists.txt b/src/server/worldserver/CMakeLists.txt
 index a367714..42e4926 100644
 --- a/src/server/worldserver/CMakeLists.txt
@@ -5702,7 +6080,7 @@ index a367714..42e4926 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/Warden/Modules
    ${CMAKE_SOURCE_DIR}/src/server/game/Weather
 diff --git a/src/server/worldserver/CommandLine/CliRunnable.cpp b/src/server/worldserver/CommandLine/CliRunnable.cpp
-index 295e63c..328e85e 100644
+index 295e63c..6fea031 100644
 --- a/src/server/worldserver/CommandLine/CliRunnable.cpp
 +++ b/src/server/worldserver/CommandLine/CliRunnable.cpp
 @@ -34,6 +34,7 @@
@@ -5710,13 +6088,13 @@ index 295e63c..328e85e 100644
  #include "Player.h"
  #include "Util.h"
 +#include "../TriniChat/IRCClient.h"
- 
+
  #if PLATFORM != PLATFORM_WINDOWS
  #include <readline/readline.h>
 @@ -115,6 +116,15 @@ void commandFinished(void*, bool /*success*/)
      fflush(stdout);
  }
- 
+
 +//Reconnect TriniChat to IRC server via CLI command
 +bool HandleIRCRelogCommand(bool, const char* /*args*/)
 +{
@@ -5735,16 +6113,16 @@ index 6c93343..e83a824 100644
 +++ b/src/server/worldserver/Main.cpp
 @@ -49,6 +49,7 @@
  #include "WorldSocketMgr.h"
- 
+
  using namespace boost::program_options;
 +#include "IRCClient.h"
- 
+
  #ifndef _TRINITY_CORE_CONFIG
      #define _TRINITY_CORE_CONFIG  "worldserver.conf"
 @@ -216,6 +217,15 @@ extern int main(int argc, char** argv)
          soapThread = new std::thread(TCSoapThread, sConfigMgr->GetStringDefault("SOAP.IP", "127.0.0.1"), uint16(sConfigMgr->GetIntDefault("SOAP.Port", 7878)));
      }
- 
+
 +    // Start up TriniChat
 +    boost::thread* triniChatThread = nullptr;
 +    if (sIRC->Active == 1)
@@ -5760,7 +6138,7 @@ index 6c93343..e83a824 100644
 @@ -269,6 +279,16 @@ extern int main(int argc, char** argv)
          delete soapThread;
      }
- 
+
 +    // Clean TrinityChat
 +    if (triniChatThread != nullptr)
 +    {
@@ -5772,7 +6150,7 @@ index 6c93343..e83a824 100644
 +    }
 +
      delete raAcceptor;
- 
+
      ///- Clean database before leaving
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
 index c40da51..6a9845d 100644
@@ -5781,7 +6159,7 @@ index c40da51..6a9845d 100644
 @@ -3242,6 +3242,285 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
- 
+
 +#########################################################
 +# TriniChat IRC BOT For Trinity Core Configuration File #
 +#########################################################
@@ -6064,6 +6442,6 @@ index c40da51..6a9845d 100644
  #
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
--- 
+--
 2.1.3
 
