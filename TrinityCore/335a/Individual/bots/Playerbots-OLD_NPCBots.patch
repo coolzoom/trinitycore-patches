@@ -1,6 +1,6 @@
-From 13633aeee19c8662bada9dbdac1b2d3bd0cc8772 Mon Sep 17 00:00:00 2001
+From ac80a967a71ca3af01391af317a2311fe0619d55 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 1 Feb 2015 01:17:20 -0600
+Date: Wed, 4 Feb 2015 05:49:54 -0600
 Subject: [PATCH] Playerbots-OLD_NPCBots
 
 ---
@@ -55,7 +55,7 @@ Subject: [PATCH] Playerbots-OLD_NPCBots
  src/server/game/Entities/Creature/Creature.h       |   54 +
  .../game/Entities/Creature/TemporarySummon.cpp     |    8 +
  src/server/game/Entities/Object/Object.cpp         |   11 +
- src/server/game/Entities/Player/Player.cpp         | 1055 +-
+ src/server/game/Entities/Player/Player.cpp         | 1020 ++
  src/server/game/Entities/Player/Player.h           |   87 +-
  src/server/game/Entities/Totem/Totem.cpp           |    7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |    5 +
@@ -82,7 +82,7 @@ Subject: [PATCH] Playerbots-OLD_NPCBots
  .../Database/Implementation/WorldDatabase.cpp      |    3 +
  .../shared/Database/Implementation/WorldDatabase.h |    4 +
  src/server/worldserver/worldserver.conf.dist       |  208 +
- 78 files changed, 42777 insertions(+), 16 deletions(-)
+ 78 files changed, 42743 insertions(+), 15 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -41102,7 +41102,7 @@ index b5bcbfd..8a3d66e 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index c6918f1..1da6123 100644
+index 34a0fba..a2e156c 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -16,6 +16,12 @@
@@ -42178,73 +42178,17 @@ index c6918f1..1da6123 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2791,6 +3808,9 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2791,7 +3808,10 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
  
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
 +    {
 +    if (!creature->IsQuestBot())
-+    }
          return NULL;
++    }
  
      // not too far
-@@ -2972,8 +3992,31 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
- {
-     if (!group)
-         return;
-+     if (group)
-+     {
-+        if (Player* player = ObjectAccessor::FindPlayer(guid))
-+        {
-+            if (player->HaveBot())
-+            {
-+                uint8 players = 0;
-+                Group::MemberSlotList const& members = group->GetMemberSlots();
-+                for (Group::member_citerator itr = members.begin(); itr!= members.end(); ++itr)
-+                {
-+                    if (Player* pl = ObjectAccessor::FindPlayer(itr->guid))
-+                        ++players;
-+                }
- 
--    group->RemoveMember(guid, method, kicker, reason);
-+                //remove npcbots so group will be disbanded if only 1 player
-+                for (uint8 i = 0; i != player->GetMaxNpcBots(); ++i)
-+                    player->RemoveBot(player->GetBotMap(i)->m_guid, players <= 1);
-+                group = player->GetGroup();
-+                if (!group)
-+                    return; //group has been disbanded
-+            }
-+        }
-+        //end npcbot
-+     group->RemoveMember(guid, method, kicker, reason);
-+    }
- }
- 
- void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend, float /*group_rate*/)
-@@ -3145,6 +4188,9 @@ void Player::GiveLevel(uint8 level)
-             }
- 
-     sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
-+
-+    if (m_playerbotAI)
-+        m_playerbotAI->GiveLevel(level);
- }
- 
- void Player::InitTalentForLevel()
-@@ -4979,6 +6025,13 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
-             stmt->setUInt32(0, guid);
-             trans->Append(stmt);
- 
-+            //npcbot - erase npcbots
-+            stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_NPCBOTS);
-+            stmt->setUInt32(0, guid);
-+            trans->Append(stmt);
-+            //CharacterDatabase.PExecute("DELETE FROM `character_npcbot` WHERE `owner` = '%u'", guid);
-+            //end npcbot
-+
-             CharacterDatabase.CommitTransaction(trans);
-             break;
-         }
+     if (!creature->IsWithinDistInMap(this, INTERACTION_DISTANCE))
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
 index f402daa..9b9e591 100644
 --- a/src/server/game/Entities/Player/Player.h
@@ -42812,7 +42756,7 @@ index f9562a1..eac154d 100644
          void LoadScripts(ScriptsType type);
          void LoadQuestRelationsHelper(QuestRelations& map, QuestRelationsReverse* reverseMap, std::string const& table, bool starter, bool go);
 diff --git a/src/server/game/Groups/Group.cpp b/src/server/game/Groups/Group.cpp
-index d912455..95bcab3 100644
+index 5664cbb..8d4932c 100644
 --- a/src/server/game/Groups/Group.cpp
 +++ b/src/server/game/Groups/Group.cpp
 @@ -105,6 +105,9 @@ bool Group::Create(Player* leader)
