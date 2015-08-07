@@ -1,28 +1,28 @@
-From cb8857ffaa453d2f123ce049309e0cf27513ec7f Mon Sep 17 00:00:00 2001
-From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Sat, 22 Nov 2014 13:52:50 -0500
+From 8363a350109330d6ffa029149f56d1e37f8ee0bb Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Fri, 7 Aug 2015 18:57:10 -0500
 Subject: [PATCH] GuildLevelSystem
 
 ---
- .../GuildLevelSystem/auth_guild_level_system.sql   |   7 +
- .../characters_guild_level_system.sql              |  55 ++++++++
- .../GuildLevelSystem/world_guild_level_system.sql  |   7 +
- src/server/game/Accounts/RBAC.h                    |   4 +-
- src/server/game/Conditions/ConditionMgr.cpp        |  22 ++++
- src/server/game/Conditions/ConditionMgr.h          |   3 +-
- src/server/game/Entities/Player/Player.cpp         |  42 +++++-
- src/server/game/Entities/Unit/Unit.cpp             |  22 +++-
- src/server/game/Guilds/Guild.cpp                   | 144 +++++++++++++++++++++
- src/server/game/Guilds/Guild.h                     |  37 ++++++
- src/server/game/Handlers/LootHandler.cpp           |  11 ++
- src/server/game/Miscellaneous/Formulas.h           |  12 +-
- src/server/game/Miscellaneous/Language.h           |   4 +-
- src/server/game/Reputation/ReputationMgr.cpp       |  10 ++
- src/server/game/World/World.cpp                    |  87 ++++++++++++-
- src/server/game/World/World.h                      |  20 +++
- src/server/scripts/Commands/cs_guild.cpp           | 121 +++++++++++++++++
- .../Database/Implementation/CharacterDatabase.cpp  |  10 +-
- .../Database/Implementation/CharacterDatabase.h    |   7 +-
+ .../GuildLevelSystem/auth_guild_level_system.sql   |    7 +
+ .../characters_guild_level_system.sql              |   55 ++++++++
+ .../GuildLevelSystem/world_guild_level_system.sql  |    7 +
+ src/server/game/Accounts/RBAC.h                    |    4 +-
+ src/server/game/Conditions/ConditionMgr.cpp        |   22 +++
+ src/server/game/Conditions/ConditionMgr.h          |    3 +-
+ src/server/game/Entities/Player/Player.cpp         |   42 +++++-
+ src/server/game/Entities/Unit/Unit.cpp             |   22 ++-
+ src/server/game/Guilds/Guild.cpp                   |  144 ++++++++++++++++++++
+ src/server/game/Guilds/Guild.h                     |   37 +++++
+ src/server/game/Handlers/LootHandler.cpp           |   11 ++
+ src/server/game/Miscellaneous/Formulas.h           |   12 +-
+ src/server/game/Miscellaneous/Language.h           |    4 +-
+ src/server/game/Reputation/ReputationMgr.cpp       |   10 ++
+ src/server/game/World/World.cpp                    |   87 +++++++++++-
+ src/server/game/World/World.h                      |   20 +++
+ src/server/scripts/Commands/cs_guild.cpp           |  121 ++++++++++++++++
+ .../Database/Implementation/CharacterDatabase.cpp  |   10 +-
+ .../Database/Implementation/CharacterDatabase.h    |    7 +-
  19 files changed, 613 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
@@ -118,10 +118,10 @@ index 0000000..fcf2396
 +INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
 \ No newline at end of file
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index a16586a..b9085f5 100644
+index c9e3f91..1d11d5d 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -696,7 +696,9 @@ enum RBACPermissions
+@@ -697,7 +697,9 @@ enum RBACPermissions
  
      // custom permissions 1000+
      // Prepatch by LordPsyan
@@ -133,19 +133,19 @@ index a16586a..b9085f5 100644
      // 03
      // 04
 diff --git a/src/server/game/Conditions/ConditionMgr.cpp b/src/server/game/Conditions/ConditionMgr.cpp
-index f7fa719..878eebd 100644
+index 9106bfd..2a1237e 100644
 --- a/src/server/game/Conditions/ConditionMgr.cpp
 +++ b/src/server/game/Conditions/ConditionMgr.cpp
-@@ -28,6 +28,7 @@
+@@ -27,6 +27,7 @@
+ #include "ScriptMgr.h"
  #include "SpellAuras.h"
  #include "SpellMgr.h"
- #include "Spell.h"
 +#include "Guild.h"
  
  char const* ConditionMgr::StaticSourceTypeData[CONDITION_SOURCE_TYPE_MAX] =
  {
-@@ -416,6 +417,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
-                 condMeets = creature->GetCreatureTemplate()->type == ConditionValue1;
+@@ -430,6 +431,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
+                 condMeets = unit->IsInWater();
              break;
          }
 +        case CONDITION_GUILD_LEVEL:
@@ -158,9 +158,9 @@ index f7fa719..878eebd 100644
          default:
              condMeets = false;
              break;
-@@ -580,6 +588,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
-         case CONDITION_CREATURE_TYPE:
-             mask |= GRID_MAP_TYPE_MASK_CREATURE;
+@@ -600,6 +608,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
+         case CONDITION_IN_WATER:
+             mask |= GRID_MAP_TYPE_MASK_CREATURE | GRID_MAP_TYPE_MASK_PLAYER;
              break;
 +        case CONDITION_GUILD_LEVEL:
 +            mask |= GRID_MAP_TYPE_MASK_PLAYER;
@@ -168,9 +168,9 @@ index f7fa719..878eebd 100644
          default:
              ASSERT(false && "Condition::GetSearcherTypeMaskForCondition - missing condition handling!");
              break;
-@@ -2056,6 +2067,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
-         case CONDITION_PHASEMASK:
-         case CONDITION_ALIVE:
+@@ -2091,6 +2102,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
+         }
+         case CONDITION_IN_WATER:
              break;
 +        case CONDITION_GUILD_LEVEL:
 +        {
@@ -187,24 +187,24 @@ index f7fa719..878eebd 100644
              break;
      }
 diff --git a/src/server/game/Conditions/ConditionMgr.h b/src/server/game/Conditions/ConditionMgr.h
-index 621da35..2244ea0 100644
+index 2798378..040dbc3 100644
 --- a/src/server/game/Conditions/ConditionMgr.h
 +++ b/src/server/game/Conditions/ConditionMgr.h
-@@ -71,7 +71,8 @@ enum ConditionTypes
-     CONDITION_ALIVE                 = 36,                   // 0                0              0                  true if unit is alive
-     CONDITION_HP_VAL                = 37,                   // hpVal            ComparisonType 0                  true if unit's hp matches given value
+@@ -74,7 +74,8 @@ enum ConditionTypes
      CONDITION_HP_PCT                = 38,                   // hpPct            ComparisonType 0                  true if unit's hp matches given pct
--    CONDITION_MAX                   = 39                    // MAX
-+    CONDITION_GUILD_LEVEL           = 39,                   // Gildenlevel      Level          Vergleichstyp
-+    CONDITION_MAX                   = 40                    // MAX
+     CONDITION_REALM_ACHIEVEMENT     = 39,                   // achievement_id   0              0                  true if realm achievement is complete
+     CONDITION_IN_WATER              = 40,                   // 0                0              0                  true if unit in water
+-    CONDITION_MAX                   = 41                    // MAX
++    CONDITION_GUILD_LEVEL           = 41,                   // Gildenlevel      Level          Vergleichstyp
++    CONDITION_MAX                   = 42                    // MAX
  };
  
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index cff45c2..5549761 100644
+index 7f9433d..9bf066d 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -5107,6 +5107,12 @@ void Player::BuildPlayerRepop()
+@@ -4963,6 +4963,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -217,7 +217,7 @@ index cff45c2..5549761 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5154,6 +5160,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5010,6 +5016,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -227,7 +227,7 @@ index cff45c2..5549761 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5479,6 +5488,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5335,6 +5344,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -243,7 +243,7 @@ index cff45c2..5549761 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -7267,7 +7285,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7123,7 +7141,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      // 21
      // 22
      // 23
@@ -261,7 +261,7 @@ index cff45c2..5549761 100644
      // 25
      // 26
      // 27
-@@ -15438,7 +15465,18 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15289,7 +15316,18 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      // Prepatch by LordPsyan
      // 41
      // 42
@@ -282,7 +282,7 @@ index cff45c2..5549761 100644
      // 45
      // 46
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 9a4b7a3..25977b9 100644
+index aaa9328..ece250c 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -62,6 +62,7 @@
@@ -293,7 +293,7 @@ index 9a4b7a3..25977b9 100644
  
  #include <cmath>
  
-@@ -12199,6 +12200,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12244,6 +12245,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
      float stack_bonus     = 1.0f;
      float non_stack_bonus = 1.0f;
  
@@ -317,7 +317,7 @@ index 9a4b7a3..25977b9 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12212,7 +12230,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12257,7 +12275,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -326,7 +326,7 @@ index 9a4b7a3..25977b9 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12246,7 +12264,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12291,7 +12309,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -336,7 +336,7 @@ index 9a4b7a3..25977b9 100644
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index 5180c9f..8e0b538 100644
+index 04eb99b..b4caac3 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1207,6 +1207,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
@@ -502,7 +502,7 @@ index 5180c9f..8e0b538 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/Guilds/Guild.h b/src/server/game/Guilds/Guild.h
-index 94bd5d3..326cec5 100644
+index b0ea9e1..4a0a987 100644
 --- a/src/server/game/Guilds/Guild.h
 +++ b/src/server/game/Guilds/Guild.h
 @@ -222,6 +222,29 @@ enum GuildMemberFlags
@@ -564,18 +564,18 @@ index 94bd5d3..326cec5 100644
      inline uint8 _GetRanksSize() const { return uint8(m_ranks.size()); }
      inline const RankInfo* GetRankInfo(uint8 rankId) const { return rankId < _GetRanksSize() ? &m_ranks[rankId] : NULL; }
 diff --git a/src/server/game/Handlers/LootHandler.cpp b/src/server/game/Handlers/LootHandler.cpp
-index 64c0107..7e60a3b 100644
+index 18ad2e8..f96c851 100644
 --- a/src/server/game/Handlers/LootHandler.cpp
 +++ b/src/server/game/Handlers/LootHandler.cpp
-@@ -30,6 +30,7 @@
- #include "World.h"
+@@ -28,6 +28,7 @@
+ #include "Player.h"
  #include "WorldPacket.h"
  #include "WorldSession.h"
 +#include "Guild.h"
  
  void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recvData)
  {
-@@ -204,6 +205,16 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
+@@ -202,6 +203,16 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
              SendPacket(&data);
          }
  
@@ -593,7 +593,7 @@ index 64c0107..7e60a3b 100644
  
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index b922932..826148f 100644
+index 3e2ac94..8cc8492 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -31,7 +31,7 @@
@@ -623,10 +623,10 @@ index b922932..826148f 100644
                      // 34
                      // 35
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 4be1a2f..c5bc453 100644
+index 4cd3cde..97fee0d 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1187,7 +1187,9 @@ enum TrinityStrings
+@@ -1188,7 +1188,9 @@ enum TrinityStrings
      LANG_AUTO_BROADCAST                 = 11000,
      LANG_INVALID_REALMID                = 11001,
      // Prepatch by LordPsyan
@@ -638,7 +638,7 @@ index 4be1a2f..c5bc453 100644
      // 03
      // 04
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
-index f19d6d7..5690f3e 100644
+index a3e4585..995289c 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
 +++ b/src/server/game/Reputation/ReputationMgr.cpp
 @@ -25,6 +25,7 @@
@@ -649,7 +649,7 @@ index f19d6d7..5690f3e 100644
  
  const int32 ReputationMgr::PointsInRank[MAX_REPUTATION_RANK] = {36000, 3000, 3000, 3000, 6000, 12000, 21000, 1000};
  
-@@ -367,6 +368,15 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
+@@ -370,6 +371,15 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
              standing += itr->second.Standing + BaseRep;
          }
  
@@ -666,10 +666,10 @@ index f19d6d7..5690f3e 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..060749e 100644
+index 153d876..e107d55 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1293,7 +1293,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1323,7 +1323,8 @@ void World::LoadConfigSettings(bool reload)
  // 04
  // 05
  // 06
@@ -679,7 +679,7 @@ index afd87b8..060749e 100644
  // 08
  // 09
  // 10
-@@ -3269,3 +3270,87 @@ void World::ReloadRBAC()
+@@ -3318,3 +3319,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -768,10 +768,10 @@ index afd87b8..060749e 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 2f13051..418ba99 100644
+index 11c527e..704155a 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -846,6 +846,11 @@ class World
+@@ -853,6 +853,11 @@ class World
  
          void ReloadRBAC();
  
@@ -783,7 +783,7 @@ index 2f13051..418ba99 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -948,6 +953,21 @@ class World
+@@ -955,6 +960,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
@@ -806,7 +806,7 @@ index 2f13051..418ba99 100644
  
  extern uint32 realmID;
 diff --git a/src/server/scripts/Commands/cs_guild.cpp b/src/server/scripts/Commands/cs_guild.cpp
-index e896131..b8e46ec 100644
+index a735e29..86febdf 100644
 --- a/src/server/scripts/Commands/cs_guild.cpp
 +++ b/src/server/scripts/Commands/cs_guild.cpp
 @@ -45,6 +45,9 @@ public:
@@ -945,10 +945,10 @@ index e896131..b8e46ec 100644
  
  void AddSC_guild_commandscript()
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 12e367c..7582f10 100644
+index 474c214..4d5339d 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -611,7 +611,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -614,7 +614,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // Prepatch by LordPsyan
      // 01
      // 02
@@ -966,10 +966,10 @@ index 12e367c..7582f10 100644
      // 05
      // 06
 diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index f8a7c24..2ac7dbb 100644
+index 30602a0..2d0f724 100644
 --- a/src/server/shared/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -543,7 +543,12 @@ enum CharacterDatabaseStatements
+@@ -546,7 +546,12 @@ enum CharacterDatabaseStatements
      // Prepatch by LordPsyan
      // 01
      // 02
@@ -984,5 +984,5 @@ index f8a7c24..2ac7dbb 100644
      // 05
      // 06
 -- 
-2.1.3
+1.7.10.4
 
