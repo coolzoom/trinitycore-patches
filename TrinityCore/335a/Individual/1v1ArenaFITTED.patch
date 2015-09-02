@@ -1,26 +1,26 @@
-From b4745dffa1a121915421f4aa385df0379a3b39ee Mon Sep 17 00:00:00 2001
-From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Sun, 7 Dec 2014 00:59:19 -0500
+From 66f4c115b662c10c97c322f2db40bf7adab29ef8 Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Wed, 2 Sep 2015 04:23:35 -0500
 Subject: [PATCH] 1v1ArenaFITTED
 
 ---
- .../arena1v1/character_v2.0.sql                    |   2 +
- sql/TrinityCore-Patches/arena1v1/world_v1.0.sql    |   3 +
- src/server/game/Battlegrounds/ArenaTeam.cpp        |   4 +-
- src/server/game/Battlegrounds/ArenaTeam.h          |   2 +-
- src/server/game/Battlegrounds/Battleground.cpp     |   5 +
- src/server/game/Battlegrounds/Battleground.h       |   2 +-
- src/server/game/Battlegrounds/BattlegroundMgr.cpp  |   2 +-
- .../game/Battlegrounds/BattlegroundQueue.cpp       |   2 +
- src/server/game/Entities/Player/Player.cpp         |   1 +
- src/server/game/Handlers/BattleGroundHandler.cpp   |   6 +-
- src/server/game/Handlers/PetitionsHandler.cpp      |   4 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
- src/server/game/World/World.cpp                    |   8 +
- src/server/game/World/World.h                      |   8 +-
- src/server/scripts/Custom/npc_arena1v1.cpp         | 309 +++++++++++++++++++++
- src/server/scripts/Custom/npc_arena1v1.h           |  69 +++++
- src/server/worldserver/worldserver.conf.dist       |  65 +++++
+ .../arena1v1/character_v2.0.sql                    |    2 +
+ sql/TrinityCore-Patches/arena1v1/world_v1.0.sql    |    3 +
+ src/server/game/Battlegrounds/ArenaTeam.cpp        |    4 +-
+ src/server/game/Battlegrounds/ArenaTeam.h          |    2 +-
+ src/server/game/Battlegrounds/Battleground.cpp     |    5 +
+ src/server/game/Battlegrounds/Battleground.h       |    2 +-
+ src/server/game/Battlegrounds/BattlegroundMgr.cpp  |    2 +-
+ .../game/Battlegrounds/BattlegroundQueue.cpp       |    2 +
+ src/server/game/Entities/Player/Player.cpp         |    1 +
+ src/server/game/Handlers/BattleGroundHandler.cpp   |    6 +-
+ src/server/game/Handlers/PetitionsHandler.cpp      |    4 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
+ src/server/game/World/World.cpp                    |    8 +
+ src/server/game/World/World.h                      |    8 +-
+ src/server/scripts/Custom/npc_arena1v1.cpp         |  309 ++++++++++++++++++++
+ src/server/scripts/Custom/npc_arena1v1.h           |   69 +++++
+ src/server/worldserver/worldserver.conf.dist       |   65 ++++
  17 files changed, 489 insertions(+), 9 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/arena1v1/character_v2.0.sql
  create mode 100644 sql/TrinityCore-Patches/arena1v1/world_v1.0.sql
@@ -45,7 +45,7 @@ index 0000000..75d4337
 +INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 +('535200','0','0','0','0','0','18','0','18','0','LordPsyan','1v1 Arena master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','npc_1v1arena','1');
 diff --git a/src/server/game/Battlegrounds/ArenaTeam.cpp b/src/server/game/Battlegrounds/ArenaTeam.cpp
-index 19617a8..2172d82 100644
+index 3b7e9ac..1d225d8 100644
 --- a/src/server/game/Battlegrounds/ArenaTeam.cpp
 +++ b/src/server/game/Battlegrounds/ArenaTeam.cpp
 @@ -439,7 +439,7 @@ void ArenaTeam::Query(WorldSession* session)
@@ -67,7 +67,7 @@ index 19617a8..2172d82 100644
      return (uint32) points;
  }
 diff --git a/src/server/game/Battlegrounds/ArenaTeam.h b/src/server/game/Battlegrounds/ArenaTeam.h
-index 2f6472e..5b00577 100644
+index 2b08eaa..0c75f54 100644
 --- a/src/server/game/Battlegrounds/ArenaTeam.h
 +++ b/src/server/game/Battlegrounds/ArenaTeam.h
 @@ -82,7 +82,7 @@ enum ArenaTeamTypes
@@ -80,10 +80,10 @@ index 2f6472e..5b00577 100644
  
  struct ArenaTeamMember
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index 0853d65..4bb22bd 100644
+index 3e9b68d..d2b6b11 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
-@@ -460,6 +460,11 @@ inline void Battleground::_ProcessJoin(uint32 diff)
+@@ -458,6 +458,11 @@ inline void Battleground::_ProcessJoin(uint32 diff)
          // First start warning - 2 or 1 minute
          SendMessageToAll(StartMessageIds[BG_STARTING_EVENT_FIRST], CHAT_MSG_BG_SYSTEM_NEUTRAL);
      }
@@ -96,10 +96,10 @@ index 0853d65..4bb22bd 100644
      else if (GetStartDelayTime() <= StartDelayTimes[BG_STARTING_EVENT_SECOND] && !(m_Events & BG_STARTING_EVENT_2))
      {
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index ed4885c..12f9f65 100644
+index 0813429..a5c4455 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
-@@ -173,7 +173,7 @@ enum ArenaType
+@@ -174,7 +174,7 @@ enum ArenaType
  {
      ARENA_TYPE_2v2          = 2,
      ARENA_TYPE_3v3          = 3,
@@ -109,10 +109,10 @@ index ed4885c..12f9f65 100644
  
  enum BattlegroundStartingEvents
 diff --git a/src/server/game/Battlegrounds/BattlegroundMgr.cpp b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-index f5ee169..57e3ff0 100644
+index 5bdaf0e..1a9dbd0 100644
 --- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-@@ -423,7 +423,7 @@ Battleground* BattlegroundMgr::CreateNewBattleground(BattlegroundTypeId original
+@@ -421,7 +421,7 @@ Battleground* BattlegroundMgr::CreateNewBattleground(BattlegroundTypeId original
                  maxPlayersPerTeam = 3;
                  break;
              case ARENA_TYPE_5v5:
@@ -122,7 +122,7 @@ index f5ee169..57e3ff0 100644
          }
  
 diff --git a/src/server/game/Battlegrounds/BattlegroundQueue.cpp b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
-index 3993ec0..eab01b2 100644
+index d9950f4..981ca53 100644
 --- a/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundQueue.cpp
 @@ -163,6 +163,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
@@ -133,7 +133,7 @@ index 3993ec0..eab01b2 100644
              sWorld->SendWorldText(LANG_ARENA_QUEUE_ANNOUNCE_WORLD_JOIN, Team->GetName().c_str(), ginfo->ArenaType, ginfo->ArenaType, ginfo->ArenaTeamRating);
      }
  
-@@ -354,6 +355,7 @@ void BattlegroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
+@@ -355,6 +356,7 @@ void BattlegroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
      // announce to world if arena team left queue for rated match, show only once
      if (group->ArenaType && group->IsRated && group->Players.empty() && sWorld->getBoolConfig(CONFIG_ARENA_QUEUE_ANNOUNCER_ENABLE))
          if (ArenaTeam* Team = sArenaTeamMgr->GetArenaTeamById(group->ArenaTeamId))
@@ -142,10 +142,10 @@ index 3993ec0..eab01b2 100644
  
      // if player leaves queue and he is invited to rated arena match, then he have to lose
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index ea85f8b..b9a1cd9 100644
+index 3b71f95..85f6483 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -21958,6 +21958,7 @@ uint32 Player::GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const
+@@ -21729,6 +21729,7 @@ uint32 Player::GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const
      uint32 max_personal_rating = 0;
      for (uint8 i = minarenaslot; i < MAX_ARENA_SLOT; ++i)
      {
@@ -154,7 +154,7 @@ index ea85f8b..b9a1cd9 100644
          {
              uint32 p_rating = GetArenaPersonalRating(i);
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
-index ce8ae92..14db7f1 100644
+index 37d8f8e..3f49aca 100644
 --- a/src/server/game/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Handlers/BattleGroundHandler.cpp
 @@ -37,7 +37,7 @@
@@ -166,7 +166,7 @@ index ce8ae92..14db7f1 100644
  // 04
  // 05
  // 06
-@@ -460,6 +460,10 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket &recvData)
+@@ -468,6 +468,10 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket &recvData)
          if (!_player->IsInvitedForBattlegroundQueueType(bgQueueTypeId))
              return;                                 // cheating?
  
@@ -178,10 +178,10 @@ index ce8ae92..14db7f1 100644
              _player->SetBattlegroundEntryPoint();
  
 diff --git a/src/server/game/Handlers/PetitionsHandler.cpp b/src/server/game/Handlers/PetitionsHandler.cpp
-index 1e6dc1a..4c16251 100644
+index 05e7934..23874da 100644
 --- a/src/server/game/Handlers/PetitionsHandler.cpp
 +++ b/src/server/game/Handlers/PetitionsHandler.cpp
-@@ -951,7 +951,7 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
+@@ -941,7 +941,7 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
      }
      else
      {
@@ -190,7 +190,7 @@ index 1e6dc1a..4c16251 100644
          // 2v2
          data << uint32(1);                                  // index
          data << uint32(ARENA_TEAM_CHARTER_2v2);             // charter entry
-@@ -967,12 +967,14 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
+@@ -957,12 +957,14 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
          data << uint32(3);                                  // unknown
          data << uint32(3);                                  // required signs?
          // 5v5
@@ -198,7 +198,7 @@ index 1e6dc1a..4c16251 100644
          data << uint32(3);                                  // index
          data << uint32(ARENA_TEAM_CHARTER_5v5);             // charter entry
          data << uint32(CHARTER_DISPLAY_ID);                 // charter display id
-         data << uint32(ARENA_TEAM_CHARTER_5v5_COST);        // charter cost
+         data << uint32(sWorld->getIntConfig(CONFIG_CHARTER_COST_ARENA_5v5)); // charter cost
          data << uint32(5);                                  // unknown
          data << uint32(5);                                  // required signs?
 +        */
@@ -206,7 +206,7 @@ index 1e6dc1a..4c16251 100644
  
      SendPacket(&data);
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index bd43fbe..cf916ed 100644
+index 7e5f73a..5797967 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -1475,7 +1475,8 @@ void AddBattlegroundScripts()
@@ -230,10 +230,10 @@ index bd43fbe..cf916ed 100644
  // end63
  // end64
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..35e1971 100644
+index 8476dcc..8ce959a 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1044,6 +1044,14 @@ void World::LoadConfigSettings(bool reload)
+@@ -1055,6 +1055,14 @@ void World::LoadConfigSettings(bool reload)
      m_bool_configs[CONFIG_ARENA_SEASON_IN_PROGRESS]                  = sConfigMgr->GetBoolDefault("Arena.ArenaSeason.InProgress", true);
      m_bool_configs[CONFIG_ARENA_LOG_EXTENDED_INFO]                   = sConfigMgr->GetBoolDefault("ArenaLog.ExtendedInfo", false);
  
@@ -249,7 +249,7 @@ index afd87b8..35e1971 100644
  
      m_int_configs[CONFIG_CREATURE_PICKPOCKET_REFILL] = sConfigMgr->GetIntDefault("Creature.PickPocketRefillDelay", 10 * MINUTE);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 2f13051..77ecee5 100644
+index 11c527e..6e82e95 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -130,6 +130,10 @@ enum WorldBoolConfigs
@@ -674,10 +674,10 @@ index 0000000..caa75a2
 +#endif
 \ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c40da51..cebdf3d 100644
+index 3aa2d19..b94fc54 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2331,6 +2331,71 @@ ArenaLog.ExtendedInfo = 0
+@@ -2434,6 +2434,71 @@ ArenaLog.ExtendedInfo = 0
  
  #
  ###################################################################################################
@@ -750,5 +750,5 @@ index c40da51..cebdf3d 100644
  ###################################################################################################
  # NETWORK CONFIG
 -- 
-2.1.3
+1.7.10.4
 
