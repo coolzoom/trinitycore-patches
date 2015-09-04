@@ -1,1 +1,0 @@
-Do not use the prepatch file the ALL patch. Apply ALL-No-Bots.patch first, then apply the bots patch of your choice.
