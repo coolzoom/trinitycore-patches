@@ -26,7 +26,8 @@ Here is a list of the patches, and a detailed description of each. (Not finished
 * **All-In-One-NPC.patch** - 
   NPC that does a variety of things, from buffing to morphing.
 
-* **ArenaGambler.patch** - 
+* **ArenaGambler.patch** - Someone give me a good description of this. I am assuming you bet on the winner of a battle in an arena.
+* **Arena_Template.patch** - This script has a bunch of LearnSpell commands. Other than that, I have no clue. Probably needs an SQL file, so if anyone plays around with this, send me a message explaining what it does. THanks.
 * **Beastmaster.patch** - 
   NPC that offers the sale of hunter pets. My version has pets in DB, and you can turn on/off hunter only, and GM only. You can also decide how much gold or tokens per pet, instead of per pet type (normal or exotic) like all the other beastmaster patches do.
 
