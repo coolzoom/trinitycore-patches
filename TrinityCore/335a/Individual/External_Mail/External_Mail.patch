@@ -1,17 +1,17 @@
-From 6bf51918648bcc710dbe02d96b865d0d0e183d7d Mon Sep 17 00:00:00 2001
+From b1ecc1ef2c8f332c256cce120839a4a2e8d4a3a2 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 17 Sep 2014 08:07:39 -0400
+Date: Mon, 7 Sep 2015 09:08:19 -0500
 Subject: [PATCH] External_Mail
 
 ---
- .../External_Mail/characters.external_mail.sql     | 10 ++++
- src/server/game/Mails/Mail.cpp                     | 62 ++++++++++++++++++++++
- src/server/game/Server/WorldSession.h              |  1 +
- src/server/game/World/World.cpp                    | 19 ++++++-
- src/server/game/World/World.h                      |  4 +-
- .../Database/Implementation/CharacterDatabase.cpp  |  3 ++
- .../Database/Implementation/CharacterDatabase.h    |  2 +
- src/server/worldserver/worldserver.conf.dist       | 14 +++++
+ .../External_Mail/characters.external_mail.sql     |   10 ++++
+ .../Database/Implementation/CharacterDatabase.cpp  |    3 +
+ .../Database/Implementation/CharacterDatabase.h    |    2 +
+ src/server/game/Mails/Mail.cpp                     |   62 ++++++++++++++++++++
+ src/server/game/Server/WorldSession.h              |    1 +
+ src/server/game/World/World.cpp                    |   19 +++++-
+ src/server/game/World/World.h                      |    4 +-
+ src/server/worldserver/worldserver.conf.dist       |   14 +++++
  8 files changed, 113 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/External_Mail/characters.external_mail.sql
 
@@ -32,8 +32,35 @@ index 0000000..8cd6a05
 +  PRIMARY KEY  (`id`)
 +) ENGINE=MyISAM AUTO_INCREMENT=7525 DEFAULT CHARSET=utf8;
 \ No newline at end of file
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+index 474c214..a3582a3 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+@@ -142,6 +142,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_UPD_MAIL_RETURNED, "UPDATE mail SET sender = ?, receiver = ?, expire_time = ?, deliver_time = ?, cod = 0, checked = ? WHERE id = ?", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_MAIL_ITEM_RECEIVER, "UPDATE mail_items SET receiver = ? WHERE item_guid = ?", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_UPD_ITEM_OWNER, "UPDATE item_instance SET owner_guid = ? WHERE guid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_GET_EXTERNAL_MAIL, "SELECT id, receiver, subject, message, money, item, item_count FROM mail_external ORDER BY id ASC", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_DEL_EXTERNAL_MAIL, "DELETE FROM mail_external WHERE id = ?", CONNECTION_ASYNC);
++
+ 
+     PrepareStatement(CHAR_SEL_ITEM_REFUNDS, "SELECT player_guid, paidMoney, paidExtendedCost FROM item_refund_instance WHERE item_guid = ? AND player_guid = ? LIMIT 1", CONNECTION_SYNCH);
+     PrepareStatement(CHAR_SEL_ITEM_BOP_TRADE, "SELECT allowedPlayers FROM item_soulbound_trade_data WHERE itemGuid = ? LIMIT 1", CONNECTION_SYNCH);
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
+index 30602a0..925b2b6 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.h
++++ b/src/server/database/Database/Implementation/CharacterDatabase.h
+@@ -142,6 +142,8 @@ enum CharacterDatabaseStatements
+     CHAR_UPD_MAIL_RETURNED,
+     CHAR_UPD_MAIL_ITEM_RECEIVER,
+     CHAR_UPD_ITEM_OWNER,
++    CHAR_GET_EXTERNAL_MAIL,
++    CHAR_DEL_EXTERNAL_MAIL,
+     CHAR_SEL_ITEM_REFUNDS,
+     CHAR_SEL_ITEM_BOP_TRADE,
+     CHAR_DEL_ITEM_BOP_TRADE,
 diff --git a/src/server/game/Mails/Mail.cpp b/src/server/game/Mails/Mail.cpp
-index 2459e46..df3be65 100644
+index e8eec55..386b3e4 100644
 --- a/src/server/game/Mails/Mail.cpp
 +++ b/src/server/game/Mails/Mail.cpp
 @@ -20,6 +20,7 @@
@@ -43,8 +70,8 @@ index 2459e46..df3be65 100644
 +#include "WorldSession.h"
  #include "ObjectMgr.h"
  #include "Player.h"
- #include "Unit.h"
-@@ -282,3 +283,64 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
+ #include "BattlegroundMgr.h"
+@@ -281,3 +282,64 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver,
          deleteIncludedItems(temp);
      }
  }
@@ -76,7 +103,7 @@ index 2459e46..df3be65 100644
 +        uint32 itemId = fields[5].GetUInt32();
 +        uint32 itemCount = fields[6].GetUInt32();
 +
-+        Player *receiver = ObjectAccessor::FindPlayer(receiver_guid);
++        Player *receiver = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, 0, (receiver_guid)));
 +
 +        mail = new MailDraft(subject, body);
 +
@@ -111,10 +138,10 @@ index 2459e46..df3be65 100644
 +}
 \ No newline at end of file
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index e46a58d..3573c90 100644
+index 3753f79..7327358 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -333,6 +333,7 @@ class WorldSession
+@@ -374,6 +374,7 @@ class WorldSession
              }
          }
          //used with item_page table
@@ -123,10 +150,10 @@ index e46a58d..3573c90 100644
          //auction
          void SendAuctionHello(ObjectGuid guid, Creature* unit);
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 2d2d08c..e8f0d11 100644
+index 8476dcc..390319b 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1248,6 +1248,10 @@ void World::LoadConfigSettings(bool reload)
+@@ -1278,6 +1278,10 @@ void World::LoadConfigSettings(bool reload)
      // MySQL ping time interval
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
  
@@ -137,7 +164,7 @@ index 2d2d08c..e8f0d11 100644
      // misc
      m_bool_configs[CONFIG_PDUMP_NO_PATHS] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowPaths", true);
      m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
-@@ -1778,7 +1782,9 @@ void World::SetInitialWorldSettings()
+@@ -1860,7 +1864,9 @@ void World::SetInitialWorldSettings()
      tm localTm;
      localtime_r(&m_gameTime, &localTm);
      mail_timer = ((((localTm.tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
@@ -148,7 +175,7 @@ index 2d2d08c..e8f0d11 100644
      mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
      TC_LOG_INFO("server.loading", "Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
  
-@@ -2014,6 +2020,17 @@ void World::Update(uint32 diff)
+@@ -2092,6 +2098,17 @@ void World::Update(uint32 diff)
      if (m_gameTime > m_NextGuildReset)
          ResetGuildCap();
  
@@ -167,10 +194,10 @@ index 2d2d08c..e8f0d11 100644
      if (m_timers[WUPDATE_AUCTIONS].Passed())
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 79f128b..aaf9f98 100644
+index 11c527e..584a892 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -176,7 +176,7 @@ enum WorldBoolConfigs
+@@ -177,7 +177,7 @@ enum WorldBoolConfigs
      // 16
      // 17
      // 18
@@ -179,15 +206,15 @@ index 79f128b..aaf9f98 100644
      // 20
      // Visit http://www.realmsofwarcraft.com/bb for forums and information
      //
-@@ -386,6 +386,7 @@ enum WorldIntConfigs
+@@ -409,6 +409,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
 +    CONFIG_EXTERNAL_MAIL_INTERVAL,
-     INT_CONFIG_VALUE_COUNT
- };
- 
-@@ -830,6 +831,7 @@ class World
+     CONFIG_CHARTER_COST_GUILD,
+     CONFIG_CHARTER_COST_ARENA_2v2,
+     CONFIG_CHARTER_COST_ARENA_3v3,
+@@ -884,6 +885,7 @@ class World
          time_t m_startTime;
          time_t m_gameTime;
          IntervalTimer m_timers[WUPDATE_COUNT];
@@ -195,39 +222,12 @@ index 79f128b..aaf9f98 100644
          time_t mail_timer;
          time_t mail_timer_expires;
          uint32 m_updateTime, m_updateTimeSum;
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 374711a..f3b1680 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -142,6 +142,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(CHAR_UPD_MAIL_RETURNED, "UPDATE mail SET sender = ?, receiver = ?, expire_time = ?, deliver_time = ?, cod = 0, checked = ? WHERE id = ?", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_UPD_MAIL_ITEM_RECEIVER, "UPDATE mail_items SET receiver = ? WHERE item_guid = ?", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_UPD_ITEM_OWNER, "UPDATE item_instance SET owner_guid = ? WHERE guid = ?", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_GET_EXTERNAL_MAIL, "SELECT id, receiver, subject, message, money, item, item_count FROM mail_external ORDER BY id ASC", CONNECTION_SYNCH);
-+    PrepareStatement(CHAR_DEL_EXTERNAL_MAIL, "DELETE FROM mail_external WHERE id = ?", CONNECTION_ASYNC);
-+
- 
-     PrepareStatement(CHAR_SEL_ITEM_REFUNDS, "SELECT player_guid, paidMoney, paidExtendedCost FROM item_refund_instance WHERE item_guid = ? AND player_guid = ? LIMIT 1", CONNECTION_SYNCH);
-     PrepareStatement(CHAR_SEL_ITEM_BOP_TRADE, "SELECT allowedPlayers FROM item_soulbound_trade_data WHERE itemGuid = ? LIMIT 1", CONNECTION_SYNCH);
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index b918715..b39850b 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.h
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -142,6 +142,8 @@ enum CharacterDatabaseStatements
-     CHAR_UPD_MAIL_RETURNED,
-     CHAR_UPD_MAIL_ITEM_RECEIVER,
-     CHAR_UPD_ITEM_OWNER,
-+    CHAR_GET_EXTERNAL_MAIL,
-+    CHAR_DEL_EXTERNAL_MAIL,
-     CHAR_SEL_ITEM_REFUNDS,
-     CHAR_SEL_ITEM_BOP_TRADE,
-     CHAR_DEL_ITEM_BOP_TRADE,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..5f7af52 100644
+index 3aa2d19..a187aeb 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2672,6 +2672,20 @@ PlayerDump.DisallowOverwrite = 1
- UI.ShowQuestLevelsInDialogs = 0
+@@ -2571,6 +2571,20 @@ CharDelete.Heroic.MinLevel = 0
+ CharDelete.KeepDays = 30
  
  #
 +#    External.Mail.Enable
@@ -248,5 +248,5 @@ index 9097e0b..5f7af52 100644
  
  ###################################################################################################
 -- 
-2.1.0
+1.7.10.4
 
