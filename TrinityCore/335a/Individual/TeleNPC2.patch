@@ -1,18 +1,18 @@
-From 90a274b4808c0d8e4f13c2b9dcac7c18ed405a4e Mon Sep 17 00:00:00 2001
+From 4ce3a3242eb0e48e32d4c3789586558f20a4b617 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 22 Sep 2014 10:14:12 -0400
+Date: Mon, 7 Sep 2015 06:39:32 -0500
 Subject: [PATCH] TeleNPC2
 
 ---
- README.NPCTELEPORT                                 |  14 +
- .../TeleNPC2/world.npc_teleport.sql                | 119 +++++++
- src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  | 380 +++++++++++++++++++++
- src/server/game/AI/ScriptedAI/sc_npc_teleport.h    | 151 ++++++++
- src/server/game/Scripting/ScriptLoader.cpp         |   9 +-
- src/server/game/Scripting/ScriptMgr.cpp            |   3 +
- src/server/scripts/CMakeLists.txt                  |   3 +
- src/server/scripts/Custom/npc_teleport.cpp         | 222 ++++++++++++
- 8 files changed, 899 insertions(+), 2 deletions(-)
+ README.NPCTELEPORT                                 |   14 +
+ .../TeleNPC2/world.npc_teleport.sql                |  119 ++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  377 ++++++++++++++++++++
+ src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |    9 +-
+ src/server/game/Scripting/ScriptMgr.cpp            |    3 +
+ src/server/scripts/CMakeLists.txt                  |    3 +
+ src/server/scripts/Custom/npc_teleport.cpp         |  219 ++++++++++++
+ 8 files changed, 893 insertions(+), 2 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
@@ -166,10 +166,10 @@ index 0000000..abaa188
 +INSERT INTO `creature_template` (`entry`, `modelid1`, `name`, `minlevel`, `maxlevel`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RegenHealth`, `flags_extra`, `ScriptName`) VALUES (100000, 26502, 'TeleNPC2', 83, 83, 35, 1, 1, 1.14286, 2, 1, 1, 1, 1, 2, 2048, 3, 1, 1, 1, 1, 1, 1, 1, 2, 'npc_teleport');
 diff --git a/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
 new file mode 100644
-index 0000000..3aed0f7
+index 0000000..7c26762
 --- /dev/null
 +++ b/src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
-@@ -0,0 +1,380 @@
+@@ -0,0 +1,377 @@
 +/**
 + *
 + * @File : sc_npc_teleport.cpp
@@ -182,10 +182,9 @@ index 0000000..3aed0f7
 + *
 + **/
 +
-+
-+#include "ScriptPCH.h"
++#include "Player.h"
 +#include "sc_npc_teleport.h"
-+//#include "ProgressBar.h"
++#include "WorldSession.h"
 +
 +#define TELE    nsNpcTel::CatDest
 +#define PAGE    nsNpcTel::Page
@@ -491,7 +490,6 @@ index 0000000..3aed0f7
 +    if (result)
 +    {
 +        TC_LOG_INFO("server.loading", "Loading %s, %s and %s...", Table[0], Table[1], Table[2]);
-+        // barGoLink bar(result->GetRowCount());
 +
 +        uint32 catid = 0;
 +        uint32 nbDest = 0;
@@ -500,7 +498,6 @@ index 0000000..3aed0f7
 +
 +        do
 +        {
-+            // bar.step();
 +            Field *fields = result->Fetch();
 +
 +            if (!IsValidCat && catid == fields[3].GetUInt32() && !FirstTime)
@@ -708,7 +705,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 8d5350b..e4f93e5 100644
+index 7e5f73a..fb43f99 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -36,6 +36,9 @@ void AddSC_holiday_spell_scripts();
@@ -731,7 +728,7 @@ index 8d5350b..e4f93e5 100644
  // start54
  // start55
  // start56
-@@ -1553,7 +1557,8 @@ void AddCustomScripts()
+@@ -1593,7 +1597,8 @@ void AddCustomScripts()
  // end50
  // end51
  // end52
@@ -742,7 +739,7 @@ index 8d5350b..e4f93e5 100644
  // end55
  // end56
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index 51100ac..4c76b7d 100644
+index aed829a..caa3a91 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
@@ -753,7 +750,7 @@ index 51100ac..4c76b7d 100644
  #include "ScriptSystem.h"
  #include "Transport.h"
  #include "Vehicle.h"
-@@ -188,6 +189,8 @@ void ScriptMgr::Initialize()
+@@ -193,6 +194,8 @@ void ScriptMgr::Initialize()
      uint32 oldMSTime = getMSTime();
  
      LoadDatabase();
@@ -763,7 +760,7 @@ index 51100ac..4c76b7d 100644
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
 diff --git a/src/server/scripts/CMakeLists.txt b/src/server/scripts/CMakeLists.txt
-index f11791e..f6f6190 100644
+index 3668a2b..baea928 100644
 --- a/src/server/scripts/CMakeLists.txt
 +++ b/src/server/scripts/CMakeLists.txt
 @@ -22,6 +22,9 @@ include(Commands/CMakeLists.txt)
@@ -778,10 +775,10 @@ index f11791e..f6f6190 100644
    ../game/AI/ScriptedAI/ScriptedFollowerAI.cpp
 diff --git a/src/server/scripts/Custom/npc_teleport.cpp b/src/server/scripts/Custom/npc_teleport.cpp
 new file mode 100644
-index 0000000..9d50719
+index 0000000..754a604
 --- /dev/null
 +++ b/src/server/scripts/Custom/npc_teleport.cpp
-@@ -0,0 +1,222 @@
+@@ -0,0 +1,219 @@
 +/**
 + *
 + * @File : npc_teleport.cpp
@@ -794,9 +791,6 @@ index 0000000..9d50719
 + *
 + **/
 +
-+
-+
-+#include "ScriptPCH.h"
 +#include "sc_npc_teleport.h"
 +#include <sstream>
 +
@@ -1005,5 +999,5 @@ index 0000000..9d50719
 +}
 +// End of TeleNPC2
 -- 
-2.1.0
+1.7.10.4
 
