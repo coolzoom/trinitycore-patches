@@ -1,14 +1,14 @@
-From b06c5d02d074ddedfa6be05ae1bf44898f2f8ecd Mon Sep 17 00:00:00 2001
+From eca10cf60b5ade949a324f8d762c20c5db67166a Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 4 Sep 2015 09:01:03 -0500
+Date: Wed, 23 Sep 2015 00:41:33 -0500
 Subject: [PATCH] BountyHunter
 
 ---
  .../BountyHunter/characters.BountyHunter.sql       |   38 ++
  .../BountyHunter/world.BountyHunter.sql            |    5 +
  src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
- src/server/scripts/Custom/bountyhunter.cpp         |  461 ++++++++++++++++++++
- 4 files changed, 508 insertions(+), 2 deletions(-)
+ src/server/scripts/Custom/bountyhunter.cpp         |  457 ++++++++++++++++++++
+ 4 files changed, 504 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/BountyHunter/characters.BountyHunter.sql
  create mode 100644 sql/TrinityCore-Patches/BountyHunter/world.BountyHunter.sql
  create mode 100644 src/server/scripts/Custom/bountyhunter.cpp
@@ -59,15 +59,15 @@ index 0000000..edccae3
 +/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 diff --git a/sql/TrinityCore-Patches/BountyHunter/world.BountyHunter.sql b/sql/TrinityCore-Patches/BountyHunter/world.BountyHunter.sql
 new file mode 100644
-index 0000000..2338536
+index 0000000..990343c
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/BountyHunter/world.BountyHunter.sql
 @@ -0,0 +1,5 @@
 +-- Bounty Hunter NPC
 +
 +DELETE FROM `creature_template` WHERE (`entry`=99014);
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
-+('99014','0','0','0','0','0','24818','3422','24819','24821','George','Bounty Hunter','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','BountyHunter','1');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
++('99014','0','0','0','0','0','24818','3422','24819','24821','George','Bounty Hunter','','0','255','255','0','35','0','1','1.14286','1','0','0','0','0','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','0','3','1','5','1','1','1','1','0','0','1','0','0','BountyHunter','1');
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
 index 7e5f73a..675c739 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
@@ -94,10 +94,10 @@ index 7e5f73a..675c739 100644
  // end16
 diff --git a/src/server/scripts/Custom/bountyhunter.cpp b/src/server/scripts/Custom/bountyhunter.cpp
 new file mode 100644
-index 0000000..9a1d099
+index 0000000..217c1c8
 --- /dev/null
 +++ b/src/server/scripts/Custom/bountyhunter.cpp
-@@ -0,0 +1,461 @@
+@@ -0,0 +1,457 @@
 +#include <cstring>
 +
 +using namespace std;
@@ -127,10 +127,6 @@ index 0000000..9a1d099
 +#define PLACE_BOUNTY "Ich will Jemanden tot sehen!"
 +#define LIST_BOUNTY "Zeig mir die Liste der Opfer!"
 +#define NVM "Ich moechte doch nichts."
-+
-+
-+
-+
 +
 +#if SET_CURRENCY != 2
 +
