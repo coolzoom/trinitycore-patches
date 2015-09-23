@@ -1,32 +1,32 @@
-From 31f54a24b08f76376f0d6bad0500013f0053c626 Mon Sep 17 00:00:00 2001
+From ef26e4cb7925daab09a46174d52883b7aa4d0076 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 9 Sep 2014 01:40:57 -0400
+Date: Wed, 23 Sep 2015 00:00:43 -0500
 Subject: [PATCH] ProfessionNPC
 
 ---
- .../profession_npc/world_professionnpc.sql         |   4 +
- src/server/game/Scripting/ScriptLoader.cpp         |   7 +-
- src/server/scripts/Custom/professionnpc.cpp        | 396 +++++++++++++++++++++
- src/server/worldserver/worldserver.conf.dist       |  47 +++
- 4 files changed, 451 insertions(+), 3 deletions(-)
+ .../profession_npc/world_professionnpc.sql         |    4 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    7 +-
+ src/server/scripts/Custom/professionnpc.cpp        |  394 ++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   47 +++
+ 4 files changed, 449 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
  create mode 100644 src/server/scripts/Custom/professionnpc.cpp
 
 diff --git a/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql b/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
 new file mode 100644
-index 0000000..d2141cf
+index 0000000..696d3d7
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/profession_npc/world_professionnpc.sql
 @@ -0,0 +1,4 @@
 +DELETE FROM `creature_template` WHERE `entry` = 60001;
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','professionnpc','1');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('60001','0','0','0','0','0','18','0','18','0','Cyon','Profession master','','0','59','61','0','35','1','1.48','1.14286','0','0','0','1500','1900','1','1','1','0','0','0','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','1','0','0','professionnpc','1');
 +-- end
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..a5aeebb 100644
+index 7e5f73a..262b295 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -695,7 +695,6 @@ void AddSC_outdoorpvp_zm();
+@@ -687,7 +687,6 @@ void AddSC_outdoorpvp_zm();
  // player
  void AddSC_chat_log();
  void AddSC_action_ip_logger();
@@ -34,7 +34,7 @@ index 5d120b2..a5aeebb 100644
  #endif
  
  void AddScripts()
-@@ -1478,7 +1477,8 @@ void AddBattlegroundScripts()
+@@ -1459,7 +1458,8 @@ void AddBattlegroundScripts()
  // start42
  // start43
  // start44
@@ -44,7 +44,7 @@ index 5d120b2..a5aeebb 100644
  // start46
  // start47
  // start48
-@@ -1564,7 +1564,8 @@ void AddCustomScripts()
+@@ -1585,7 +1585,8 @@ void AddCustomScripts()
  // end42
  // end43
  // end44
@@ -56,10 +56,10 @@ index 5d120b2..a5aeebb 100644
  // end48
 diff --git a/src/server/scripts/Custom/professionnpc.cpp b/src/server/scripts/Custom/professionnpc.cpp
 new file mode 100644
-index 0000000..3407d40
+index 0000000..699621f
 --- /dev/null
 +++ b/src/server/scripts/Custom/professionnpc.cpp
-@@ -0,0 +1,396 @@
+@@ -0,0 +1,394 @@
 +/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -76,9 +76,7 @@ index 0000000..3407d40
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+#include "ScriptPCH.h"
 +#include "Config.h"
-+#include "SystemConfig.h"
 +
 +class professionnpc : public CreatureScript
 +{
@@ -457,10 +455,10 @@ index 0000000..3407d40
 +
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..0e8bbfd 100644
+index 865833a..3cd0cac 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,53 @@ PacketSpoof.BanDuration = 86400
+@@ -3404,6 +3404,53 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -515,5 +513,5 @@ index 9097e0b..0e8bbfd 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-2.1.0.rc1
+1.7.10.4
 
