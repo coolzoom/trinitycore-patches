@@ -1,20 +1,20 @@
-From 86e64b0a30678477ae50cf105de23b84a1215c8a Mon Sep 17 00:00:00 2001
+From 1f1f60d596f8b7008ff495e42c04516d6968d5e3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 16 Sep 2014 08:08:07 -0400
-Subject: [PATCH 2/2] GuildHouses
+Date: Wed, 23 Sep 2015 20:06:23 -0500
+Subject: [PATCH] GuildHouses
 
 ---
- .../Guildhouses/world_guildhouses.sql              |  67 +++++
- src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
- src/server/scripts/Custom/guildmaster.cpp          | 313 +++++++++++++++++++++
- src/server/worldserver/worldserver.conf.dist       |  30 ++
- 4 files changed, 414 insertions(+), 2 deletions(-)
+ .../Guildhouses/world_guildhouses.sql              |   67 +++++
+ src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
+ src/server/scripts/Custom/guildmaster.cpp          |  308 ++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   30 ++
+ 4 files changed, 409 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
  create mode 100644 src/server/scripts/Custom/guildmaster.cpp
 
 diff --git a/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 new file mode 100644
-index 0000000..61f7878
+index 0000000..d9a0b4a
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/Guildhouses/world_guildhouses.sql
 @@ -0,0 +1,67 @@
@@ -83,14 +83,14 @@ index 0000000..61f7878
 +
 +DELETE FROM creature_template WHERE `entry`=13;
 +
-+INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `questItem1`, `questItem2`, `questItem3`, `questItem4`, `questItem5`, `questItem6`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
-+('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','0','0','0','0','0','0','1','0','0','guildmaster','12340');
++INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `spell1`, `spell2`, `spell3`, `spell4`, `spell5`, `spell6`, `spell7`, `spell8`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `DamageModifier`, `ExperienceModifier`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) values
++('13','0','0','0','0','0','26789','0','0','0','Beltez','Guildhouse Keeper',NULL,'0','80','80','0','35','1','1','1.14286','0.75','0','0','1400','1900','1','1','1','0','0','8','0','0','0','0','0','7','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','','1','3','1','1','1','1','1','1','0','0','1','0','0','guildmaster','12340');
 \ No newline at end of file
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..66b5c1c 100644
+index 7e5f73a..1b464f0 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1450,7 +1450,8 @@ void AddBattlegroundScripts()
+@@ -1431,7 +1431,8 @@ void AddBattlegroundScripts()
  // start14
  // start15
  // start16
@@ -100,7 +100,7 @@ index 5d120b2..66b5c1c 100644
  // start18
  // start19
  // start20
-@@ -1536,7 +1537,8 @@ void AddCustomScripts()
+@@ -1557,7 +1558,8 @@ void AddCustomScripts()
  // end14
  // end15
  // end16
@@ -112,16 +112,11 @@ index 5d120b2..66b5c1c 100644
  // end20
 diff --git a/src/server/scripts/Custom/guildmaster.cpp b/src/server/scripts/Custom/guildmaster.cpp
 new file mode 100644
-index 0000000..01eec42
+index 0000000..835f87c
 --- /dev/null
 +++ b/src/server/scripts/Custom/guildmaster.cpp
-@@ -0,0 +1,313 @@
-+#include "ScriptPCH.h"
+@@ -0,0 +1,308 @@
 +#include "Config.h"
-+
-+//extern DatabaseMysql SD2Database;
-+
-+//extern WorldDatabaseWorkerPool WorldDatabase;
 +
 +#define MSG_GOSSIP_TELE          "Teleport to GuildHouse"
 +#define MSG_GOSSIP_BUY           "Buy GuildHouse"
@@ -430,10 +425,10 @@ index 0000000..01eec42
 + new guildmaster();
 +}
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..fd3f853 100644
+index 7061e95..04a43e6 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3217,6 +3217,36 @@ PacketSpoof.BanDuration = 86400
+@@ -3405,6 +3405,36 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -471,5 +466,5 @@ index 9097e0b..fd3f853 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-2.1.0
+1.7.10.4
 
