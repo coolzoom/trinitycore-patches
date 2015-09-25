@@ -1,24 +1,24 @@
-From e1435aede0f5a4637d5511f0826e43781f58601c Mon Sep 17 00:00:00 2001
-From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Wed, 10 Dec 2014 09:38:42 -0500
-Subject: [PATCH] rate_xp_loot
+From 5f0eaf959762fa898f85bc48f2952246fed5e94f Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Fri, 25 Sep 2015 13:43:58 -0500
+Subject: [PATCH] 2015_09_25-rate_xp_loot
 
 ---
- sql/TrinityCore-Patches/Rates/auth.rbac.sql        |  11 +
- sql/TrinityCore-Patches/Rates/characters.rates.sql |  13 +
- sql/TrinityCore-Patches/Rates/world.commands.sql   |   5 +
- src/server/game/Entities/Creature/GossipDef.cpp    |   4 +-
- src/server/game/Entities/Player/Player.cpp         |   6 +-
- src/server/game/Entities/Player/Player.h           |   9 +-
- src/server/game/Loot/LootMgr.cpp                   |  12 +-
- src/server/game/Loot/LootMgr.h                     |   4 +-
- src/server/game/Scripting/ScriptLoader.cpp         |   4 +-
- src/server/game/World/World.cpp                    |  42 ++-
- src/server/game/World/World.h                      |   8 +-
- src/server/scripts/Custom/custom_rates.cpp         | 315 +++++++++++++++++++++
- .../Database/Implementation/CharacterDatabase.cpp  |   9 +-
- .../Database/Implementation/CharacterDatabase.h    |  10 +-
- src/server/worldserver/worldserver.conf.dist       |  43 +++
+ sql/TrinityCore-Patches/Rates/auth.rbac.sql        |   11 +
+ sql/TrinityCore-Patches/Rates/characters.rates.sql |   13 +
+ sql/TrinityCore-Patches/Rates/world.commands.sql   |    5 +
+ .../Database/Implementation/CharacterDatabase.cpp  |    9 +-
+ .../Database/Implementation/CharacterDatabase.h    |   10 +-
+ src/server/game/Entities/Creature/GossipDef.cpp    |    4 +-
+ src/server/game/Entities/Player/Player.cpp         |    6 +-
+ src/server/game/Entities/Player/Player.h           |    9 +-
+ src/server/game/Loot/LootMgr.cpp                   |   12 +-
+ src/server/game/Loot/LootMgr.h                     |    4 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |    4 +-
+ src/server/game/World/World.cpp                    |   42 ++-
+ src/server/game/World/World.h                      |    8 +-
+ src/server/scripts/Custom/custom_rates.cpp         |  315 ++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   43 +++
  15 files changed, 475 insertions(+), 20 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Rates/auth.rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Rates/characters.rates.sql
@@ -73,11 +73,52 @@ index 0000000..0a408c7
 +INSERT INTO `command`(`name`,`permission`,`help`) VALUES
 +('rate xp',@RATE_PERM+0,'Syntax: .rate xp $value\r\nSets your XP multiplier to $value. If no parameter is provided, it will show your current XP rate.'),
 +('rate loot',@RATE_PERM+1,'Syntax: .rate loot $value\r\nSets your loot multiplier to $value. If no parameter is provided, it will show your current loot rate. A $value of 0 means you won\'t be able to loot anything.');
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+index 9ff0d61..e5ae45a 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+@@ -627,7 +627,14 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     // 14
+     // 15
+     // 16
+-    // 17
++    PrepareStatement(CHAR_INS_INDIVIDUAL_XP_RATE, "INSERT INTO character_xp_rate (guid, xp_rate) VALUES (?, ?)", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_DEL_INDIVIDUAL_XP_RATE, "DELETE FROM character_xp_rate WHERE guid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_SEL_INDIVIDUAL_XP_RATE, "SELECT xp_rate FROM character_xp_rate WHERE guid = ?", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_UPD_INDIVIDUAL_XP_RATE, "UPDATE character_xp_rate SET xp_rate = ? WHERE guid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_INS_INDIVIDUAL_LOOT_RATE, "INSERT INTO character_loot_rate (guid, loot_rate) VALUES (?, ?)", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_DEL_INDIVIDUAL_LOOT_RATE, "DELETE FROM character_loot_rate WHERE guid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_SEL_INDIVIDUAL_LOOT_RATE, "SELECT loot_rate FROM character_loot_rate WHERE guid = ?", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_UPD_INDIVIDUAL_LOOT_RATE, "UPDATE character_loot_rate SET loot_rate = ? WHERE guid = ?", CONNECTION_ASYNC);
+     // 18
+     // 19
+     // 20
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
+index bb995dd..38e2cb6 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.h
++++ b/src/server/database/Database/Implementation/CharacterDatabase.h
+@@ -559,7 +559,15 @@ enum CharacterDatabaseStatements
+     // 14
+     // 15
+     // 16
+-    // 17
++    CHAR_INS_INDIVIDUAL_XP_RATE,
++    CHAR_DEL_INDIVIDUAL_XP_RATE,
++    CHAR_SEL_INDIVIDUAL_XP_RATE,
++    CHAR_UPD_INDIVIDUAL_XP_RATE,
++
++    CHAR_INS_INDIVIDUAL_LOOT_RATE,
++    CHAR_DEL_INDIVIDUAL_LOOT_RATE,
++    CHAR_SEL_INDIVIDUAL_LOOT_RATE,
++    CHAR_UPD_INDIVIDUAL_LOOT_RATE,
+     // 18
+     // 19
+     // 20
 diff --git a/src/server/game/Entities/Creature/GossipDef.cpp b/src/server/game/Entities/Creature/GossipDef.cpp
-index 044c853..3099629 100644
+index db67f1f..30a70aa 100644
 --- a/src/server/game/Entities/Creature/GossipDef.cpp
 +++ b/src/server/game/Entities/Creature/GossipDef.cpp
-@@ -456,7 +456,7 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* quest, ObjectGuid npcGU
+@@ -454,7 +454,7 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* quest, ObjectGuid npcGU
          }
  
          data << uint32(quest->GetRewOrReqMoney());
@@ -86,7 +127,7 @@ index 044c853..3099629 100644
      }
  
      // rewarded honor points. Multiply with 10 to satisfy client
-@@ -694,7 +694,7 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* quest, ObjectGuid npcGUI
+@@ -692,7 +692,7 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* quest, ObjectGuid npcGUI
      }
  
      data << uint32(quest->GetRewOrReqMoney());
@@ -96,10 +137,10 @@ index 044c853..3099629 100644
      // rewarded honor points. Multiply with 10 to satisfy client
      data << uint32(10 * quest->CalculateHonorGain(_session->GetPlayer()->GetQuestLevel(quest)));
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index ea85f8b..0ede86f 100644
+index 2fe5084..5c388c0 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -932,6 +932,9 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -927,6 +927,9 @@ Player::Player(WorldSession* session): Unit(true)
      _activeCheats = CHEAT_NONE;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
@@ -109,7 +150,7 @@ index ea85f8b..0ede86f 100644
  }
  
  Player::~Player()
-@@ -6911,6 +6914,7 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6790,6 +6793,7 @@ void Player::CheckAreaExploreAndOutdoor()
                      XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
  
@@ -117,7 +158,7 @@ index ea85f8b..0ede86f 100644
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -15429,7 +15433,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15280,7 +15284,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      bool rewarded = (m_RewardedQuests.find(quest_id) != m_RewardedQuests.end());
  
      // Not give XP in case already completed once repeatable quest
@@ -127,10 +168,10 @@ index ea85f8b..0ede86f 100644
      // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 28b592f..4163025 100644
+index 4336e5a..97fb96b 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2359,7 +2359,11 @@ class Player : public Unit, public GridObject<Player>
+@@ -2317,7 +2317,11 @@ class Player : public Unit, public GridObject<Player>
      // 14
      // 15
      // 16
@@ -143,7 +184,7 @@ index 28b592f..4163025 100644
      // 18
      // 19
      // 20
-@@ -2715,7 +2719,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2664,7 +2668,8 @@ class Player : public Unit, public GridObject<Player>
          // 34
          // 35
          // 36
@@ -154,10 +195,10 @@ index 28b592f..4163025 100644
          // 39
          // 40
 diff --git a/src/server/game/Loot/LootMgr.cpp b/src/server/game/Loot/LootMgr.cpp
-index 921058a..1642435 100644
+index 22ebe6c..8cdee7b 100644
 --- a/src/server/game/Loot/LootMgr.cpp
 +++ b/src/server/game/Loot/LootMgr.cpp
-@@ -283,17 +283,17 @@ void LootStore::ReportNonExistingId(uint32 lootId, const char* ownerType, uint32
+@@ -277,17 +277,17 @@ void LootStore::ReportNonExistingId(uint32 lootId, const char* ownerType, uint32
  
  // Checks if the entry (quest, non-quest, reference) takes it's chance (at loot generation)
  // RATE_DROP_ITEMS is no longer used for all types of entries
@@ -178,7 +219,7 @@ index 921058a..1642435 100644
  
      return roll_chance_f(chance*qualityModifier);
  }
-@@ -459,7 +459,7 @@ bool Loot::FillLoot(uint32 lootId, LootStore const& store, Player* lootOwner, bo
+@@ -453,7 +453,7 @@ bool Loot::FillLoot(uint32 lootId, LootStore const& store, Player* lootOwner, bo
      items.reserve(MAX_NR_LOOT_ITEMS);
      quest_items.reserve(MAX_NR_QUEST_ITEMS);
  
@@ -187,7 +228,7 @@ index 921058a..1642435 100644
  
      // Setting access rights for group loot case
      Group* group = lootOwner->GetGroup();
-@@ -1291,7 +1291,7 @@ void LootTemplate::CopyConditions(LootItem* li) const
+@@ -1285,7 +1285,7 @@ void LootTemplate::CopyConditions(LootItem* li) const
  }
  
  // Rolls for every item in the template and adds the rolled items the the loot
@@ -196,7 +237,7 @@ index 921058a..1642435 100644
  {
      if (groupId)                                            // Group reference uses own processing of the group
      {
-@@ -1312,7 +1312,7 @@ void LootTemplate::Process(Loot& loot, bool rate, uint16 lootMode, uint8 groupId
+@@ -1306,7 +1306,7 @@ void LootTemplate::Process(Loot& loot, bool rate, uint16 lootMode, uint8 groupId
          if (!(item->lootmode & lootMode))                       // Do not add if mode mismatch
              continue;
  
@@ -206,7 +247,7 @@ index 921058a..1642435 100644
  
          if (item->reference > 0)                            // References processing
 diff --git a/src/server/game/Loot/LootMgr.h b/src/server/game/Loot/LootMgr.h
-index 7d8309f..7f0f192 100644
+index 7d7580f..ef83c70 100644
 --- a/src/server/game/Loot/LootMgr.h
 +++ b/src/server/game/Loot/LootMgr.h
 @@ -141,7 +141,7 @@ struct LootStoreItem
@@ -228,7 +269,7 @@ index 7d8309f..7f0f192 100644
          void CopyConditions(LootItem* li) const;
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index bd43fbe..59be520 100644
+index 7e5f73a..396d825 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -1499,7 +1499,7 @@ void AddBattlegroundScripts()
@@ -250,10 +291,10 @@ index bd43fbe..59be520 100644
  // end87
  // end88
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index afd87b8..6a7fdb3 100644
+index ae0d1d8..13f8149 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1303,7 +1303,47 @@ void World::LoadConfigSettings(bool reload)
+@@ -1333,7 +1333,47 @@ void World::LoadConfigSettings(bool reload)
  // 14
  // 15
  // 16
@@ -303,7 +344,7 @@ index afd87b8..6a7fdb3 100644
  // 19
  // 20
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 2f13051..21179bf 100644
+index 11c527e..5f080f1 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -175,7 +175,8 @@ enum WorldBoolConfigs
@@ -316,7 +357,7 @@ index 2f13051..21179bf 100644
      // 18
      // 19
      // 20
-@@ -426,7 +427,10 @@ enum WorldIntConfigs
+@@ -432,7 +433,10 @@ enum WorldIntConfigs
      // 74
      // 75
      // 76
@@ -330,7 +371,7 @@ index 2f13051..21179bf 100644
      // 80
 diff --git a/src/server/scripts/Custom/custom_rates.cpp b/src/server/scripts/Custom/custom_rates.cpp
 new file mode 100644
-index 0000000..3f7f1b3
+index 0000000..24ed31e
 --- /dev/null
 +++ b/src/server/scripts/Custom/custom_rates.cpp
 @@ -0,0 +1,315 @@
@@ -344,7 +385,7 @@ index 0000000..3f7f1b3
 +	static int32 GetRateFromDB(const Player *player, CharacterDatabaseStatements statement)
 +	{
 +		PreparedStatement *stmt = CharacterDatabase.GetPreparedStatement(statement);
-+		stmt->setUInt32(0, player->GetGUIDLow());
++		stmt->setUInt32(0, player->GetGUID().GetCounter());
 +		PreparedQueryResult result = CharacterDatabase.Query(stmt);
 +
 +		if (result)
@@ -359,13 +400,13 @@ index 0000000..3f7f1b3
 +		{
 +			PreparedStatement *stmt = CharacterDatabase.GetPreparedStatement(uStmt);
 +			stmt->setUInt32(0, rate);
-+			stmt->setUInt32(1, player->GetGUIDLow());
++			stmt->setUInt32(1, player->GetGUID().GetCounter());
 +			CharacterDatabase.Execute(stmt);
 +		}
 +		else
 +		{
 +			PreparedStatement *stmt = CharacterDatabase.GetPreparedStatement(iStmt);
-+			stmt->setUInt32(0, player->GetGUIDLow());
++			stmt->setUInt32(0, player->GetGUID().GetCounter());
 +			stmt->setUInt32(1, rate);
 +			CharacterDatabase.Execute(stmt);
 +		}
@@ -650,52 +691,11 @@ index 0000000..3f7f1b3
 +	new custom_rate_commands();
 +}
 \ No newline at end of file
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 12e367c..db67677 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -625,7 +625,14 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     // 14
-     // 15
-     // 16
--    // 17
-+    PrepareStatement(CHAR_INS_INDIVIDUAL_XP_RATE, "INSERT INTO character_xp_rate (guid, xp_rate) VALUES (?, ?)", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_DEL_INDIVIDUAL_XP_RATE, "DELETE FROM character_xp_rate WHERE guid = ?", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_SEL_INDIVIDUAL_XP_RATE, "SELECT xp_rate FROM character_xp_rate WHERE guid = ?", CONNECTION_SYNCH);
-+    PrepareStatement(CHAR_UPD_INDIVIDUAL_XP_RATE, "UPDATE character_xp_rate SET xp_rate = ? WHERE guid = ?", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_INS_INDIVIDUAL_LOOT_RATE, "INSERT INTO character_loot_rate (guid, loot_rate) VALUES (?, ?)", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_DEL_INDIVIDUAL_LOOT_RATE, "DELETE FROM character_loot_rate WHERE guid = ?", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_SEL_INDIVIDUAL_LOOT_RATE, "SELECT loot_rate FROM character_loot_rate WHERE guid = ?", CONNECTION_SYNCH);
-+    PrepareStatement(CHAR_UPD_INDIVIDUAL_LOOT_RATE, "UPDATE character_loot_rate SET loot_rate = ? WHERE guid = ?", CONNECTION_ASYNC);
-     // 18
-     // 19
-     // 20
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index f8a7c24..e67fe7d 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.h
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -557,7 +557,15 @@ enum CharacterDatabaseStatements
-     // 14
-     // 15
-     // 16
--    // 17
-+    CHAR_INS_INDIVIDUAL_XP_RATE,
-+    CHAR_DEL_INDIVIDUAL_XP_RATE,
-+    CHAR_SEL_INDIVIDUAL_XP_RATE,
-+    CHAR_UPD_INDIVIDUAL_XP_RATE,
-+
-+    CHAR_INS_INDIVIDUAL_LOOT_RATE,
-+    CHAR_DEL_INDIVIDUAL_LOOT_RATE,
-+    CHAR_SEL_INDIVIDUAL_LOOT_RATE,
-+    CHAR_UPD_INDIVIDUAL_LOOT_RATE,
-     // 18
-     // 19
-     // 20
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index c40da51..fa8e38d 100644
+index 4fccf90..6837e13 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3241,6 +3241,49 @@ PacketSpoof.BanDuration = 86400
+@@ -3404,6 +3404,49 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
@@ -746,5 +746,5 @@ index c40da51..fa8e38d 100644
  #
  # Prepatch by LordPsyan.
 -- 
-2.1.3
+1.7.10.4
 
