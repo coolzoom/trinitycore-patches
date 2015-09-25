@@ -1,12 +1,14 @@
-From 8363a350109330d6ffa029149f56d1e37f8ee0bb Mon Sep 17 00:00:00 2001
+From c31bbd84b51a57e7c15345cc8ec633099ad28ec4 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 7 Aug 2015 18:57:10 -0500
-Subject: [PATCH] GuildLevelSystem
+Date: Fri, 25 Sep 2015 14:16:13 -0500
+Subject: [PATCH] 2015_09_25-GuildLevelSytem
 
 ---
  .../GuildLevelSystem/auth_guild_level_system.sql   |    7 +
  .../characters_guild_level_system.sql              |   55 ++++++++
  .../GuildLevelSystem/world_guild_level_system.sql  |    7 +
+ .../Database/Implementation/CharacterDatabase.cpp  |   10 +-
+ .../Database/Implementation/CharacterDatabase.h    |    7 +-
  src/server/game/Accounts/RBAC.h                    |    4 +-
  src/server/game/Conditions/ConditionMgr.cpp        |   22 +++
  src/server/game/Conditions/ConditionMgr.h          |    3 +-
@@ -21,8 +23,6 @@ Subject: [PATCH] GuildLevelSystem
  src/server/game/World/World.cpp                    |   87 +++++++++++-
  src/server/game/World/World.h                      |   20 +++
  src/server/scripts/Commands/cs_guild.cpp           |  121 ++++++++++++++++
- .../Database/Implementation/CharacterDatabase.cpp  |   10 +-
- .../Database/Implementation/CharacterDatabase.h    |    7 +-
  19 files changed, 613 insertions(+), 12 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/auth_guild_level_system.sql
  create mode 100644 sql/TrinityCore-Patches/GuildLevelSystem/characters_guild_level_system.sql
@@ -117,11 +117,50 @@ index 0000000..fcf2396
 +INSERT INTO `command` VALUES ('guild setlevel', '1001', 'Syntax: .guild setlevel $GuildName $Level');
 +INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
 \ No newline at end of file
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+index 9ff0d61..4081c05 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+@@ -613,7 +613,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     // Prepatch by LordPsyan
+     // 01
+     // 02
+-    // 03
++    //Guild-Level-System
++    //Load
++    PrepareStatement(CHAR_SEL_GUILD_BONUS_INFO, "SELECT RequiredGuildLevel FROM guild_bonus_config WHERE BonusId = ?", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_SEL_GUILD_LEVEL_INFO, "SELECT xp, level FROM guild WHERE guildid = ?", CONNECTION_SYNCH);
++    PrepareStatement(CHAR_SEL_GUILD_XP_FOR_NEXT_LEVEL, "SELECT xp_for_next_level FROM guild_xp_for_next_level WHERE level = ?", CONNECTION_SYNCH);
++
++    //Save
++    PrepareStatement(CHAR_UPD_GUILD_LEVEL, "UPDATE guild SET level = ? WHERE guildid = ?", CONNECTION_ASYNC);
++    PrepareStatement(CHAR_UPD_GUILD_XP, "UPDATE guild SET xp = (xp + ?) WHERE guildid = ?", CONNECTION_ASYNC);
+     // 04
+     // 05
+     // 06
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
+index bb995dd..d001488 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.h
++++ b/src/server/database/Database/Implementation/CharacterDatabase.h
+@@ -545,7 +545,12 @@ enum CharacterDatabaseStatements
+     // Prepatch by LordPsyan
+     // 01
+     // 02
+-    // 03
++    //Guild-Level-System
++    CHAR_SEL_GUILD_BONUS_INFO,
++    CHAR_SEL_GUILD_LEVEL_INFO,
++    CHAR_SEL_GUILD_XP_FOR_NEXT_LEVEL,
++    CHAR_UPD_GUILD_LEVEL,
++    CHAR_UPD_GUILD_XP,
+     // 04
+     // 05
+     // 06
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index c9e3f91..1d11d5d 100644
+index b06a9e2..d989b45 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
-@@ -697,7 +697,9 @@ enum RBACPermissions
+@@ -699,7 +699,9 @@ enum RBACPermissions
  
      // custom permissions 1000+
      // Prepatch by LordPsyan
@@ -133,7 +172,7 @@ index c9e3f91..1d11d5d 100644
      // 03
      // 04
 diff --git a/src/server/game/Conditions/ConditionMgr.cpp b/src/server/game/Conditions/ConditionMgr.cpp
-index 9106bfd..2a1237e 100644
+index f726032..089e31b 100644
 --- a/src/server/game/Conditions/ConditionMgr.cpp
 +++ b/src/server/game/Conditions/ConditionMgr.cpp
 @@ -27,6 +27,7 @@
@@ -201,10 +240,10 @@ index 2798378..040dbc3 100644
  
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 7f9433d..9bf066d 100644
+index 2fe5084..1bfe6cc 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -4963,6 +4963,12 @@ void Player::BuildPlayerRepop()
+@@ -4986,6 +4986,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -217,7 +256,7 @@ index 7f9433d..9bf066d 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5010,6 +5016,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5033,6 +5039,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -227,7 +266,7 @@ index 7f9433d..9bf066d 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5335,6 +5344,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5358,6 +5367,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -243,7 +282,7 @@ index 7f9433d..9bf066d 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -7123,7 +7141,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7146,7 +7164,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      // 21
      // 22
      // 23
@@ -282,7 +321,7 @@ index 7f9433d..9bf066d 100644
      // 45
      // 46
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index aaa9328..ece250c 100644
+index 3938b8d..dd164e7 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -62,6 +62,7 @@
@@ -293,7 +332,7 @@ index aaa9328..ece250c 100644
  
  #include <cmath>
  
-@@ -12244,6 +12245,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12252,6 +12253,23 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
      float stack_bonus     = 1.0f;
      float non_stack_bonus = 1.0f;
  
@@ -317,7 +356,7 @@ index aaa9328..ece250c 100644
      switch (mtype)
      {
          // Only apply debuffs
-@@ -12257,7 +12275,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12265,7 +12283,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
          {
              if (IsMounted()) // Use on mount auras
              {
@@ -326,7 +365,7 @@ index aaa9328..ece250c 100644
                  stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
                  non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK) / 100.0f;
              }
-@@ -12291,7 +12309,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
+@@ -12299,7 +12317,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
              }
              else if (IsMounted())
              {
@@ -336,7 +375,7 @@ index aaa9328..ece250c 100644
              }
              else             // Use not mount (shapeshift for example) auras (should stack)
 diff --git a/src/server/game/Guilds/Guild.cpp b/src/server/game/Guilds/Guild.cpp
-index 04eb99b..b4caac3 100644
+index fab22b3..7f68064 100644
 --- a/src/server/game/Guilds/Guild.cpp
 +++ b/src/server/game/Guilds/Guild.cpp
 @@ -1207,6 +1207,9 @@ bool Guild::Create(Player* pLeader, std::string const& name)
@@ -564,7 +603,7 @@ index b0ea9e1..4a0a987 100644
      inline uint8 _GetRanksSize() const { return uint8(m_ranks.size()); }
      inline const RankInfo* GetRankInfo(uint8 rankId) const { return rankId < _GetRanksSize() ? &m_ranks[rankId] : NULL; }
 diff --git a/src/server/game/Handlers/LootHandler.cpp b/src/server/game/Handlers/LootHandler.cpp
-index 18ad2e8..f96c851 100644
+index 9876e93..9a99ab8 100644
 --- a/src/server/game/Handlers/LootHandler.cpp
 +++ b/src/server/game/Handlers/LootHandler.cpp
 @@ -28,6 +28,7 @@
@@ -623,10 +662,10 @@ index 3e2ac94..8cc8492 100644
                      // 34
                      // 35
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 4cd3cde..97fee0d 100644
+index 7106320..7fe67cf 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1188,7 +1188,9 @@ enum TrinityStrings
+@@ -1189,7 +1189,9 @@ enum TrinityStrings
      LANG_AUTO_BROADCAST                 = 11000,
      LANG_INVALID_REALMID                = 11001,
      // Prepatch by LordPsyan
@@ -638,7 +677,7 @@ index 4cd3cde..97fee0d 100644
      // 03
      // 04
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
-index a3e4585..995289c 100644
+index a4065fa..1cb09a3 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
 +++ b/src/server/game/Reputation/ReputationMgr.cpp
 @@ -25,6 +25,7 @@
@@ -666,7 +705,7 @@ index a3e4585..995289c 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 153d876..e107d55 100644
+index ae0d1d8..7f2b84c 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1323,7 +1323,8 @@ void World::LoadConfigSettings(bool reload)
@@ -679,7 +718,7 @@ index 153d876..e107d55 100644
  // 08
  // 09
  // 10
-@@ -3318,3 +3319,87 @@ void World::ReloadRBAC()
+@@ -3310,3 +3311,87 @@ void World::ReloadRBAC()
          if (WorldSession* session = itr->second)
              session->InvalidateRBACData();
  }
@@ -944,45 +983,6 @@ index a735e29..86febdf 100644
  };
  
  void AddSC_guild_commandscript()
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.cpp b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-index 474c214..4d5339d 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.cpp
-@@ -614,7 +614,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     // Prepatch by LordPsyan
-     // 01
-     // 02
--    // 03
-+    //Guild-Level-System
-+    //Load
-+    PrepareStatement(CHAR_SEL_GUILD_BONUS_INFO, "SELECT RequiredGuildLevel FROM guild_bonus_config WHERE BonusId = ?", CONNECTION_SYNCH);
-+    PrepareStatement(CHAR_SEL_GUILD_LEVEL_INFO, "SELECT xp, level FROM guild WHERE guildid = ?", CONNECTION_SYNCH);
-+    PrepareStatement(CHAR_SEL_GUILD_XP_FOR_NEXT_LEVEL, "SELECT xp_for_next_level FROM guild_xp_for_next_level WHERE level = ?", CONNECTION_SYNCH);
-+
-+    //Save
-+    PrepareStatement(CHAR_UPD_GUILD_LEVEL, "UPDATE guild SET level = ? WHERE guildid = ?", CONNECTION_ASYNC);
-+    PrepareStatement(CHAR_UPD_GUILD_XP, "UPDATE guild SET xp = (xp + ?) WHERE guildid = ?", CONNECTION_ASYNC);
-     // 04
-     // 05
-     // 06
-diff --git a/src/server/shared/Database/Implementation/CharacterDatabase.h b/src/server/shared/Database/Implementation/CharacterDatabase.h
-index 30602a0..2d0f724 100644
---- a/src/server/shared/Database/Implementation/CharacterDatabase.h
-+++ b/src/server/shared/Database/Implementation/CharacterDatabase.h
-@@ -546,7 +546,12 @@ enum CharacterDatabaseStatements
-     // Prepatch by LordPsyan
-     // 01
-     // 02
--    // 03
-+    //Guild-Level-System
-+    CHAR_SEL_GUILD_BONUS_INFO,
-+    CHAR_SEL_GUILD_LEVEL_INFO,
-+    CHAR_SEL_GUILD_XP_FOR_NEXT_LEVEL,
-+    CHAR_UPD_GUILD_LEVEL,
-+    CHAR_UPD_GUILD_XP,
-     // 04
-     // 05
-     // 06
 -- 
 1.7.10.4
 
