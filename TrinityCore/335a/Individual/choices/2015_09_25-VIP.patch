@@ -1,26 +1,26 @@
-From 113180f4117f74ecfd1092429d88ec7f6924a2fd Mon Sep 17 00:00:00 2001
+From 863c1efa17668d83fcd1228fb933b030d76197dd Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 17 Sep 2014 10:19:48 -0400
-Subject: [PATCH] VIP
+Date: Fri, 25 Sep 2015 14:58:26 -0500
+Subject: [PATCH] 2015_09_25-VIP
 
 ---
- sql/TrinityCore-Patches/VIP/account_premium.sql    | 22 ++++++
- src/server/authserver/Server/AuthSession.cpp       |  3 +
- src/server/game/Entities/Player/Player.cpp         |  9 ++-
- src/server/game/Miscellaneous/Formulas.h           |  6 +-
- src/server/game/Miscellaneous/Language.h           |  2 +-
- src/server/game/Reputation/ReputationMgr.cpp       |  4 +
- src/server/game/Scripting/ScriptLoader.cpp         |  4 +-
- src/server/game/Server/WorldSession.cpp            |  3 +-
- src/server/game/Server/WorldSession.h              |  4 +-
- src/server/game/Server/WorldSocket.cpp             | 14 +++-
- src/server/game/World/World.cpp                    |  9 +++
- src/server/game/World/World.h                      |  9 +++
- src/server/scripts/Custom/cs_premium.cpp           | 90 ++++++++++++++++++++++
- .../Database/Implementation/LoginDatabase.cpp      |  5 +-
- .../shared/Database/Implementation/LoginDatabase.h |  3 +
- src/server/worldserver/worldserver.conf.dist       | 16 ++++
- 16 files changed, 193 insertions(+), 10 deletions(-)
+ sql/TrinityCore-Patches/VIP/account_premium.sql    |   22 +++++
+ src/server/authserver/Server/AuthSession.cpp       |    3 +
+ .../Database/Implementation/LoginDatabase.cpp      |    5 +-
+ .../Database/Implementation/LoginDatabase.h        |    3 +
+ src/server/game/Entities/Player/Player.cpp         |    9 +-
+ src/server/game/Miscellaneous/Formulas.h           |    6 +-
+ src/server/game/Miscellaneous/Language.h           |    2 +-
+ src/server/game/Reputation/ReputationMgr.cpp       |    4 +
+ src/server/game/Scripting/ScriptLoader.cpp         |    4 +-
+ src/server/game/Server/WorldSession.cpp            |    3 +-
+ src/server/game/Server/WorldSession.h              |    4 +-
+ src/server/game/Server/WorldSocket.cpp             |   13 ++-
+ src/server/game/World/World.cpp                    |    9 ++
+ src/server/game/World/World.h                      |    9 ++
+ src/server/scripts/Custom/cs_premium.cpp           |   90 ++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist       |   16 ++++
+ 16 files changed, 192 insertions(+), 10 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/VIP/account_premium.sql
  create mode 100644 src/server/scripts/Custom/cs_premium.cpp
 
@@ -54,7 +54,7 @@ index 0000000..770380c
 +('vip mail', 999, 'Syntax: .vip mail');
 \ No newline at end of file
 diff --git a/src/server/authserver/Server/AuthSession.cpp b/src/server/authserver/Server/AuthSession.cpp
-index e8241ac..0d9d2b5 100644
+index 28819b8..9b87c0d 100644
 --- a/src/server/authserver/Server/AuthSession.cpp
 +++ b/src/server/authserver/Server/AuthSession.cpp
 @@ -297,6 +297,9 @@ bool AuthSession::HandleLogonChallenge()
@@ -67,11 +67,42 @@ index e8241ac..0d9d2b5 100644
                  // If the account is banned, reject the logon attempt
                  stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_BANNED);
                  stmt->setUInt32(0, fields[1].GetUInt32());
+diff --git a/src/server/database/Database/Implementation/LoginDatabase.cpp b/src/server/database/Database/Implementation/LoginDatabase.cpp
+index 8f0b506..2bdae15 100644
+--- a/src/server/database/Database/Implementation/LoginDatabase.cpp
++++ b/src/server/database/Database/Implementation/LoginDatabase.cpp
+@@ -106,8 +106,11 @@ void LoginDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(LOGIN_INS_CHAR_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES (?, ?, ?, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
+     // 0: string, 1: string, 2: string                      // Complete name: "Login_Insert_Failed_Account_Login_due_password_IP_Logging"
+     PrepareStatement(LOGIN_INS_FALP_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES ((SELECT id FROM account WHERE username = ?), 0, 1, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
+-    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
+ 
++    PrepareStatement(LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_SYNCH);
++    PrepareStatement(LOGIN_SEL_PREMIUM, "SELECT 1 FROM account_premium WHERE id = ? AND active = 1", CONNECTION_SYNCH);
++
++    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
+     PrepareStatement(LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS, "SELECT permissionId, granted FROM rbac_account_permissions WHERE accountId = ? AND (realmId = ? OR realmId = -1) ORDER BY permissionId, realmId", CONNECTION_SYNCH);
+     PrepareStatement(LOGIN_INS_RBAC_ACCOUNT_PERMISSION, "INSERT INTO rbac_account_permissions (accountId, permissionId, granted, realmId) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE granted = VALUES(granted)", CONNECTION_ASYNC);
+     PrepareStatement(LOGIN_DEL_RBAC_ACCOUNT_PERMISSION, "DELETE FROM rbac_account_permissions WHERE accountId = ? AND permissionId = ? AND (realmId = ? OR realmId = -1)", CONNECTION_ASYNC);
+diff --git a/src/server/database/Database/Implementation/LoginDatabase.h b/src/server/database/Database/Implementation/LoginDatabase.h
+index 7f6cffa..b2cb34d 100644
+--- a/src/server/database/Database/Implementation/LoginDatabase.h
++++ b/src/server/database/Database/Implementation/LoginDatabase.h
+@@ -123,6 +123,9 @@ enum LoginDatabaseStatements
+     LOGIN_INS_CHAR_IP_LOGGING,
+     LOGIN_INS_FALP_IP_LOGGING,
+ 
++    LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM,
++    LOGIN_SEL_PREMIUM,
++
+     LOGIN_SEL_ACCOUNT_ACCESS_BY_ID,
+     LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS,
+     LOGIN_INS_RBAC_ACCOUNT_PERMISSION,
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 3fb1a2b..cbe562b 100644
+index 2fe5084..3be8053 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -6863,6 +6863,9 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6790,6 +6790,9 @@ void Player::CheckAreaExploreAndOutdoor()
                      XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
  
@@ -81,7 +112,7 @@ index 3fb1a2b..cbe562b 100644
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -7232,7 +7235,8 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7159,7 +7162,8 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      // 34
      // 35
      // 36
@@ -91,7 +122,7 @@ index 3fb1a2b..cbe562b 100644
      // 38
      // 39
      // 40
-@@ -15375,7 +15379,8 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15298,7 +15302,8 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      // 49
      // 50
      // 51
@@ -102,7 +133,7 @@ index 3fb1a2b..cbe562b 100644
      // 54
      // 55
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index b922932..640f9fe 100644
+index 3e2ac94..0360462 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -27,7 +27,7 @@
@@ -126,10 +157,10 @@ index b922932..640f9fe 100644
                  }
              }
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index 374b377..53734a2 100644
+index 7106320..85c9d84 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1195,7 +1195,7 @@ enum TrinityStrings
+@@ -1206,7 +1206,7 @@ enum TrinityStrings
      // 15
      // 16
      // 17
@@ -139,10 +170,10 @@ index 374b377..53734a2 100644
      // 20
      // Visit http://www.realmsofwarcraft.com/bb for forums and information
 diff --git a/src/server/game/Reputation/ReputationMgr.cpp b/src/server/game/Reputation/ReputationMgr.cpp
-index f19d6d7..27237d0 100644
+index a4065fa..0ea904f 100644
 --- a/src/server/game/Reputation/ReputationMgr.cpp
 +++ b/src/server/game/Reputation/ReputationMgr.cpp
-@@ -364,6 +364,10 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
+@@ -367,6 +367,10 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
          {
              // int32 *= float cause one point loss?
              standing = int32(floor((float)standing * sWorld->getRate(RATE_REPUTATION_GAIN) + 0.5f));
@@ -154,10 +185,10 @@ index f19d6d7..27237d0 100644
          }
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 5d120b2..7e9c1da 100644
+index 7e5f73a..88a80c2 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1499,7 +1499,7 @@ void AddBattlegroundScripts()
+@@ -1480,7 +1480,7 @@ void AddBattlegroundScripts()
  // start63
  // start64
  // start65
@@ -166,7 +197,7 @@ index 5d120b2..7e9c1da 100644
  // start67
  // start68
  // start69
-@@ -1585,7 +1585,7 @@ void AddCustomScripts()
+@@ -1606,7 +1606,7 @@ void AddCustomScripts()
  // end63
  // end64
  // end65
@@ -176,10 +207,10 @@ index 5d120b2..7e9c1da 100644
  // end68
  // end69
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index beb6ea5..7ab40ec 100644
+index e689600..2b669be 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
-@@ -97,7 +97,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
+@@ -95,7 +95,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
  }
  
  /// WorldSession constructor
@@ -188,7 +219,7 @@ index beb6ea5..7ab40ec 100644
      m_muteTime(mute_time),
      m_timeOutTime(0),
      AntiDOS(this),
-@@ -105,6 +105,7 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, Account
+@@ -103,6 +103,7 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, Account
      _player(NULL),
      m_Socket(sock),
      _security(sec),
@@ -197,10 +228,10 @@ index beb6ea5..7ab40ec 100644
      m_expansion(expansion),
      _warden(NULL),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index e46a58d..c5b116a 100644
+index e597cbf..dd8dcfc 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
-@@ -209,7 +209,7 @@ struct PacketCounter
+@@ -249,7 +249,7 @@ struct PacketCounter
  class WorldSession
  {
      public:
@@ -209,7 +240,7 @@ index e46a58d..c5b116a 100644
          ~WorldSession();
  
          bool PlayerLoading() const { return m_playerLoading; }
-@@ -241,6 +241,7 @@ class WorldSession
+@@ -282,6 +282,7 @@ class WorldSession
          void InvalidateRBACData(); // Used to force LoadPermissions at next HasPermission check
  
          AccountTypes GetSecurity() const { return _security; }
@@ -217,7 +248,7 @@ index e46a58d..c5b116a 100644
          uint32 GetAccountId() const { return _accountId; }
          Player* GetPlayer() const { return _player; }
          std::string const& GetPlayerName() const;
-@@ -987,6 +988,7 @@ class WorldSession
+@@ -1035,6 +1036,7 @@ class WorldSession
          AccountTypes _security;
          uint32 _accountId;
          uint8 m_expansion;
@@ -226,10 +257,10 @@ index e46a58d..c5b116a 100644
          typedef std::list<AddonInfo> AddonsList;
  
 diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
-index ef92a59..7fb648c 100644
+index 066a4e5..03f87f3 100644
 --- a/src/server/game/Server/WorldSocket.cpp
 +++ b/src/server/game/Server/WorldSocket.cpp
-@@ -238,6 +238,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+@@ -262,6 +262,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
      uint32 id;
      LocaleConstant locale;
      std::string account;
@@ -237,7 +268,7 @@ index ef92a59..7fb648c 100644
      SHA1Hash sha;
      uint32 clientBuild;
      uint32 serverId, loginServerType, region, battlegroup, realmIndex;
-@@ -423,6 +424,16 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
+@@ -447,6 +448,16 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
          return;
      }
  
@@ -254,18 +285,17 @@ index ef92a59..7fb648c 100644
      // Check locked state for server
      AccountTypes allowedAccountType = sWorld->GetPlayerSecurityLimit();
      TC_LOG_DEBUG("network", "Allowed Level: %u Player Level %u", allowedAccountType, AccountTypes(security));
-@@ -461,7 +472,8 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
-     // At this point, we can safely hook a successful login
+@@ -486,7 +497,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
      sScriptMgr->OnAccountLogin(id);
  
+     _authed = true;
 -    _worldSession = new WorldSession(id, shared_from_this(), AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter);
 +    _worldSession = new WorldSession(id, shared_from_this(), AccountTypes(security), isPremium, expansion, mutetime, locale, recruiter, isRecruiter);
-+
      _worldSession->LoadGlobalAccountData();
      _worldSession->LoadTutorialsData();
      _worldSession->ReadAddonsInfo(recvPacket);
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 2d2d08c..86ff8db 100644
+index ae0d1d8..bba111a 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -458,6 +458,15 @@ void World::LoadConfigSettings(bool reload)
@@ -285,7 +315,7 @@ index 2d2d08c..86ff8db 100644
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 79f128b..8ecdc88 100644
+index 11c527e..4fd1034 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -97,6 +97,8 @@ enum WorldBoolConfigs
@@ -297,7 +327,7 @@ index 79f128b..8ecdc88 100644
      CONFIG_ALL_TAXI_PATHS,
      CONFIG_INSTANT_TAXI,
      CONFIG_INSTANCE_IGNORE_LEVEL,
-@@ -414,6 +416,13 @@ enum Rates
+@@ -467,6 +469,13 @@ enum Rates
      RATE_XP_KILL,
      RATE_XP_QUEST,
      RATE_XP_EXPLORE,
@@ -408,42 +438,11 @@ index 0000000..0a4d01b
 +    new premium_commandscript();
 +}
 \ No newline at end of file
-diff --git a/src/server/shared/Database/Implementation/LoginDatabase.cpp b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-index a2b9091..ba50ff0 100644
---- a/src/server/shared/Database/Implementation/LoginDatabase.cpp
-+++ b/src/server/shared/Database/Implementation/LoginDatabase.cpp
-@@ -106,8 +106,11 @@ void LoginDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(LOGIN_INS_CHAR_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES (?, ?, ?, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
-     // 0: string, 1: string, 2: string                      // Complete name: "Login_Insert_Failed_Account_Login_due_password_IP_Logging"
-     PrepareStatement(LOGIN_INS_FALP_IP_LOGGING, "INSERT INTO logs_ip_actions (account_id,character_guid,type,ip,systemnote,unixtime,time) VALUES ((SELECT id FROM account WHERE username = ?), 0, 1, ?, ?, unix_timestamp(NOW()), NOW())", CONNECTION_ASYNC);
--    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
- 
-+    PrepareStatement(LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM, "UPDATE account_premium SET active = 0 WHERE unsetdate<=UNIX_TIMESTAMP() AND unsetdate<>setdate", CONNECTION_SYNCH);
-+    PrepareStatement(LOGIN_SEL_PREMIUM, "SELECT 1 FROM account_premium WHERE id = ? AND active = 1", CONNECTION_SYNCH);
-+
-+    PrepareStatement(LOGIN_SEL_ACCOUNT_ACCESS_BY_ID, "SELECT gmlevel, RealmID FROM account_access WHERE id = ? and (RealmID = ? OR RealmID = -1) ORDER BY gmlevel desc", CONNECTION_SYNCH);
-     PrepareStatement(LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS, "SELECT permissionId, granted FROM rbac_account_permissions WHERE accountId = ? AND (realmId = ? OR realmId = -1) ORDER BY permissionId, realmId", CONNECTION_SYNCH);
-     PrepareStatement(LOGIN_INS_RBAC_ACCOUNT_PERMISSION, "INSERT INTO rbac_account_permissions (accountId, permissionId, granted, realmId) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE granted = VALUES(granted)", CONNECTION_ASYNC);
-     PrepareStatement(LOGIN_DEL_RBAC_ACCOUNT_PERMISSION, "DELETE FROM rbac_account_permissions WHERE accountId = ? AND permissionId = ? AND (realmId = ? OR realmId = -1)", CONNECTION_ASYNC);
-diff --git a/src/server/shared/Database/Implementation/LoginDatabase.h b/src/server/shared/Database/Implementation/LoginDatabase.h
-index d37149c..50352de 100644
---- a/src/server/shared/Database/Implementation/LoginDatabase.h
-+++ b/src/server/shared/Database/Implementation/LoginDatabase.h
-@@ -123,6 +123,9 @@ enum LoginDatabaseStatements
-     LOGIN_INS_CHAR_IP_LOGGING,
-     LOGIN_INS_FALP_IP_LOGGING,
- 
-+    LOGIN_UPD_EXPIRED_ACCOUNT_PREMIUM,
-+    LOGIN_SEL_PREMIUM,
-+
-     LOGIN_SEL_ACCOUNT_ACCESS_BY_ID,
-     LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS,
-     LOGIN_INS_RBAC_ACCOUNT_PERMISSION,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 9097e0b..006181f 100644
+index 4fccf90..fbde735 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2459,6 +2459,22 @@ CharDelete.KeepDays = 30
+@@ -2574,6 +2574,22 @@ CharDelete.KeepDays = 30
  #
  ###################################################################################################
  
@@ -467,5 +466,5 @@ index 9097e0b..006181f 100644
  # CUSTOM SERVER OPTIONS
  #
 -- 
-2.1.0
+1.7.10.4
 
