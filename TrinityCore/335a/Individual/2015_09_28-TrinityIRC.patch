@@ -1,7 +1,7 @@
-From 57b31b3653aaa5800ec605482fde9becb57ea14f Mon Sep 17 00:00:00 2001
+From 675d89ed03d3889585ce292214508b4b909132a1 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 27 Sep 2015 14:37:07 -0500
-Subject: [PATCH] 2015_09_27-TrinityIRC
+Date: Mon, 28 Sep 2015 17:57:10 -0500
+Subject: [PATCH] 2015_09_28-TrinityIRC
 
 ---
  .../TriniIRC/World_TrinityChat.sql                 |   81 +
@@ -30,11 +30,11 @@ Subject: [PATCH] 2015_09_27-TrinityIRC
  src/server/game/World/World.h                      |    4 +
  src/server/scripts/CMakeLists.txt                  |    1 +
  src/server/scripts/Commands/cs_message.cpp         |   20 +
- src/server/worldserver/CMakeLists.txt              |    1 +
+ src/server/worldserver/CMakeLists.txt              |    5 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |   35 +
  src/server/worldserver/worldserver.conf.dist       |  280 ++-
- 30 files changed, 5717 insertions(+), 6 deletions(-)
+ 30 files changed, 5721 insertions(+), 6 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -5821,19 +5821,36 @@ index 922958f..7cbacaf 100644
          std::string str = handler->GetTrinityString(LANG_GLOBAL_NOTIFY);
          str += args;
 diff --git a/src/server/worldserver/CMakeLists.txt b/src/server/worldserver/CMakeLists.txt
-index 78f39e0..ef5febb 100644
+index 78f39e0..b0f4649 100644
 --- a/src/server/worldserver/CMakeLists.txt
 +++ b/src/server/worldserver/CMakeLists.txt
-@@ -96,6 +96,7 @@ include_directories(
+@@ -78,11 +78,14 @@ include_directories(
+   ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Item/Container
+   ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Object
+   ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Object/Updates
++  ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Pet
++  ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Player
+   ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Unit
+   ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Vehicle
+   ${CMAKE_SOURCE_DIR}/src/server/game/Globals
+   ${CMAKE_SOURCE_DIR}/src/server/game/Grids
+   ${CMAKE_SOURCE_DIR}/src/server/game/Grids/Cells
++  ${CMAKE_SOURCE_DIR}/src/server/game/Groups
+   ${CMAKE_SOURCE_DIR}/src/server/game/Handlers
+   ${CMAKE_SOURCE_DIR}/src/server/game/Instances
+   ${CMAKE_SOURCE_DIR}/src/server/game/Loot
+@@ -95,7 +98,9 @@ include_directories(
+   ${CMAKE_SOURCE_DIR}/src/server/game/Scripting
    ${CMAKE_SOURCE_DIR}/src/server/game/Server
    ${CMAKE_SOURCE_DIR}/src/server/game/Server/Protocol
++  ${CMAKE_SOURCE_DIR}/src/server/game/Spells
    ${CMAKE_SOURCE_DIR}/src/server/game/Spells/Auras
 +  ${CMAKE_SOURCE_DIR}/src/server/game/TriniChat
    ${CMAKE_SOURCE_DIR}/src/server/game/Weather
    ${CMAKE_SOURCE_DIR}/src/server/game/World
    ${CMAKE_SOURCE_DIR}/src/server/shared
 diff --git a/src/server/worldserver/CommandLine/CliRunnable.cpp b/src/server/worldserver/CommandLine/CliRunnable.cpp
-index ad9ae28..17305fb 100644
+index ad9ae28..2e00f34 100644
 --- a/src/server/worldserver/CommandLine/CliRunnable.cpp
 +++ b/src/server/worldserver/CommandLine/CliRunnable.cpp
 @@ -28,6 +28,7 @@
@@ -5852,7 +5869,7 @@ index ad9ae28..17305fb 100644
 +bool HandleIRCRelogCommand(bool, const char *args)
 +{
 +    TC_LOG_ERROR("misc" "TriniChat is dropping from IRC Server","");
-+    sIRC.ResetIRC();
++    sIRC->ResetIRC();
 +    TC_LOG_ERROR("misc" "TriniChat is reconnecting to IRC Server","");
 +    return true;
 +}
