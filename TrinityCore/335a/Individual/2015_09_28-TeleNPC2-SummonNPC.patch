@@ -1,23 +1,27 @@
-From 4ce3a3242eb0e48e32d4c3789586558f20a4b617 Mon Sep 17 00:00:00 2001
+From f63c4c942f2a47504e2f3df2b9b0717aa6258ee7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 7 Sep 2015 06:39:32 -0500
-Subject: [PATCH] TeleNPC2
+Date: Mon, 28 Sep 2015 01:34:51 -0500
+Subject: [PATCH] 2015_09_28-TeleNPC2-SummonNPC
 
 ---
  README.NPCTELEPORT                                 |   14 +
+ .../SummonNPC/world.summonnpc-item.sql             |    4 +
  .../TeleNPC2/world.npc_teleport.sql                |  119 ++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp  |  377 ++++++++++++++++++++
  src/server/game/AI/ScriptedAI/sc_npc_teleport.h    |  151 ++++++++
- src/server/game/Scripting/ScriptLoader.cpp         |    9 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   15 +-
  src/server/game/Scripting/ScriptMgr.cpp            |    3 +
  src/server/scripts/CMakeLists.txt                  |    3 +
  src/server/scripts/Custom/npc_teleport.cpp         |  219 ++++++++++++
- 8 files changed, 893 insertions(+), 2 deletions(-)
+ src/server/scripts/Custom/summon.cpp               |   46 +++
+ 10 files changed, 947 insertions(+), 4 deletions(-)
  create mode 100644 README.NPCTELEPORT
+ create mode 100644 sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
  create mode 100644 sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.cpp
  create mode 100644 src/server/game/AI/ScriptedAI/sc_npc_teleport.h
  create mode 100644 src/server/scripts/Custom/npc_teleport.cpp
+ create mode 100644 src/server/scripts/Custom/summon.cpp
 
 diff --git a/README.NPCTELEPORT b/README.NPCTELEPORT
 new file mode 100644
@@ -39,6 +43,16 @@ index 0000000..015c9c2
 +
 +Run the query setup_npc_teleport.sql located in the trinity sql directory on
 +your world DB. This will setup the DB and you can customize from there.
+diff --git a/sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql b/sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
+new file mode 100644
+index 0000000..695b845
+--- /dev/null
++++ b/sql/TrinityCore-Patches/SummonNPC/world.summonnpc-item.sql
+@@ -0,0 +1,4 @@
++-- Example item:
++DELETE FROM `item_template` WHERE `entry` = 100000;
++insert into `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `StatsCount`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `flagsCustom`, `VerifiedBuild`) values
++('100000','15','0','-1','Icerune','46787','4','72','0','1','0','0','0','-1','-1','1','1','0','0','0','0','0','0','6','1','1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','18282','0','0','0','8000','0','-1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','1','|cff00FF00Use: Summons Lithathrad Teleporter.|r','0','0','0','0','0','3','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','-1','0','0','0','0','summon','0','0','0','0','0','-4');
 diff --git a/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql b/sql/TrinityCore-Patches/TeleNPC2/world.npc_teleport.sql
 new file mode 100644
 index 0000000..abaa188
@@ -705,7 +719,7 @@ index 0000000..4830245
 +
 +#endif
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..fb43f99 100644
+index 7e5f73a..d1260b7 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -36,6 +36,9 @@ void AddSC_holiday_spell_scripts();
@@ -718,7 +732,13 @@ index 7e5f73a..fb43f99 100644
  //Commands
  void AddSC_account_commandscript();
  void AddSC_achievement_commandscript();
-@@ -1467,7 +1470,8 @@ void AddBattlegroundScripts()
+@@ -1463,11 +1466,13 @@ void AddBattlegroundScripts()
+ // start46
+ // start47
+ // start48
+-// start49
++// IceRune
++void AddSC_summon();
  // start50
  // start51
  // start52
@@ -728,7 +748,13 @@ index 7e5f73a..fb43f99 100644
  // start54
  // start55
  // start56
-@@ -1593,7 +1597,8 @@ void AddCustomScripts()
+@@ -1589,11 +1594,13 @@ void AddCustomScripts()
+ // end46
+ // end47
+ // end48
+-// end49
++    // IceRune
++    AddSC_summon();
  // end50
  // end51
  // end52
@@ -739,7 +765,7 @@ index 7e5f73a..fb43f99 100644
  // end55
  // end56
 diff --git a/src/server/game/Scripting/ScriptMgr.cpp b/src/server/game/Scripting/ScriptMgr.cpp
-index aed829a..caa3a91 100644
+index 0ece05f..405bcf0 100644
 --- a/src/server/game/Scripting/ScriptMgr.cpp
 +++ b/src/server/game/Scripting/ScriptMgr.cpp
 @@ -23,6 +23,7 @@
@@ -998,6 +1024,59 @@ index 0000000..754a604
 +    new npc_teleport;
 +}
 +// End of TeleNPC2
+diff --git a/src/server/scripts/Custom/summon.cpp b/src/server/scripts/Custom/summon.cpp
+new file mode 100644
+index 0000000..7729f0d
+--- /dev/null
++++ b/src/server/scripts/Custom/summon.cpp
+@@ -0,0 +1,46 @@
++//#include "ScriptPCH.h"
++
++class summon : public ItemScript
++{
++        public:
++                summon() : ItemScript("summon")
++                {
++                }
++                bool OnUse(Player* pPlayer, Item* pItem, SpellCastTargets const& /*targets*/)
++                {
++   uint32 sSpell = 18282; //Icerune Visual Spell when used
++   if (pPlayer->IsInCombat())
++   {
++        pPlayer->GetSession()->SendNotification("You are in combat.");
++   }
++
++   else if (pPlayer->isMoving())
++   {
++        pPlayer->GetSession()->SendNotification("You can not do that while moving.");
++   }
++
++   else if (pPlayer->FindNearestCreature(80410, 40) || pPlayer->FindNearestCreature(100000, 8))
++   {
++        pPlayer->GetSession()->SendNotification("Teleportercan not be summoned because another Teleporter is within range.");
++   }
++
++   else
++   {
++        float x, y, z, o = pPlayer->GetOrientation();
++
++        if (o >= 3.141592)
++         o = o - 3.141592;
++        else
++         o = o + 3.141592;
++        pPlayer->GetClosePoint(x, y, z, pPlayer->GetObjectSize());
++        Creature* pCreature = pPlayer->SummonCreature(100000, x, y, z+2.2, o, TEMPSUMMON_TIMED_DESPAWN, 50000);
++        pCreature->CastSpell(pCreature, 63660);
++        return false;
++   }
++  return false;
++                }
++};
++void AddSC_summon()
++{
++        new summon();
++}
+\ No newline at end of file
 -- 
 1.7.10.4
 
