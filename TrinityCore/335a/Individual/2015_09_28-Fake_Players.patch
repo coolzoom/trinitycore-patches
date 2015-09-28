@@ -1,7 +1,7 @@
-From 486dc8f81e056f8a15fc71f5106bf8f7d53eed3f Mon Sep 17 00:00:00 2001
+From 923b03e486abc29fe38951b431c3ef09feda7469 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 24 Sep 2015 06:49:24 -0500
-Subject: [PATCH] Fake_Players
+Date: Mon, 28 Sep 2015 07:24:47 -0500
+Subject: [PATCH] 2015_09_28-Fake_Players
 
 ---
  .../Fake_Players/characters.fake_players.sql       |   40 ++++++++++
@@ -92,10 +92,10 @@ index 9ff0d61..d488c52 100644
      PrepareStatement(CHAR_INS_QUEST_POOL_SAVE, "INSERT INTO pool_quest_save (pool_id, quest_id) VALUES (?, ?)", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM, "DELETE FROM guild_bank_item WHERE guildid = ? AND TabId = ? AND SlotId = ?", CONNECTION_ASYNC);
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index bb995dd..116fb0c 100644
+index 1e37a98..81b5b9b 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
-@@ -42,6 +42,11 @@ enum CharacterDatabaseStatements
+@@ -29,6 +29,11 @@ enum CharacterDatabaseStatements
          name for a suiting suffix.
      */
  
@@ -213,7 +213,7 @@ index 30764fe..ef3b3f0 100644
      }
  
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 51f7e3f..6b035ac 100644
+index 51f7e3f..5d5c9dd 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -182,6 +182,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -243,8 +243,8 @@ index 51f7e3f..6b035ac 100644
 -    data.put(0, displaycount);                            // insert right count, count displayed
 +    if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST) && displaycount < 49)
 +    {
-+        const char fake_players_db = (searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
-+        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(fake_players_db);
++        //const char fake_players_db = (searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
++        PreparedStatement* fake = CharacterDatabase.GetPreparedStatement(searchBool ? FAKE_CHAR_ONLINE_SEARCH : FAKE_CHAR_ONLINE);
 +
 +        fake->setUInt32(0, sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
 +        if (searchBool)
@@ -382,7 +382,7 @@ index 11c527e..0903c45 100644
      CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 7061e95..83bc84d 100644
+index 4fccf90..7e7057b 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3131,6 +3131,16 @@ AuctionHouseBot.forceExcludeItems = ""
