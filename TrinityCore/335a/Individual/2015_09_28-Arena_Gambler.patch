@@ -1,15 +1,15 @@
-From 460daf6240903ddef1d131010633ac0ea0916262 Mon Sep 17 00:00:00 2001
-From: Lord Psyan <realmsofwarcraft@gmail.com>
-Date: Wed, 19 Nov 2014 09:41:22 -0500
-Subject: [PATCH] ArenaGambler
+From 399765a18d1d436c2571fc9fcb101e26c1131a1c Mon Sep 17 00:00:00 2001
+From: LordPsyan <realmsofwarcraft@gmail.com>
+Date: Mon, 28 Sep 2015 17:21:31 -0500
+Subject: [PATCH] 2015_09_28-Arena_Gambler
 
 ---
- .../ArenaGambler/CharactersDB.sql                  |  59 ++
- sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql   | 371 +++++++++++
- src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
- src/server/scripts/Custom/ArenaGambler.cpp         | 308 +++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.cpp  | 723 +++++++++++++++++++++
- src/server/scripts/Custom/ArenaGamblingSystem.h    | 458 +++++++++++++
+ .../ArenaGambler/CharactersDB.sql                  |   59 ++
+ sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql   |  371 ++++++++++
+ src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
+ src/server/scripts/Custom/ArenaGambler.cpp         |  308 +++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.cpp  |  723 ++++++++++++++++++++
+ src/server/scripts/Custom/ArenaGamblingSystem.h    |  458 +++++++++++++
  6 files changed, 1923 insertions(+), 2 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/CharactersDB.sql
  create mode 100644 sql/TrinityCore-Patches/ArenaGambler/WorldDB.sql
@@ -460,7 +460,7 @@ index 0000000..e2fd8e3
 +(240087, 194608, 1, 1, 1, -7254.69, 1036.01, 306.361, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1),
 +(240086, 194608, 1, 1, 1, -7261.24, 1031, 306.36, 5.3627, 0, 0, 0.444166, -0.895945, 25, 0, 1);
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index bd43fbe..0fc399d 100644
+index 7e5f73a..fbcb368 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
 @@ -1419,7 +1419,8 @@ void AddBattlegroundScripts()
@@ -485,7 +485,7 @@ index bd43fbe..0fc399d 100644
  // end08
 diff --git a/src/server/scripts/Custom/ArenaGambler.cpp b/src/server/scripts/Custom/ArenaGambler.cpp
 new file mode 100644
-index 0000000..3c2abc5
+index 0000000..30fdaf9
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGambler.cpp
 @@ -0,0 +1,308 @@
@@ -496,7 +496,7 @@ index 0000000..3c2abc5
 + * Version: 1.9
 + * Status: functional
 +*/
-+#include "ScriptPCH.h"
++
 +#include "ArenaGamblingSystem.h"
 +#include "ScriptMgr.h"
 +#include "Player.h"
@@ -540,7 +540,7 @@ index 0000000..3c2abc5
 +                            pPlayer->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, ARENA_GAMBLER_ICON_BET_ITEM,    ARENA_GAMBLER_TEXT_BET_ITEM_AMOUNT,    ARENA_GAMBLER_MENU_BET_ITEM_AMOUNT,    GOSSIP_ACTION_INFO_DEF + 1, "", false);
 +                            if(matchData->GetChallengerItemId() && matchData->GetDefenderItemId() && matchData->GetItemCountBy(pPlayer) != 0 &&  matchData->HasSetReady(pPlayer) == false) // if everything checks out, but player is not yet ready.
 +                                pPlayer->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, ARENA_GAMBLER_ICON_ACCEPT,    ARENA_GAMBLER_TEXT_ACCEPT_CHALLENGE,    ARENA_GAMBLER_MENU_ACCEPT_CHALLENGE,    GOSSIP_ACTION_INFO_DEF + 1, "", false);
-+                            if(matchData->GetChallengerGUID() == pPlayer->GetGUIDLow())
++                            if(matchData->GetChallengerGUID() == pPlayer->GetGUID().GetCounter())
 +                                pPlayer->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, ARENA_GAMBLER_ICON_CANCEL,    ARENA_GAMBLER_TEXT_CANCEL_CHALLENGE,    ARENA_GAMBLER_MENU_CANCEL_CHALLENGE,    GOSSIP_ACTION_INFO_DEF + 1, "", false);
 +                            else
 +                                pPlayer->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, ARENA_GAMBLER_ICON_DECLINE,    ARENA_GAMBLER_TEXT_DECLINE_CHALLENGE,    ARENA_GAMBLER_MENU_DECLINE_CHALLENGE,    GOSSIP_ACTION_INFO_DEF + 1, "", false);
@@ -725,8 +725,8 @@ index 0000000..3c2abc5
 +                            return true;
 +                        }
 +                        sGamblingSystem->SetupMatch(pPlayer, pDefender);
-+                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGE_ISSUED, pDefender);
-+                        ChatHandler(pDefender->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_CHALLENGED, pPlayer);
++                        pPlayer->GetSession()->SendAreaTriggerMessage(ARENA_GAMBLER_MSG_CHALLENGE_ISSUED, pDefender);
++                        pDefender->GetSession()->SendAreaTriggerMessage(ARENA_GAMBLER_MSG_CHALLENGED, pPlayer);
 +                        OnGossipSelect(pPlayer, pCreature, ARENA_GAMBLER_MENU_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 +                    }
 +                    else
@@ -736,7 +736,7 @@ index 0000000..3c2abc5
 +                case ARENA_GAMBLER_MENU_BET_ITEM:
 +                {
 +                    if(sGamblingSystem->AddItemForMatch(pPlayer, pCode) == false)
-+                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_ADD_FAILED);
++                        pPlayer->GetSession()->SendAreaTriggerMessage(ARENA_GAMBLER_MSG_ITEM_ADD_FAILED);
 +                    else
 +                        ChatHandler(pPlayer->GetSession()).PSendSysMessage(ARENA_GAMBLER_MSG_ITEM_ADD_SUCCESS);
 +                    OnGossipSelect(pPlayer, pCreature, ARENA_GAMBLER_MENU_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
@@ -752,7 +752,7 @@ index 0000000..3c2abc5
 +    ArenaRecords() : GameObjectScript(ARENA_RECORDS_SCRIPT_NAME) { }
 +    bool OnGossipHello(Player* pPlayer, GameObject* pGo)
 +    {
-+        if(QueryResult queryResult = CharacterDatabase.PQuery("SELECT `playerGUID`,`duelsLost`,`duelsWon`,`duelsRefused`,`duelsTotal` FROM `custom_duel_statistics` WHERE `playerGUID` = '%u'", pPlayer->GetGUIDLow()))
++        if(QueryResult queryResult = CharacterDatabase.PQuery("SELECT `playerGUID`,`duelsLost`,`duelsWon`,`duelsRefused`,`duelsTotal` FROM `custom_duel_statistics` WHERE `playerGUID` = '%u'", pPlayer->GetGUID().GetCounter()))
 +        {
 +            uint32 playerGUID = queryResult->Fetch()[0].GetUInt32();
 +            uint32 duelsLost = queryResult->Fetch()[1].GetUInt32();
@@ -800,7 +800,7 @@ index 0000000..3c2abc5
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.cpp b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 new file mode 100644
-index 0000000..fda4f74
+index 0000000..eba6f78
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.cpp
 @@ -0,0 +1,723 @@
@@ -811,7 +811,7 @@ index 0000000..fda4f74
 + * Version: 1.9
 + * Status: functional
 +*/
-+#include "ScriptPCH.h"
++
 +#include "ArenaGamblingSystem.h"
 +
 +using namespace std;
@@ -866,8 +866,8 @@ index 0000000..fda4f74
 +        if(Itr->second->GetMatchStatus() != GAMBLER_MATCH_STATUS_TELEPORT)
 +            continue;
 +
-+        Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, Itr->second->GetChallengerGUID()));
-+        Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,Itr->second->GetDefenderGUID()));
++        Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player, Itr->second->GetChallengerGUID()));
++        Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player,Itr->second->GetDefenderGUID()));
 +
 +        if(pChallenger == NULL || pDefender == NULL)
 +            continue;
@@ -978,7 +978,7 @@ index 0000000..fda4f74
 +    GamblerMatchMap::iterator Itr;
 +    for(Itr = m_matchStorage.begin(); Itr != m_matchStorage.end(); ++Itr)
 +    {
-+        if(Itr->second->GetChallengerGUID() == pPlayer->GetGUIDLow() || Itr->second->GetDefenderGUID() == pPlayer->GetGUIDLow())
++        if(Itr->second->GetChallengerGUID() == pPlayer->GetGUID().GetCounter() || Itr->second->GetDefenderGUID() == pPlayer->GetGUID().GetCounter())
 +        {
 +            // Match is over, old data
 +            if(Itr->second->GetMatchWinner())
@@ -1040,7 +1040,7 @@ index 0000000..fda4f74
 +// Match Setup
 +void GamblingSystem::SetupMatch(Player *pChallenger, Player *pDefender)
 +{
-+    GamblerMatchData *matchData = new GamblerMatchData(_generateMatchId(), pChallenger->GetGUIDLow(), pDefender->GetGUIDLow());
++    GamblerMatchData *matchData = new GamblerMatchData(_generateMatchId(), pChallenger->GetGUID().GetCounter(), pDefender->GetGUID().GetCounter());
 +    AcquireMatchLock();
 +    m_matchStorage.insert(make_pair(matchData->GetMatchId(), matchData));
 +    ReleaseMatchLock();
@@ -1050,10 +1050,6 @@ index 0000000..fda4f74
 +{
 +    switch(qualityType)
 +    {
-+        case ITEM_QUALITY_POOR:
-+        {
-+            return QUALITY_POOR;
-+        }break;
 +        case ITEM_QUALITY_NORMAL:
 +        {
 +            return QUALITY_NORMAL;
@@ -1082,8 +1078,12 @@ index 0000000..fda4f74
 +        {
 +            return QUALITY_HEIRLOOM;
 +        }break;
++        default :
++        {
++            return QUALITY_POOR;
++        }break;
 +    }
-+    return false;
++    return 0;
 +}
 +
 +bool GamblingSystem::AddItemForMatch(Player *pPlayer, std::string itemName)
@@ -1167,11 +1167,11 @@ index 0000000..fda4f74
 +
 +        Player *secondPlayer = NULL;
 +        if(matchData->IsChallenger(pPlayer))
-+            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, matchData->GetDefenderGUID()));
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player, matchData->GetDefenderGUID()));
 +        else
-+            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, matchData->GetChallengerGUID()));
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player, matchData->GetChallengerGUID()));
 +        if(secondPlayer)
-+            ChatHandler(secondPlayer->GetSession()).PSendSysMessage("|cffffffffThe player |cff00ccff%s |cffffffffhas bet |cff00ccff%u|cffffffffx of the item |%s|Hitem:%u:0:0:0:0:0:0:0:%u|h[%s]|h|r", pPlayer, amount, GetQualityColor(itemProto->Quality).c_str(),  pItem->GetEntry(), pPlayer->getLevel(),  itemProto->Name1.c_str());
++            secondPlayer->GetSession()->SendAreaTriggerMessage("|cffffffffThe player |cff00ccff%s |cffffffffhas bet |cff00ccff%u|cffffffffx of the item |%s|Hitem:%u:0:0:0:0:0:0:0:%u|h[%s]|h|r", pPlayer, amount, GetQualityColor(itemProto->Quality).c_str(),  pItem->GetEntry(), pPlayer->getLevel(),  itemProto->Name1.c_str());
 +        return true;
 +    }
 +    return false;
@@ -1191,9 +1191,9 @@ index 0000000..fda4f74
 +        Player *secondPlayer = NULL;
 +
 +        if(matchData->IsChallenger(pPlayer)){
-+            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetDefenderGUID()));}
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player,matchData->GetDefenderGUID()));}
 +        else{
-+            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetChallengerGUID()));}
++            secondPlayer = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player,matchData->GetChallengerGUID()));}
 +
 +        // Don't start the duel if there is no second player
 +        if(secondPlayer == NULL)
@@ -1266,8 +1266,8 @@ index 0000000..fda4f74
 +        }
 +
 +        _saveCurrentMatchProgress(matchData);
-+        _updatePlayerStats(pPlayer->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_TOTAL, 1);
-+        _updatePlayerStats(secondPlayer->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_TOTAL, 1);
++        _updatePlayerStats(pPlayer->GetGUID().GetCounter(), GAMBLER_PLAYER_STAT_DUELS_TOTAL, 1);
++        _updatePlayerStats(secondPlayer->GetGUID().GetCounter(), GAMBLER_PLAYER_STAT_DUELS_TOTAL, 1);
 +
 +        pPlayer->DestroyItemCount(itemId1, amount1, true, true);
 +        secondPlayer->DestroyItemCount(itemId2, amount2, true, true);
@@ -1292,9 +1292,9 @@ index 0000000..fda4f74
 +    GamblerMatchData *matchData = GetMatchDataBy(pPlayer);
 +    if(matchData == NULL)
 +        return;
-+    SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_CANCELED, pPlayer, matchData->GetChallengerGUID() == pPlayer->GetGUIDLow() ? GAMBLER_SYSTEM_MSG_CANCELED_1 : GAMBLER_SYSTEM_MSG_CANCELED_2);
++    SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_CANCELED, pPlayer, matchData->GetChallengerGUID() == pPlayer->GetGUID().GetCounter() ? GAMBLER_SYSTEM_MSG_CANCELED_1 : GAMBLER_SYSTEM_MSG_CANCELED_2);
 +    if(matchData->IsDefender(pPlayer))
-+        _updatePlayerStats(pPlayer->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_REFUSED, 1);
++        _updatePlayerStats(pPlayer->GetGUID().GetCounter(), GAMBLER_PLAYER_STAT_DUELS_REFUSED, 1);
 +    _deleteMatchData(matchData->GetMatchId());
 +}
 +
@@ -1309,34 +1309,34 @@ index 0000000..fda4f74
 +    {
 +        case DUEL_INTERRUPTED:
 +        {
-+            _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
-+            _createItemAndMailToPlayer(pLoser, pLoser->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
++            _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
++            _createItemAndMailToPlayer(pLoser, pLoser->GetGUID().GetCounter(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
 +            SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_INTERRUPTED);
 +        }break;
 +        case DUEL_WON:
 +        {
-+            _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
-+            _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
++            _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
++            _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
 +            SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner);
 +        }break;
 +        case DUEL_FLED:
 +        {
 +            if(m_awardFled)
 +            {
-+                _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
-+                _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
++                _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
++                _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_WON);
 +                SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_WON, pWinner);
 +
 +            }else{
-+                _createItemAndMailToPlayer(pWinner, pWinner->GetGUIDLow(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
-+                _createItemAndMailToPlayer(pLoser, pLoser->GetGUIDLow(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
++                _createItemAndMailToPlayer(pWinner, pWinner->GetGUID().GetCounter(), itemId1, amount1, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
++                _createItemAndMailToPlayer(pLoser, pLoser->GetGUID().GetCounter(), itemId2, amount2, GAMBLER_SYSTEM_MSG_MAIL_BODY_MATCH_INCOMPLETE);
 +                SendMessageToPlayers(matchData, GAMBLER_SYSTEM_MSG_DUEL_FLED_NON_AWARD);
 +            }
 +        }break;
 +    }
-+    _updatePlayerStats(pWinner->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_WON, 1);
-+    _updatePlayerStats(pLoser->GetGUIDLow(), GAMBLER_PLAYER_STAT_DUELS_LOST, 1);
-+    matchData->SetMatchWinner(pWinner->GetGUIDLow());
++    _updatePlayerStats(pWinner->GetGUID().GetCounter(), GAMBLER_PLAYER_STAT_DUELS_WON, 1);
++    _updatePlayerStats(pLoser->GetGUID().GetCounter(), GAMBLER_PLAYER_STAT_DUELS_LOST, 1);
++    matchData->SetMatchWinner(pWinner->GetGUID().GetCounter());
 +    _saveCurrentMatchProgress(matchData);
 +    _deleteMatchData(matchData->GetMatchId());
 +    pWinner->TeleportToBGEntryPoint();
@@ -1350,7 +1350,7 @@ index 0000000..fda4f74
 +    GamblerMatchMap::iterator Itr;
 +    for(Itr = m_matchStorage.begin(); Itr != m_matchStorage.end(); ++Itr)
 +    {
-+        if(Itr->second->GetChallengerGUID() == pPlayer->GetGUIDLow() || Itr->second->GetDefenderGUID() == pPlayer->GetGUIDLow())
++        if(Itr->second->GetChallengerGUID() == pPlayer->GetGUID().GetCounter() || Itr->second->GetDefenderGUID() == pPlayer->GetGUID().GetCounter())
 +        {
 +            delete Itr->second;
 +            m_matchStorage.erase(Itr);
@@ -1399,8 +1399,8 @@ index 0000000..fda4f74
 +// Messaging
 +void GamblingSystem::SendMessageToPlayers(GamblerMatchData *matchData, const char *msgToSend, ...)
 +{
-+    Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetChallengerGUID()));
-+    Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER,matchData->GetDefenderGUID()));
++    Player *pChallenger = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player,matchData->GetChallengerGUID()));
++    Player *pDefender    = ObjectAccessor::FindPlayer(ObjectGuid(HighGuid::Player,matchData->GetDefenderGUID()));
 +
 +    char Result[1024];
 +    va_list List;
@@ -1524,13 +1524,13 @@ index 0000000..fda4f74
 +    GamblerMatchData *matchData = sGamblingSystem->GetMatchDataBy(pPlayer);
 +    if(matchData == NULL){
 +        return;}
-+    else if(matchData->MatchStarted() && (matchData->GetChallengerGUID() == pPlayer->GetGUIDLow() || matchData->GetDefenderGUID() == pPlayer->GetGUIDLow()))
++    else if(matchData->MatchStarted() && (matchData->GetChallengerGUID() == pPlayer->GetGUID().GetCounter() || matchData->GetDefenderGUID() == pPlayer->GetGUID().GetCounter()))
 +            pPlayer->DuelComplete(DUEL_FLED);
 +}
 \ No newline at end of file
 diff --git a/src/server/scripts/Custom/ArenaGamblingSystem.h b/src/server/scripts/Custom/ArenaGamblingSystem.h
 new file mode 100644
-index 0000000..1c256d3
+index 0000000..c861ea0
 --- /dev/null
 +++ b/src/server/scripts/Custom/ArenaGamblingSystem.h
 @@ -0,0 +1,458 @@
@@ -1803,7 +1803,7 @@ index 0000000..1c256d3
 +
 +        uint32 GetItemIdBy(Player *pPlayer)
 +        {
-+            if(pPlayer->GetGUIDLow() == GetChallengerGUID())
++            if(pPlayer->GetGUID().GetCounter() == GetChallengerGUID())
 +                return GetChallengerItemId();
 +            else
 +                return GetDefenderItemId();
@@ -1811,7 +1811,7 @@ index 0000000..1c256d3
 +
 +        uint32 GetItemCountBy(Player *pPlayer)
 +        {
-+            if(pPlayer->GetGUIDLow() == GetChallengerGUID())
++            if(pPlayer->GetGUID().GetCounter() == GetChallengerGUID())
 +                return GetChallengerItemCount();
 +            else
 +                return GetDefenderItemCount();
@@ -1820,7 +1820,7 @@ index 0000000..1c256d3
 +        // Misc Functions
 +        bool IsChallenger(Player *pPlayer)
 +        {
-+            if(pPlayer->GetGUIDLow() == GetChallengerGUID())
++            if(pPlayer->GetGUID().GetCounter() == GetChallengerGUID())
 +                return true;
 +            return false;
 +        }
@@ -1994,5 +1994,5 @@ index 0000000..1c256d3
 +#endif
 \ No newline at end of file
 -- 
-2.1.1
+1.7.10.4
 
