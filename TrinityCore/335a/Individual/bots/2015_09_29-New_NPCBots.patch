@@ -1,7 +1,7 @@
-From 15cfe17e5461ee2ced3e60983c4bd283bc93feb4 Mon Sep 17 00:00:00 2001
+From ca0539559006a322601426ea0aa95fa8271d8f92 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 27 Sep 2015 17:15:31 -0500
-Subject: [PATCH] 2015_09_27-New_NPCBots
+Date: Tue, 29 Sep 2015 14:01:29 -0500
+Subject: [PATCH] 2015_09_29-New_NPCBots
 
 ---
  sql/TrinityCore-Patches/Bots/character_bots.sql    |   26 +
@@ -292,10 +292,10 @@ index 0000000..6a85210
 +
 +-- end
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-index 9ff0d61..d594b2a 100644
+index afc75da..5438016 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-@@ -617,7 +617,25 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -618,7 +618,25 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // 04
      // 05
      // 06
@@ -323,10 +323,10 @@ index 9ff0d61..d594b2a 100644
      // 09
      // 10
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index 1e37a98..38c2455 100644
+index 49ecf04..76505c9 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
-@@ -536,7 +536,20 @@ enum CharacterDatabaseStatements
+@@ -537,7 +537,20 @@ enum CharacterDatabaseStatements
      // 04
      // 05
      // 06
@@ -646,7 +646,7 @@ index 0000000..d72af36
 +#endif
 diff --git a/src/server/game/AI/NpcBots/bot_GridNotifiers.h b/src/server/game/AI/NpcBots/bot_GridNotifiers.h
 new file mode 100644
-index 0000000..db1f56e
+index 0000000..9f3c35d
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_GridNotifiers.h
 @@ -0,0 +1,724 @@
@@ -1333,7 +1333,7 @@ index 0000000..db1f56e
 +                return false;
 +            if (urand(0,100) > 20)
 +                return false;
-+            if (u->GetTypeId() == TYPEID_CORPSE && !sObjectAccessor->FindPlayer(u->ToCorpse()->GetOwnerGUID()))
++            if (u->GetTypeId() == TYPEID_CORPSE && !ObjectAccessor::FindPlayer(u->ToCorpse()->GetOwnerGUID()))
 +                return false;
 +
 +            return true;
@@ -1376,7 +1376,7 @@ index 0000000..db1f56e
 +#endif
 diff --git a/src/server/game/AI/NpcBots/bot_ai.cpp b/src/server/game/AI/NpcBots/bot_ai.cpp
 new file mode 100644
-index 0000000..d4ccded
+index 0000000..71867f7
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_ai.cpp
 @@ -0,0 +1,8125 @@
@@ -2033,7 +2033,7 @@ index 0000000..d4ccded
 +        GetNearbyFriendlyTargetsList(targets, 30);
 +        for (GuidList::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
 +        {
-+            if (Unit* u = sObjectAccessor->GetUnit(*me, *itr))
++            if (Unit* u = ObjectAccessor::GetUnit(*me, *itr))
 +            {
 +                if (HealTarget(u, GetHealthPCT(u), diff))
 +                    return;
@@ -2110,7 +2110,7 @@ index 0000000..d4ccded
 +            {
 +                if (ObjectGuid guid = pGroup->GetTargetIcons()[i])//check this one
 +                {
-+                    if (Unit* unit = sObjectAccessor->FindConnectedPlayer(guid))
++                    if (Unit* unit = ObjectAccessor::FindConnectedPlayer(guid))
 +                    {
 +                        if (unit->IsAlive() && me->GetMap() == unit->FindMap() &&
 +                            master->GetVictim() != unit && unit->GetVictim() != master &&
@@ -2149,7 +2149,7 @@ index 0000000..d4ccded
 +        Unit* target = playerOrCorpse->GetTypeId() == TYPEID_PLAYER ? playerOrCorpse->ToUnit() : (Unit*)playerOrCorpse->ToCorpse();
 +        if (doCast(target, REZZ)) //rezzing it
 +        {
-+            if (Player* player = playerOrCorpse->GetTypeId() == TYPEID_PLAYER ? playerOrCorpse->ToPlayer() : sObjectAccessor->FindPlayer(playerOrCorpse->ToCorpse()->GetOwnerGUID()))
++            if (Player* player = playerOrCorpse->GetTypeId() == TYPEID_PLAYER ? playerOrCorpse->ToPlayer() : ObjectAccessor::FindPlayer(playerOrCorpse->ToCorpse()->GetOwnerGUID()))
 +                BotWhisper("Rezzing You", player);
 +            rezz_cd = 20;
 +        }
@@ -2241,7 +2241,7 @@ index 0000000..d4ccded
 +        GuidList targets;
 +        GetNearbyFriendlyTargetsList(targets, 38);
 +        for (GuidList::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
-+            if (Unit* u = sObjectAccessor->GetUnit(*me, *itr))
++            if (Unit* u = ObjectAccessor::GetUnit(*me, *itr))
 +                if (CureTarget(u, cureSpell, diff))
 +                    return;
 +        */
@@ -5024,7 +5024,7 @@ index 0000000..d4ccded
 +            }
 +            for (GuidSet::const_iterator i = Set.begin(); i != Set.end(); ++i)
 +            {
-+                Unit* unit = sObjectAccessor->FindConnectedPlayer(*i);
++                Unit* unit = ObjectAccessor::FindConnectedPlayer(*i);
 +                if (unit && (unit->IsFriendlyTo(me) || IsInBotParty(unit) || !unit->IsInCombat()))
 +                {
 +                    master->getHostileRefManager().deleteReference(unit);
@@ -5053,7 +5053,7 @@ index 0000000..d4ccded
 +                }
 +                for (GuidSet::const_iterator i = Set.begin(); i != Set.end(); ++i)
 +                {
-+                    Unit* unit = sObjectAccessor->FindConnectedPlayer(*i);
++                    Unit* unit = ObjectAccessor::FindConnectedPlayer(*i);
 +                    if (!unit || !unit->InSamePhase(me)) continue;
 +                    if (unit->IsFriendlyTo(me) || IsInBotParty(unit) || !unit->IsInCombat())
 +                    {
@@ -5077,7 +5077,7 @@ index 0000000..d4ccded
 +                    }
 +                    for (GuidSet::const_iterator i = Set.begin(); i != Set.end(); ++i)
 +                    {
-+                        Unit* unit = sObjectAccessor->FindConnectedPlayer(*i);
++                        Unit* unit = ObjectAccessor::FindConnectedPlayer(*i);
 +                        if (!unit || !unit->InSamePhase(me)) continue;
 +                        if (unit->IsFriendlyTo(me) || IsInBotParty(unit) || !unit->IsInCombat())
 +                        {
@@ -5111,7 +5111,7 @@ index 0000000..d4ccded
 +                    }
 +                    for (GuidSet::const_iterator i = Set.begin(); i != Set.end(); ++i)
 +                    {
-+                        Unit* unit = sObjectAccessor->FindConnectedPlayer(*i);
++                        Unit* unit = ObjectAccessor::FindConnectedPlayer(*i);
 +                        if (!unit || !unit->InSamePhase(me)) continue;
 +                        if (unit->IsFriendlyTo(me) || IsInBotParty(unit) || !unit->IsInCombat())
 +                        {
@@ -5137,7 +5137,7 @@ index 0000000..d4ccded
 +                }
 +                for (GuidSet::const_iterator i = Set.begin(); i != Set.end(); ++i)
 +                {
-+                    Unit* unit = sObjectAccessor->FindConnectedPlayer(*i);
++                    Unit* unit = ObjectAccessor::FindConnectedPlayer(*i);
 +                    if (!unit || !unit->InSamePhase(me)) continue;
 +                    if (unit->IsFriendlyTo(me) || IsInBotParty(unit) || !unit->IsInCombat())
 +                    {
@@ -10421,7 +10421,7 @@ index 0000000..d594cdf
 +#endif
 diff --git a/src/server/game/AI/NpcBots/bot_bm_ai.cpp b/src/server/game/AI/NpcBots/bot_bm_ai.cpp
 new file mode 100644
-index 0000000..6e387de
+index 0000000..f55639b
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_bm_ai.cpp
 @@ -0,0 +1,968 @@
@@ -10490,7 +10490,7 @@ index 0000000..6e387de
 +                bool Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 +                {
 +                    bool suc = false;
-+                    /*if (Creature* bot = sObjectAccessor->GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
++                    /*if (Creature* bot = ObjectAccessor::GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
 +                    {
 +                        ASSERT(bot->GetBotClass() == BOT_CLASS_BM);
 +                        (dynamic_cast<blademaster_bot::blademaster_botAI*>(bot->GetBotMinionAI()))->CriticalStrikeFinish(_targetGuid, _dinfo, _windwalk);
@@ -10518,7 +10518,7 @@ index 0000000..6e387de
 +            protected:
 +                bool Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 +                {
-+                    /*if (Creature* bot = sObjectAccessor->GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
++                    /*if (Creature* bot = ObjectAccessor::GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
 +                    {
 +                        (dynamic_cast<blademaster_bot::blademaster_botAI*>(bot->GetBotMinionAI()))->TerminateEvent();
 +                        return true;
@@ -10540,7 +10540,7 @@ index 0000000..6e387de
 +            protected:
 +                bool Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 +                {
-+                    /*if (Creature* bot = sObjectAccessor->GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
++                    /*if (Creature* bot = ObjectAccessor::GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
 +                    {
 +                        ASSERT(bot->GetBotClass() == BOT_CLASS_BM);
 +                        (dynamic_cast<blademaster_bot::blademaster_botAI*>(bot->GetBotMinionAI()))->MirrorImageFinish();
@@ -10564,7 +10564,7 @@ index 0000000..6e387de
 +            protected:
 +                bool Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 +                {
-+                    /*if (Creature* bot = sObjectAccessor->GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
++                    /*if (Creature* bot = ObjectAccessor::GetObjectInOrOutOfWorld(_botGuid, (Creature*)NULL))
 +                    {
 +                        ASSERT(bot->GetBotClass() == BOT_CLASS_BM);
 +                        (dynamic_cast<blademaster_bot::blademaster_botAI*>(bot->GetBotMinionAI()))->MirrorImageMid();
@@ -10900,7 +10900,7 @@ index 0000000..6e387de
 +            while (int8(_illusionGuids.size()) > (3 - illusionsCount))
 +            {
 +                GuidList::iterator itr = _illusionGuids.begin();
-+                if (Creature* illusion = sObjectAccessor->GetCreatureOrPetOrVehicle(*me, *itr))
++                if (Creature* illusion = ObjectAccessor::GetCreatureOrPetOrVehicle(*me, *itr))
 +                    if (!illusion->IsDuringRemoveFromWorld())
 +                        illusion->ToCreature()->GetBotAI()->JustDied(NULL);
 +
@@ -11017,7 +11017,7 @@ index 0000000..6e387de
 +
 +            for (GuidList::const_iterator itr = _illusionGuids.begin(); itr != _illusionGuids.end(); ++itr)
 +            {
-+                if (Creature* illusion = sObjectAccessor->GetCreatureOrPetOrVehicle(*me, *itr))
++                if (Creature* illusion = ObjectAccessor::GetCreatureOrPetOrVehicle(*me, *itr))
 +                    illusion->SetPhaseMask(master->GetPhaseMask(), true);
 +
 +                if (counter == r)
@@ -11085,7 +11085,7 @@ index 0000000..6e387de
 +                return;
 +            }
 +
-+            Unit* target = sObjectAccessor->GetUnit(*me, targetGuid);
++            Unit* target = ObjectAccessor::GetUnit(*me, targetGuid);
 +            if (!target || !target->IsAlive())
 +            {
 +                me->PlayDistanceSound(SOUND_MISS_WHOOSH_2H);
@@ -11290,7 +11290,7 @@ index 0000000..6e387de
 +            while (!_illusionGuids.empty())
 +            {
 +                GuidList::iterator itr = _illusionGuids.begin();
-+                if (Creature* illusion = sObjectAccessor->GetCreatureOrPetOrVehicle(*me, *itr))
++                if (Creature* illusion = ObjectAccessor::GetCreatureOrPetOrVehicle(*me, *itr))
 +                    if (illusion->GetBotAI())
 +                        illusion->GetBotAI()->JustDied(NULL);
 +
@@ -15510,7 +15510,7 @@ index 0000000..8fa05af
 +}
 diff --git a/src/server/game/AI/NpcBots/bot_mage_ai.cpp b/src/server/game/AI/NpcBots/bot_mage_ai.cpp
 new file mode 100644
-index 0000000..2228345
+index 0000000..d28177b
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_mage_ai.cpp
 @@ -0,0 +1,910 @@
@@ -16140,7 +16140,7 @@ index 0000000..2228345
 +                    return;
 +                }
 +
-+                Player* pTarget = sObjectAccessor->FindPlayer(aftercastTargetGuid);
++                Player* pTarget = ObjectAccessor::FindPlayer(aftercastTargetGuid);
 +                aftercastTargetGuid.Clear();
 +
 +                if (!pTarget/* || me->GetDistance(pTarget) > 15*/)
@@ -19511,7 +19511,7 @@ index 0000000..43d2551
 +}
 diff --git a/src/server/game/AI/NpcBots/bot_shaman_ai.cpp b/src/server/game/AI/NpcBots/bot_shaman_ai.cpp
 new file mode 100644
-index 0000000..71ef8a9
+index 0000000..6671b3c
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/bot_shaman_ai.cpp
 @@ -0,0 +1,1340 @@
@@ -19673,7 +19673,7 @@ index 0000000..71ef8a9
 +                    if (master->GetDistance2d(_totems[i].second.pos.m_positionX, _totems[i].second.pos.m_positionY) > _totems[i].second.effradius &&
 +                        me->GetDistance2d(_totems[i].second.pos.m_positionX, _totems[i].second.pos.m_positionY) > _totems[i].second.effradius)
 +                    {
-+                        Unit* to = sObjectAccessor->FindConnectedPlayer(_totems[i].first);
++                        Unit* to = ObjectAccessor::FindConnectedPlayer(_totems[i].first);
 +                        if (!to)
 +                        {
 +                            _totems[i].first.Clear();
@@ -19875,7 +19875,7 @@ index 0000000..71ef8a9
 +            {
 +                if (_totems[T_WATER].first)
 +                {
-+                    Unit* to = sObjectAccessor->FindConnectedPlayer(_totems[T_WATER].first);
++                    Unit* to = ObjectAccessor::FindConnectedPlayer(_totems[T_WATER].first);
 +                    if (!to)
 +                        _totems[T_WATER].first.Clear();
 +                    else
@@ -20616,7 +20616,7 @@ index 0000000..71ef8a9
 +            {
 +                if (_totems[i].first)
 +                {
-+                    Unit* to = sObjectAccessor->FindConnectedPlayer(_totems[i].first);
++                    Unit* to = ObjectAccessor::FindConnectedPlayer(_totems[i].first);
 +                    if (!to)
 +                    {
 +                        //TC_LOG_ERROR("entities.player", "%s has no totem in slot %u during remove!", me->GetName().c_str(), i);
@@ -26136,7 +26136,7 @@ index 4642244..109b374 100644
  }
  
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
-index f5af355..a237602 100644
+index 21a6544..6253fa9 100644
 --- a/src/server/game/Entities/Object/Object.cpp
 +++ b/src/server/game/Entities/Object/Object.cpp
 @@ -1032,6 +1032,11 @@ void WorldObject::setActive(bool on)
@@ -26177,7 +26177,7 @@ index f5af355..a237602 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2fe5084..3036cfc 100644
+index cb666b0..b56dc70 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -87,7 +87,9 @@
@@ -26247,7 +26247,7 @@ index 2fe5084..3036cfc 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2351,6 +2381,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2353,6 +2383,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
              if (pet)
                  UnsummonPetTemporaryIfAny();
  
@@ -26259,7 +26259,7 @@ index 2fe5084..3036cfc 100644
              // remove all dyn objects
              RemoveAllDynObjects();
  
-@@ -2535,6 +2570,38 @@ void Player::RemoveFromWorld()
+@@ -2537,6 +2572,38 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -26298,7 +26298,7 @@ index 2fe5084..3036cfc 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2810,6 +2877,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2812,6 +2879,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
      if (creature->GetCharmerGUID())
          return NULL;
  
@@ -26310,7 +26310,7 @@ index 2fe5084..3036cfc 100644
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
          return NULL;
-@@ -3016,6 +3088,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -3018,6 +3090,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
      if (!group)
          return;
  
@@ -26354,8 +26354,8 @@ index 2fe5084..3036cfc 100644
  }
  
 @@ -4865,6 +4973,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
-             stmt->setUInt32(0, guid);
-             trans->Append(stmt);
+ 
+             Corpse::DeleteFromDB(playerguid, trans);
  
 +            //npcbot - erase npcbots
 +            stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_NPCBOT_OWNER_ALL);
@@ -26368,7 +26368,7 @@ index 2fe5084..3036cfc 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -7124,6 +7240,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7136,6 +7252,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
          else
          {
@@ -26380,7 +26380,7 @@ index 2fe5084..3036cfc 100644
                  return false;
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 4336e5a..d2c0b73 100644
+index 33204a1..70133aa 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -55,6 +55,10 @@ class UpdateMask;
@@ -26394,7 +26394,7 @@ index 4336e5a..d2c0b73 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2311,7 +2315,20 @@ class Player : public Unit, public GridObject<Player>
+@@ -2316,7 +2320,20 @@ class Player : public Unit, public GridObject<Player>
      // 08
      // 09
      // 10
@@ -26416,7 +26416,7 @@ index 4336e5a..d2c0b73 100644
      // 12
      // 13
      // 14
-@@ -2580,6 +2597,14 @@ class Player : public Unit, public GridObject<Player>
+@@ -2585,6 +2602,14 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -26432,7 +26432,7 @@ index 4336e5a..d2c0b73 100644
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
 diff --git a/src/server/game/Entities/Totem/Totem.cpp b/src/server/game/Entities/Totem/Totem.cpp
-index 85ee51a..3c06abf 100644
+index 85ee51a..f54793a 100644
 --- a/src/server/game/Entities/Totem/Totem.cpp
 +++ b/src/server/game/Entities/Totem/Totem.cpp
 @@ -142,6 +142,13 @@ void Totem::UnSummon(uint32 msTime)
@@ -26441,7 +26441,7 @@ index 85ee51a..3c06abf 100644
  
 +    //npcbot: send SummonedCreatureDespawn()
 +    if (GetCreatorGUID().IsCreature())
-+        if (Unit* bot = sObjectAccessor->FindConnectedPlayer(GetCreatorGUID()))
++        if (Unit* bot = ObjectAccessor::FindConnectedPlayer(GetCreatorGUID()))
 +            if (bot->ToCreature()->GetIAmABot())
 +                bot->ToCreature()->OnBotDespawn(this);
 +    //end npcbot
@@ -27385,10 +27385,10 @@ index 39b1c34..ac17613 100644
          explicit Unit (bool isWorldObject);
  
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 4bf86fa..37ef83d 100644
+index b5d8d08..73c0ab9 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -7887,6 +7887,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
+@@ -7873,6 +7873,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
      return SKILL_RANGE_LEVEL;
  }
  
@@ -27472,7 +27472,7 @@ index 4bf86fa..37ef83d 100644
  {
      uint32 oldMSTime = getMSTime();
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index b9d7556..9880856 100644
+index 4623700..1f2b043 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -136,6 +136,21 @@ struct GameTele
@@ -27497,7 +27497,7 @@ index b9d7556..9880856 100644
  enum ScriptsType
  {
      SCRIPTS_FIRST = 1,
-@@ -1036,6 +1051,7 @@ class ObjectMgr
+@@ -1034,6 +1049,7 @@ class ObjectMgr
  
          void LoadNPCSpellClickSpells();
  
@@ -27505,7 +27505,7 @@ index b9d7556..9880856 100644
          void LoadGameTele();
  
          void LoadGossipMenu();
-@@ -1253,6 +1269,8 @@ class ObjectMgr
+@@ -1248,6 +1264,8 @@ class ObjectMgr
          bool AddGameTele(GameTele& data);
          bool DeleteGameTele(std::string const& name);
  
@@ -27514,7 +27514,7 @@ index b9d7556..9880856 100644
          TrainerSpellData const* GetNpcTrainerSpells(uint32 entry) const
          {
              CacheTrainerSpellContainer::const_iterator  iter = _cacheTrainerSpellStore.find(entry);
-@@ -1404,6 +1422,8 @@ class ObjectMgr
+@@ -1399,6 +1417,8 @@ class ObjectMgr
          PageTextContainer _pageTextStore;
          InstanceTemplateContainer _instanceTemplateStore;
  
@@ -27649,7 +27649,7 @@ index 0f0640e..b8e1e5d 100644
      // Get creator of the unit (SPELL_AURA_CLONE_CASTER does not stack)
      Unit* creator = unit->GetAuraEffectsByType(SPELL_AURA_CLONE_CASTER).front()->GetCaster();
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index b50099b..d8d144a 100644
+index 7acafb3..f4cc273 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
 @@ -36,6 +36,10 @@
@@ -27663,7 +27663,7 @@ index b50099b..d8d144a 100644
  u_map_magic MapMagic        = { {'M','A','P','S'} };
  u_map_magic MapVersionMagic = { {'v','1','.','3'} };
  u_map_magic MapAreaMagic    = { {'A','R','E','A'} };
-@@ -2752,8 +2756,24 @@ uint32 Map::GetPlayersCountExceptGMs() const
+@@ -2753,8 +2757,24 @@ uint32 Map::GetPlayersCountExceptGMs() const
  {
      uint32 count = 0;
      for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
@@ -27689,7 +27689,7 @@ index b50099b..d8d144a 100644
      return count;
  }
  
-@@ -2819,6 +2839,10 @@ void Map::AddToActive(Creature* c)
+@@ -2820,6 +2840,10 @@ void Map::AddToActive(Creature* c)
          GridCoord p = Trinity::ComputeGridCoord(x, y);
          if (getNGrid(p.x_coord, p.y_coord))
              getNGrid(p.x_coord, p.y_coord)->incUnloadActiveLock();
@@ -27700,7 +27700,7 @@ index b50099b..d8d144a 100644
          else
          {
              GridCoord p2 = Trinity::ComputeGridCoord(c->GetPositionX(), c->GetPositionY());
-@@ -2850,6 +2874,10 @@ void Map::RemoveFromActive(Creature* c)
+@@ -2851,6 +2875,10 @@ void Map::RemoveFromActive(Creature* c)
          GridCoord p = Trinity::ComputeGridCoord(x, y);
          if (getNGrid(p.x_coord, p.y_coord))
              getNGrid(p.x_coord, p.y_coord)->decUnloadActiveLock();
@@ -27712,7 +27712,7 @@ index b50099b..d8d144a 100644
          {
              GridCoord p2 = Trinity::ComputeGridCoord(c->GetPositionX(), c->GetPositionY());
 diff --git a/src/server/game/Maps/MapManager.cpp b/src/server/game/Maps/MapManager.cpp
-index 82be633..3633d17 100644
+index 0e7f9db..4db1756 100644
 --- a/src/server/game/Maps/MapManager.cpp
 +++ b/src/server/game/Maps/MapManager.cpp
 @@ -37,6 +37,10 @@
@@ -27789,7 +27789,7 @@ index 82be633..3633d17 100644
 +        Map* npcbotmap = sMapMgr->CreateBaseMap(mapId);
 +        npcbotmap->LoadGrid(pos_x, pos_y);
 +        Creature* bot = npcbotmap->GetCreature(ObjectGuid(HighGuid::Unit, entry, tableGuid));
-+        ASSERT(bot);
++        ABORT();
 +        //debug
 +        if (!bot->IsAlive())
 +        {
@@ -27998,7 +27998,7 @@ index ea5e4c8..5c90254 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index ae0d1d8..7687a61 100644
+index e72aeba..b19d1ce 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1537,6 +1537,9 @@ void World::SetInitialWorldSettings()
