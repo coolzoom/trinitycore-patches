@@ -1,6 +1,6 @@
-From b5bd6d204e19cf4f11f25cfab87c6031281c992f Mon Sep 17 00:00:00 2001
+From 45dee36dc5d1e0f0ed117145dd6d39bd71f1125d Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Mon, 28 Sep 2015 15:07:49 -0500
+Date: Tue, 29 Sep 2015 12:29:57 -0500
 Subject: [PATCH] 335a_prepatch
 
 ---
@@ -63,10 +63,10 @@ index 0000000..534fc57
 +190010        Warpweaver               Transmogrification
 \ No newline at end of file
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-index 6494f92..9ff0d61 100644
+index b5b79a3..afc75da 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-@@ -610,4 +610,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -611,4 +611,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      PrepareStatement(CHAR_UPD_QUEST_TRACK_GM_COMPLETE, "UPDATE quest_tracker SET completed_by_gm = 1 WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
      PrepareStatement(CHAR_UPD_QUEST_TRACK_COMPLETE_TIME, "UPDATE quest_tracker SET quest_complete_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
      PrepareStatement(CHAR_UPD_QUEST_TRACK_ABANDON_TIME, "UPDATE quest_tracker SET quest_abandon_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
@@ -96,10 +96,10 @@ index 6494f92..9ff0d61 100644
 +    // End of prepatch
  }
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index 5ebafe0..1e37a98 100644
+index c76c584..49ecf04 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
-@@ -529,7 +529,30 @@ enum CharacterDatabaseStatements
+@@ -530,7 +530,30 @@ enum CharacterDatabaseStatements
      CHAR_UPD_QUEST_TRACK_GM_COMPLETE,
      CHAR_UPD_QUEST_TRACK_COMPLETE_TIME,
      CHAR_UPD_QUEST_TRACK_ABANDON_TIME,
@@ -167,7 +167,7 @@ index 805f613..b06a9e2 100644
  };
  
 diff --git a/src/server/game/Entities/Object/Position.h b/src/server/game/Entities/Object/Position.h
-index b3e474f..0f72f2c 100644
+index b3e474f..a145230 100644
 --- a/src/server/game/Entities/Object/Position.h
 +++ b/src/server/game/Entities/Object/Position.h
 @@ -51,7 +51,7 @@ struct Position
@@ -175,12 +175,12 @@ index b3e474f..0f72f2c 100644
      float m_positionZ;
      // Better to limit access to _orientation field, to guarantee the value is normalized
 -private:
-+//private:
++public:
      float m_orientation;
  
  public:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index b5d3eba..2fe5084 100644
+index e4452b8..cb666b0 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,7 +79,31 @@
@@ -216,7 +216,7 @@ index b5d3eba..2fe5084 100644
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
  #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
-@@ -7118,6 +7142,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7130,6 +7154,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -247,7 +247,7 @@ index b5d3eba..2fe5084 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12474,6 +12522,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12488,6 +12536,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -278,7 +278,7 @@ index b5d3eba..2fe5084 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15214,7 +15286,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15228,7 +15300,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -311,10 +311,10 @@ index b5d3eba..2fe5084 100644
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 94d0fa5..4336e5a 100644
+index e798f5d..33204a1 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2300,7 +2300,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2305,7 +2305,30 @@ class Player : public Unit, public GridObject<Player>
  
          std::string GetMapAreaAndZoneString();
          std::string GetCoordsMapAreaAndZoneString();
@@ -346,10 +346,10 @@ index 94d0fa5..4336e5a 100644
      protected:
          // Gamemaster whisper whitelist
          GuidList WhisperList;
-@@ -2624,6 +2647,30 @@ class Player : public Unit, public GridObject<Player>
-         uint32 _pendingBindTimer;
- 
+@@ -2631,6 +2654,30 @@ class Player : public Unit, public GridObject<Player>
          uint32 _activeCheats;
+ 
+         WorldLocation _corpseLocation;
 +        // Prepatch by LordPsyan
 +        // 21
 +        // 22
@@ -414,10 +414,10 @@ index fec0b8e..3b30d4e 100644
  {
      ObjectGuid guid;
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index 61b2837..9deec2a 100644
+index ba22ab6..9d94543 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -993,10 +993,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -997,10 +997,56 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
      sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
@@ -878,7 +878,7 @@ index 7c4b117..7e5f73a 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index ce1837f..ae0d1d8 100644
+index 2e61aec..e72aeba 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1120,7 +1120,30 @@ void World::LoadConfigSettings(bool reload)
@@ -946,7 +946,7 @@ index ce1837f..ae0d1d8 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index af89adc..11c527e 100644
+index 256b856..88bcdee 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -158,6 +158,30 @@ enum WorldBoolConfigs
