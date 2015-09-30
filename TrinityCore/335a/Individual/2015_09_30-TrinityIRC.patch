@@ -1,6 +1,6 @@
-From 124f7ad205c745258baed3fae14e9ae80732fa27 Mon Sep 17 00:00:00 2001
+From 94dc1805e4c8667bc262afbf24e3464b3e72cacf Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 30 Sep 2015 07:12:06 -0500
+Date: Wed, 30 Sep 2015 09:40:46 -0500
 Subject: [PATCH] 2015_09_30-TrinityIRC
 
 ---
@@ -325,7 +325,7 @@ index cb666b0..5e9215f 100644
  }
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 33204a1..8f715af 100644
+index 1a591fe..63ecae0 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -2669,7 +2669,8 @@ class Player : public Unit, public GridObject<Player>
@@ -5492,19 +5492,19 @@ index 0000000..700d730
 +
 +#endif
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e72aeba..e0166b7 100644
+index 41c80f6..ca13b7d 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -64,7 +64,7 @@
- #include "WaypointMovementGenerator.h"
- #include "WeatherMgr.h"
- #include "WorldSession.h"
--
+@@ -67,7 +67,7 @@
+ // Prepatch by LordPsyan
+ // 01
+ // 02
+-// 03
 +#include "IRCClient.h"
- 
- std::atomic<bool> World::m_stopEvent(false);
- uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1343,6 +1343,168 @@ void World::LoadConfigSettings(bool reload)
+ // 04
+ // 05
+ // 06
+@@ -1366,6 +1366,168 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
@@ -5673,7 +5673,7 @@ index e72aeba..e0166b7 100644
  }
  
  extern void LoadGameObjectModelList(std::string const& dataPath);
-@@ -1368,6 +1530,7 @@ void World::SetInitialWorldSettings()
+@@ -1391,6 +1553,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -5681,7 +5681,7 @@ index e72aeba..e0166b7 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1829,6 +1992,9 @@ void World::SetInitialWorldSettings()
+@@ -1852,6 +2015,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), GitRevision::GetFullVersion());       // One-time query
  
@@ -5691,7 +5691,7 @@ index e72aeba..e0166b7 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1845,6 +2011,8 @@ void World::SetInitialWorldSettings()
+@@ -1868,6 +2034,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -5700,7 +5700,7 @@ index e72aeba..e0166b7 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -2221,6 +2389,12 @@ void World::Update(uint32 diff)
+@@ -2244,6 +2412,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -5713,7 +5713,7 @@ index e72aeba..e0166b7 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2838,6 +3012,20 @@ void World::SendAutoBroadcast()
+@@ -2861,6 +3035,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
