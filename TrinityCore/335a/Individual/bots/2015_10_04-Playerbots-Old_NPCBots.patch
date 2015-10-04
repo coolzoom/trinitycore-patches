@@ -1,7 +1,7 @@
-From e804afdbb1b288e58cd0716955722db3242d10c5 Mon Sep 17 00:00:00 2001
+From e75124282dba082fc44889f9986a75a62256e449 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Tue, 29 Sep 2015 14:28:14 -0500
-Subject: [PATCH] 2015_09_29-Playerbots-Old_NPCBots
+Date: Sun, 4 Oct 2015 00:18:54 -0500
+Subject: [PATCH] 2015_10_04-Playerbots-Old_NPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |   31 +
@@ -59,7 +59,7 @@ Subject: [PATCH] 2015_09_29-Playerbots-Old_NPCBots
  src/server/game/Entities/Creature/Creature.h       |   54 +
  .../game/Entities/Creature/TemporarySummon.cpp     |    8 +
  src/server/game/Entities/Object/Object.cpp         |   11 +
- src/server/game/Entities/Player/Player.cpp         | 1021 ++
+ src/server/game/Entities/Player/Player.cpp         | 1021 +-
  src/server/game/Entities/Player/Player.h           |   87 +-
  src/server/game/Entities/Totem/Totem.cpp           |    7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |    5 +
@@ -69,7 +69,7 @@ Subject: [PATCH] 2015_09_29-Playerbots-Old_NPCBots
  src/server/game/Groups/Group.cpp                   |   16 +
  src/server/game/Groups/Group.h                     |    3 +
  src/server/game/Handlers/CharacterHandler.cpp      |  156 +-
- src/server/game/Handlers/ChatHandler.cpp           |   32 +-
+ src/server/game/Handlers/ChatHandler.cpp           |   33 +-
  src/server/game/Handlers/GroupHandler.cpp          |   14 +
  src/server/game/Handlers/MiscHandler.cpp           |   35 +
  src/server/game/Handlers/NPCHandler.cpp            |   33 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2015_09_29-Playerbots-Old_NPCBots
  src/server/game/World/World.cpp                    |    3 +
  src/server/scripts/Spells/spell_priest.cpp         |    4 +
  src/server/worldserver/worldserver.conf.dist       |  208 +
- 78 files changed, 42721 insertions(+), 15 deletions(-)
+ 78 files changed, 42720 insertions(+), 17 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -41155,23 +41155,23 @@ index 21a6544..cb4bb78 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index cb666b0..c87e2bf 100644
+index cb666b0..da02030 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -16,6 +16,12 @@
-  * with this program. If not, see <http://www.gnu.org/licenses/>.
-  */
- 
+@@ -87,7 +87,11 @@
+ // 64
+ // 65
+ // 66
+-// 67
 +// Playerbot mod
 +#include "PlayerbotAI.h"
 +
 +// NPCBot
 +#include "bothelper.h"
-+
- #include "Player.h"
- #include "AccountMgr.h"
- #include "AchievementMgr.h"
-@@ -561,6 +567,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+ // 68
+ // 69
+ // 70
+@@ -561,6 +565,18 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
          for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
              AddPct(xp, (*i)->GetAmount());
  
@@ -41190,7 +41190,7 @@ index cb666b0..c87e2bf 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -911,6 +929,31 @@ Player::Player(WorldSession* session): Unit(true)
+@@ -911,6 +927,31 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -41222,7 +41222,7 @@ index cb666b0..c87e2bf 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -965,6 +1008,23 @@ Player::~Player()
+@@ -965,6 +1006,23 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -41246,7 +41246,7 @@ index cb666b0..c87e2bf 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1923,6 +1983,21 @@ void Player::Update(uint32 p_time)
+@@ -1923,6 +1981,21 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
@@ -41268,7 +41268,7 @@ index cb666b0..c87e2bf 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -2195,6 +2270,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2195,6 +2268,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -41281,7 +41281,7 @@ index cb666b0..c87e2bf 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2303,6 +2384,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2303,6 +2382,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -41295,7 +41295,7 @@ index cb666b0..c87e2bf 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2537,6 +2625,936 @@ void Player::RemoveFromWorld()
+@@ -2537,6 +2623,936 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -42232,7 +42232,7 @@ index cb666b0..c87e2bf 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2814,7 +3832,10 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2814,7 +3830,10 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
  
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
@@ -42244,7 +42244,7 @@ index cb666b0..c87e2bf 100644
      // not too far
      if (!creature->IsWithinDistInMap(this, INTERACTION_DISTANCE))
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 33204a1..b71d854 100644
+index 1a591fe..19ff26d 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -55,6 +55,14 @@ class UpdateMask;
@@ -43088,19 +43088,20 @@ index 9d94543..827c01a 100644
  {
      uint32 data;
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index e13b417..c60510c 100644
+index e9c3cea..9a32d31 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
-@@ -38,6 +38,8 @@
- #include "Util.h"
- #include "ScriptMgr.h"
- #include "AccountMgr.h"
+@@ -45,7 +45,8 @@
+ // 64
+ // 65
+ // 66
+-// 67
 +//Playerbot mod
 +#include "PlayerbotAI.h"
- 
- void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
- {
-@@ -268,7 +270,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+ // 68
+ // 69
+ // 70
+@@ -291,7 +292,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
              }
  
              Player* receiver = ObjectAccessor::FindConnectedPlayerByName(to);
@@ -43109,7 +43110,7 @@ index e13b417..c60510c 100644
              {
                  SendPlayerNotFoundNotice(to);
                  return;
-@@ -297,6 +299,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -320,6 +321,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                  (HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !sender->isAcceptWhispers() && !sender->IsInWhisperWhiteList(receiver->GetGUID())))
                  sender->AddWhisperWhiteList(receiver->GetGUID());
  
@@ -43127,7 +43128,7 @@ index e13b417..c60510c 100644
              GetPlayer()->Whisper(msg, Language(lang), receiver);
          } break;
          case CHAT_MSG_PARTY:
-@@ -316,6 +329,23 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -339,6 +351,23 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  
              sScriptMgr->OnPlayerChat(GetPlayer(), type, lang, msg, group);
  
@@ -43370,10 +43371,10 @@ index 0f0640e..ba3abf2 100644
          return;
  
 diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
-index 7acafb3..1be5008 100644
+index 2af77ff..081ce7b 100644
 --- a/src/server/game/Maps/Map.cpp
 +++ b/src/server/game/Maps/Map.cpp
-@@ -2754,7 +2754,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
+@@ -2761,7 +2761,10 @@ uint32 Map::GetPlayersCountExceptGMs() const
      uint32 count = 0;
      for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
          if (!itr->GetSource()->IsGameMaster())
@@ -43683,10 +43684,10 @@ index e597cbf..7358815 100644
      private:
          void InitializeQueryCallbackParameters();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e72aeba..b19d1ce 100644
+index 41c80f6..d03c7f9 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1537,6 +1537,9 @@ void World::SetInitialWorldSettings()
+@@ -1560,6 +1560,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
