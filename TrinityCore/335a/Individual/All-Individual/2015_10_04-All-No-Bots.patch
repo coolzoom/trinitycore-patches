@@ -1,7 +1,7 @@
-From 41994da665d1b3d425925ea23b5ec313503d6cbc Mon Sep 17 00:00:00 2001
+From 818541eaa221d6040681b8ebc529f85c94e9a599 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 30 Sep 2015 10:35:57 -0500
-Subject: [PATCH] 2015_09_30-All-No-Bots
+Date: Sun, 4 Oct 2015 00:23:03 -0500
+Subject: [PATCH] 2015_10_04-All-No-Bots
 
 ---
  README.NPCTELEPORT                                 |   14 +
@@ -72,7 +72,7 @@ Subject: [PATCH] 2015_09_30-All-No-Bots
  src/server/game/Handlers/AuctionHouseHandler.cpp   |    4 +-
  src/server/game/Handlers/BattleGroundHandler.cpp   |    4 +-
  src/server/game/Handlers/CharacterHandler.cpp      |    3 +
- src/server/game/Handlers/ChatHandler.cpp           |   30 +-
+ src/server/game/Handlers/ChatHandler.cpp           |   31 +-
  src/server/game/Handlers/GroupHandler.cpp          |   12 +-
  src/server/game/Handlers/MiscHandler.cpp           |   98 +-
  src/server/game/Handlers/QueryHandler.cpp          |    2 +-
@@ -131,7 +131,7 @@ Subject: [PATCH] 2015_09_30-All-No-Bots
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |   35 +
  src/server/worldserver/worldserver.conf.dist       |  786 ++++++-
- 127 files changed, 24240 insertions(+), 207 deletions(-)
+ 127 files changed, 24240 insertions(+), 208 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Reforging_README.md
  create mode 100644 event_readme.txt
@@ -6981,18 +6981,19 @@ index 9d94543..c3f9609 100644
      // Prepatch by LordPsyan
      // 01
 diff --git a/src/server/game/Handlers/ChatHandler.cpp b/src/server/game/Handlers/ChatHandler.cpp
-index e13b417..c858b10 100644
+index e9c3cea..dbe6d44 100644
 --- a/src/server/game/Handlers/ChatHandler.cpp
 +++ b/src/server/game/Handlers/ChatHandler.cpp
-@@ -38,6 +38,7 @@
- #include "Util.h"
- #include "ScriptMgr.h"
- #include "AccountMgr.h"
+@@ -41,7 +41,7 @@
+ // Prepatch by LordPsyan
+ // 61
+ // 62
+-// 63
 +#include "IRCClient.h"
- 
- void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
- {
-@@ -47,6 +48,18 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+ // 64
+ // 65
+ // 66
+@@ -70,6 +70,18 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
      recvData >> type;
      recvData >> lang;
  
@@ -7011,7 +7012,7 @@ index e13b417..c858b10 100644
      if (type >= MAX_CHAT_MSG_TYPE)
      {
          TC_LOG_ERROR("network", "CHAT: Wrong message type received: %u", type);
-@@ -54,7 +67,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -77,7 +89,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
          return;
      }
  
@@ -7020,7 +7021,7 @@ index e13b417..c858b10 100644
      {
          TC_LOG_ERROR("network", "CMSG_MESSAGECHAT: Possible hacking-attempt: %s tried to send a message in universal language", GetPlayerInfo().c_str());
          SendNotification(LANG_UNKNOWN_LANGUAGE);
-@@ -252,6 +265,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -275,6 +287,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                  return;
              }
  
@@ -7031,7 +7032,7 @@ index e13b417..c858b10 100644
              if (type == CHAT_MSG_SAY)
                  sender->Say(msg, Language(lang));
              else if (type == CHAT_MSG_EMOTE)
-@@ -270,7 +287,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -293,7 +309,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
              Player* receiver = ObjectAccessor::FindConnectedPlayerByName(to);
              if (!receiver || (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
              {
@@ -7048,7 +7049,7 @@ index e13b417..c858b10 100644
                  return;
              }
              if (!sender->IsGameMaster() && sender->getLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
-@@ -430,6 +455,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
+@@ -453,6 +477,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
  
              if (ChannelMgr* cMgr = ChannelMgr::forTeam(sender->GetTeam()))
              {
