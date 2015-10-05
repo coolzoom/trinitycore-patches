@@ -1,26 +1,26 @@
-From 5592cb55cb5b27102f295ead12c4cfbfe93eafb1 Mon Sep 17 00:00:00 2001
+From aad03b3cb076e4665b2ff469fffbbda1db00c30f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 4 Oct 2015 00:07:09 -0500
+Date: Mon, 5 Oct 2015 14:09:17 -0500
 Subject: [PATCH] 335a_prepatch
 
 ---
- npc-entry-list.txt                                 |   32 +++
- .../Database/Implementation/CharacterDatabase.cpp  |   24 ++
- .../Database/Implementation/CharacterDatabase.h    |   25 +-
- src/server/game/Accounts/RBAC.h                    |   24 ++
- src/server/game/Entities/Object/Position.h         |    2 +-
- src/server/game/Entities/Player/Player.cpp         |   99 +++++++-
- src/server/game/Entities/Player/Player.h           |   49 +++-
- src/server/game/Handlers/BattleGroundHandler.cpp   |   25 +-
- src/server/game/Handlers/CharacterHandler.cpp      |   50 +++-
- src/server/game/Handlers/ChatHandler.cpp           |   25 +-
- src/server/game/Miscellaneous/Formulas.h           |   55 ++++-
- src/server/game/Miscellaneous/Language.h           |   51 ++++-
- src/server/game/Scripting/ScriptLoader.cpp         |  242 +++++++++++++++++++-
- src/server/game/World/World.cpp                    |   75 +++++-
- src/server/game/World/World.h                      |   92 ++++++++
- src/server/scripts/Custom/CMakeLists.txt           |    4 +-
- src/server/worldserver/worldserver.conf.dist       |   27 +++
+ npc-entry-list.txt                                 |  32 +++
+ .../Database/Implementation/CharacterDatabase.cpp  |  24 ++
+ .../Database/Implementation/CharacterDatabase.h    |  25 ++-
+ src/server/game/Accounts/RBAC.h                    |  24 ++
+ src/server/game/Entities/Object/Position.h         |   2 +-
+ src/server/game/Entities/Player/Player.cpp         |  99 ++++++++-
+ src/server/game/Entities/Player/Player.h           |  49 ++++-
+ src/server/game/Handlers/BattleGroundHandler.cpp   |  25 ++-
+ src/server/game/Handlers/CharacterHandler.cpp      |  50 ++++-
+ src/server/game/Handlers/ChatHandler.cpp           |  25 ++-
+ src/server/game/Miscellaneous/Formulas.h           |  55 ++++-
+ src/server/game/Miscellaneous/Language.h           |  51 ++++-
+ src/server/game/Scripting/ScriptLoader.cpp         | 242 ++++++++++++++++++++-
+ src/server/game/World/World.cpp                    |  75 ++++++-
+ src/server/game/World/World.h                      |  92 ++++++++
+ src/server/scripts/Custom/CMakeLists.txt           |   4 +-
+ src/server/worldserver/worldserver.conf.dist       |  27 +++
  17 files changed, 881 insertions(+), 20 deletions(-)
  create mode 100644 npc-entry-list.txt
 
@@ -181,7 +181,7 @@ index b3e474f..a145230 100644
  
  public:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index e4452b8..cb666b0 100644
+index 1be3c24..f47312d 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,7 +79,31 @@
@@ -248,7 +248,7 @@ index e4452b8..cb666b0 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12488,6 +12536,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12502,6 +12550,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -279,7 +279,7 @@ index e4452b8..cb666b0 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15228,7 +15300,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15242,7 +15314,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -312,10 +312,10 @@ index e4452b8..cb666b0 100644
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 2646d5e..1a591fe 100644
+index 0c1fdd8..b4e28f1 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2305,7 +2305,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2310,7 +2310,30 @@ class Player : public Unit, public GridObject<Player>
  
          std::string GetMapAreaAndZoneString();
          std::string GetCoordsMapAreaAndZoneString();
@@ -347,7 +347,7 @@ index 2646d5e..1a591fe 100644
      protected:
          // Gamemaster whisper whitelist
          GuidList WhisperList;
-@@ -2631,6 +2654,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2636,6 +2659,30 @@ class Player : public Unit, public GridObject<Player>
          uint32 _activeCheats;
  
          WorldLocation _corpseLocation;
@@ -589,7 +589,7 @@ index ba39723..3e2ac94 100644
  
              sScriptMgr->OnGainCalculation(gain, player, u);
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index a4ba986..7106320 100644
+index d374c8c..c1df19b 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
 @@ -1188,7 +1188,30 @@ enum TrinityStrings
@@ -624,12 +624,12 @@ index a4ba986..7106320 100644
      // Show Kick in world
      LANG_COMMAND_KICKMESSAGE_WORLD = 11002,
  
-@@ -1202,6 +1225,30 @@ enum TrinityStrings
-     LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD   = 11007,
- 
+@@ -1204,6 +1227,30 @@ enum TrinityStrings
      LANG_NPCINFO_INHABIT_TYPE                     = 11008,
--    LANG_NPCINFO_FLAGS_EXTRA                      = 11009
-+    LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
+     LANG_NPCINFO_FLAGS_EXTRA                      = 11009,
+ 
+-    LANG_COOLDOWN_NOT_RESET_AFTER_DUEL            = 11010
++    LANG_COOLDOWN_NOT_RESET_AFTER_DUEL            = 11010,
 +    // Prepatch by LordPsyan
 +    // 21
 +    // 22
@@ -915,7 +915,7 @@ index 7c4b117..7e5f73a 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 2e61aec..41c80f6 100644
+index 85e7916..7122c29 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -64,7 +64,30 @@
@@ -982,7 +982,7 @@ index 2e61aec..41c80f6 100644
      ///- Load the CharDelete related config options
      m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
      m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
-@@ -1293,7 +1339,30 @@ void World::LoadConfigSettings(bool reload)
+@@ -1294,7 +1340,30 @@ void World::LoadConfigSettings(bool reload)
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
@@ -1015,7 +1015,7 @@ index 2e61aec..41c80f6 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 256b856..88bcdee 100644
+index 1f71975..6fbc314 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -158,6 +158,30 @@ enum WorldBoolConfigs
@@ -1049,7 +1049,7 @@ index 256b856..88bcdee 100644
      CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA,
      CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA,
-@@ -181,6 +205,50 @@ enum WorldFloatConfigs
+@@ -182,6 +206,50 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -1100,7 +1100,7 @@ index 256b856..88bcdee 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -347,6 +415,30 @@ enum WorldIntConfigs
+@@ -348,6 +416,30 @@ enum WorldIntConfigs
      CONFIG_CHARTER_COST_ARENA_5v5,
      CONFIG_NO_GRAY_AGGRO_ABOVE,
      CONFIG_NO_GRAY_AGGRO_BELOW,
@@ -1150,7 +1150,7 @@ index 5218f76..b91b179 100644
  
  message("  -> Prepared: Custom")
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index b4a7e7a..4fccf90 100644
+index 1689f05..96a3710 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -1182,7 +1182,7 @@ index b4a7e7a..4fccf90 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -3382,3 +3404,8 @@ PacketSpoof.BanDuration = 86400
+@@ -3390,3 +3412,8 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
@@ -1192,5 +1192,5 @@ index b4a7e7a..4fccf90 100644
 +# See http://www.realmsofwarcraft.com/bb for forums and information.
 +#
 -- 
-1.7.10.4
+2.1.4
 
