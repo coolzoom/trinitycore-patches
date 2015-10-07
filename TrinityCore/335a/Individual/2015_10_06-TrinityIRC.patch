@@ -1,7 +1,7 @@
-From 6a3bdf02edf22cb968ba5e533764a949d48a8756 Mon Sep 17 00:00:00 2001
+From 9c10fc6dca99562dce2554b1f3d9f8c06a786293 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 4 Oct 2015 00:14:51 -0500
-Subject: [PATCH] 2015_10_04-TrinityIRC
+Date: Wed, 7 Oct 2015 08:43:38 -0500
+Subject: [PATCH] 2015_10_06-TrinityIRC
 
 ---
  .../TriniIRC/World_TrinityChat.sql                 |   81 +
@@ -33,8 +33,8 @@ Subject: [PATCH] 2015_10_04-TrinityIRC
  src/server/worldserver/CMakeLists.txt              |    5 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |   35 +
- src/server/worldserver/worldserver.conf.dist       |  280 ++-
- 30 files changed, 5721 insertions(+), 7 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  278 ++-
+ 30 files changed, 5719 insertions(+), 7 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql
  create mode 100644 src/server/game/TriniChat/IRCClient.cpp
  create mode 100644 src/server/game/TriniChat/IRCClient.h
@@ -271,7 +271,7 @@ index 72d80ab..6dc25b0 100644
 +
  #endif
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index cb666b0..5e9215f 100644
+index f47312d..579c907 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -32,6 +32,7 @@
@@ -316,7 +316,7 @@ index cb666b0..5e9215f 100644
      UpdateAllStats();
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
-@@ -20699,6 +20720,7 @@ void Player::PetSpellInitialize()
+@@ -20713,6 +20734,7 @@ void Player::PetSpellInitialize()
      //Cooldowns
      pet->GetSpellHistory()->WritePacket<Pet>(data);
  
@@ -325,10 +325,10 @@ index cb666b0..5e9215f 100644
  }
  
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 1a591fe..63ecae0 100644
+index b4e28f1..1317427 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2669,7 +2669,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2674,7 +2674,8 @@ class Player : public Unit, public GridObject<Player>
          // 32
          // 33
          // 34
@@ -5493,7 +5493,7 @@ index 0000000..700d730
 +
 +#endif
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 41c80f6..ca13b7d 100644
+index 7122c29..aee0c8d 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -67,7 +67,7 @@
@@ -5505,7 +5505,7 @@ index 41c80f6..ca13b7d 100644
  // 04
  // 05
  // 06
-@@ -1366,6 +1366,168 @@ void World::LoadConfigSettings(bool reload)
+@@ -1367,6 +1367,168 @@ void World::LoadConfigSettings(bool reload)
      // call ScriptMgr if we're reloading the configuration
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
@@ -5674,7 +5674,7 @@ index 41c80f6..ca13b7d 100644
  }
  
  extern void LoadGameObjectModelList(std::string const& dataPath);
-@@ -1391,6 +1553,7 @@ void World::SetInitialWorldSettings()
+@@ -1392,6 +1554,7 @@ void World::SetInitialWorldSettings()
  
      ///- Initialize config settings
      LoadConfigSettings();
@@ -5682,7 +5682,7 @@ index 41c80f6..ca13b7d 100644
  
      ///- Initialize Allowed Security Level
      LoadDBAllowedSecurityLevel();
-@@ -1852,6 +2015,9 @@ void World::SetInitialWorldSettings()
+@@ -1853,6 +2016,9 @@ void World::SetInitialWorldSettings()
      LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
                              realmID, uint32(m_startTime), GitRevision::GetFullVersion());       // One-time query
  
@@ -5692,7 +5692,7 @@ index 41c80f6..ca13b7d 100644
      m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
      m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
      m_timers[WUPDATE_UPTIME].SetInterval(m_int_configs[CONFIG_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
-@@ -1868,6 +2034,8 @@ void World::SetInitialWorldSettings()
+@@ -1869,6 +2035,8 @@ void World::SetInitialWorldSettings()
  
      m_timers[WUPDATE_PINGDB].SetInterval(getIntConfig(CONFIG_DB_PING_INTERVAL)*MINUTE*IN_MILLISECONDS);    // Mysql ping time in minutes
  
@@ -5701,7 +5701,7 @@ index 41c80f6..ca13b7d 100644
      //to set mailtimer to return mails every day between 4 and 5 am
      //mailtimer is increased when updating auctions
      //one second is 1000 -(tested on win system)
-@@ -2244,6 +2412,12 @@ void World::Update(uint32 diff)
+@@ -2245,6 +2413,12 @@ void World::Update(uint32 diff)
          WorldDatabase.KeepAlive();
      }
  
@@ -5714,7 +5714,7 @@ index 41c80f6..ca13b7d 100644
      // update the instance reset times
      sInstanceSaveMgr->Update();
  
-@@ -2861,6 +3035,20 @@ void World::SendAutoBroadcast()
+@@ -2862,6 +3036,20 @@ void World::SendAutoBroadcast()
      TC_LOG_DEBUG("misc", "AutoBroadcast: '%s'", msg.c_str());
  }
  
@@ -5736,7 +5736,7 @@ index 41c80f6..ca13b7d 100644
  {
      PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_COUNT);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 88bcdee..1a14de2 100644
+index 6fbc314..f307761 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -75,6 +75,7 @@ enum WorldTimers
@@ -5747,7 +5747,7 @@ index 88bcdee..1a14de2 100644
      WUPDATE_MAILBOXQUEUE,
      WUPDATE_DELETECHARS,
      WUPDATE_AHBOT,
-@@ -639,6 +640,9 @@ class World
+@@ -640,6 +641,9 @@ class World
          void AddSession(WorldSession* s);
          void SendAutoBroadcast();
          bool RemoveSession(uint32 id);
@@ -5954,7 +5954,7 @@ index ab13262..b52a7d7 100644
      realmID = sConfigMgr->GetIntDefault("RealmID", 0);
      if (!realmID)
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 4fccf90..89733ba 100644
+index 96a3710..b18d5c4 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2571,9 +2571,6 @@ CharDelete.Heroic.MinLevel = 0
@@ -5967,7 +5967,7 @@ index 4fccf90..89733ba 100644
  ###################################################################################################
  # CUSTOM SERVER OPTIONS
  #
-@@ -3209,6 +3206,8 @@ AuctionHouseBot.Buyer.Recheck.Interval = 20
+@@ -3217,6 +3214,8 @@ AuctionHouseBot.Buyer.Recheck.Interval = 20
  #
  ###################################################################################################
  
@@ -5976,7 +5976,7 @@ index 4fccf90..89733ba 100644
  ###################################################################################################
  # LOGGING SYSTEM SETTINGS
  #
-@@ -3405,6 +3404,281 @@ PacketSpoof.BanDuration = 86400
+@@ -3413,6 +3412,279 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -6117,7 +6117,7 @@ index 4fccf90..89733ba 100644
 +# Print IRC messages to GM Name Announce and Gm Name Announce to IRC Channel
 +# Default: "staff"
 +# irc.ignore_bots
-+* enter nicks of bots to ignore seprated by commas
++# enter nicks of bots to ignore seprated by commas
 +# Default: ""
 +#
 +irc.staff_link = 0
@@ -6185,8 +6185,6 @@ index 4fccf90..89733ba 100644
 +chat.join_irc = "[$Name]: Has Joined IRC!"
 +chat.leave_wow = "12<<04 $GM$Name Left The $Channel Channel!"
 +chat.leave_irc = "[$Name]: Has Left IRC!"
-+chat.change_nick = "<> $Name Is Now Known As $NewName!"
-+chat.change_nick = "<> $Name Is Now Known As $NewName!"
 +chat.change_nick = "<> $Name Is Now Known As $NewName!"
 +
 +##################################################
@@ -6259,5 +6257,5 @@ index 4fccf90..89733ba 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-1.7.10.4
+2.1.4
 
