@@ -7,7 +7,7 @@ Create an account at http://www.realmsofwarcraft.com
 I will update this as often as I can. Below is a list of patches.
 I will start with the ALL patch. Apply Bots patch of your choice after applying ALL
 
-* ALL without any bots. (Player_Events not included)
+* **ALL without any bots** - All patches in Individual folder (Player_Events not included)
 
 I am also accepting donations. I am only adding this because a few people have asked how to donate. I never
 thought about it, and never expected to get donations. I do this because I enjoy it. If you want to donate,
@@ -17,9 +17,7 @@ to donate, go here: http://www.realmsofwarcraft.com/donate.php or make a donatio
 
 Here is a list of the patches, and a detailed description of each. (Not finished, but working on it.)
 
-* **All-In-One-NPC.patch** - 
-  NPC that does a variety of things, from buffing to morphing.
-
+* **All-In-One-NPC.patch** - NPC that does a variety of things, from buffing to morphing.
 * **255_in_who_list.patch** - 3.3.5a is designed for level 70 and the "who" list will only display up to level 99. This allows for higher levels to be displayed.
 * **ArenaGambler.patch** - Someone give me a good description of this. I am assuming you bet on the winner of a battle in an arena.
 * **Arena_Template.patch** - This patch replaces 1v1 arena patch. THis has 1v1 and 3v3 arena options.
