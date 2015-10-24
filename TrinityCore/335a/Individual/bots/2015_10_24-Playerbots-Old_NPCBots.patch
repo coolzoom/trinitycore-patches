@@ -1,7 +1,7 @@
-From d0e90a82ba68ff8cecf30954a22eede965e00515 Mon Sep 17 00:00:00 2001
+From c52572b073b96666d87878b3a6bfa83b9734dff7 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 17 Oct 2015 21:27:38 -0500
-Subject: [PATCH] 2015_10_17-Playerbots-Old_NPCBots
+Date: Sat, 24 Oct 2015 16:40:59 -0500
+Subject: [PATCH] 2015_10_24-Playerbots-Old_NPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |    31 +
@@ -27,7 +27,7 @@ Subject: [PATCH] 2015_10_17-Playerbots-Old_NPCBots
  src/server/game/AI/NpcBots/bot_shaman_ai.cpp       |  1383 +++
  src/server/game/AI/NpcBots/bot_warlock_ai.cpp      |   547 +
  src/server/game/AI/NpcBots/bot_warrior_ai.cpp      |  1144 ++
- src/server/game/AI/NpcBots/botcommands.cpp         |   663 ++
+ src/server/game/AI/NpcBots/botcommands.cpp         |   660 +
  src/server/game/AI/NpcBots/botgiver.cpp            |   340 +
  src/server/game/AI/NpcBots/bothelper.cpp           |   421 +
  src/server/game/AI/NpcBots/bothelper.h             |    32 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2015_10_17-Playerbots-Old_NPCBots
  src/server/game/World/World.cpp                    |     3 +
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42720 insertions(+), 17 deletions(-)
+ 78 files changed, 42717 insertions(+), 17 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -18609,10 +18609,10 @@ index 0000000..c4acdd4
 +}
 diff --git a/src/server/game/AI/NpcBots/botcommands.cpp b/src/server/game/AI/NpcBots/botcommands.cpp
 new file mode 100644
-index 0000000..0a69869
+index 0000000..4feb5fe
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/botcommands.cpp
-@@ -0,0 +1,663 @@
+@@ -0,0 +1,660 @@
 +/*
 +Name: script_bot_commands
 +%Complete: ???
@@ -18636,26 +18636,23 @@ index 0000000..0a69869
 +public:
 +    script_bot_commands() : CommandScript("script_bot_commands") { }
 +
-+    ChatCommand* GetCommands() const
++    std::vector<ChatCommand> GetCommands() const
 +    {
-+        static ChatCommand npcbotCommandTable[] =
++        static std::vector<ChatCommand> npcbotCommandTable =
 +        {
-+            { "add",        rbac::RBAC_PERM_COMMAND_NPCBOT_ADD,     false, &HandleNpcBotAddCommand,             "", NULL },
-+            { "remove",     rbac::RBAC_PERM_COMMAND_NPCBOT_REMOVE,  false, &HandleNpcBotRemoveCommand,          "", NULL },
-+            { "reset",      rbac::RBAC_PERM_COMMAND_NPCBOT_RESET,   false, &HandleNpcBotResetCommand,           "", NULL },
-+            { "command",    rbac::RBAC_PERM_COMMAND_NPCBOT_CMD,     false, &HandleNpcBotCommandCommand,         "", NULL },
-+            { "distance",   rbac::RBAC_PERM_COMMAND_NPCBOT_DIST,    false, &HandleNpcBotDistanceCommand,        "", NULL },
-+            { "info",       rbac::RBAC_PERM_COMMAND_NPCBOT_INFO,    false, &HandleNpcBotInfoCommand,            "", NULL },
-+            { "helper",     rbac::RBAC_PERM_COMMAND_NPCBOT_HELPER,  false, &HandleBotHelperCommand,             "", NULL },
-+            { "revive",     rbac::RBAC_PERM_COMMAND_NPCBOT_REVIVE,  false, &HandleNpcBotReviveCommand,          "", NULL },
-+            { NULL,         0,                                      false, NULL,                                "", NULL }
++            { "add",        rbac::RBAC_PERM_COMMAND_NPCBOT_ADD,     false, &HandleNpcBotAddCommand,             ""},
++            { "remove",     rbac::RBAC_PERM_COMMAND_NPCBOT_REMOVE,  false, &HandleNpcBotRemoveCommand,          ""},
++            { "reset",      rbac::RBAC_PERM_COMMAND_NPCBOT_RESET,   false, &HandleNpcBotResetCommand,           ""},
++            { "command",    rbac::RBAC_PERM_COMMAND_NPCBOT_CMD,     false, &HandleNpcBotCommandCommand,         ""},
++            { "distance",   rbac::RBAC_PERM_COMMAND_NPCBOT_DIST,    false, &HandleNpcBotDistanceCommand,        ""},
++            { "info",       rbac::RBAC_PERM_COMMAND_NPCBOT_INFO,    false, &HandleNpcBotInfoCommand,            ""},
++            { "helper",     rbac::RBAC_PERM_COMMAND_NPCBOT_HELPER,  false, &HandleBotHelperCommand,             ""},
++            { "revive",     rbac::RBAC_PERM_COMMAND_NPCBOT_REVIVE,  false, &HandleNpcBotReviveCommand,          ""},
 +        };
-+
-+        static ChatCommand commandTable[] =
++        static std::vector<ChatCommand> commandTable =
 +        {
-+            { "bot",            SEC_PLAYER,         false, &HandlePlayerbotCommand,                     "", NULL },
-+            { "npcbot",     rbac::RBAC_PERM_COMMAND_NPCBOT,         false, NULL,                  "", npcbotCommandTable },
-+            { NULL,         0,                                      false, NULL,                                "", NULL }
++            { "bot",        SEC_PLAYER,                             false, &HandlePlayerbotCommand,             ""},
++            { "npcbot",     rbac::RBAC_PERM_COMMAND_NPCBOT,         false, NULL,                                ""},
 +        };
 +        return commandTable;
 +    }
@@ -18736,7 +18733,7 @@ index 0000000..0a69869
 +               return false;
 +           }
 +
-+           uint32 accountId = sObjectMgr->GetPlayerAccountIdByGUID(guid);
++           ObjectGuid::LowType accountId = sObjectMgr->GetPlayerAccountIdByGUID(guid);
 +           if (accountId != handler->GetSession()->GetAccountId())
 +           {
 +               handler->PSendSysMessage("You may only add bots from the same account.");
@@ -41155,7 +41152,7 @@ index e4d9e61..215ae6f 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 7036762..3b8f14f 100644
+index 9c0d171..7461a82 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -87,7 +87,11 @@
@@ -43386,10 +43383,10 @@ index 7ab83d5..0d757c4 100644
  }
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..5d6b31d 100644
+index fff6dd6..bd400d0 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1514,7 +1514,23 @@ void AddBattlegroundScripts()
+@@ -1516,7 +1516,23 @@ void AddBattlegroundScripts()
  // start97
  // start98
  // start99
@@ -43414,7 +43411,7 @@ index 7e5f73a..5d6b31d 100644
  // start101
  // start102
  // start103
-@@ -1640,7 +1656,22 @@ void AddCustomScripts()
+@@ -1642,7 +1658,22 @@ void AddCustomScripts()
  // end97
  // end98
  // end99
@@ -43684,7 +43681,7 @@ index 6b1279e..4690b28 100644
      private:
          void InitializeQueryCallbackParameters();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 754485f..e74b282 100644
+index 3c13b91..2f416a2 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1562,6 +1562,9 @@ void World::SetInitialWorldSettings()
