@@ -1,7 +1,7 @@
-From 4ec1b64be577fc30a6a5b9f650151f5a07f6214d Mon Sep 17 00:00:00 2001
+From ed2696be8b2cf74fd5aeef5d25549b53063c0b2b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 17 Oct 2015 16:10:47 -0500
-Subject: [PATCH] 2015_10_17-New-NPCBots
+Date: Sun, 25 Oct 2015 22:00:20 -0500
+Subject: [PATCH] 2015_10_25-New-NPCBots
 
 ---
  sql/TrinityCore-Patches/Bots/character_bots.sql    |   26 +
@@ -26,7 +26,7 @@ Subject: [PATCH] 2015_10_17-New-NPCBots
  src/server/game/AI/NpcBots/bot_shaman_ai.cpp       | 1340 ++++
  src/server/game/AI/NpcBots/bot_warlock_ai.cpp      |  519 ++
  src/server/game/AI/NpcBots/bot_warrior_ai.cpp      | 1915 +++++
- src/server/game/AI/NpcBots/botcommands.cpp         |  937 +++
+ src/server/game/AI/NpcBots/botcommands.cpp         |  934 +++
  src/server/game/AI/NpcBots/botmgr.cpp              |  841 ++
  src/server/game/AI/NpcBots/botmgr.h                |  110 +
  src/server/game/CMakeLists.txt                     |    1 +
@@ -60,7 +60,7 @@ Subject: [PATCH] 2015_10_17-New-NPCBots
  src/server/scripts/Spells/spell_paladin.cpp        |   40 +
  src/server/scripts/Spells/spell_priest.cpp         |    4 +
  src/server/worldserver/worldserver.conf.dist       |  122 +
- 56 files changed, 27049 insertions(+), 8 deletions(-)
+ 56 files changed, 27046 insertions(+), 8 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_bots.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
@@ -23303,10 +23303,10 @@ index 0000000..3cc8060
 +}
 diff --git a/src/server/game/AI/NpcBots/botcommands.cpp b/src/server/game/AI/NpcBots/botcommands.cpp
 new file mode 100644
-index 0000000..0912ccb
+index 0000000..215f38b
 --- /dev/null
 +++ b/src/server/game/AI/NpcBots/botcommands.cpp
-@@ -0,0 +1,937 @@
+@@ -0,0 +1,934 @@
 +#include "bot_ai.h"
 +#include "botmgr.h"
 +#include "Chat.h"
@@ -23340,32 +23340,29 @@ index 0000000..0912ccb
 +public:
 +    script_bot_commands() : CommandScript("script_bot_commands") { }
 +
-+    ChatCommand* GetCommands() const
++    std::vector<ChatCommand> GetCommands() const
 +    {
-+        static ChatCommand npcbotSetCommandTable[] =
++        static std::vector<ChatCommand> npcbotSetCommandTable =
 +        {
-+            { "faction",    GM_COMMANDS,                        false, &HandleNpcSetFactionCommand,             "", NULL },
-+            { "owner",      GM_COMMANDS,                        false, &HandleNpcSetOwnerCommand,               "", NULL },
-+            { NULL,         0,                                  false, NULL,                                    "", NULL }
++            { "faction",    GM_COMMANDS,                        false, &HandleNpcSetFactionCommand,             ""},
++            { "owner",      GM_COMMANDS,                        false, &HandleNpcSetOwnerCommand,               ""},
 +        };
 +
-+        static ChatCommand npcbotCommandTable[] =
++        static std::vector<ChatCommand> npcbotCommandTable =
 +        {
-+            { "set",        GM_COMMANDS,                        false, NULL,                   "", npcbotSetCommandTable },
-+            { "add",        GM_COMMANDS,                        false, &HandleNpcBotAddCommand,                 "", NULL },
-+            { "remove",     GM_COMMANDS,                        false, &HandleNpcBotRemoveCommand,              "", NULL },
-+            { "spawn",      GM_COMMANDS,                        false, &HandleNpcBotSpawnCommand,               "", NULL },
-+            { "delete",     GM_COMMANDS,                        false, &HandleNpcBotDeleteCommand,              "", NULL },
-+            { "lookup",     GM_COMMANDS,                        false, &HandleNpcBotLookupCommand,              "", NULL },
-+            { "revive",     GM_COMMANDS,                        false, &HandleNpcBotReviveCommand,              "", NULL },
-+            { "cast",       GM_COMMANDS,                        false, &HandleNpcBotCastCustomSpell,            "", NULL },
-+            { NULL,         0,                                  false, NULL,                                    "", NULL }
++            { "set",        GM_COMMANDS,                        false, NULL,                                    ""},
++            { "add",        GM_COMMANDS,                        false, &HandleNpcBotAddCommand,                 ""},
++            { "remove",     GM_COMMANDS,                        false, &HandleNpcBotRemoveCommand,              ""},
++            { "spawn",      GM_COMMANDS,                        false, &HandleNpcBotSpawnCommand,               ""},
++            { "delete",     GM_COMMANDS,                        false, &HandleNpcBotDeleteCommand,              ""},
++            { "lookup",     GM_COMMANDS,                        false, &HandleNpcBotLookupCommand,              ""},
++            { "revive",     GM_COMMANDS,                        false, &HandleNpcBotReviveCommand,              ""},
++            { "cast",       GM_COMMANDS,                        false, &HandleNpcBotCastCustomSpell,            ""},
 +        };
 +
-+        static ChatCommand commandTable[] =
++        static std::vector<ChatCommand> commandTable =
 +        {
-+            { "npcbot",     GM_COMMANDS,                        false, NULL,                      "", npcbotCommandTable },
-+            { NULL,         0,                                  false, NULL,                                    "", NULL }
++            { "npcbot",     GM_COMMANDS,                        false, NULL,                      ""},
 +        };
 +        return commandTable;
 +    }
@@ -26177,7 +26174,7 @@ index e4d9e61..ba411b1 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 7036762..6f2e12b 100644
+index 9c0d171..1e9e4e9 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -87,7 +87,9 @@
@@ -27863,10 +27860,10 @@ index 9046d9e..d01520e 100644
      float maxDiff = m_maxSpeed * diff;
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..7b4a123 100644
+index fff6dd6..4cb9ebf 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1514,7 +1514,22 @@ void AddBattlegroundScripts()
+@@ -1516,7 +1516,22 @@ void AddBattlegroundScripts()
  // start97
  // start98
  // start99
@@ -27890,7 +27887,7 @@ index 7e5f73a..7b4a123 100644
  // start101
  // start102
  // start103
-@@ -1640,7 +1655,22 @@ void AddCustomScripts()
+@@ -1642,7 +1657,22 @@ void AddCustomScripts()
  // end97
  // end98
  // end99
@@ -27998,7 +27995,7 @@ index ea5e4c8..5c90254 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 754485f..e74b282 100644
+index 3c13b91..2f416a2 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -1562,6 +1562,9 @@ void World::SetInitialWorldSettings()
@@ -28024,7 +28021,7 @@ index 3668a2b..f61c813 100644
    ${CMAKE_SOURCE_DIR}/src/server/game/AI/SmartScripts
    ${CMAKE_SOURCE_DIR}/src/server/game/AuctionHouse
 diff --git a/src/server/scripts/Commands/cs_npc.cpp b/src/server/scripts/Commands/cs_npc.cpp
-index 8e7a138..f048cb7 100644
+index 99c10b0..8793bb7 100644
 --- a/src/server/scripts/Commands/cs_npc.cpp
 +++ b/src/server/scripts/Commands/cs_npc.cpp
 @@ -32,6 +32,8 @@ EndScriptData */
@@ -28036,7 +28033,7 @@ index 8e7a138..f048cb7 100644
  
  template<typename E, typename T = char const*>
  struct EnumName
-@@ -247,6 +249,16 @@ public:
+@@ -239,6 +241,16 @@ public:
          if (!charID)
              return false;
  
@@ -28053,7 +28050,7 @@ index 8e7a138..f048cb7 100644
          uint32 id  = atoi(charID);
          if (!sObjectMgr->GetCreatureTemplate(id))
              return false;
-@@ -301,6 +313,97 @@ public:
+@@ -293,6 +305,97 @@ public:
  
          sObjectMgr->AddCreatureToGrid(db_guid, sObjectMgr->GetCreatureData(db_guid));
          return true;
