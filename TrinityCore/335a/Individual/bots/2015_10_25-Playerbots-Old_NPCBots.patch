@@ -1,7 +1,7 @@
-From c52572b073b96666d87878b3a6bfa83b9734dff7 Mon Sep 17 00:00:00 2001
+From 5d6ce580d461f16d61fe7ac7955a4275ed80ca7b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sat, 24 Oct 2015 16:40:59 -0500
-Subject: [PATCH] 2015_10_24-Playerbots-Old_NPCBots
+Date: Sun, 25 Oct 2015 22:32:55 -0500
+Subject: [PATCH] 2015_10_25-Playerbots-Old_NPCBots
 
 ---
  .../Playerbot_NPCBots/auth_rbac.sql                |    31 +
@@ -82,7 +82,7 @@ Subject: [PATCH] 2015_10_24-Playerbots-Old_NPCBots
  src/server/game/World/World.cpp                    |     3 +
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/worldserver.conf.dist       |   208 +
- 78 files changed, 42717 insertions(+), 17 deletions(-)
+ 78 files changed, 42716 insertions(+), 18 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/auth_rbac.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/character_NPC_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Playerbot_NPCBots/world_bot_helper_locales_gossip_menu_option.sql
@@ -41152,7 +41152,7 @@ index e4d9e61..215ae6f 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9c0d171..7461a82 100644
+index aa91f27..c391dc5 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -87,7 +87,11 @@
@@ -41243,11 +41243,11 @@ index 9c0d171..7461a82 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1923,6 +1981,21 @@ void Player::Update(uint32 p_time)
-     //because we don't want player's ghost teleported from graveyard
-     if (IsHasDelayedTeleport() && IsAlive())
-         TeleportTo(m_teleport_dest, m_teleport_options);
-+
+@@ -1926,7 +1984,20 @@ void Player::Update(uint32 p_time)
+     // Prepatch by LordPsyan
+     // 81
+     // 82
+-    // 83
 +    //Playerbot mod: UpdateAI
 +    if (m_playerbotAI != NULL)
 +        m_playerbotAI->UpdateAI(p_time);
@@ -41262,10 +41262,10 @@ index 9c0d171..7461a82 100644
 +    }
 +    else
 +        RefreshBot(p_time);
- }
- 
- void Player::setDeathState(DeathState s)
-@@ -2195,6 +2268,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+     // 84
+     // 85
+     // 86
+@@ -2219,6 +2290,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          return false;
      }
  
@@ -41278,7 +41278,7 @@ index 9c0d171..7461a82 100644
      // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
      Pet* pet = GetPet();
  
-@@ -2303,6 +2382,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2327,6 +2404,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
          if (!sMapMgr->CanPlayerEnter(mapid, this, false))
              return false;
  
@@ -41292,7 +41292,7 @@ index 9c0d171..7461a82 100644
          //I think this always returns true. Correct me if I am wrong.
          // If the map is not created, assume it is possible to enter it.
          // It will be created in the WorldPortAck.
-@@ -2537,6 +2623,936 @@ void Player::RemoveFromWorld()
+@@ -2561,6 +2645,936 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -42229,7 +42229,7 @@ index 9c0d171..7461a82 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2814,7 +3830,10 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2838,7 +3852,10 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
  
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
@@ -43300,7 +43300,7 @@ index f8d7f73..b39b34a 100644
      if (!unit)
      {
 diff --git a/src/server/game/Handlers/QuestHandler.cpp b/src/server/game/Handlers/QuestHandler.cpp
-index 91bc830..9057009 100644
+index fd7c443..5d4c64e 100644
 --- a/src/server/game/Handlers/QuestHandler.cpp
 +++ b/src/server/game/Handlers/QuestHandler.cpp
 @@ -30,6 +30,8 @@
@@ -43312,7 +43312,7 @@ index 91bc830..9057009 100644
  
  void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recvData)
  {
-@@ -588,8 +590,13 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
+@@ -587,8 +589,13 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
              receiver->PlayerTalkClass->SendQuestGiverRequestItems(quest, sender->GetGUID(), receiver->CanCompleteRepeatableQuest(quest), true);
          else
          {

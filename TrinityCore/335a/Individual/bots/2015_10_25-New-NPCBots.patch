@@ -1,6 +1,6 @@
-From ed2696be8b2cf74fd5aeef5d25549b53063c0b2b Mon Sep 17 00:00:00 2001
+From 77075b5c9c8845ee6049466947e91d6f9add04b3 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 25 Oct 2015 22:00:20 -0500
+Date: Sun, 25 Oct 2015 23:11:08 -0500
 Subject: [PATCH] 2015_10_25-New-NPCBots
 
 ---
@@ -60,7 +60,7 @@ Subject: [PATCH] 2015_10_25-New-NPCBots
  src/server/scripts/Spells/spell_paladin.cpp        |   40 +
  src/server/scripts/Spells/spell_priest.cpp         |    4 +
  src/server/worldserver/worldserver.conf.dist       |  122 +
- 56 files changed, 27046 insertions(+), 8 deletions(-)
+ 56 files changed, 27045 insertions(+), 9 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_bots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_bots.sql
  create mode 100644 src/server/game/AI/NpcBots/QBots/botQ_Airen.cpp
@@ -26174,7 +26174,7 @@ index e4d9e61..ba411b1 100644
  
      return summon;
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9c0d171..1e9e4e9 100644
+index aa91f27..36df7ec 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -87,7 +87,9 @@
@@ -26232,19 +26232,19 @@ index 9c0d171..1e9e4e9 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1923,6 +1948,11 @@ void Player::Update(uint32 p_time)
-     //because we don't want player's ghost teleported from graveyard
-     if (IsHasDelayedTeleport() && IsAlive())
-         TeleportTo(m_teleport_dest, m_teleport_options);
-+
+@@ -1934,7 +1959,10 @@ void Player::Update(uint32 p_time)
+     // 88
+     // 89
+     // 90
+-    // 91
 +    //NpcBot mod: Update
 +    if (_botMgr)
 +        _botMgr->Update(p_time);
 +    //end Npcbot
- }
- 
- void Player::setDeathState(DeathState s)
-@@ -2353,6 +2383,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+     // 92
+     // 93
+     // 94
+@@ -2377,6 +2405,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
              if (pet)
                  UnsummonPetTemporaryIfAny();
  
@@ -26256,7 +26256,7 @@ index 9c0d171..1e9e4e9 100644
              // remove all dyn objects
              RemoveAllDynObjects();
  
-@@ -2537,6 +2572,38 @@ void Player::RemoveFromWorld()
+@@ -2561,6 +2594,38 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -26295,7 +26295,7 @@ index 9c0d171..1e9e4e9 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2812,6 +2879,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2836,6 +2901,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
      if (creature->GetCharmerGUID())
          return NULL;
  
@@ -26307,7 +26307,7 @@ index 9c0d171..1e9e4e9 100644
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
          return NULL;
-@@ -3018,6 +3090,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -3042,6 +3112,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
      if (!group)
          return;
  
@@ -26350,7 +26350,7 @@ index 9c0d171..1e9e4e9 100644
      group->RemoveMember(guid, method, kicker, reason);
  }
  
-@@ -4865,6 +4973,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4889,6 +4995,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
  
              Corpse::DeleteFromDB(playerguid, trans);
  
@@ -26365,7 +26365,7 @@ index 9c0d171..1e9e4e9 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -7136,6 +7252,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7160,6 +7274,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
          else
          {
