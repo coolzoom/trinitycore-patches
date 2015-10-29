@@ -1,12 +1,12 @@
-From f43a703d34a3c2bb7e450adea2c1736874944574 Mon Sep 17 00:00:00 2001
+From 3b6beca45f3cffd8cfc591031236d30cc502f5c1 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 25 Oct 2015 22:07:51 -0500
+Date: Thu, 29 Oct 2015 07:04:21 -0500
 Subject: [PATCH] 335a_prepatch
 
 ---
  npc-entry-list.txt                                 |  32 +++
  .../Database/Implementation/CharacterDatabase.cpp  |  24 ++
- .../Database/Implementation/CharacterDatabase.h    |  25 ++-
+ .../Database/Implementation/CharacterDatabase.h    |  24 ++
  src/server/game/Accounts/RBAC.h                    |  24 ++
  src/server/game/Entities/Object/Position.h         |   2 +-
  src/server/game/Entities/Player/Player.cpp         | 123 ++++++++++-
@@ -21,7 +21,7 @@ Subject: [PATCH] 335a_prepatch
  src/server/game/World/World.h                      |  92 ++++++++
  src/server/scripts/Custom/CMakeLists.txt           |   4 +-
  src/server/worldserver/worldserver.conf.dist       |  27 +++
- 17 files changed, 905 insertions(+), 21 deletions(-)
+ 17 files changed, 905 insertions(+), 20 deletions(-)
  create mode 100644 npc-entry-list.txt
 
 diff --git a/npc-entry-list.txt b/npc-entry-list.txt
@@ -64,13 +64,13 @@ index 0000000..534fc57
 +190010        Warpweaver               Transmogrification
 \ No newline at end of file
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-index b41ba41..14b664d 100644
+index 4557dca..8d64eb8 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-@@ -611,4 +611,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
-     PrepareStatement(CHAR_UPD_QUEST_TRACK_GM_COMPLETE, "UPDATE quest_tracker SET completed_by_gm = 1 WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_UPD_QUEST_TRACK_COMPLETE_TIME, "UPDATE quest_tracker SET quest_complete_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
-     PrepareStatement(CHAR_UPD_QUEST_TRACK_ABANDON_TIME, "UPDATE quest_tracker SET quest_abandon_time = NOW() WHERE id = ? AND character_guid = ? ORDER BY quest_accept_time DESC LIMIT 1", CONNECTION_ASYNC);
+@@ -614,4 +614,28 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     
+     // DeserterTracker
+     PrepareStatement(CHAR_INS_DESERTER_TRACK, "INSERT INTO battleground_deserters (guid, type, datetime) VALUES (?, ?, NOW())", CONNECTION_ASYNC);
 +    // Prepatch by LordPsyan
 +    // 01
 +    // 02
@@ -97,14 +97,13 @@ index b41ba41..14b664d 100644
 +    // End of prepatch
  }
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index c76c584..49ecf04 100644
+index f920a8c..36e38a2 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
-@@ -530,7 +530,30 @@ enum CharacterDatabaseStatements
-     CHAR_UPD_QUEST_TRACK_GM_COMPLETE,
-     CHAR_UPD_QUEST_TRACK_COMPLETE_TIME,
+@@ -532,6 +532,30 @@ enum CharacterDatabaseStatements
      CHAR_UPD_QUEST_TRACK_ABANDON_TIME,
--
+ 
+     CHAR_INS_DESERTER_TRACK,
 +    // Prepatch by LordPsyan
 +    // 01
 +    // 02
@@ -129,9 +128,9 @@ index c76c584..49ecf04 100644
 +    // Visit http://www.realmsofwarcraft.com/bb for forums and information
 +    //
 +    // End of prepatch
+ 
      MAX_CHARACTERDATABASE_STATEMENTS
  };
- 
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
 index 805f613..b06a9e2 100644
 --- a/src/server/game/Accounts/RBAC.h
@@ -181,7 +180,7 @@ index b3e474f..a145230 100644
  
  public:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 93e1b0c..aa91f27 100644
+index 5df5fa9..e0df0cf 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -79,7 +79,31 @@
@@ -248,7 +247,7 @@ index 93e1b0c..aa91f27 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -7130,6 +7178,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7131,6 +7179,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -279,7 +278,7 @@ index 93e1b0c..aa91f27 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12488,6 +12560,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12489,6 +12561,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -310,7 +309,7 @@ index 93e1b0c..aa91f27 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -15228,7 +15324,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15229,7 +15325,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -410,7 +409,7 @@ index 1717678..de0ca98 100644
  
  void AddItemsSetItem(Player* player, Item* item);
 diff --git a/src/server/game/Handlers/BattleGroundHandler.cpp b/src/server/game/Handlers/BattleGroundHandler.cpp
-index fec0b8e..3b30d4e 100644
+index d4291e3..68cc591 100644
 --- a/src/server/game/Handlers/BattleGroundHandler.cpp
 +++ b/src/server/game/Handlers/BattleGroundHandler.cpp
 @@ -34,7 +34,30 @@
@@ -948,7 +947,7 @@ index a6a8eca..fff6dd6 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 1c401be..3c13b91 100644
+index 6a3dafd..1c26578 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -64,7 +64,30 @@
@@ -983,7 +982,7 @@ index 1c401be..3c13b91 100644
  
  std::atomic<bool> World::m_stopEvent(false);
  uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-@@ -1121,7 +1144,30 @@ void World::LoadConfigSettings(bool reload)
+@@ -1122,7 +1145,30 @@ void World::LoadConfigSettings(bool reload)
      m_visibility_notify_periodOnContinents = sConfigMgr->GetIntDefault("Visibility.Notify.Period.OnContinents", DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInInstances = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InInstances",   DEFAULT_VISIBILITY_NOTIFY_PERIOD);
      m_visibility_notify_periodInBGArenas = sConfigMgr->GetIntDefault("Visibility.Notify.Period.InBGArenas",    DEFAULT_VISIBILITY_NOTIFY_PERIOD);
@@ -1015,7 +1014,7 @@ index 1c401be..3c13b91 100644
      ///- Load the CharDelete related config options
      m_int_configs[CONFIG_CHARDELETE_METHOD] = sConfigMgr->GetIntDefault("CharDelete.Method", 0);
      m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfigMgr->GetIntDefault("CharDelete.MinLevel", 0);
-@@ -1295,7 +1341,30 @@ void World::LoadConfigSettings(bool reload)
+@@ -1296,7 +1342,30 @@ void World::LoadConfigSettings(bool reload)
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
@@ -1048,10 +1047,10 @@ index 1c401be..3c13b91 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 7c7af77..1584614 100644
+index e655a64..fea3658 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -158,6 +158,30 @@ enum WorldBoolConfigs
+@@ -159,6 +159,30 @@ enum WorldBoolConfigs
      CONFIG_STATS_LIMITS_ENABLE,
      CONFIG_INSTANCES_RESET_ANNOUNCE,
      CONFIG_IP_BASED_ACTION_LOGGING,
@@ -1082,7 +1081,7 @@ index 7c7af77..1584614 100644
      CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA,
      CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA,
-@@ -182,6 +206,50 @@ enum WorldFloatConfigs
+@@ -183,6 +207,50 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -1133,7 +1132,7 @@ index 7c7af77..1584614 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -348,6 +416,30 @@ enum WorldIntConfigs
+@@ -349,6 +417,30 @@ enum WorldIntConfigs
      CONFIG_CHARTER_COST_ARENA_5v5,
      CONFIG_NO_GRAY_AGGRO_ABOVE,
      CONFIG_NO_GRAY_AGGRO_BELOW,
@@ -1183,7 +1182,7 @@ index 5218f76..b91b179 100644
  
  message("  -> Prepared: Custom")
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 221fea1..20ee18e 100644
+index 13b6b22..8a7da8c 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -3,6 +3,28 @@
@@ -1215,7 +1214,7 @@ index 221fea1..20ee18e 100644
  ###################################################################################################
  # SECTION INDEX
  #
-@@ -3400,3 +3422,8 @@ PacketSpoof.BanDuration = 86400
+@@ -3408,3 +3430,8 @@ PacketSpoof.BanDuration = 86400
  
  #
  ###################################################################################################
