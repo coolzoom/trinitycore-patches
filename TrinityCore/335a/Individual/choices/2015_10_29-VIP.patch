@@ -1,26 +1,26 @@
-From 863c1efa17668d83fcd1228fb933b030d76197dd Mon Sep 17 00:00:00 2001
+From c97ce9e201e9b7bb204d10c7ffe0a39b40112e6c Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 25 Sep 2015 14:58:26 -0500
-Subject: [PATCH] 2015_09_25-VIP
+Date: Thu, 29 Oct 2015 21:26:31 -0500
+Subject: [PATCH] 2015_10_29-VIP
 
 ---
- sql/TrinityCore-Patches/VIP/account_premium.sql    |   22 +++++
- src/server/authserver/Server/AuthSession.cpp       |    3 +
- .../Database/Implementation/LoginDatabase.cpp      |    5 +-
- .../Database/Implementation/LoginDatabase.h        |    3 +
- src/server/game/Entities/Player/Player.cpp         |    9 +-
- src/server/game/Miscellaneous/Formulas.h           |    6 +-
- src/server/game/Miscellaneous/Language.h           |    2 +-
- src/server/game/Reputation/ReputationMgr.cpp       |    4 +
- src/server/game/Scripting/ScriptLoader.cpp         |    4 +-
- src/server/game/Server/WorldSession.cpp            |    3 +-
- src/server/game/Server/WorldSession.h              |    4 +-
- src/server/game/Server/WorldSocket.cpp             |   13 ++-
- src/server/game/World/World.cpp                    |    9 ++
- src/server/game/World/World.h                      |    9 ++
- src/server/scripts/Custom/cs_premium.cpp           |   90 ++++++++++++++++++++
- src/server/worldserver/worldserver.conf.dist       |   16 ++++
- 16 files changed, 192 insertions(+), 10 deletions(-)
+ sql/TrinityCore-Patches/VIP/account_premium.sql    | 22 ++++++
+ src/server/authserver/Server/AuthSession.cpp       |  3 +
+ .../Database/Implementation/LoginDatabase.cpp      |  5 +-
+ .../Database/Implementation/LoginDatabase.h        |  3 +
+ src/server/game/Entities/Player/Player.cpp         |  9 ++-
+ src/server/game/Miscellaneous/Formulas.h           |  6 +-
+ src/server/game/Miscellaneous/Language.h           |  2 +-
+ src/server/game/Reputation/ReputationMgr.cpp       |  4 +
+ src/server/game/Scripting/ScriptLoader.cpp         |  4 +-
+ src/server/game/Server/WorldSession.cpp            |  3 +-
+ src/server/game/Server/WorldSession.h              |  4 +-
+ src/server/game/Server/WorldSocket.cpp             | 13 +++-
+ src/server/game/World/World.cpp                    |  9 +++
+ src/server/game/World/World.h                      |  9 +++
+ src/server/scripts/Custom/cs_premium.cpp           | 88 ++++++++++++++++++++++
+ src/server/worldserver/worldserver.conf.dist       | 16 ++++
+ 16 files changed, 190 insertions(+), 10 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/VIP/account_premium.sql
  create mode 100644 src/server/scripts/Custom/cs_premium.cpp
 
@@ -85,10 +85,10 @@ index 8f0b506..2bdae15 100644
      PrepareStatement(LOGIN_INS_RBAC_ACCOUNT_PERMISSION, "INSERT INTO rbac_account_permissions (accountId, permissionId, granted, realmId) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE granted = VALUES(granted)", CONNECTION_ASYNC);
      PrepareStatement(LOGIN_DEL_RBAC_ACCOUNT_PERMISSION, "DELETE FROM rbac_account_permissions WHERE accountId = ? AND permissionId = ? AND (realmId = ? OR realmId = -1)", CONNECTION_ASYNC);
 diff --git a/src/server/database/Database/Implementation/LoginDatabase.h b/src/server/database/Database/Implementation/LoginDatabase.h
-index 7f6cffa..b2cb34d 100644
+index 79b7a53..00d053a 100644
 --- a/src/server/database/Database/Implementation/LoginDatabase.h
 +++ b/src/server/database/Database/Implementation/LoginDatabase.h
-@@ -123,6 +123,9 @@ enum LoginDatabaseStatements
+@@ -110,6 +110,9 @@ enum LoginDatabaseStatements
      LOGIN_INS_CHAR_IP_LOGGING,
      LOGIN_INS_FALP_IP_LOGGING,
  
@@ -99,10 +99,10 @@ index 7f6cffa..b2cb34d 100644
      LOGIN_SEL_RBAC_ACCOUNT_PERMISSIONS,
      LOGIN_INS_RBAC_ACCOUNT_PERMISSION,
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2fe5084..3be8053 100644
+index 13a720f..cca752f 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -6790,6 +6790,9 @@ void Player::CheckAreaExploreAndOutdoor()
+@@ -6827,6 +6827,9 @@ void Player::CheckAreaExploreAndOutdoor()
                      XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level)*sWorld->getRate(RATE_XP_EXPLORE));
                  }
  
@@ -112,7 +112,7 @@ index 2fe5084..3be8053 100644
                  GiveXP(XP, NULL);
                  SendExplorationExperience(area, XP);
              }
-@@ -7159,7 +7162,8 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7196,7 +7199,8 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      // 34
      // 35
      // 36
@@ -122,7 +122,7 @@ index 2fe5084..3be8053 100644
      // 38
      // 39
      // 40
-@@ -15298,7 +15302,8 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15337,7 +15341,8 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      // 49
      // 50
      // 51
@@ -133,7 +133,7 @@ index 2fe5084..3be8053 100644
      // 54
      // 55
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index 3e2ac94..0360462 100644
+index f8f6fc4..b29009d 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -27,7 +27,7 @@
@@ -148,13 +148,13 @@ index 3e2ac94..0360462 100644
 @@ -235,6 +235,10 @@ namespace Trinity
                      // End of prepatch
                  } else {
-                 xpMod *= sWorld->getRate(RATE_XP_KILL);
+                 xpMod *= isBattleGround ? sWorld->getRate(RATE_XP_BG_KILL) : sWorld->getRate(RATE_XP_KILL);
 +
 +                if(player->GetSession()->IsPremium())
 +                    xpMod *= sWorld->getRate(RATE_XP_KILL_PREMIUM);
 +
                  gain = uint32(gain * xpMod);
-                 }
+             }
              }
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
 index 7106320..85c9d84 100644
@@ -185,10 +185,10 @@ index a4065fa..0ea904f 100644
          }
  
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..88a80c2 100644
+index fff6dd6..ee66b32 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1480,7 +1480,7 @@ void AddBattlegroundScripts()
+@@ -1482,7 +1482,7 @@ void AddBattlegroundScripts()
  // start63
  // start64
  // start65
@@ -197,7 +197,7 @@ index 7e5f73a..88a80c2 100644
  // start67
  // start68
  // start69
-@@ -1606,7 +1606,7 @@ void AddCustomScripts()
+@@ -1608,7 +1608,7 @@ void AddCustomScripts()
  // end63
  // end64
  // end65
@@ -207,7 +207,7 @@ index 7e5f73a..88a80c2 100644
  // end68
  // end69
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index e689600..2b669be 100644
+index c99346c..113e835 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -95,7 +95,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
@@ -228,7 +228,7 @@ index e689600..2b669be 100644
      m_expansion(expansion),
      _warden(NULL),
 diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
-index e597cbf..dd8dcfc 100644
+index 6b1279e..f1ab205 100644
 --- a/src/server/game/Server/WorldSession.h
 +++ b/src/server/game/Server/WorldSession.h
 @@ -249,7 +249,7 @@ struct PacketCounter
@@ -295,11 +295,11 @@ index 066a4e5..03f87f3 100644
      _worldSession->LoadTutorialsData();
      _worldSession->ReadAddonsInfo(recvPacket);
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index ae0d1d8..bba111a 100644
+index 028ed43..8a8fa37 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -458,6 +458,15 @@ void World::LoadConfigSettings(bool reload)
-     rate_values[RATE_XP_KILL]     = sConfigMgr->GetFloatDefault("Rate.XP.Kill", 1.0f);
+@@ -482,6 +482,15 @@ void World::LoadConfigSettings(bool reload)
+     rate_values[RATE_XP_BG_KILL]  = sConfigMgr->GetFloatDefault("Rate.XP.BattlegroundKill", 1.0f);
      rate_values[RATE_XP_QUEST]    = sConfigMgr->GetFloatDefault("Rate.XP.Quest", 1.0f);
      rate_values[RATE_XP_EXPLORE]  = sConfigMgr->GetFloatDefault("Rate.XP.Explore", 1.0f);
 +
@@ -315,7 +315,7 @@ index ae0d1d8..bba111a 100644
      if (rate_values[RATE_REPAIRCOST] < 0.0f)
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 11c527e..4fd1034 100644
+index ccea34e..b7b0d5d 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -97,6 +97,8 @@ enum WorldBoolConfigs
@@ -327,8 +327,8 @@ index 11c527e..4fd1034 100644
      CONFIG_ALL_TAXI_PATHS,
      CONFIG_INSTANT_TAXI,
      CONFIG_INSTANCE_IGNORE_LEVEL,
-@@ -467,6 +469,13 @@ enum Rates
-     RATE_XP_KILL,
+@@ -470,6 +472,13 @@ enum Rates
+     RATE_XP_BG_KILL,
      RATE_XP_QUEST,
      RATE_XP_EXPLORE,
 +
@@ -343,10 +343,10 @@ index 11c527e..4fd1034 100644
      RATE_REPUTATION_LOWLEVEL_KILL,
 diff --git a/src/server/scripts/Custom/cs_premium.cpp b/src/server/scripts/Custom/cs_premium.cpp
 new file mode 100644
-index 0000000..0a4d01b
+index 0000000..f85ea26
 --- /dev/null
 +++ b/src/server/scripts/Custom/cs_premium.cpp
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,88 @@
 +#include "Language.h"
 +#include "World.h"
 +//#include "AuctionHouseMgr.h"
@@ -356,20 +356,18 @@ index 0000000..0a4d01b
 +public:
 +    premium_commandscript() : CommandScript("premium_commandscript") { }
 +
-+    ChatCommand* GetCommands() const
++    std::vector<ChatCommand> GetCommands() const override
 +    {
-+        static ChatCommand premiumCommandTable[] =
++        static std::vector<ChatCommand> premiumCommandTable =
 +        {
-+            { "bank",  SEC_PLAYER, false, &HandlePremiumBankCommand,    "", NULL },
-+            { "mail",  SEC_PLAYER, false, &HandlePremiumMailCommand,    "", NULL },
++            { "bank",  SEC_PLAYER, false, &HandlePremiumBankCommand,    "" },
++            { "mail",  SEC_PLAYER, false, &HandlePremiumMailCommand,    "" },
 +            //{ "auc",  SEC_PLAYER,  false, &HandlePremiumAuctionCommand, "", NULL },
-+            { NULL,    0,          false, NULL,                         "", NULL }
 +        };
 +
-+        static ChatCommand commandTable[] =
++        static std::vector<ChatCommand> commandTable =
 +        {
 +            { "vip", SEC_PLAYER, false, NULL, "", premiumCommandTable },
-+            { NULL,  0,          false, NULL, "", NULL }
 +        };
 +
 +        return commandTable;
@@ -439,10 +437,10 @@ index 0000000..0a4d01b
 +}
 \ No newline at end of file
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 4fccf90..fbde735 100644
+index 8a7da8c..e0b1cea 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2574,6 +2574,22 @@ CharDelete.KeepDays = 30
+@@ -2592,6 +2592,22 @@ CharDelete.KeepDays = 30
  #
  ###################################################################################################
  
@@ -466,5 +464,5 @@ index 4fccf90..fbde735 100644
  # CUSTOM SERVER OPTIONS
  #
 -- 
-1.7.10.4
+2.1.4
 
