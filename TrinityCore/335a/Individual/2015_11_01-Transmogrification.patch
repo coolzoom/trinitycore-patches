@@ -1,27 +1,27 @@
-From bd8a6a509ca2a2fe0c178810aa47ec47a27a23e4 Mon Sep 17 00:00:00 2001
+From c774a3cdb6e547275d27fde2a27102fc8a8e3795 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 27 Sep 2015 16:14:30 -0500
-Subject: [PATCH] 2015_09_27-Transmogrification
+Date: Sun, 1 Nov 2015 11:00:18 -0600
+Subject: [PATCH] 2015_11_01-Transmogrification
 
 ---
- .../Transmogrification/characters.sql              |   37 +
- .../Transmogrification/world_NPC.sql               |    6 +
- .../Transmogrification/world_texts.sql             |   18 +
- src/server/game/DataStores/DBCStores.cpp           |    4 +-
- src/server/game/DataStores/DBCStores.h             |    2 +-
- src/server/game/DataStores/DBCStructure.h          |    2 +-
- src/server/game/DataStores/DBCfmt.h                |    2 +-
- src/server/game/Entities/Player/Player.cpp         |    6 +-
- src/server/game/Entities/Player/Player.h           |   19 +-
- src/server/game/Handlers/SpellHandler.cpp          |    8 +-
- src/server/game/Scripting/ScriptLoader.cpp         |    8 +-
- src/server/scripts/Custom/CHANGELOG.md             |  126 +++
- src/server/scripts/Custom/README.md                |   53 ++
- src/server/scripts/Custom/Transmogrification.cpp   |  857 ++++++++++++++++++++
- src/server/scripts/Custom/Transmogrification.h     |  129 +++
- src/server/scripts/Custom/Transmogrifier.cpp       |  421 ++++++++++
- src/server/scripts/Spells/spell_generic.cpp        |   22 +-
- src/server/worldserver/worldserver.conf.dist       |  206 +++++
+ .../Transmogrification/characters.sql              |  37 +
+ .../Transmogrification/world_NPC.sql               |   6 +
+ .../Transmogrification/world_texts.sql             |  18 +
+ src/server/game/DataStores/DBCStores.cpp           |   4 +-
+ src/server/game/DataStores/DBCStores.h             |   2 +-
+ src/server/game/DataStores/DBCStructure.h          |   2 +-
+ src/server/game/DataStores/DBCfmt.h                |   2 +-
+ src/server/game/Entities/Player/Player.cpp         |   6 +-
+ src/server/game/Entities/Player/Player.h           |  19 +-
+ src/server/game/Handlers/SpellHandler.cpp          |   8 +-
+ src/server/game/Scripting/ScriptLoader.cpp         |   8 +-
+ src/server/scripts/Custom/CHANGELOG.md             | 126 +++
+ src/server/scripts/Custom/README.md                |  53 ++
+ src/server/scripts/Custom/Transmogrification.cpp   | 857 +++++++++++++++++++++
+ src/server/scripts/Custom/Transmogrification.h     | 129 ++++
+ src/server/scripts/Custom/Transmogrifier.cpp       | 421 ++++++++++
+ src/server/scripts/Spells/spell_generic.cpp        |  22 +-
+ src/server/worldserver/worldserver.conf.dist       | 206 +++++
  18 files changed, 1913 insertions(+), 13 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/characters.sql
  create mode 100644 sql/TrinityCore-Patches/Transmogrification/world_NPC.sql
@@ -112,10 +112,10 @@ index 0000000..e0bdf56
 +(@STRING_ENTRY+9, 'There are no transmogrifications'),
 +(@STRING_ENTRY+10, 'Invalid name inserted');
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index e268b37..0f281db 100644
+index 806d9d4..2632ef7 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
-@@ -119,7 +119,7 @@ DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
+@@ -120,7 +120,7 @@ DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
  DBCStorage <ItemEntry>                    sItemStore(Itemfmt);
  DBCStorage <ItemBagFamilyEntry>           sItemBagFamilyStore(ItemBagFamilyfmt);
  //DBCStorage <ItemCondExtCostsEntry> sItemCondExtCostsStore(ItemCondExtCostsEntryfmt);
@@ -124,7 +124,7 @@ index e268b37..0f281db 100644
  DBCStorage <ItemExtendedCostEntry> sItemExtendedCostStore(ItemExtendedCostEntryfmt);
  DBCStorage <ItemLimitCategoryEntry> sItemLimitCategoryStore(ItemLimitCategoryEntryfmt);
  DBCStorage <ItemRandomPropertiesEntry> sItemRandomPropertiesStore(ItemRandomPropertiesfmt);
-@@ -378,7 +378,7 @@ void LoadDBCStores(const std::string& dataPath)
+@@ -384,7 +384,7 @@ void LoadDBCStores(const std::string& dataPath)
  
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemStore,                   dbcPath, "Item.dbc");
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemBagFamilyStore,          dbcPath, "ItemBagFamily.dbc");
@@ -134,10 +134,10 @@ index e268b37..0f281db 100644
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemExtendedCostStore,       dbcPath, "ItemExtendedCost.dbc");
      LoadDBC(availableDbcLocales, bad_dbc_files, sItemLimitCategoryStore,      dbcPath, "ItemLimitCategory.dbc");
 diff --git a/src/server/game/DataStores/DBCStores.h b/src/server/game/DataStores/DBCStores.h
-index d955e95..8e89ede 100644
+index 2def790..8e5b13c 100644
 --- a/src/server/game/DataStores/DBCStores.h
 +++ b/src/server/game/DataStores/DBCStores.h
-@@ -132,7 +132,7 @@ extern DBCStorage <GtRegenMPPerSptEntry>         sGtRegenMPPerSptStore;
+@@ -135,7 +135,7 @@ extern DBCStorage <GtRegenMPPerSptEntry>         sGtRegenMPPerSptStore;
  extern DBCStorage <HolidaysEntry>                sHolidaysStore;
  extern DBCStorage <ItemEntry>                    sItemStore;
  extern DBCStorage <ItemBagFamilyEntry>           sItemBagFamilyStore;
@@ -147,10 +147,10 @@ index d955e95..8e89ede 100644
  extern DBCStorage <ItemLimitCategoryEntry>       sItemLimitCategoryStore;
  extern DBCStorage <ItemRandomPropertiesEntry>    sItemRandomPropertiesStore;
 diff --git a/src/server/game/DataStores/DBCStructure.h b/src/server/game/DataStores/DBCStructure.h
-index 092ef71..24e3475 100644
+index dc4ad55..6f7c6a4 100644
 --- a/src/server/game/DataStores/DBCStructure.h
 +++ b/src/server/game/DataStores/DBCStructure.h
-@@ -1167,7 +1167,7 @@ struct ItemDisplayInfoEntry
+@@ -1166,7 +1166,7 @@ struct ItemDisplayInfoEntry
      uint32      ID;                                         // 0        m_ID
                                                              // 1        m_modelName[2]
                                                              // 2        m_modelTexture[2]
@@ -160,7 +160,7 @@ index 092ef71..24e3475 100644
                                                              // 5        m_flags
                                                              // 6        m_spellVisualID
 diff --git a/src/server/game/DataStores/DBCfmt.h b/src/server/game/DataStores/DBCfmt.h
-index 5c24e6f..1dd02cf 100644
+index c75c0ff..d15cd77 100644
 --- a/src/server/game/DataStores/DBCfmt.h
 +++ b/src/server/game/DataStores/DBCfmt.h
 @@ -73,7 +73,7 @@ char const GtRegenMPPerSptfmt[] = "f";
@@ -173,7 +173,7 @@ index 5c24e6f..1dd02cf 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2fe5084..99588f3 100644
+index abe098b..a7d979a 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -16,6 +16,7 @@
@@ -184,7 +184,7 @@ index 2fe5084..99588f3 100644
  #include "Player.h"
  #include "AccountMgr.h"
  #include "AchievementMgr.h"
-@@ -12396,7 +12397,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12438,7 +12439,10 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -197,18 +197,18 @@ index 2fe5084..99588f3 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 4336e5a..5b878bd 100644
+index 166b5c4..11609f9 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -28,6 +28,7 @@
- #include "QuestDef.h"
+@@ -29,6 +29,7 @@
  #include "SpellMgr.h"
+ #include "SpellHistory.h"
  #include "Unit.h"
 +#include "../../scripts/Custom/Transmogrification.h"
  
  #include <limits>
  #include <string>
-@@ -124,6 +125,18 @@ struct SpellModifier
+@@ -125,6 +126,18 @@ struct SpellModifier
      Aura* const ownerAura;
  };
  
@@ -227,7 +227,7 @@ index 4336e5a..5b878bd 100644
  typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
  typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
  typedef std::list<SpellModifier*> SpellModList;
-@@ -2307,7 +2320,11 @@ class Player : public Unit, public GridObject<Player>
+@@ -2313,7 +2326,11 @@ class Player : public Unit, public GridObject<Player>
      // 04
      // 05
      // 06
@@ -267,10 +267,10 @@ index 0f0640e..d0b866c 100644
                  data << uint32(0);
          }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..d2a2f39 100644
+index fff6dd6..a1efe36 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1471,7 +1471,9 @@ void AddBattlegroundScripts()
+@@ -1473,7 +1473,9 @@ void AddBattlegroundScripts()
  // start54
  // start55
  // start56
@@ -281,7 +281,7 @@ index 7e5f73a..d2a2f39 100644
  // start58
  // start59
  // start60
-@@ -1597,7 +1599,9 @@ void AddCustomScripts()
+@@ -1599,7 +1601,9 @@ void AddCustomScripts()
  // end54
  // end55
  // end56
@@ -1910,7 +1910,7 @@ index 0000000..dedc81d
 +    new CS_Transmogrification();
 +}
 diff --git a/src/server/scripts/Spells/spell_generic.cpp b/src/server/scripts/Spells/spell_generic.cpp
-index 0ab7c2f..49acf31 100644
+index ca8c9a9..d14c711 100644
 --- a/src/server/scripts/Spells/spell_generic.cpp
 +++ b/src/server/scripts/Spells/spell_generic.cpp
 @@ -38,6 +38,7 @@
@@ -1964,10 +1964,10 @@ index 0ab7c2f..49acf31 100644
                          else
                              target->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2));
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 4fccf90..32e264e 100644
+index 8a7da8c..5a686e0 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3405,6 +3405,212 @@ PacketSpoof.BanDuration = 86400
+@@ -3431,6 +3431,212 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -2181,5 +2181,5 @@ index 4fccf90..32e264e 100644
  # Prepatch by LordPsyan.
  # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
-1.7.10.4
+2.1.4
 

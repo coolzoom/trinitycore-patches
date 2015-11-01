@@ -1,16 +1,16 @@
-From 7bf660a2c55a7040101b00a92b26859f4b108944 Mon Sep 17 00:00:00 2001
+From 9e3c8ea827e20836bfb1e9af576abf26206b573f Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 27 Sep 2015 15:52:28 -0500
-Subject: [PATCH] 2015_09_27-Reforging
+Date: Sun, 1 Nov 2015 10:57:28 -0600
+Subject: [PATCH] 2015_11_01-Reforging
 
 ---
- Reforging_README.md                                |   40 ++
- .../Reforging/characters.reforging.sql             |   10 +
- .../Reforging/world.reforging.sql                  |    6 +
- src/server/game/Entities/Player/Player.cpp         |   34 +-
- src/server/game/Entities/Player/Player.h           |    9 +
- src/server/game/Scripting/ScriptLoader.cpp         |    6 +-
- src/server/scripts/Custom/Reforging.cpp            |  644 ++++++++++++++++++++
+ Reforging_README.md                                |  40 ++
+ .../Reforging/characters.reforging.sql             |  10 +
+ .../Reforging/world.reforging.sql                  |   6 +
+ src/server/game/Entities/Player/Player.cpp         |  34 +-
+ src/server/game/Entities/Player/Player.h           |   9 +
+ src/server/game/Scripting/ScriptLoader.cpp         |   6 +-
+ src/server/scripts/Custom/Reforging.cpp            | 644 +++++++++++++++++++++
  7 files changed, 744 insertions(+), 5 deletions(-)
  create mode 100644 Reforging_README.md
  create mode 100644 sql/TrinityCore-Patches/Reforging/characters.reforging.sql
@@ -92,10 +92,10 @@ index 0000000..9a91aae
 +INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
 +(@Entry, 20988, 0, @Name, "Arcane Reforger", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'REFORGER_NPC');
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2fe5084..46d59f8 100644
+index abe098b..1465768 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -7707,6 +7707,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7747,6 +7747,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -116,7 +116,7 @@ index 2fe5084..46d59f8 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7721,10 +7735,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7761,10 +7775,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -142,7 +142,7 @@ index 2fe5084..46d59f8 100644
          }
  
          if (val == 0)
-@@ -12516,14 +12544,14 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12558,14 +12586,14 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -160,10 +160,10 @@ index 2fe5084..46d59f8 100644
      // 03
      // 04
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 4336e5a..beb7a64 100644
+index 166b5c4..234f122 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -128,6 +128,14 @@ typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
+@@ -129,6 +129,14 @@ typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
  typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
  typedef std::list<SpellModifier*> SpellModList;
  
@@ -178,7 +178,7 @@ index 4336e5a..beb7a64 100644
  typedef std::unordered_map<uint32 /*instanceId*/, time_t/*releaseTime*/> InstanceTimeMap;
  
  enum TrainerSpellState
-@@ -2273,6 +2281,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -2279,6 +2287,7 @@ class Player : public Unit, public GridObject<Player>
          void SetTitle(CharTitlesEntry const* title, bool lost = false);
  
          //bool isActiveObject() const { return true; }
@@ -187,10 +187,10 @@ index 4336e5a..beb7a64 100644
  
          uint32 GetChampioningFaction() const { return m_ChampioningFaction; }
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index 7e5f73a..28f0e35 100644
+index fff6dd6..7f53131 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1487,7 +1487,8 @@ void AddBattlegroundScripts()
+@@ -1489,7 +1489,8 @@ void AddBattlegroundScripts()
  // start70
  // start71
  // start72
@@ -200,7 +200,7 @@ index 7e5f73a..28f0e35 100644
  // start74
  // start75
  // start76
-@@ -1613,7 +1614,8 @@ void AddCustomScripts()
+@@ -1615,7 +1616,8 @@ void AddCustomScripts()
  // end70
  // end71
  // end72
@@ -861,5 +861,5 @@ index 0000000..b47e225
 +
 +#undef FOR_REFORGE_ITEMS
 -- 
-1.7.10.4
+2.1.4
 
