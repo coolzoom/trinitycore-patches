@@ -1,7 +1,7 @@
-From e86d76b60e6091d36170edcc0eb7a3e71ff26362 Mon Sep 17 00:00:00 2001
+From 30b2cad8e2d62920d856103050d5b9e1ee688980 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Thu, 29 Oct 2015 16:08:08 -0500
-Subject: [PATCH] 2015_10_29-GuildLevelSystem
+Date: Thu, 5 Nov 2015 22:11:04 -0600
+Subject: [PATCH] 2015_11_05-GuildLevelSystem
 
 ---
  .../GuildLevelSystem/auth_guild_level_system.sql   |   7 +
@@ -118,10 +118,10 @@ index 0000000..fcf2396
 +INSERT INTO `command` VALUES ('guild givexp', '1002', 'Syntax: .guild givexp $GuildName $Xp');
 \ No newline at end of file
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-index c8ba929..2215776 100644
+index 9bd2398..bad467a 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-@@ -616,7 +616,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+@@ -617,7 +617,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
      // Prepatch by LordPsyan
      // 01
      // 02
@@ -139,10 +139,10 @@ index c8ba929..2215776 100644
      // 05
      // 06
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index 8e8ddb8..f2cb0a8 100644
+index 2f6827b..ca5abce 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
-@@ -534,7 +534,12 @@ enum CharacterDatabaseStatements
+@@ -535,7 +535,12 @@ enum CharacterDatabaseStatements
      // Prepatch by LordPsyan
      // 01
      // 02
@@ -157,7 +157,7 @@ index 8e8ddb8..f2cb0a8 100644
      // 05
      // 06
 diff --git a/src/server/game/Accounts/RBAC.h b/src/server/game/Accounts/RBAC.h
-index b06a9e2..d989b45 100644
+index 7fe503d..035b6fe 100644
 --- a/src/server/game/Accounts/RBAC.h
 +++ b/src/server/game/Accounts/RBAC.h
 @@ -699,7 +699,9 @@ enum RBACPermissions
@@ -172,7 +172,7 @@ index b06a9e2..d989b45 100644
      // 03
      // 04
 diff --git a/src/server/game/Conditions/ConditionMgr.cpp b/src/server/game/Conditions/ConditionMgr.cpp
-index f726032..089e31b 100644
+index 3675d43..a1710db 100644
 --- a/src/server/game/Conditions/ConditionMgr.cpp
 +++ b/src/server/game/Conditions/ConditionMgr.cpp
 @@ -27,6 +27,7 @@
@@ -181,9 +181,9 @@ index f726032..089e31b 100644
  #include "SpellMgr.h"
 +#include "Guild.h"
  
- char const* ConditionMgr::StaticSourceTypeData[CONDITION_SOURCE_TYPE_MAX] =
+ char const* const ConditionMgr::StaticSourceTypeData[CONDITION_SOURCE_TYPE_MAX] =
  {
-@@ -430,6 +431,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
+@@ -430,6 +431,13 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
                  condMeets = unit->IsInWater();
              break;
          }
@@ -197,7 +197,7 @@ index f726032..089e31b 100644
          default:
              condMeets = false;
              break;
-@@ -600,6 +608,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
+@@ -600,6 +608,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition() const
          case CONDITION_IN_WATER:
              mask |= GRID_MAP_TYPE_MASK_CREATURE | GRID_MAP_TYPE_MASK_PLAYER;
              break;
@@ -207,7 +207,7 @@ index f726032..089e31b 100644
          default:
              ASSERT(false && "Condition::GetSearcherTypeMaskForCondition - missing condition handling!");
              break;
-@@ -2091,6 +2102,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
+@@ -2088,6 +2099,17 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond) const
          }
          case CONDITION_IN_WATER:
              break;
@@ -226,10 +226,10 @@ index f726032..089e31b 100644
              break;
      }
 diff --git a/src/server/game/Conditions/ConditionMgr.h b/src/server/game/Conditions/ConditionMgr.h
-index 2798378..040dbc3 100644
+index 81fe379..228923e 100644
 --- a/src/server/game/Conditions/ConditionMgr.h
 +++ b/src/server/game/Conditions/ConditionMgr.h
-@@ -74,7 +74,8 @@ enum ConditionTypes
+@@ -71,7 +71,8 @@ enum ConditionTypes
      CONDITION_HP_PCT                = 38,                   // hpPct            ComparisonType 0                  true if unit's hp matches given pct
      CONDITION_REALM_ACHIEVEMENT     = 39,                   // achievement_id   0              0                  true if realm achievement is complete
      CONDITION_IN_WATER              = 40,                   // 0                0              0                  true if unit in water
@@ -240,10 +240,10 @@ index 2798378..040dbc3 100644
  
  /*! Documentation on implementing a new ConditionSourceType:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 13a720f..4d23489 100644
+index a54767b..76f6919 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -5009,6 +5009,12 @@ void Player::BuildPlayerRepop()
+@@ -5027,6 +5027,12 @@ void Player::BuildPlayerRepop()
      // convert player body to ghost
      SetHealth(1);
  
@@ -256,7 +256,7 @@ index 13a720f..4d23489 100644
      SetMovement(MOVE_WATER_WALK);
      if (!GetSession()->isLogingOut())
          SetMovement(MOVE_UNROOT);
-@@ -5056,6 +5062,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+@@ -5074,6 +5080,9 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
      SetMovement(MOVE_LAND_WALK);
      SetMovement(MOVE_UNROOT);
  
@@ -266,7 +266,7 @@ index 13a720f..4d23489 100644
      m_deathTimer = 0;
  
      // set health/powers (0- will be set in caller)
-@@ -5395,6 +5404,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5413,6 +5422,15 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
  
              costs = uint32(costs * discountMod * sWorld->getRate(RATE_REPAIRCOST));
  
@@ -282,7 +282,7 @@ index 13a720f..4d23489 100644
              if (costs == 0)                                   //fix for ITEM_QUALITY_ARTIFACT
                  costs = 1;
  
-@@ -7183,7 +7201,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -7201,7 +7219,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      // 21
      // 22
      // 23
@@ -300,7 +300,7 @@ index 13a720f..4d23489 100644
      // 25
      // 26
      // 27
-@@ -15328,7 +15355,18 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15346,7 +15373,18 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      // Prepatch by LordPsyan
      // 41
      // 42
@@ -321,7 +321,7 @@ index 13a720f..4d23489 100644
      // 45
      // 46
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 78e65da..0f87baf 100644
+index 6b234df..b70f620 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -62,6 +62,7 @@
@@ -632,7 +632,7 @@ index 9876e93..9a99ab8 100644
  
          // Delete the money loot record from the DB
 diff --git a/src/server/game/Miscellaneous/Formulas.h b/src/server/game/Miscellaneous/Formulas.h
-index f8f6fc4..0f2acfd 100644
+index 4a285f9..bcdce22 100644
 --- a/src/server/game/Miscellaneous/Formulas.h
 +++ b/src/server/game/Miscellaneous/Formulas.h
 @@ -31,7 +31,7 @@
@@ -705,10 +705,10 @@ index a4065fa..1cb09a3 100644
              standing = Reputation_Cap;
          else if (standing < Reputation_Bottom)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 028ed43..b6e55cb 100644
+index a47ca53..249b1f4 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1349,7 +1349,8 @@ void World::LoadConfigSettings(bool reload)
+@@ -1339,7 +1339,8 @@ void World::LoadConfigSettings(bool reload)
  // 04
  // 05
  // 06
@@ -718,7 +718,7 @@ index 028ed43..b6e55cb 100644
  // 08
  // 09
  // 10
-@@ -3348,3 +3349,86 @@ void World::RemoveOldCorpses()
+@@ -3338,3 +3339,86 @@ void World::RemoveOldCorpses()
      m_timers[WUPDATE_CORPSES].SetCurrent(m_timers[WUPDATE_CORPSES].GetInterval());
  }
  
@@ -806,10 +806,10 @@ index 028ed43..b6e55cb 100644
 +}
 +//Guild-Level-System [End]
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index ccea34e..a20390a 100644
+index 22c67ac..a313b32 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -859,6 +859,11 @@ class World
+@@ -860,6 +860,11 @@ class World
  
          void RemoveOldCorpses();
  
@@ -821,7 +821,7 @@ index ccea34e..a20390a 100644
      protected:
          void _UpdateGameTime();
          // callback for UpdateRealmCharacters
-@@ -962,6 +967,21 @@ class World
+@@ -963,6 +968,21 @@ class World
  
          void ProcessQueryCallbacks();
          std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
