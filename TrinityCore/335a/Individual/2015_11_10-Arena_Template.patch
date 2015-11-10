@@ -1,15 +1,15 @@
-From 5a6af11b3c635e3b0aaefef398832dbe4ff1d912 Mon Sep 17 00:00:00 2001
+From 9e89d6b6ac0236ae4bc302ba03b6337857b11d58 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 1 Nov 2015 11:35:59 -0600
-Subject: [PATCH] 2015_11_01-Arena_Template
+Date: Tue, 10 Nov 2015 08:15:11 -0600
+Subject: [PATCH] 2015_11_10-Arena_Template
 
 ---
  .../character.Arena_Template_NPC.sql               | 2476 ++++++++++++++++++++
  src/server/game/Scripting/ScriptLoader.cpp         |    4 +-
  src/server/game/World/World.cpp                    |   21 +-
- src/server/scripts/Custom/TemplateNPC.cpp          | 1478 ++++++++++++
+ src/server/scripts/Custom/TemplateNPC.cpp          | 1466 ++++++++++++
  src/server/scripts/Custom/TemplateNPC.h            |  257 ++
- 5 files changed, 4233 insertions(+), 3 deletions(-)
+ 5 files changed, 4221 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Arena_Template_NPC/character.Arena_Template_NPC.sql
  create mode 100644 src/server/scripts/Custom/TemplateNPC.cpp
  create mode 100644 src/server/scripts/Custom/TemplateNPC.h
@@ -2497,10 +2497,10 @@ index 0000000..72c5ee0
 +/*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 diff --git a/src/server/game/Scripting/ScriptLoader.cpp b/src/server/game/Scripting/ScriptLoader.cpp
-index fff6dd6..86f2996 100644
+index 4ea8583..1f7428a 100644
 --- a/src/server/game/Scripting/ScriptLoader.cpp
 +++ b/src/server/game/Scripting/ScriptLoader.cpp
-@@ -1520,7 +1520,7 @@ void AddBattlegroundScripts()
+@@ -1514,7 +1514,7 @@ void AddBattlegroundScripts()
  // start101
  // start102
  // start103
@@ -2509,7 +2509,7 @@ index fff6dd6..86f2996 100644
  // start105
  // start106
  // start107
-@@ -1646,7 +1646,7 @@ void AddCustomScripts()
+@@ -1640,7 +1640,7 @@ void AddCustomScripts()
  // end101
  // end102
  // end103
@@ -2519,7 +2519,7 @@ index fff6dd6..86f2996 100644
  // end106
  // end107
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 17ea868..17110e6 100644
+index a47ca53..f8e42f7 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -71,7 +71,7 @@
@@ -2531,7 +2531,7 @@ index 17ea868..17110e6 100644
  // 08
  // 09
  // 10
-@@ -1942,6 +1942,25 @@ void World::SetInitialWorldSettings()
+@@ -1943,6 +1943,25 @@ void World::SetInitialWorldSettings()
  
      LoadCharacterInfoStore();
  
@@ -2559,10 +2559,10 @@ index 17ea868..17110e6 100644
      TC_LOG_INFO("server.worldserver", "World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
 diff --git a/src/server/scripts/Custom/TemplateNPC.cpp b/src/server/scripts/Custom/TemplateNPC.cpp
 new file mode 100644
-index 0000000..0b24eca
+index 0000000..16dc313
 --- /dev/null
 +++ b/src/server/scripts/Custom/TemplateNPC.cpp
-@@ -0,0 +1,1478 @@
+@@ -0,0 +1,1466 @@
 +#include "TemplateNPC.h"
 +
 +void sTemplateNPC::LearnPlateMailSpells(Player* player)
@@ -3085,63 +3085,54 @@ index 0000000..0b24eca
 +            { "blood",             SEC_ADMINISTRATOR,         false,          &HandleCreateDeathKnightBloodItemSetCommand,       ""},
 +            { "frost",             SEC_ADMINISTRATOR,         false,          &HandleCreateDeathKnightFrostItemSetCommand,       ""},
 +            { "unholy",            SEC_ADMINISTRATOR,         false,          &HandleCreateDeathKnightUnholyItemSetCommand,      ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createRogueItemSetTable =
 +        {
 +            { "assassination",     SEC_ADMINISTRATOR,         false,          &HandleCreateRogueAssassinationItemSetCommand,     ""},
 +            { "combat",            SEC_ADMINISTRATOR,         false,          &HandleCreateRogueCombatItemSetCommand,            ""},
 +            { "subtlety",          SEC_ADMINISTRATOR,         false,          &HandleCreateRogueSubtletyItemSetCommand,          ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createHunterItemSetTable =
 +        {
 +            { "marksmanship",      SEC_ADMINISTRATOR,         false,          &HandleCreateHunterMarksmanshipItemSetCommand,     ""},
 +            { "beastmastery",      SEC_ADMINISTRATOR,         false,          &HandleCreateHunterBeastmasteryItemSetCommand,     ""},
 +            { "survival",          SEC_ADMINISTRATOR,         false,          &HandleCreateHunterSurvivalItemSetCommand,         ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createDruidItemSetTable =
 +        {
 +            { "ballance",          SEC_ADMINISTRATOR,         false,          &HandleCreateDruidBallanceItemSetCommand,          ""},
 +            { "feral",             SEC_ADMINISTRATOR,         false,          &HandleCreateDruidFeralItemSetCommand,             ""},
 +            { "restoration",       SEC_ADMINISTRATOR,         false,          &HandleCreateDruidRestorationItemSetCommand,       ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createShamanItemSetTable =
 +        {
 +            { "elemental",         SEC_ADMINISTRATOR,         false,          &HandleCreateShamanElementalItemSetCommand,        ""},
 +            { "enhancement",       SEC_ADMINISTRATOR,         false,          &HandleCreateShamanEnhancementItemSetCommand,      ""},
 +            { "restoration",       SEC_ADMINISTRATOR,         false,          &HandleCreateShamanRestorationItemSetCommand,      ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createWarlockItemSetTable =
 +        {
 +            { "affliction",        SEC_ADMINISTRATOR,         false,          &HandleCreateWarlockAfflictionItemSetCommand,      ""},
 +            { "demonology",        SEC_ADMINISTRATOR,         false,          &HandleCreateWarlockDemonologyItemSetCommand,      ""},
 +            { "destruction",       SEC_ADMINISTRATOR,         false,          &HandleCreateWarlockDestructionItemSetCommand,     ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createMageItemSetTable =
 +        {
 +            { "frost",             SEC_ADMINISTRATOR,         false,          &HandleCreateMageFrostItemSetCommand,              ""},
 +            { "fire",              SEC_ADMINISTRATOR,         false,          &HandleCreateMageFireItemSetCommand,               ""},
 +            { "arcane",            SEC_ADMINISTRATOR,         false,          &HandleCreateMageArcaneItemSetCommand,             ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createWarriorItemSetTable =
 +        {
 +            { "arms",              SEC_ADMINISTRATOR,         false,          &HandleCreateWarriorArmsItemSetCommand,            ""},
 +            { "fury",              SEC_ADMINISTRATOR,         false,          &HandleCreateWarriorFuryItemSetCommand,            ""},
 +            { "protection",        SEC_ADMINISTRATOR,         false,          &HandleCreateWarriorProtectionItemSetCommand,      ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createPaladinItemSetTable =
 +        {
 +            { "holy",              SEC_ADMINISTRATOR,         false,          &HandleCreatePaladinHolyItemSetCommand,            ""},
 +            { "protection",        SEC_ADMINISTRATOR,         false,          &HandleCreatePaladinProtectionItemSetCommand,      ""},
 +            { "retribution",       SEC_ADMINISTRATOR,         false,          &HandleCreatePaladinRetributionItemSetCommand,     ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +
 +        static std::vector<ChatCommand> createPriestItemSetTable =
@@ -3149,7 +3140,6 @@ index 0000000..0b24eca
 +            { "discipline",        SEC_ADMINISTRATOR,         false,          &HandleCreatePriestDisciplineItemSetCommand,       ""},
 +            { "shadow",            SEC_ADMINISTRATOR,         false,          &HandleCreatePriestShadowItemSetCommand,           ""},
 +            { "holy",              SEC_ADMINISTRATOR,         false,          &HandleCreatePriestHolyItemSetCommand,             ""},
-+            { NULL,                0,                         false,          NULL,                                              ""}
 +        };
 +        static std::vector<ChatCommand> createItemSetCommandTable =
 +        {
@@ -3163,12 +3153,10 @@ index 0000000..0b24eca
 +            { "hunter",            SEC_ADMINISTRATOR,          true,            NULL,         "", createHunterItemSetTable },
 +            { "rogue",             SEC_ADMINISTRATOR,          true,            NULL,         "", createRogueItemSetTable },
 +            { "deathknight",       SEC_ADMINISTRATOR,          true,            NULL,         "", createDeathKnightItemSetTable },
-+            { NULL,                0,                          false,           NULL,         ""}
 +        };
 +        static std::vector<ChatCommand> commandTable =
 +        {
-+            { "create",            SEC_ADMINISTRATOR,         true, NULL,                 "", createItemSetCommandTable },
-+            { NULL,                0,                         false, NULL,                ""}
++            { "create",            SEC_ADMINISTRATOR,         true,             NULL,         "", createItemSetCommandTable },
 +        };
 +        return commandTable;
 +    }
