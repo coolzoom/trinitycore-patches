@@ -1,7 +1,7 @@
-From 17d114bb2accf66d714d49a44dec66da1fae73df Mon Sep 17 00:00:00 2001
+From 72cf3d3beccb9a2753d30a0fcaa31d945de678a8 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 15 Nov 2015 08:09:35 -0600
-Subject: [PATCH] 2015_11_13-LordPsyanBots
+Date: Wed, 18 Nov 2015 07:54:48 -0600
+Subject: [PATCH] 2015_11_18-LordPsyanBots
 
 ---
  .../Bots/character_lordpsyanbots.sql               | 10771 +++++++++++++++++++
@@ -39,7 +39,7 @@ Subject: [PATCH] 2015_11_13-LordPsyanBots
  src/plugins/playerbot/GuildTaskMgr.h               |    45 +
  src/plugins/playerbot/Helpers.cpp                  |    90 +
  src/plugins/playerbot/LazyCalculatedValue.h        |    42 +
- src/plugins/playerbot/LootObjectStack.cpp          |   234 +
+ src/plugins/playerbot/LootObjectStack.cpp          |   245 +
  src/plugins/playerbot/LootObjectStack.h            |    76 +
  src/plugins/playerbot/PlayerbotAI.cpp              |  1390 +++
  src/plugins/playerbot/PlayerbotAI.h                |   186 +
@@ -630,7 +630,8 @@ Subject: [PATCH] 2015_11_13-LordPsyanBots
  src/server/game/Entities/Creature/Creature.h       |    85 +-
  .../game/Entities/Creature/TemporarySummon.cpp     |    10 +
  src/server/game/Entities/Object/Object.cpp         |    16 +
- src/server/game/Entities/Player/Player.cpp         |   144 +-
+ src/server/game/Entities/Player/KillRewarder.cpp   |    14 +
+ src/server/game/Entities/Player/Player.cpp         |   133 +-
  src/server/game/Entities/Player/Player.h           |    47 +-
  src/server/game/Entities/Totem/Totem.cpp           |     7 +
  src/server/game/Entities/Unit/StatSystem.cpp       |     4 +
@@ -640,7 +641,7 @@ Subject: [PATCH] 2015_11_13-LordPsyanBots
  src/server/game/Globals/ObjectMgr.h                |    20 +
  src/server/game/Groups/Group.cpp                   |    22 +
  src/server/game/Groups/Group.h                     |     8 +
- src/server/game/Handlers/CharacterHandler.cpp      |    81 +
+ src/server/game/Handlers/CharacterHandler.cpp      |    83 +
  src/server/game/Handlers/ChatHandler.cpp           |    87 +-
  src/server/game/Handlers/SpellHandler.cpp          |    30 +
  src/server/game/Maps/Map.cpp                       |    30 +-
@@ -662,7 +663,7 @@ Subject: [PATCH] 2015_11_13-LordPsyanBots
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/CMakeLists.txt              |     1 +
  src/server/worldserver/worldserver.conf.dist       |   138 +-
- 658 files changed, 79426 insertions(+), 25 deletions(-)
+ 659 files changed, 79442 insertions(+), 25 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_lordpsyanbots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_lordpsyanbots.sql
  create mode 100644 src/plugins/CMakeLists.txt
@@ -16589,7 +16590,7 @@ index 0000000..3084cdd
 +};
 diff --git a/src/plugins/playerbot/GuildTaskMgr.cpp b/src/plugins/playerbot/GuildTaskMgr.cpp
 new file mode 100644
-index 0000000..abaf28a
+index 0000000..ff70875
 --- /dev/null
 +++ b/src/plugins/playerbot/GuildTaskMgr.cpp
 @@ -0,0 +1,697 @@
@@ -17040,7 +17041,7 @@ index 0000000..abaf28a
 +        return false;
 +    }
 +
-+    if (!*args)
++    if (!args || !*args)
 +    {
 +        sLog->outMessage("gtask", LOG_LEVEL_ERROR, "Usage: gtask stats/reset");
 +        return false;
@@ -17488,10 +17489,10 @@ index 0000000..f7d3d31
 \ No newline at end of file
 diff --git a/src/plugins/playerbot/LootObjectStack.cpp b/src/plugins/playerbot/LootObjectStack.cpp
 new file mode 100644
-index 0000000..faf459c
+index 0000000..cc5b0f7
 --- /dev/null
 +++ b/src/plugins/playerbot/LootObjectStack.cpp
-@@ -0,0 +1,234 @@
+@@ -0,0 +1,245 @@
 +#include "../pchdef.h"
 +#include "LootObjectStack.h"
 +#include "playerbot.h"
@@ -17578,7 +17579,16 @@ index 0000000..faf459c
 +        if (!lockInfo)
 +            return;
 +
-+        this->guid = guid;
++        // TODO: remove?
++        /*for(uint32 i = 0; i < 6; ++i)
++        {
++            if (go->GetGOInfo()->questItems[i])
++            {
++                this->guid = guid;
++                return;
++            }
++        }*/
++
 +        for (int i = 0; i < 8; ++i)
 +        {
 +            switch (lockInfo->Type[i])
@@ -17587,6 +17597,7 @@ index 0000000..faf459c
 +                if (lockInfo->Index[i] > 0)
 +                {
 +                    reqItem = lockInfo->Index[i];
++                    this->guid = guid;
 +                }
 +                break;
 +            case LOCK_KEY_SKILL:
@@ -17594,6 +17605,7 @@ index 0000000..faf459c
 +                {
 +                    skillId = SkillByLockType(LockType(lockInfo->Index[i]));
 +                    reqSkillValue = lockInfo->Skill[i];
++                    this->guid = guid;
 +                }
 +                break;
 +            default:
@@ -19505,7 +19517,7 @@ index 0000000..8e72bf0
 +};
 diff --git a/src/plugins/playerbot/PlayerbotAIConfig.cpp b/src/plugins/playerbot/PlayerbotAIConfig.cpp
 new file mode 100644
-index 0000000..44e5bd9
+index 0000000..f1289a3
 --- /dev/null
 +++ b/src/plugins/playerbot/PlayerbotAIConfig.cpp
 @@ -0,0 +1,229 @@
@@ -19645,9 +19657,9 @@ index 0000000..44e5bd9
 +    maxGuildTaskAdvertisementTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskAdvertisementTime", 8 * 3600);
 +    minGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskRewardTime", 300);
 +    maxGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskRewardTime", 1 * 3600);
-+
-+    RandomPlayerbotFactory::CreateRandomBots();
 +    sLog->outMessage("playerbot", LOG_LEVEL_INFO, "AI Playerbot configuration loaded");
++    RandomPlayerbotFactory::CreateRandomBots();
++
 +
 +    return true;
 +}
@@ -22557,7 +22569,7 @@ index 0000000..5349555
 +#endif
 diff --git a/src/plugins/playerbot/RandomItemMgr.cpp b/src/plugins/playerbot/RandomItemMgr.cpp
 new file mode 100644
-index 0000000..bad4cc0
+index 0000000..4d4b404
 --- /dev/null
 +++ b/src/plugins/playerbot/RandomItemMgr.cpp
 @@ -0,0 +1,154 @@
@@ -22633,7 +22645,7 @@ index 0000000..bad4cc0
 +
 +bool RandomItemMgr::HandleConsoleCommand(ChatHandler* handler, char const* args)
 +{
-+    if (!*args)
++    if (!args || !*args)
 +    {
 +        sLog->outMessage("gtask", LOG_LEVEL_ERROR, "Usage: rnditem");
 +        return false;
@@ -22773,7 +22785,7 @@ index 0000000..a0f8149
 +#endif
 diff --git a/src/plugins/playerbot/RandomPlayerbotFactory.cpp b/src/plugins/playerbot/RandomPlayerbotFactory.cpp
 new file mode 100644
-index 0000000..d083416
+index 0000000..bb571f2
 --- /dev/null
 +++ b/src/plugins/playerbot/RandomPlayerbotFactory.cpp
 @@ -0,0 +1,386 @@
@@ -22785,6 +22797,7 @@ index 0000000..d083416
 +#include "PlayerbotAI.h"
 +#include "../../server/game/Entities/Player/Player.h"
 +#include "../../server/game/Guilds/Guild.h"
++#include "../../server/game/Accounts/AccountMgr.h"
 +#include "../../server/game/Guilds/GuildMgr.h"
 +#include "RandomPlayerbotFactory.h"
 +
@@ -22889,19 +22902,18 @@ index 0000000..d083416
 +    string name = CreateRandomBotName();
 +    if (name.empty())
 +        return false;
-+
++	std::string nameOrIp = "";
 +    CharSectionsEntry const* skin = GetRandomCharSection(race, SECTION_TYPE_SKIN, gender);
 +    CharSectionsEntry const* face = GetRandomCharSection(race, SECTION_TYPE_FACE, gender, skin->Color);
 +    CharSectionsEntry const* hair = GetRandomCharSection(race, SECTION_TYPE_HAIR, gender);
 +    CharSectionsEntry const* facialHair = GetRandomCharSection(race, SECTION_TYPE_FACIAL_HAIR, gender, hair->Color);
 +    uint8 outfitId = 0;
-+
 +    std::string accountName;
 +    AccountMgr::GetName(accountId, accountName);
 +	WorldSession* session = new WorldSession(accountId, std::move(accountName), NULL, SEC_PLAYER, 2, 0, LOCALE_enUS, 0, false);
 +    if (!session)
 +    {
-+        sLog->outMessage("playerbot", LOG_LEVEL_ERROR, "Couldn't create session for random bot account %d", accountId);
++        sLog->outMessage("playerbot", LOG_LEVEL_ERROR, "Couldn't create session for random bot account %s", accountId);
 +        delete session;
 +        return false;
 +    }
@@ -23206,7 +23218,7 @@ index 0000000..76f4d08
 +#endif
 diff --git a/src/plugins/playerbot/RandomPlayerbotMgr.cpp b/src/plugins/playerbot/RandomPlayerbotMgr.cpp
 new file mode 100644
-index 0000000..1ebf978
+index 0000000..ad6c103
 --- /dev/null
 +++ b/src/plugins/playerbot/RandomPlayerbotMgr.cpp
 @@ -0,0 +1,912 @@
@@ -23787,7 +23799,7 @@ index 0000000..1ebf978
 +        return false;
 +    }
 +
-+    if (!*args)
++    if (!args || !*args)
 +    {
 +        sLog->outMessage("playerbot", LOG_LEVEL_ERROR, "Usage: rndbot stats/update/reset/init/refresh/add/remove");
 +        return false;
@@ -57114,7 +57126,7 @@ index 0000000..72a1285
 +
 +}
 diff --git a/src/server/database/Database/DatabaseWorkerPool.h b/src/server/database/Database/DatabaseWorkerPool.h
-index 32837da..7f4c61a 100644
+index c7b5d8c..7f9e589 100644
 --- a/src/server/database/Database/DatabaseWorkerPool.h
 +++ b/src/server/database/Database/DatabaseWorkerPool.h
 @@ -30,7 +30,11 @@
@@ -83144,36 +83156,23 @@ index afb987f..612fdcf 100644
      //ObjectAccessor::UpdateObjectVisibility(summon);
  
      return summon;
-diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 7fb2705..cb3bf6b 100644
---- a/src/server/game/Entities/Player/Player.cpp
-+++ b/src/server/game/Entities/Player/Player.cpp
-@@ -88,7 +88,9 @@
- // 64
- // 65
- // 66
--// 67
+diff --git a/src/server/game/Entities/Player/KillRewarder.cpp b/src/server/game/Entities/Player/KillRewarder.cpp
+index ad2f8f6..e202d59 100644
+--- a/src/server/game/Entities/Player/KillRewarder.cpp
++++ b/src/server/game/Entities/Player/KillRewarder.cpp
+@@ -25,6 +25,9 @@
+ #include "InstanceScript.h"
+ #include "Pet.h"
+ #include "Player.h"
 +//npcbot
 +#include "botmgr.h"
 +//end npcbot
- // 68
- // 69
- // 70
-@@ -101,7 +103,10 @@
- // 77
- // 78
- // 79
--// 80
-+// Playerbot mod:
-+#include "../../../plugins/playerbot/playerbot.h"
-+#include "../../../plugins/playerbot/GuildTaskMgr.h"
-+
- // Visit http://www.realmsofwarcraft.com/bb for forums and information
- //
- // End of prepatch
-@@ -562,6 +567,17 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
-         for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
-             AddPct(xp, (*i)->GetAmount());
+ 
+  // == KillRewarder ====================================================
+  // KillRewarder encapsulates logic of rewarding player upon kill with:
+@@ -154,6 +157,17 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
+         for (auto const& aura : player->GetAuraEffectsByType(SPELL_AURA_MOD_XP_PCT))
+             AddPct(xp, aura->GetAmount());
  
 +        //npcbot 4.2.2.1. Apply NpcBot XP reduction
 +        if (player->GetNpcBotsCount() > 1)
@@ -83189,7 +83188,34 @@ index 7fb2705..cb3bf6b 100644
          // 4.2.3. Give XP to player.
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
-@@ -912,6 +928,10 @@ Player::Player(WorldSession* session): Unit(true)
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index 9a19ba9..8bff0c5 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -89,7 +89,9 @@
+ // 64
+ // 65
+ // 66
+-// 67
++//npcbot
++#include "botmgr.h"
++//end npcbot
+ // 68
+ // 69
+ // 70
+@@ -102,7 +104,10 @@
+ // 77
+ // 78
+ // 79
+-// 80
++// Playerbot mod:
++#include "../../../plugins/playerbot/playerbot.h"
++#include "../../../plugins/playerbot/GuildTaskMgr.h"
++
+ // Visit http://www.realmsofwarcraft.com/bb for forums and information
+ //
+ // End of prepatch
+@@ -545,6 +550,10 @@ Player::Player(WorldSession* session): Unit(true)
      m_timeSyncClient = 0;
      m_timeSyncServer = 0;
  
@@ -83200,8 +83226,8 @@ index 7fb2705..cb3bf6b 100644
      for (uint8 i = 0; i < MAX_POWERS; ++i)
          m_powerFraction[i] = 0;
  
-@@ -928,6 +948,10 @@ Player::Player(WorldSession* session): Unit(true)
-     _activeCheats = CHEAT_NONE;
+@@ -563,6 +572,10 @@ Player::Player(WorldSession* session): Unit(true)
+     manaBeforeDuel = 0;
      m_achievementMgr = new AchievementMgr(this);
      m_reputationMgr = new ReputationMgr(this);
 +
@@ -83211,7 +83237,7 @@ index 7fb2705..cb3bf6b 100644
  }
  
  Player::~Player()
-@@ -966,6 +990,14 @@ Player::~Player()
+@@ -601,6 +614,14 @@ Player::~Player()
      delete m_achievementMgr;
      delete m_reputationMgr;
  
@@ -83226,7 +83252,7 @@ index 7fb2705..cb3bf6b 100644
      sWorld->DecreasePlayerCount();
  }
  
-@@ -1931,11 +1963,18 @@ void Player::Update(uint32 p_time)
+@@ -1566,11 +1587,18 @@ void Player::Update(uint32 p_time)
      // 84
      // 85
      // 86
@@ -83247,7 +83273,7 @@ index 7fb2705..cb3bf6b 100644
      // 92
      // 93
      // 94
-@@ -2378,6 +2417,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2013,6 +2041,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
              if (pet)
                  UnsummonPetTemporaryIfAny();
  
@@ -83259,7 +83285,7 @@ index 7fb2705..cb3bf6b 100644
              // remove all dyn objects
              RemoveAllDynObjects();
  
-@@ -2562,6 +2606,38 @@ void Player::RemoveFromWorld()
+@@ -2197,6 +2230,38 @@ void Player::RemoveFromWorld()
      }
  }
  
@@ -83298,7 +83324,7 @@ index 7fb2705..cb3bf6b 100644
  void Player::RegenerateAll()
  {
      //if (m_regenTimer <= 500)
-@@ -2837,6 +2913,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
+@@ -2472,6 +2537,11 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
      if (creature->GetCharmerGUID())
          return NULL;
  
@@ -83310,7 +83336,7 @@ index 7fb2705..cb3bf6b 100644
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
          return NULL;
-@@ -3043,6 +3124,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -2678,6 +2748,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
      if (!group)
          return;
  
@@ -83353,7 +83379,7 @@ index 7fb2705..cb3bf6b 100644
      group->RemoveMember(guid, method, kicker, reason);
  }
  
-@@ -4907,6 +5024,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4542,6 +4648,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
  
              Corpse::DeleteFromDB(playerguid, trans);
  
@@ -83368,7 +83394,7 @@ index 7fb2705..cb3bf6b 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -7179,6 +7304,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6814,6 +6928,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
          else
          {
@@ -83379,7 +83405,7 @@ index 7fb2705..cb3bf6b 100644
              if (!victim->ToCreature()->IsRacialLeader())
                  return false;
  
-@@ -15447,7 +15576,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15082,7 +15200,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      if (quest->GetRewSpellCast() > 0)
      {
          SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(quest->GetRewSpellCast());
@@ -83388,7 +83414,7 @@ index 7fb2705..cb3bf6b 100644
          {
              if (Creature* creature = GetMap()->GetCreature(questGiver->GetGUID()))
                  creature->CastSpell(this, quest->GetRewSpellCast(), true);
-@@ -15458,7 +15587,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15093,7 +15211,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      else if (quest->GetRewSpell() > 0)
      {
          SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(quest->GetRewSpell());
@@ -83397,7 +83423,7 @@ index 7fb2705..cb3bf6b 100644
          {
              if (Creature* creature = GetMap()->GetCreature(questGiver->GetGUID()))
                  creature->CastSpell(this, quest->GetRewSpell(), true);
-@@ -23803,6 +23932,9 @@ bool Player::GetsRecruitAFriendBonus(bool forXP)
+@@ -23440,6 +23558,9 @@ bool Player::GetsRecruitAFriendBonus(bool forXP)
  void Player::RewardPlayerAndGroupAtKill(Unit* victim, bool isBattleGround)
  {
      KillRewarder(this, victim, isBattleGround).Reward();
@@ -83408,10 +83434,10 @@ index 7fb2705..cb3bf6b 100644
  
  void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewardSource)
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index ad29637..ea1f922 100644
+index 224cbde..4fc4043 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -56,6 +56,14 @@ class UpdateMask;
+@@ -57,6 +57,14 @@ class UpdateMask;
  
  struct CharacterCustomizeInfo;
  
@@ -83426,7 +83452,7 @@ index ad29637..ea1f922 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2301,6 +2309,18 @@ class Player : public Unit, public GridObject<Player>
+@@ -2218,6 +2226,18 @@ class Player : public Unit, public GridObject<Player>
  
          bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
  
@@ -83445,7 +83471,7 @@ index ad29637..ea1f922 100644
          //! Return collision height sent to client
          float GetCollisionHeight(bool mounted) const;
  
-@@ -2317,7 +2337,20 @@ class Player : public Unit, public GridObject<Player>
+@@ -2234,7 +2254,20 @@ class Player : public Unit, public GridObject<Player>
      // 08
      // 09
      // 10
@@ -83467,7 +83493,7 @@ index ad29637..ea1f922 100644
      // 12
      // 13
      // 14
-@@ -2585,6 +2618,14 @@ class Player : public Unit, public GridObject<Player>
+@@ -2502,6 +2535,14 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -83482,7 +83508,7 @@ index ad29637..ea1f922 100644
          // internal common parts for CanStore/StoreItem functions
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
-@@ -2674,7 +2715,9 @@ class Player : public Unit, public GridObject<Player>
+@@ -2595,7 +2636,9 @@ class Player : public Unit, public GridObject<Player>
          // 37
          // 38
          // 39
@@ -84673,7 +84699,7 @@ index b814ab0..7eea68f 100644
          bool _setMembersGroup(ObjectGuid guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index c3fe967..417bc8a 100644
+index c3fe967..fbaee2d 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -46,6 +46,9 @@
@@ -84686,7 +84712,7 @@ index c3fe967..417bc8a 100644
  
  class LoginQueryHolder : public SQLQueryHolder
  {
-@@ -60,6 +63,76 @@ class LoginQueryHolder : public SQLQueryHolder
+@@ -60,6 +63,78 @@ class LoginQueryHolder : public SQLQueryHolder
          bool Initialize();
  };
  
@@ -84729,7 +84755,9 @@ index c3fe967..417bc8a 100644
 +
 +    WorldSession* masterSession = masterAccount ? sWorld->FindSession(masterAccount) : NULL;
 +    uint32 botAccountId = holder->GetAccountId();
-+    WorldSession *botSession = new WorldSession(botAccountId, NULL, NULL, SEC_PLAYER, 2, 0, LOCALE_enUS, 0, false);
++    std::string accountName;
++	AccountMgr::GetName(botAccountId, accountName);
++	WorldSession *botSession = new WorldSession(botAccountId, std::move(accountName), NULL, SEC_PLAYER, 2, 0, LOCALE_enUS, 0, false);
 +
 +    botSession->HandlePlayerLogin(holder); // will delete lqh
 +
@@ -84763,7 +84791,7 @@ index c3fe967..417bc8a 100644
  bool LoginQueryHolder::Initialize()
  {
      SetSize(MAX_PLAYER_LOGIN_QUERY);
-@@ -993,6 +1066,14 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
+@@ -993,6 +1068,14 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
      // Handle Login-Achievements (should be handled after loading)
      _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
  
@@ -85368,10 +85396,10 @@ index af2d2d2..4124661 100644
          void SendBfInvitePlayerToWar(uint32 battleId, uint32 zoneId, uint32 time);
          void SendBfInvitePlayerToQueue(uint32 battleId);
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 76eefa0..d94a46b 100644
+index 7c9d956..2966bd6 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
-@@ -2399,6 +2399,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
+@@ -2400,6 +2400,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
              if (caster->GetTypeId() == TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR0_STOP_ATTACK_TARGET) == 0 &&
                 (m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE || m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_RANGED))
                  caster->ToPlayer()->CastItemCombatSpell(unitTarget, m_attackType, procVictim, procEx);
@@ -85385,7 +85413,7 @@ index 76eefa0..d94a46b 100644
          }
  
          m_damage = damageInfo.damage;
-@@ -3158,6 +3165,11 @@ void Spell::cast(bool skipCheck)
+@@ -3159,6 +3166,11 @@ void Spell::cast(bool skipCheck)
          return;
      }
  
@@ -85397,7 +85425,7 @@ index 76eefa0..d94a46b 100644
      PrepareTriggersExecutedOnHit();
  
      CallScriptOnCastHandlers();
-@@ -3605,6 +3617,9 @@ void Spell::finish(bool ok)
+@@ -3606,6 +3618,9 @@ void Spell::finish(bool ok)
  
      // Stop Attack for some spells
      if (m_spellInfo->HasAttribute(SPELL_ATTR0_STOP_ATTACK_TARGET))
@@ -85407,7 +85435,7 @@ index 76eefa0..d94a46b 100644
          m_caster->AttackStop();
  }
  
-@@ -3814,6 +3829,11 @@ void Spell::SendSpellStart()
+@@ -3815,6 +3830,11 @@ void Spell::SendSpellStart()
  
  void Spell::SendSpellGo()
  {
@@ -85436,7 +85464,7 @@ index 6486a7e..5e70233 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index a47ca53..58d80a5 100644
+index 76f841f..7d6bf3e 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -82,7 +82,10 @@
@@ -85451,7 +85479,7 @@ index a47ca53..58d80a5 100644
  // 19
  // 20
  // Visit http://www.realmsofwarcraft.com/bb for forums and information
-@@ -1329,6 +1332,7 @@ void World::LoadConfigSettings(bool reload)
+@@ -1330,6 +1333,7 @@ void World::LoadConfigSettings(bool reload)
  
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
@@ -85459,7 +85487,7 @@ index a47ca53..58d80a5 100644
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
-@@ -1553,6 +1557,9 @@ void World::SetInitialWorldSettings()
+@@ -1554,6 +1558,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -85469,7 +85497,7 @@ index a47ca53..58d80a5 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1949,6 +1956,11 @@ void World::SetInitialWorldSettings()
+@@ -1950,6 +1957,11 @@ void World::SetInitialWorldSettings()
  
      if (uint32 realmId = sConfigMgr->GetIntDefault("RealmID", 0)) // 0 reserved for auth
          sLog->SetRealmId(realmId);
@@ -85481,7 +85509,7 @@ index a47ca53..58d80a5 100644
  }
  
  void World::DetectDBCLang()
-@@ -2118,14 +2130,24 @@ void World::Update(uint32 diff)
+@@ -2119,14 +2131,24 @@ void World::Update(uint32 diff)
  
          ///- Handle expired auctions
          sAuctionMgr->Update();
@@ -85508,7 +85536,7 @@ index a47ca53..58d80a5 100644
  
      /// <li> Handle session updates when the timer has passed
      ResetTimeDiffRecord();
-@@ -2690,6 +2712,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
+@@ -2691,6 +2713,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
          ShutdownMsg(true, nullptr, reason);
      }
  
@@ -85520,10 +85548,10 @@ index a47ca53..58d80a5 100644
  }
  
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 22c67ac..0cff4f2 100644
+index 600bd79..5658b30 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -412,6 +412,7 @@ enum WorldIntConfigs
+@@ -413,6 +413,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -85812,7 +85840,7 @@ index 78f39e0..a2c7596 100644
    g3dlib
    gsoap
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 4d2f9d6..c33aa37 100644
+index 43afe08..b5dfe85 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -2655,12 +2655,12 @@ PlayerStart.MapsExplored = 0
@@ -85829,9 +85857,9 @@ index 4d2f9d6..c33aa37 100644
 -ResetDuelCooldowns = 0
 +ResetCoolDownAfterDuel = 0
  
- #
- #    AlwaysMaxWeaponSkill
-@@ -2857,6 +2857,16 @@ NoGrayAggro.Below = 0
+ #    ResetDuelHealthMana
+ #        Description: Reset health and mana before duel starts and restore them when duel ends.
+@@ -2864,6 +2864,16 @@ NoGrayAggro.Below = 0
  ###################################################################################################
  # AUCTION HOUSE BOT SETTINGS
  #
@@ -85848,7 +85876,7 @@ index 4d2f9d6..c33aa37 100644
  #    AuctionHouseBot.Update.Interval
  #       Description: Interval in seconds for AHBot to get updated
  #       Default:     20
-@@ -3441,6 +3451,128 @@ PacketSpoof.BanDuration = 86400
+@@ -3448,6 +3458,128 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
