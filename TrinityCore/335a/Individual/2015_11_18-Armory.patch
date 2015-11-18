@@ -1,7 +1,7 @@
-From 55033b93e15f37c56b39fe8b30d5ff6a89f41620 Mon Sep 17 00:00:00 2001
+From e1299c83348cc858a1baaffd51f8c40a3e4c3cdf Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 1 Nov 2015 11:37:13 -0600
-Subject: [PATCH] 2015_11_01-Armory
+Date: Wed, 18 Nov 2015 13:43:51 -0600
+Subject: [PATCH] 2015_11_18-Armory
 
 ---
  .../WoWArmory/characters.armory.sql                | 50 ++++++++++++++
@@ -77,7 +77,7 @@ index 0000000..c816fe8
 +  `item_quality` smallint(6) NOT NULL DEFAULT '-1'
 +) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 diff --git a/src/server/game/Achievements/AchievementMgr.cpp b/src/server/game/Achievements/AchievementMgr.cpp
-index 2662273..ccfc3db 100644
+index 2bacaff..19648f4 100644
 --- a/src/server/game/Achievements/AchievementMgr.cpp
 +++ b/src/server/game/Achievements/AchievementMgr.cpp
 @@ -1512,6 +1512,12 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
@@ -85,7 +85,7 @@ index 2662273..ccfc3db 100644
  
      SendAchievementEarned(achievement);
 +
-+	/** World of Warcraft Armory **/
++    /** World of Warcraft Armory **/
 +    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
 +        GetPlayer()->CreateWowarmoryFeed(1, achievement->ID, 0, 0);
 +    /** World of Warcraft Armory **/
@@ -318,14 +318,14 @@ index 4348eef..c1e154d 100644
  
  #endif // TRINITY_BATTLEGROUND_SCORE_H
 diff --git a/src/server/game/Entities/Item/Item.cpp b/src/server/game/Entities/Item/Item.cpp
-index 9a6af37..ae949cd 100644
+index 1b7914f..9febe04 100644
 --- a/src/server/game/Entities/Item/Item.cpp
 +++ b/src/server/game/Entities/Item/Item.cpp
-@@ -281,6 +281,17 @@ bool Item::Create(ObjectGuid::LowType guidlow, uint32 itemid, Player const* owne
+@@ -282,6 +282,17 @@ bool Item::Create(ObjectGuid::LowType guidlow, uint32 itemid, Player const* owne
  
      SetUInt32Value(ITEM_FIELD_DURATION, itemProto->Duration);
      SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, 0);
-+	/** World of Warcraft Armory **/
++    /** World of Warcraft Armory **/
 +    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
 +    {
 +        if (itemProto->Quality > 2 && itemProto->Flags != 2048 && (itemProto->Class == ITEM_CLASS_WEAPON || itemProto->Class == ITEM_CLASS_ARMOR))
@@ -340,14 +340,14 @@ index 9a6af37..ae949cd 100644
  }
  
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index abe098b..9a98d5a 100644
+index 9a19ba9..a1b088d 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -4892,6 +4892,12 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4542,6 +4542,12 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
  
              Corpse::DeleteFromDB(playerguid, trans);
  
-+			/* World of Warcraft Armory */
++            /* World of Warcraft Armory */
 +            trans->PAppend("DELETE FROM armory_character_stats WHERE guid = '%u'",guid);
 +            trans->PAppend("DELETE FROM character_feed_log WHERE guid = '%u'",guid);
 +            /* World of Warcraft Armory */
@@ -356,20 +356,20 @@ index abe098b..9a98d5a 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -17246,6 +17252,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -16898,6 +16904,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
          CharacterDatabase.Execute(stmt);
          return false;
      }
-+	// Cleanup old Wowarmory feeds
++    // Cleanup old Wowarmory feeds
 +    InitWowarmoryFeeds();
  
      // overwrite possible wrong/corrupted guid
      SetGuidValue(OBJECT_FIELD_GUID, guid);
-@@ -19521,6 +19529,33 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19173,6 +19181,33 @@ void Player::SaveToDB(bool create /*=false*/)
  
      CharacterDatabase.CommitTransaction(trans);
  
-+	    /* World of Warcraft Armory */
++        /* World of Warcraft Armory */
 +    // Place this code AFTER CharacterDatabase.CommitTransaction(); to avoid some character saving errors.
 +    // Wowarmory feeds
 +    if (sWorld->getBoolConfig(CONFIG_ARMORY_ENABLE))
@@ -399,7 +399,7 @@ index abe098b..9a98d5a 100644
      // save pet (hunter pet level and experience and all type pets health/mana).
      if (Pet* pet = GetPet())
          pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-@@ -26399,6 +26434,47 @@ void Player::_SaveInstanceTimeRestrictions(SQLTransaction& trans)
+@@ -26050,6 +26085,47 @@ void Player::_SaveInstanceTimeRestrictions(SQLTransaction& trans)
      }
  }
  
@@ -448,11 +448,11 @@ index abe098b..9a98d5a 100644
  {
      for (GuidList::const_iterator itr = WhisperList.begin(); itr != WhisperList.end(); ++itr)
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 166b5c4..b291a6a 100644
+index 224cbde..03cabb7 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -1089,6 +1089,21 @@ private:
-     bool _isPvP;
+@@ -1000,6 +1000,21 @@ struct TradeStatusInfo
+     uint8 Slot;
  };
  
 +/* World of Warcraft Armory */
@@ -473,28 +473,28 @@ index 166b5c4..b291a6a 100644
  class Player : public Unit, public GridObject<Player>
  {
      friend class WorldSession;
-@@ -2173,6 +2188,10 @@ class Player : public Unit, public GridObject<Player>
+@@ -2090,6 +2105,10 @@ class Player : public Unit, public GridObject<Player>
          void SendCinematicStart(uint32 CinematicSequenceId);
          void SendMovieStart(uint32 MovieId);
  
-+	    /* World of Warcraft Armory */
++        /* World of Warcraft Armory */
 +        void CreateWowarmoryFeed(uint32 type, uint32 data, uint32 item_guid, uint32 item_quality);
 +        void InitWowarmoryFeeds();
 +        /* World of Warcraft Armory */
          /*********************************************************/
          /***                 INSTANCE SYSTEM                   ***/
          /*********************************************************/
-@@ -2646,6 +2665,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2563,6 +2582,8 @@ class Player : public Unit, public GridObject<Player>
          uint32 m_timeSyncTimer;
          uint32 m_timeSyncClient;
          uint32 m_timeSyncServer;
-+		// World of Warcraft Armory Feeds
++        // World of Warcraft Armory Feeds
 +        WowarmoryFeeds m_wowarmory_feeds;
  
          InstanceTimeMap _instanceResetTimes;
          uint32 _pendingBindId;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 77615aa..8330db9 100644
+index 6b234df..400111e 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -707,8 +707,17 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
@@ -542,14 +542,14 @@ index 77615aa..8330db9 100644
                  else
                  {
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 17ea868..be857ce 100644
+index 76f841f..dcd5cc0 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1290,6 +1290,10 @@ void World::LoadConfigSettings(bool reload)
+@@ -1292,6 +1292,10 @@ void World::LoadConfigSettings(bool reload)
          m_timers[WUPDATE_AUTOBROADCAST].Reset();
      }
  
-+	/** World of Warcraft Armory **/
++    /** World of Warcraft Armory **/
 +    m_bool_configs[CONFIG_ARMORY_ENABLE] = sConfigMgr->GetBoolDefault("Armory.Enable", true);
 +    /** World of Warcraft Armory **/
 +
@@ -557,22 +557,22 @@ index 17ea868..be857ce 100644
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
  
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index ccea34e..2a6919c 100644
+index 600bd79..da9789b 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -146,6 +146,7 @@ enum WorldBoolConfigs
-     CONFIG_ALLOW_TICKETS,
+@@ -147,6 +147,7 @@ enum WorldBoolConfigs
+     CONFIG_DELETE_CHARACTER_TICKET_TRACE,
      CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
      CONFIG_PRESERVE_CUSTOM_CHANNELS,
-+	CONFIG_ARMORY_ENABLE,
++    CONFIG_ARMORY_ENABLE,
      CONFIG_PDUMP_NO_PATHS,
      CONFIG_PDUMP_NO_OVERWRITE,
      CONFIG_QUEST_IGNORE_AUTO_ACCEPT,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 8a7da8c..eb16267 100644
+index 43afe08..ea84b9e 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2876,6 +2876,13 @@ AuctionHouseBot.Alliance.Items.Amount.Ratio = 100
+@@ -2893,6 +2893,13 @@ AuctionHouseBot.Alliance.Items.Amount.Ratio = 100
  
  AuctionHouseBot.Horde.Items.Amount.Ratio = 100
  
