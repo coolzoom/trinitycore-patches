@@ -1,7 +1,7 @@
-From 342a76725e81b30c338945e5ed16bfb5ec9f05b6 Mon Sep 17 00:00:00 2001
+From 1ee0169ea287ee4fbe989b1b940488e5341a19d2 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 18 Nov 2015 14:12:02 -0600
-Subject: [PATCH] 2015_11_18-All-No-Bots
+Date: Sat, 28 Nov 2015 11:46:34 -0600
+Subject: [PATCH] 2015_11_28-All-No-Bots
 
 ---
  README.NPCTELEPORT                                 |   14 +
@@ -65,7 +65,7 @@ Subject: [PATCH] 2015_11_18-All-No-Bots
  src/server/game/DataStores/DBCStructure.h          |    2 +-
  src/server/game/DataStores/DBCfmt.h                |    2 +-
  src/server/game/Entities/Creature/Creature.cpp     |    2 +-
- src/server/game/Entities/Player/Player.cpp         |  366 ++-
+ src/server/game/Entities/Player/Player.cpp         |  368 ++-
  src/server/game/Entities/Player/Player.h           |   96 +-
  src/server/game/Entities/Unit/Unit.cpp             |   26 +-
  src/server/game/Entities/Unit/Unit.h               |    4 +-
@@ -131,8 +131,8 @@ Subject: [PATCH] 2015_11_18-All-No-Bots
  src/server/worldserver/CMakeLists.txt              |    5 +
  src/server/worldserver/CommandLine/CliRunnable.cpp |    9 +
  src/server/worldserver/Main.cpp                    |   35 +
- src/server/worldserver/worldserver.conf.dist       |  809 ++++++-
- 128 files changed, 24713 insertions(+), 217 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |  815 ++++++-
+ 128 files changed, 24718 insertions(+), 220 deletions(-)
  create mode 100644 README.NPCTELEPORT
  create mode 100644 Reforging_README.md
  create mode 100644 TransmogVendor_README.md
@@ -4009,14 +4009,14 @@ index 0000000..4529815
 +/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 diff --git a/sql/TrinityCore-Patches/TransmogVendor/world_TransMogVendor.sql b/sql/TrinityCore-Patches/TransmogVendor/world_TransMogVendor.sql
 new file mode 100644
-index 0000000..353e593
+index 0000000..fac2946
 --- /dev/null
 +++ b/sql/TrinityCore-Patches/TransmogVendor/world_TransMogVendor.sql
 @@ -0,0 +1,6 @@
 +SET
-+@Entry = 190011,
++@Entry = 190012,
 +@Name = "Narpweaver";
-+
++DELETE FROM `creture_template` WHERE `entry` = @Entry;
 +INSERT INTO `creature_template` (`entry`, `modelid1`, `modelid2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `InhabitType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
 +(@Entry, 19646, 0, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 129, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 3, 1, 0, 0, 1, 0, 0, 'NPC_TransmogDisplayVendor');
 diff --git a/sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql b/sql/TrinityCore-Patches/TriniIRC/World_TrinityChat.sql
@@ -5940,7 +5940,7 @@ index c75c0ff..d15cd77 100644
  char const ItemExtendedCostEntryfmt[] = "niiiiiiiiiiiiiix";
  char const ItemLimitCategoryEntryfmt[] = "nxxxxxxxxxxxxxxxxxii";
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 9173d44..7f39927 100644
+index ea10ce7..63075fa 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -1510,7 +1510,7 @@ void Creature::setDeathState(DeathState s)
@@ -5953,7 +5953,7 @@ index 9173d44..7f39927 100644
          // always save boss respawn time at death to prevent crash cheating
          if (sWorld->getBoolConfig(CONFIG_SAVE_RESPAWN_TIME_IMMEDIATELY) || isWorldBoss())
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9a19ba9..abf9779 100644
+index f146d82..5e54112 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -16,6 +16,8 @@
@@ -6107,7 +6107,7 @@ index 9a19ba9..abf9779 100644
  }
  
  void Player::RegenerateAll()
-@@ -2763,7 +2824,7 @@ void Player::GiveLevel(uint8 level)
+@@ -2768,7 +2829,7 @@ void Player::GiveLevel(uint8 level)
          guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
  
      PlayerLevelInfo info;
@@ -6116,7 +6116,7 @@ index 9a19ba9..abf9779 100644
  
      PlayerClassLevelInfo classInfo;
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), level, &classInfo);
-@@ -2808,6 +2869,17 @@ void Player::GiveLevel(uint8 level)
+@@ -2813,6 +2874,17 @@ void Player::GiveLevel(uint8 level)
      InitTaxiNodesForLevel();
      InitGlyphsForLevel();
  
@@ -6134,7 +6134,7 @@ index 9a19ba9..abf9779 100644
      UpdateAllStats();
  
      if (sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL)) // Max weapon skill when leveling up
-@@ -2901,7 +2973,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
+@@ -2906,7 +2978,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
      sObjectMgr->GetPlayerClassLevelInfo(getClass(), getLevel(), &classInfo);
  
      PlayerLevelInfo info;
@@ -6143,16 +6143,28 @@ index 9a19ba9..abf9779 100644
  
      SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL));
      SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(getLevel()));
-@@ -4820,7 +4892,7 @@ Corpse* Player::CreateCorpse()
+@@ -4812,7 +4884,7 @@ Corpse* Player::CreateCorpse()
+     // prevent existence 2 corpse for player
+     SpawnCorpseBones();
+ 
+-    uint32 _pb, _pb2, _cfb1, _cfb2;
++    uint32 _uf, _pb, _pb2, _cfb1, _cfb2;
+ 
+     Corpse* corpse = new Corpse((m_ExtraFlags & PLAYER_EXTRA_PVP_DEATH) ? CORPSE_RESURRECTABLE_PVP : CORPSE_RESURRECTABLE_PVE);
+     SetPvPDeath(false);
+@@ -4825,9 +4897,11 @@ Corpse* Player::CreateCorpse()
  
      _corpseLocation.WorldRelocate(*this);
  
--    _uf = GetUInt32Value(UNIT_FIELD_BYTES_0);
 +    _uf = getORace();
      _pb = GetUInt32Value(PLAYER_BYTES);
      _pb2 = GetUInt32Value(PLAYER_BYTES_2);
  
-@@ -6507,10 +6579,10 @@ uint32 Player::TeamForRace(uint8 race)
++    uint8 race       = (uint8)(_uf);
+     uint8 skin       = (uint8)(_pb);
+     uint8 face       = (uint8)(_pb >> 8);
+     uint8 hairstyle  = (uint8)(_pb >> 16);
+@@ -6510,10 +6584,10 @@ uint32 Player::TeamForRace(uint8 race)
  
  void Player::setFactionForRace(uint8 race)
  {
@@ -6165,7 +6177,7 @@ index 9a19ba9..abf9779 100644
  }
  
  ReputationRank Player::GetReputationRank(uint32 faction) const
-@@ -6612,6 +6684,27 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6615,6 +6689,27 @@ void Player::RewardReputation(Unit* victim, float rate)
      if (!Rep)
          return;
  
@@ -6193,7 +6205,7 @@ index 9a19ba9..abf9779 100644
      uint32 ChampioningFaction = 0;
  
      if (GetChampioningFaction())
-@@ -6626,23 +6719,23 @@ void Player::RewardReputation(Unit* victim, float rate)
+@@ -6629,23 +6724,23 @@ void Player::RewardReputation(Unit* victim, float rate)
  
      uint32 team = GetTeam();
  
@@ -6223,7 +6235,7 @@ index 9a19ba9..abf9779 100644
          uint32 current_reputation_rank2 = GetReputationMgr().GetRank(factionEntry2);
          if (factionEntry2 && current_reputation_rank2 <= Rep->ReputationMaxCap2)
              GetReputationMgr().ModifyReputation(factionEntry2, donerep2);
-@@ -6737,7 +6830,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6740,7 +6835,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          if (!victim || victim == this || victim->GetTypeId() != TYPEID_PLAYER)
              return false;
  
@@ -6232,7 +6244,7 @@ index 9a19ba9..abf9779 100644
              return false;
  
          return true;
-@@ -6749,6 +6842,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6752,6 +6847,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
      ObjectGuid victim_guid;
      uint32 victim_rank = 0;
@@ -6240,7 +6252,7 @@ index 9a19ba9..abf9779 100644
  
      // need call before fields update to have chance move yesterday data to appropriate fields before today data change.
      UpdateHonorFields();
-@@ -6791,16 +6885,77 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6794,16 +6890,77 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              //  title[1..14]  -> rank[5..18]
              //  title[15..28] -> rank[5..18]
              //  title[other]  -> 0
@@ -6327,7 +6339,7 @@ index 9a19ba9..abf9779 100644
  
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
-@@ -6812,6 +6967,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6815,6 +6972,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, GetAreaId());
              UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1, 0, victim);
          }
@@ -6358,7 +6370,7 @@ index 9a19ba9..abf9779 100644
          else
          {
              if (!victim->ToCreature()->IsRacialLeader())
-@@ -6926,6 +7105,30 @@ void Player::SetArenaPoints(uint32 value)
+@@ -6929,6 +7110,30 @@ void Player::SetArenaPoints(uint32 value)
          AddKnownCurrency(ITEM_ARENA_POINTS_ID);
  }
  
@@ -6389,7 +6401,7 @@ index 9a19ba9..abf9779 100644
  void Player::ModifyHonorPoints(int32 value, SQLTransaction trans)
  {
      int32 newValue = int32(GetHonorPoints()) + value;
-@@ -7085,7 +7288,7 @@ void Player::UpdateArea(uint32 newArea)
+@@ -7088,7 +7293,7 @@ void Player::UpdateArea(uint32 newArea)
  
      // previously this was in UpdateZone (but after UpdateArea) so nothing will break
      pvpInfo.IsInNoPvPArea = false;
@@ -6398,7 +6410,7 @@ index 9a19ba9..abf9779 100644
      {
          SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
          pvpInfo.IsInNoPvPArea = true;
-@@ -7397,6 +7600,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7400,6 +7605,20 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
      if (only_level_scale && !ssv)
          return;
  
@@ -6419,7 +6431,7 @@ index 9a19ba9..abf9779 100644
      for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
      {
          uint32 statType = 0;
-@@ -7411,10 +7628,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
+@@ -7414,10 +7633,24 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
          }
          else
          {
@@ -6445,7 +6457,7 @@ index 9a19ba9..abf9779 100644
          }
  
          if (val == 0)
-@@ -11593,13 +11824,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
+@@ -11596,13 +11829,13 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
      if (!proto)
          return EQUIP_ERR_ITEM_NOT_FOUND;
  
@@ -6462,7 +6474,7 @@ index 9a19ba9..abf9779 100644
          return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
  
      if (proto->RequiredSkill != 0)
-@@ -12088,7 +12319,12 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
+@@ -12091,7 +12324,12 @@ void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
  {
      if (pItem)
      {
@@ -6476,7 +6488,7 @@ index 9a19ba9..abf9779 100644
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
          SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
      }
-@@ -12208,22 +12444,22 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
+@@ -12211,22 +12449,22 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
              pItem->SendUpdateToPlayer(this);
      }
  }
@@ -6503,7 +6515,7 @@ index 9a19ba9..abf9779 100644
      // 10
      // 11
      // 12
-@@ -16924,6 +17160,11 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -16927,6 +17165,11 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
          return false;
      }
  
@@ -6515,7 +6527,7 @@ index 9a19ba9..abf9779 100644
      SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
      SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
  
-@@ -16984,10 +17225,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -16987,10 +17230,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
      TC_LOG_DEBUG("entities.player.loading", "Load Basic value of player %s is: ", m_name.c_str());
      outDebugValues();
  
@@ -6526,7 +6538,7 @@ index 9a19ba9..abf9779 100644
      // load home bind and check in same time class/race pair, it used later for restore broken positions
      if (!_LoadHomeBind(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_HOME_BIND)))
          return false;
-@@ -18914,7 +19151,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -18928,7 +19167,7 @@ void Player::SaveToDB(bool create /*=false*/)
          stmt->setUInt32(index++, GetGUID().GetCounter());
          stmt->setUInt32(index++, GetSession()->GetAccountId());
          stmt->setString(index++, GetName());
@@ -6535,7 +6547,7 @@ index 9a19ba9..abf9779 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, GetByteValue(PLAYER_BYTES_3, 0));   // save gender from PLAYER_BYTES_3, UNIT_BYTES_0 changes with every transform effect
          stmt->setUInt8(index++, getLevel());
-@@ -19019,7 +19256,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -19033,7 +19272,7 @@ void Player::SaveToDB(bool create /*=false*/)
          // Update query
          stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER);
          stmt->setString(index++, GetName());
@@ -6544,7 +6556,7 @@ index 9a19ba9..abf9779 100644
          stmt->setUInt8(index++, getClass());
          stmt->setUInt8(index++, GetByteValue(PLAYER_BYTES_3, 0));   // save gender from PLAYER_BYTES_3, UNIT_BYTES_0 changes with every transform effect
          stmt->setUInt8(index++, getLevel());
-@@ -20259,6 +20496,18 @@ void Player::StopCastingCharm()
+@@ -20273,6 +20512,18 @@ void Player::StopCastingCharm()
      }
  }
  
@@ -6563,7 +6575,7 @@ index 9a19ba9..abf9779 100644
  void Player::Say(std::string const& text, Language language, WorldObject const* /*= nullptr*/)
  {
      std::string _text(text);
-@@ -20395,6 +20644,7 @@ void Player::PetSpellInitialize()
+@@ -20409,6 +20660,7 @@ void Player::PetSpellInitialize()
      //Cooldowns
      pet->GetSpellHistory()->WritePacket<Pet>(data);
  
@@ -6571,7 +6583,7 @@ index 9a19ba9..abf9779 100644
      GetSession()->SendPacket(&data);
  }
  
-@@ -21287,23 +21537,29 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
+@@ -21301,23 +21553,29 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
          return false;
      }
  
@@ -6608,7 +6620,7 @@ index 9a19ba9..abf9779 100644
      if (!sConditionMgr->IsObjectMeetingVendorItemConditions(creature->GetEntry(), item, this, creature))
      {
          TC_LOG_DEBUG("condition", "BuyItemFromVendor: conditions not met for creature entry %u item %u", creature->GetEntry(), item);
-@@ -21793,11 +22049,6 @@ void Player::SetBGTeam(uint32 team)
+@@ -21807,11 +22065,6 @@ void Player::SetBGTeam(uint32 team)
      SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
  }
  
@@ -6620,7 +6632,7 @@ index 9a19ba9..abf9779 100644
  void Player::LeaveBattleground(bool teleportToEntryPoint)
  {
      if (Battleground* bg = GetBattleground())
-@@ -21883,7 +22134,7 @@ void Player::ReportedAfkBy(Player* reporter)
+@@ -21897,7 +22150,7 @@ void Player::ReportedAfkBy(Player* reporter)
  
  WorldLocation Player::GetStartPosition() const
  {
@@ -6629,7 +6641,7 @@ index 9a19ba9..abf9779 100644
      uint32 mapId = info->mapId;
      if (getClass() == CLASS_DEATH_KNIGHT && HasSpell(50977))
          mapId = 0;
-@@ -22338,10 +22589,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
+@@ -22352,10 +22605,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
  
      SendEquipmentSetList();
  
@@ -6646,7 +6658,7 @@ index 9a19ba9..abf9779 100644
      GetSession()->SendPacket(&data);
  
      GetReputationMgr().SendForceReactions();                // SMSG_SET_FORCED_REACTIONS
-@@ -22580,7 +22834,7 @@ void Player::LearnCustomSpells()
+@@ -22594,7 +22850,7 @@ void Player::LearnCustomSpells()
  void Player::LearnDefaultSkills()
  {
      // learn default race/class skills
@@ -6656,7 +6668,7 @@ index 9a19ba9..abf9779 100644
      {
          uint32 skillId = itr->SkillId;
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 224cbde..19b5a04 100644
+index edf9c5b..15bf021 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -29,6 +29,7 @@
@@ -6772,7 +6784,7 @@ index 224cbde..19b5a04 100644
          bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
          bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
          void CleanupAfterTaxiFlight();
-@@ -1093,6 +1165,12 @@ class Player : public Unit, public GridObject<Player>
+@@ -1094,6 +1166,12 @@ class Player : public Unit, public GridObject<Player>
          void SetCommandStatusOn(uint32 command) { _activeCheats |= command; }
          void SetCommandStatusOff(uint32 command) { _activeCheats &= ~command; }
  
@@ -6785,7 +6797,7 @@ index 224cbde..19b5a04 100644
          // Played Time Stuff
          time_t m_logintime;
          time_t m_Last_tick;
-@@ -1125,6 +1203,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -1126,6 +1204,8 @@ class Player : public Unit, public GridObject<Player>
          void TextEmote(std::string const& text, WorldObject const* = nullptr, bool = false) override;
          /// Handles whispers from Addons and players based on sender, receiver's guid and language.
          void Whisper(std::string const& text, Language language, Player* receiver, bool = false) override;
@@ -6794,7 +6806,7 @@ index 224cbde..19b5a04 100644
  
          /*********************************************************/
          /***                    STORAGE SYSTEM                 ***/
-@@ -1817,8 +1897,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1818,8 +1898,7 @@ class Player : public Unit, public GridObject<Player>
          void CheckAreaExploreAndOutdoor(void);
  
          static uint32 TeamForRace(uint8 race);
@@ -6804,7 +6816,7 @@ index 224cbde..19b5a04 100644
          void setFactionForRace(uint8 race);
  
          void InitDisplayIds();
-@@ -1855,6 +1934,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -1856,6 +1935,7 @@ class Player : public Unit, public GridObject<Player>
          void ModifyHonorPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, honor save query will be added to trans
          void ModifyArenaPoints(int32 value, SQLTransaction trans = SQLTransaction(nullptr));      //! If trans is specified, arena point save query will be added to trans
          uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const;
@@ -6812,7 +6824,7 @@ index 224cbde..19b5a04 100644
          void SetHonorPoints(uint32 value);
          void SetArenaPoints(uint32 value);
  
-@@ -1967,7 +2047,6 @@ class Player : public Unit, public GridObject<Player>
+@@ -1968,7 +2048,6 @@ class Player : public Unit, public GridObject<Player>
          void SetBattlegroundEntryPoint();
  
          void SetBGTeam(uint32 team);
@@ -6820,7 +6832,7 @@ index 224cbde..19b5a04 100644
  
          void LeaveBattleground(bool teleportToEntryPoint = true);
          bool CanJoinToBattleground(Battleground const* bg) const;
-@@ -2196,6 +2275,7 @@ class Player : public Unit, public GridObject<Player>
+@@ -2197,6 +2276,7 @@ class Player : public Unit, public GridObject<Player>
          void SetTitle(CharTitlesEntry const* title, bool lost = false);
  
          //bool isActiveObject() const { return true; }
@@ -6828,7 +6840,7 @@ index 224cbde..19b5a04 100644
          bool CanSeeSpellClickOn(Creature const* creature) const;
  
          uint32 GetChampioningFaction() const { return m_ChampioningFaction; }
-@@ -2230,7 +2310,10 @@ class Player : public Unit, public GridObject<Player>
+@@ -2231,7 +2311,10 @@ class Player : public Unit, public GridObject<Player>
      // 04
      // 05
      // 06
@@ -6840,7 +6852,7 @@ index 224cbde..19b5a04 100644
      // 08
      // 09
      // 10
-@@ -2590,7 +2673,8 @@ class Player : public Unit, public GridObject<Player>
+@@ -2593,7 +2676,8 @@ class Player : public Unit, public GridObject<Player>
          // 32
          // 33
          // 34
@@ -6851,7 +6863,7 @@ index 224cbde..19b5a04 100644
          // 37
          // 38
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 6b234df..7f72630 100644
+index 73c1bf6..11b3d8d 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -432,7 +432,14 @@ void Unit::DisableSpline()
@@ -6870,7 +6882,7 @@ index 6b234df..7f72630 100644
  }
  
  float Unit::GetMeleeReach() const
-@@ -16085,7 +16092,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
+@@ -16101,7 +16108,7 @@ void Unit::RemoveCharmedBy(Unit* charmer)
  void Unit::RestoreFaction()
  {
      if (GetTypeId() == TYPEID_PLAYER)
@@ -6879,7 +6891,7 @@ index 6b234df..7f72630 100644
      else
      {
          if (HasUnitTypeMask(UNIT_MASK_MINION))
-@@ -16839,6 +16846,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
+@@ -16855,6 +16862,21 @@ uint32 Unit::GetModelForTotem(PlayerTotemType totemType)
              }
              break;
          }
@@ -6902,7 +6914,7 @@ index 6b234df..7f72630 100644
      return 0;
  }
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 39b1c34..6feeaf2 100644
+index 2500f32..c50d51c 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
 @@ -1305,8 +1305,10 @@ class Unit : public WorldObject
@@ -7023,7 +7035,7 @@ index 68cc591..0e7aefc 100644
                  continue;
              }
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index c3fe967..8e0cd37 100644
+index ae57309..f7c550e 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -1019,6 +1019,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
@@ -7144,7 +7156,7 @@ index 30764fe..ef3b3f0 100644
      }
  
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 2eebbfc..fdbff3f 100644
+index 6dcd324..5f4ac79 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -182,6 +182,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -7703,10 +7715,10 @@ index 3cbdf93..cfc21a5 100644
      TC_LOG_INFO("server.loading", "Loading C++ scripts");
  
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 7c9d956..08e6932 100644
+index 4f3b60d..0eab650 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
-@@ -4685,8 +4685,8 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -4684,8 +4684,8 @@ SpellCastResult Spell::CheckCast(bool strict)
      }
  
      // Check global cooldown
@@ -26624,7 +26636,7 @@ index ab13262..b52a7d7 100644
      realmID = sConfigMgr->GetIntDefault("RealmID", 0);
      if (!realmID)
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 43afe08..7cde06f 100644
+index 43afe08..f91f619 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -812,6 +812,13 @@ RecruitAFriend.MaxDifference = 4
@@ -26651,24 +26663,17 @@ index 43afe08..7cde06f 100644
  ###################################################################################################
  # CUSTOM SERVER OPTIONS
  #
-@@ -3174,6 +3178,16 @@ AuctionHouseBot.forceExcludeItems = ""
- #
- ###################################################################################################
+@@ -3171,9 +3175,6 @@ AuctionHouseBot.forceIncludeItems = ""
  
-+#    Fake.WHO.List
-+#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
-+#        49 real players online
-+#        Default: 0 (disabled)
-+#                 1 (enabled)
-+
-+Fake.WHO.List = 0
-+Fake.WHO.Online.Interval = 5
-+Fake.WHO.LevelUp.Interval = 2
-+
+ AuctionHouseBot.forceExcludeItems = ""
+ 
+-#
+-###################################################################################################
+-
  ###################################################################################################
  # AUCTION HOUSE BOT BUYER CONFIG
  #
-@@ -3252,6 +3266,8 @@ AuctionHouseBot.Buyer.Recheck.Interval = 20
+@@ -3252,6 +3253,8 @@ AuctionHouseBot.Buyer.Recheck.Interval = 20
  #
  ###################################################################################################
  
@@ -26677,7 +26682,7 @@ index 43afe08..7cde06f 100644
  ###################################################################################################
  # LOGGING SYSTEM SETTINGS
  #
-@@ -3448,6 +3464,793 @@ PacketSpoof.BanDuration = 86400
+@@ -3448,6 +3451,806 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -27464,6 +27469,19 @@ index 43afe08..7cde06f 100644
 +
 +Transmogrification.SetCostModifier = 3.0
 +Transmogrification.SetCopperCost = 0
++
++#
++###################################################################################################
++
++#    Fake.WHO.List
++#        Add fake players to fill in WHO LIST (who is online list, "O" button) if there is less then
++#        49 real players online
++#        Default: 0 (disabled)
++#                 1 (enabled)
++
++Fake.WHO.List = 0
++Fake.WHO.Online.Interval = 5
++Fake.WHO.LevelUp.Interval = 2
 +
 +#
 +###################################################################################################
