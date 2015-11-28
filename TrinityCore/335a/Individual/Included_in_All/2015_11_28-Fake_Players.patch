@@ -1,7 +1,7 @@
-From 9c82b1ae2c0226a0ddbe5b972f62dad5a8f7075b Mon Sep 17 00:00:00 2001
+From a859754e4771de11b976f8046be0808d62ddf43b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 1 Nov 2015 10:42:35 -0600
-Subject: [PATCH] 2015_11_01-Fake_Players
+Date: Sat, 28 Nov 2015 09:41:01 -0600
+Subject: [PATCH] 2015_11_28-Fake_Players
 
 ---
  .../Fake_Players/characters.fake_players.sql       | 40 +++++++++++
@@ -76,7 +76,7 @@ index 0000000..c1be608
 +DELETE FROM `trinity_string` WHERE `entry` = 12001;
 +INSERT INTO `trinity_string` (`entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`) VALUES (12001, 'Message: "Do not disturb".', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'РЎРѕРѕР±С‰РµРЅРёРµ: "РќРµ Р±РµСЃРїРѕРєРѕРёС‚СЊ".');
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
-index ab7b42a..83413dd 100644
+index 9bd2398..dba815b 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
 @@ -22,6 +22,11 @@ void CharacterDatabaseConnection::DoPrepareStatements()
@@ -92,7 +92,7 @@ index ab7b42a..83413dd 100644
      PrepareStatement(CHAR_INS_QUEST_POOL_SAVE, "INSERT INTO pool_quest_save (pool_id, quest_id) VALUES (?, ?)", CONNECTION_ASYNC);
      PrepareStatement(CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM, "DELETE FROM guild_bank_item WHERE guildid = ? AND TabId = ? AND SlotId = ?", CONNECTION_ASYNC);
 diff --git a/src/server/database/Database/Implementation/CharacterDatabase.h b/src/server/database/Database/Implementation/CharacterDatabase.h
-index 8e8ddb8..6dfd7bb 100644
+index 2f6827b..437d0ec 100644
 --- a/src/server/database/Database/Implementation/CharacterDatabase.h
 +++ b/src/server/database/Database/Implementation/CharacterDatabase.h
 @@ -29,6 +29,11 @@ enum CharacterDatabaseStatements
@@ -108,10 +108,10 @@ index 8e8ddb8..6dfd7bb 100644
      CHAR_INS_QUEST_POOL_SAVE,
      CHAR_DEL_NONEXISTENT_GUILD_BANK_ITEM,
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index abe098b..cd6f0f4 100644
+index f146d82..cd86502 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1827,6 +1827,13 @@ void Player::Update(uint32 p_time)
+@@ -1463,6 +1463,13 @@ void Player::Update(uint32 p_time)
              // m_nextSave reset in SaveToDB call
              SaveToDB();
              TC_LOG_DEBUG("entities.player", "Player '%s' (GUID: %u) saved", GetName().c_str(), GetGUID().GetCounter());
@@ -213,7 +213,7 @@ index 30764fe..ef3b3f0 100644
      }
  
 diff --git a/src/server/game/Handlers/MiscHandler.cpp b/src/server/game/Handlers/MiscHandler.cpp
-index 2eebbfc..6042f2b 100644
+index 6dcd324..2d7be38 100644
 --- a/src/server/game/Handlers/MiscHandler.cpp
 +++ b/src/server/game/Handlers/MiscHandler.cpp
 @@ -182,6 +182,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recvData)
@@ -345,10 +345,10 @@ index 7106320..6c0e366 100644
      // 29
      // 30
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 17ea868..f8d727d 100644
+index 76f841f..f05b95f 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -684,6 +684,10 @@ void World::LoadConfigSettings(bool reload)
+@@ -685,6 +685,10 @@ void World::LoadConfigSettings(bool reload)
      m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
      m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
  
@@ -360,10 +360,10 @@ index 17ea868..f8d727d 100644
      if (m_int_configs[CONFIG_MIN_PLAYER_NAME] < 1 || m_int_configs[CONFIG_MIN_PLAYER_NAME] > MAX_PLAYER_NAME)
      {
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index ccea34e..d8f453c 100644
+index 600bd79..9c281b2 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -174,7 +174,7 @@ enum WorldBoolConfigs
+@@ -175,7 +175,7 @@ enum WorldBoolConfigs
      // 12
      // 13
      // 14
@@ -372,7 +372,7 @@ index ccea34e..d8f453c 100644
      // 16
      // 17
      // 18
-@@ -380,6 +380,8 @@ enum WorldIntConfigs
+@@ -382,6 +382,8 @@ enum WorldIntConfigs
      CONFIG_CHARDELETE_HEROIC_MIN_LEVEL,
      CONFIG_AUTOBROADCAST_CENTER,
      CONFIG_AUTOBROADCAST_INTERVAL,
@@ -382,10 +382,10 @@ index ccea34e..d8f453c 100644
      CONFIG_DB_PING_INTERVAL,
      CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION,
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 8a7da8c..ad246b1 100644
+index 43afe08..b832785 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -3157,6 +3157,16 @@ AuctionHouseBot.forceExcludeItems = ""
+@@ -3448,6 +3448,16 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
@@ -399,9 +399,9 @@ index 8a7da8c..ad246b1 100644
 +Fake.WHO.Online.Interval = 5
 +Fake.WHO.LevelUp.Interval = 2
 +
- ###################################################################################################
- # AUCTION HOUSE BOT BUYER CONFIG
  #
+ # Prepatch by LordPsyan.
+ # See http://www.realmsofwarcraft.com/bb for forums and information.
 -- 
 2.1.4
 
