@@ -1,7 +1,7 @@
-From 72cf3d3beccb9a2753d30a0fcaa31d945de678a8 Mon Sep 17 00:00:00 2001
+From 36f9d1ea5fb1a49520bee8c978f3d1b344d8dc00 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 18 Nov 2015 07:54:48 -0600
-Subject: [PATCH] 2015_11_18-LordPsyanBots
+Date: Sun, 29 Nov 2015 14:14:55 -0600
+Subject: [PATCH] 2015_11_29-LordPsyanBots
 
 ---
  .../Bots/character_lordpsyanbots.sql               | 10771 +++++++++++++++++++
@@ -653,8 +653,8 @@ Subject: [PATCH] 2015_11_18-LordPsyanBots
  src/server/game/Server/WorldSession.h              |     7 +-
  src/server/game/Spells/Spell.cpp                   |    20 +
  src/server/game/Spells/SpellInfo.cpp               |     5 +
- src/server/game/World/World.cpp                    |    32 +-
- src/server/game/World/World.h                      |     1 +
+ src/server/game/World/World.cpp                    |    44 +-
+ src/server/game/World/World.h                      |     2 +
  src/server/scripts/CMakeLists.txt                  |     1 +
  src/server/scripts/Commands/cs_ahbot.cpp           |     4 +
  src/server/scripts/Commands/cs_misc.cpp            |     9 +
@@ -662,8 +662,8 @@ Subject: [PATCH] 2015_11_18-LordPsyanBots
  src/server/scripts/Spells/spell_paladin.cpp        |    40 +
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/CMakeLists.txt              |     1 +
- src/server/worldserver/worldserver.conf.dist       |   138 +-
- 659 files changed, 79442 insertions(+), 25 deletions(-)
+ src/server/worldserver/worldserver.conf.dist       |   156 +-
+ 659 files changed, 79473 insertions(+), 25 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_lordpsyanbots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_lordpsyanbots.sql
  create mode 100644 src/plugins/CMakeLists.txt
@@ -82409,7 +82409,7 @@ index 86b010a..72167c6 100644
      proposal.queues = check;
      proposal.isNew = numLfgGroups != 1 || sLFGMgr->GetOldState(gguid) != LFG_STATE_DUNGEON;
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 9173d44..24c841c 100644
+index ea10ce7..0d27d90 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
 @@ -48,6 +48,10 @@
@@ -83189,7 +83189,7 @@ index ad2f8f6..e202d59 100644
          player->GiveXP(xp, _victim, _groupRate);
          if (Pet* pet = player->GetPet())
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 9a19ba9..8bff0c5 100644
+index 429b594..e05e60e 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -89,7 +89,9 @@
@@ -83336,7 +83336,7 @@ index 9a19ba9..8bff0c5 100644
      // not unfriendly/hostile
      if (creature->GetReactionTo(this) <= REP_UNFRIENDLY)
          return NULL;
-@@ -2678,6 +2748,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
+@@ -2683,6 +2753,42 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method
      if (!group)
          return;
  
@@ -83379,7 +83379,7 @@ index 9a19ba9..8bff0c5 100644
      group->RemoveMember(guid, method, kicker, reason);
  }
  
-@@ -4542,6 +4648,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
+@@ -4547,6 +4653,14 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
  
              Corpse::DeleteFromDB(playerguid, trans);
  
@@ -83394,7 +83394,7 @@ index 9a19ba9..8bff0c5 100644
              CharacterDatabase.CommitTransaction(trans);
              break;
          }
-@@ -6814,6 +6928,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6817,6 +6931,10 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
          else
          {
@@ -83405,7 +83405,7 @@ index 9a19ba9..8bff0c5 100644
              if (!victim->ToCreature()->IsRacialLeader())
                  return false;
  
-@@ -15082,7 +15200,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15085,7 +15203,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      if (quest->GetRewSpellCast() > 0)
      {
          SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(quest->GetRewSpellCast());
@@ -83414,7 +83414,7 @@ index 9a19ba9..8bff0c5 100644
          {
              if (Creature* creature = GetMap()->GetCreature(questGiver->GetGUID()))
                  creature->CastSpell(this, quest->GetRewSpellCast(), true);
-@@ -15093,7 +15211,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -15096,7 +15214,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      else if (quest->GetRewSpell() > 0)
      {
          SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(quest->GetRewSpell());
@@ -83423,7 +83423,7 @@ index 9a19ba9..8bff0c5 100644
          {
              if (Creature* creature = GetMap()->GetCreature(questGiver->GetGUID()))
                  creature->CastSpell(this, quest->GetRewSpell(), true);
-@@ -23440,6 +23558,9 @@ bool Player::GetsRecruitAFriendBonus(bool forXP)
+@@ -23454,6 +23572,9 @@ bool Player::GetsRecruitAFriendBonus(bool forXP)
  void Player::RewardPlayerAndGroupAtKill(Unit* victim, bool isBattleGround)
  {
      KillRewarder(this, victim, isBattleGround).Reward();
@@ -83434,7 +83434,7 @@ index 9a19ba9..8bff0c5 100644
  
  void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewardSource)
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 224cbde..4fc4043 100644
+index edf9c5b..3ff7cc4 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
 @@ -57,6 +57,14 @@ class UpdateMask;
@@ -83452,7 +83452,7 @@ index 224cbde..4fc4043 100644
  typedef std::deque<Mail*> PlayerMails;
  
  #define PLAYER_MAX_SKILLS           127
-@@ -2218,6 +2226,18 @@ class Player : public Unit, public GridObject<Player>
+@@ -2219,6 +2227,18 @@ class Player : public Unit, public GridObject<Player>
  
          bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
  
@@ -83471,7 +83471,7 @@ index 224cbde..4fc4043 100644
          //! Return collision height sent to client
          float GetCollisionHeight(bool mounted) const;
  
-@@ -2234,7 +2254,20 @@ class Player : public Unit, public GridObject<Player>
+@@ -2235,7 +2255,20 @@ class Player : public Unit, public GridObject<Player>
      // 08
      // 09
      // 10
@@ -83493,7 +83493,7 @@ index 224cbde..4fc4043 100644
      // 12
      // 13
      // 14
-@@ -2502,6 +2535,14 @@ class Player : public Unit, public GridObject<Player>
+@@ -2503,6 +2536,14 @@ class Player : public Unit, public GridObject<Player>
          bool m_needsZoneUpdate;
  
      private:
@@ -83508,7 +83508,7 @@ index 224cbde..4fc4043 100644
          // internal common parts for CanStore/StoreItem functions
          InventoryResult CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
          InventoryResult CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemTemplate const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
-@@ -2595,7 +2636,9 @@ class Player : public Unit, public GridObject<Player>
+@@ -2598,7 +2639,9 @@ class Player : public Unit, public GridObject<Player>
          // 37
          // 38
          // 39
@@ -83553,7 +83553,7 @@ index fb27fea..e601a12 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 6b234df..a908cca 100644
+index 63de39f..930ccf7 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -255,6 +255,13 @@ Unit::Unit(bool isWorldObject) :
@@ -84156,7 +84156,7 @@ index 6b234df..a908cca 100644
      return true;
  }
  
-@@ -12993,6 +13321,10 @@ void Unit::ModSpellCastTime(SpellInfo const* spellInfo, int32 & castTime, Spell*
+@@ -12990,6 +13318,10 @@ void Unit::ModSpellCastTime(SpellInfo const* spellInfo, int32 & castTime, Spell*
      // called from caster
      if (Player* modOwner = GetSpellModOwner())
          modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell);
@@ -84167,7 +84167,7 @@ index 6b234df..a908cca 100644
  
      if (!(spellInfo->HasAttribute(SPELL_ATTR0_ABILITY) || spellInfo->HasAttribute(SPELL_ATTR0_TRADESPELL) || spellInfo->HasAttribute(SPELL_ATTR3_NO_DONE_BONUS)) &&
          ((GetTypeId() == TYPEID_PLAYER && spellInfo->SpellFamilyName) || GetTypeId() == TYPEID_UNIT))
-@@ -14146,6 +14478,13 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
+@@ -14162,6 +14494,13 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                      ToPlayer()->AddComboPoints(target, 1);
                      StartReactiveTimer(REACTIVE_OVERPOWER);
                  }
@@ -84181,7 +84181,7 @@ index 6b234df..a908cca 100644
              }
          }
      }
-@@ -14703,6 +15042,29 @@ void Unit::ClearComboPointHolders()
+@@ -14719,6 +15058,29 @@ void Unit::ClearComboPointHolders()
      }
  }
  
@@ -84211,7 +84211,7 @@ index 6b234df..a908cca 100644
  void Unit::ClearAllReactives()
  {
      for (uint8 i = 0; i < MAX_REACTIVE; ++i)
-@@ -14811,6 +15173,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
+@@ -14827,6 +15189,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
  {
      // Not apply this to creature cast spells with casttime == 0
      if (CastingTime == 0 && GetTypeId() == TYPEID_UNIT && !IsPet())
@@ -84221,7 +84221,7 @@ index 6b234df..a908cca 100644
          return 3500;
  
      if (CastingTime > 7000) CastingTime = 7000;
-@@ -15454,6 +15819,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
+@@ -15470,6 +15835,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
  
          // only if not player and not controlled by player pet. And not at BG
          if ((durabilityLoss && !player && !victim->ToPlayer()->InBattleground()) || (player && sWorld->getBoolConfig(CONFIG_DURABILITY_LOSS_IN_PVP)))
@@ -84231,7 +84231,7 @@ index 6b234df..a908cca 100644
          {
              TC_LOG_DEBUG("entities.unit", "We are dead, losing %f percent durability", sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH));
              plrVictim->DurabilityLossAll(sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH), false);
-@@ -16393,6 +16761,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16409,6 +16777,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      //calculate miss chance
      float missChance = victim->GetUnitMissChance(attType);
  
@@ -84253,7 +84253,7 @@ index 6b234df..a908cca 100644
      if (!spellId && haveOffhandWeapon())
          missChance += 19;
  
-@@ -16421,6 +16804,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16437,6 +16820,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      else
          missChance -= m_modMeleeHitChance;
  
@@ -84265,7 +84265,7 @@ index 6b234df..a908cca 100644
      // Limit miss chance from 0 to 60%
      if (missChance < 0.0f)
          return 0.0f;
-@@ -16737,6 +17125,183 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16753,6 +17141,183 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
          }
      }
  
@@ -84450,10 +84450,10 @@ index 6b234df..a908cca 100644
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
      if (formEntry && formEntry->modelID_A)
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 39b1c34..ac17613 100644
+index 2500f32..17f45ad 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
-@@ -2124,6 +2124,18 @@ class Unit : public WorldObject
+@@ -2125,6 +2125,18 @@ class Unit : public WorldObject
          void TextEmote(uint32 textId, WorldObject const* target = nullptr, bool isBossEmote = false);
          void Whisper(uint32 textId, Player* target, bool isBossWhisper = false);
  
@@ -84473,7 +84473,7 @@ index 39b1c34..ac17613 100644
          explicit Unit (bool isWorldObject);
  
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 046ce42..4d23fd7 100644
+index b2be5c4..c20fb29 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
 @@ -7881,6 +7881,82 @@ SkillRangeType GetSkillRangeType(SkillRaceClassInfoEntry const* rcEntry)
@@ -84699,7 +84699,7 @@ index b814ab0..7eea68f 100644
          bool _setMembersGroup(ObjectGuid guid, uint8 group);
          void _homebindIfInstance(Player* player);
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index c3fe967..fbaee2d 100644
+index ae57309..e66a89a 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
 @@ -46,6 +46,9 @@
@@ -85263,7 +85263,7 @@ index 4ea8583..0537d01 100644
  // end102
  // end103
 diff --git a/src/server/game/Server/WorldSession.cpp b/src/server/game/Server/WorldSession.cpp
-index b1a043c..85f7d65 100644
+index 1ccd6a4..01b783f 100644
 --- a/src/server/game/Server/WorldSession.cpp
 +++ b/src/server/game/Server/WorldSession.cpp
 @@ -46,6 +46,9 @@
@@ -85396,7 +85396,7 @@ index af2d2d2..4124661 100644
          void SendBfInvitePlayerToWar(uint32 battleId, uint32 zoneId, uint32 time);
          void SendBfInvitePlayerToQueue(uint32 battleId);
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 7c9d956..2966bd6 100644
+index 4f3b60d..18babed 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -2400,6 +2400,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
@@ -85413,7 +85413,7 @@ index 7c9d956..2966bd6 100644
          }
  
          m_damage = damageInfo.damage;
-@@ -3159,6 +3166,11 @@ void Spell::cast(bool skipCheck)
+@@ -3158,6 +3165,11 @@ void Spell::cast(bool skipCheck)
          return;
      }
  
@@ -85425,7 +85425,7 @@ index 7c9d956..2966bd6 100644
      PrepareTriggersExecutedOnHit();
  
      CallScriptOnCastHandlers();
-@@ -3606,6 +3618,9 @@ void Spell::finish(bool ok)
+@@ -3605,6 +3617,9 @@ void Spell::finish(bool ok)
  
      // Stop Attack for some spells
      if (m_spellInfo->HasAttribute(SPELL_ATTR0_STOP_ATTACK_TARGET))
@@ -85435,7 +85435,7 @@ index 7c9d956..2966bd6 100644
          m_caster->AttackStop();
  }
  
-@@ -3815,6 +3830,11 @@ void Spell::SendSpellStart()
+@@ -3814,6 +3829,11 @@ void Spell::SendSpellStart()
  
  void Spell::SendSpellGo()
  {
@@ -85464,10 +85464,10 @@ index 6486a7e..5e70233 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 76f841f..7d6bf3e 100644
+index 76f841f..c92f566 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -82,7 +82,10 @@
+@@ -82,7 +82,12 @@
  // 15
  // 16
  // 17
@@ -85475,11 +85475,23 @@ index 76f841f..7d6bf3e 100644
 +// playerbot mod
 +#include "../../plugins/ahbot/AhBot.h"
 +#include "../../plugins/playerbot/PlayerbotAIConfig.h"
++#include "../../plugins/playerbot/playerbot.h"
 +#include "../../plugins/playerbot/RandomPlayerbotMgr.h"
++#include "../../plugins/playerbot/RandomPlayerbotFactory.h"
  // 19
  // 20
  // Visit http://www.realmsofwarcraft.com/bb for forums and information
-@@ -1330,6 +1333,7 @@ void World::LoadConfigSettings(bool reload)
+@@ -1292,6 +1297,9 @@ void World::LoadConfigSettings(bool reload)
+         m_timers[WUPDATE_AUTOBROADCAST].Reset();
+     }
+ 
++    // RandomBot AutoLogin
++    m_bool_configs[CONFIG_RANDOMBOTAUTOLOGIN] = sConfigMgr->GetBoolDefault("RandomBotAutoLogin.On", true);
++
+     // MySQL ping time interval
+     m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
+ 
+@@ -1330,6 +1338,7 @@ void World::LoadConfigSettings(bool reload)
  
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
@@ -85487,7 +85499,7 @@ index 76f841f..7d6bf3e 100644
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
-@@ -1554,6 +1558,9 @@ void World::SetInitialWorldSettings()
+@@ -1554,6 +1563,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -85497,7 +85509,7 @@ index 76f841f..7d6bf3e 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1950,6 +1957,11 @@ void World::SetInitialWorldSettings()
+@@ -1950,6 +1962,18 @@ void World::SetInitialWorldSettings()
  
      if (uint32 realmId = sConfigMgr->GetIntDefault("RealmID", 0)) // 0 reserved for auth
          sLog->SetRealmId(realmId);
@@ -85506,10 +85518,17 @@ index 76f841f..7d6bf3e 100644
 +    auctionbot.Init();
 +
 +    sPlayerbotAIConfig.Initialize();
++    uint8 randomBotAutologin = sWorld->getBoolConfig(CONFIG_RANDOMBOTAUTOLOGIN);
++    if (randomBotAutologin == 0)
++    {
++        return;
++    } else {
++        sRandomPlayerbotMgr.UpdateAIInternal(0);
++    }
  }
  
  void World::DetectDBCLang()
-@@ -2119,14 +2131,24 @@ void World::Update(uint32 diff)
+@@ -2119,14 +2143,24 @@ void World::Update(uint32 diff)
  
          ///- Handle expired auctions
          sAuctionMgr->Update();
@@ -85536,7 +85555,7 @@ index 76f841f..7d6bf3e 100644
  
      /// <li> Handle session updates when the timer has passed
      ResetTimeDiffRecord();
-@@ -2691,6 +2713,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
+@@ -2691,6 +2725,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
          ShutdownMsg(true, nullptr, reason);
      }
  
@@ -85548,10 +85567,18 @@ index 76f841f..7d6bf3e 100644
  }
  
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 600bd79..5658b30 100644
+index 600bd79..fd67d4e 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -413,6 +413,7 @@ enum WorldIntConfigs
+@@ -143,6 +143,7 @@ enum WorldBoolConfigs
+     CONFIG_SHOW_MUTE_IN_WORLD,
+     CONFIG_SHOW_BAN_IN_WORLD,
+     CONFIG_AUTOBROADCAST,
++    CONFIG_RANDOMBOTAUTOLOGIN,
+     CONFIG_ALLOW_TICKETS,
+     CONFIG_DELETE_CHARACTER_TICKET_TRACE,
+     CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
+@@ -413,6 +414,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -85840,10 +85867,35 @@ index 78f39e0..a2c7596 100644
    g3dlib
    gsoap
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 43afe08..b5dfe85 100644
+index 43afe08..ee08bb0 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
-@@ -2655,12 +2655,12 @@ PlayerStart.MapsExplored = 0
+@@ -23,6 +23,24 @@
+ PrepatchGI.Added = 0
+ 
+ #
++
++###################################################################################################
++#
++# Random Playerbot Configuration
++#
++#
++# If you want random bots to automatically enter world, you must set
++# this to 1.
++#
++# RandomBotAutoLogin.On
++#         default = 0 (Bot will not enter world)
++#                   1 (Random bots spawned)
++
++RandomBotAutoLogin.On = 1
++
++#
++
++#
+ ###################################################################################################
+ 
+ ###################################################################################################
+@@ -2655,12 +2673,12 @@ PlayerStart.MapsExplored = 0
  HonorPointsAfterDuel = 0
  
  #
@@ -85859,7 +85911,7 @@ index 43afe08..b5dfe85 100644
  
  #    ResetDuelHealthMana
  #        Description: Reset health and mana before duel starts and restore them when duel ends.
-@@ -2864,6 +2864,16 @@ NoGrayAggro.Below = 0
+@@ -2864,6 +2882,16 @@ NoGrayAggro.Below = 0
  ###################################################################################################
  # AUCTION HOUSE BOT SETTINGS
  #
@@ -85876,7 +85928,7 @@ index 43afe08..b5dfe85 100644
  #    AuctionHouseBot.Update.Interval
  #       Description: Interval in seconds for AHBot to get updated
  #       Default:     20
-@@ -3448,6 +3458,128 @@ PacketSpoof.BanDuration = 86400
+@@ -3448,6 +3476,128 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
