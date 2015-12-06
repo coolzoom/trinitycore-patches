@@ -1,7 +1,17 @@
-From 36f9d1ea5fb1a49520bee8c978f3d1b344d8dc00 Mon Sep 17 00:00:00 2001
+From fcfcf789116c24e64ecdd0e06f788ff4a154ef05 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Sun, 29 Nov 2015 14:14:55 -0600
-Subject: [PATCH] 2015_11_29-LordPsyanBots
+Date: Sun, 6 Dec 2015 12:30:31 -0600
+Subject: [PATCH] Updates for LordPsyanBots based off ike3s recent changes:
+ [ai-0.36-112] do not reset strategies on area trigger (as it breaks
+ teleporting) [ai-0.36-113] respect dependent quests in bot randomizer
+ [ai-0.36-114] use meeting stone action fix [ai-0.36-115] make sure there is
+ only one reward per guild task [ai-0.36-116] notify player about guild task
+ completion [ai-0.36-126] less aggressive default config values [ai-0.36-117]
+ reduce guild task reward deplay to max 10 minutes [ai-0.36-118] friendly
+ guild task advertisement subject [ai-0.36-119] remove threat strategy from
+ druid random bot [ai-0.36-121] strategy cleanup [ai-0.36-122] switch to 2d
+ distances [ai-0.36-123] better random bot quest initialization [ai-0.36-124]
+ shaman: cast searing totem near targets [ai-0.36-125] 'near' formation
 
 ---
  .../Bots/character_lordpsyanbots.sql               | 10771 +++++++++++++++++++
@@ -35,7 +45,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  src/plugins/playerbot/ChatHelper.h                 |    52 +
  src/plugins/playerbot/FleeManager.cpp              |   160 +
  src/plugins/playerbot/FleeManager.h                |    83 +
- src/plugins/playerbot/GuildTaskMgr.cpp             |   697 ++
+ src/plugins/playerbot/GuildTaskMgr.cpp             |   726 ++
  src/plugins/playerbot/GuildTaskMgr.h               |    45 +
  src/plugins/playerbot/Helpers.cpp                  |    90 +
  src/plugins/playerbot/LazyCalculatedValue.h        |    42 +
@@ -50,7 +60,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  src/plugins/playerbot/PlayerbotAIConfig.h          |    82 +
  src/plugins/playerbot/PlayerbotCommandServer.cpp   |    94 +
  src/plugins/playerbot/PlayerbotCommandServer.h     |    26 +
- src/plugins/playerbot/PlayerbotFactory.cpp         |  1723 +++
+ src/plugins/playerbot/PlayerbotFactory.cpp         |  1745 +++
  src/plugins/playerbot/PlayerbotFactory.h           |    68 +
  src/plugins/playerbot/PlayerbotMgr.cpp             |   472 +
  src/plugins/playerbot/PlayerbotMgr.h               |    69 +
@@ -101,7 +111,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  .../playerbot/strategy/actions/ActionContext.h     |   110 +
  .../playerbot/strategy/actions/AddLootAction.cpp   |    62 +
  .../playerbot/strategy/actions/AddLootAction.h     |    32 +
- .../strategy/actions/AreaTriggerAction.cpp         |    80 +
+ .../strategy/actions/AreaTriggerAction.cpp         |    73 +
  .../playerbot/strategy/actions/AreaTriggerAction.h |    23 +
  .../playerbot/strategy/actions/AttackAction.cpp    |   104 +
  .../playerbot/strategy/actions/AttackAction.h      |    38 +
@@ -238,7 +248,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  .../playerbot/strategy/actions/UnequipAction.h     |    18 +
  .../playerbot/strategy/actions/UseItemAction.cpp   |   302 +
  .../playerbot/strategy/actions/UseItemAction.h     |    47 +
- .../strategy/actions/UseMeetingStoneAction.cpp     |    81 +
+ .../strategy/actions/UseMeetingStoneAction.cpp     |    86 +
  .../strategy/actions/UseMeetingStoneAction.h       |    26 +
  .../playerbot/strategy/actions/WhoAction.cpp       |   160 +
  src/plugins/playerbot/strategy/actions/WhoAction.h |    23 +
@@ -254,7 +264,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  .../strategy/druid/DruidAiObjectContext.cpp        |   258 +
  .../strategy/druid/DruidAiObjectContext.h          |    12 +
  .../playerbot/strategy/druid/DruidBearActions.h    |    64 +
- .../playerbot/strategy/druid/DruidCatActions.h     |    69 +
+ .../playerbot/strategy/druid/DruidCatActions.h     |    64 +
  .../playerbot/strategy/druid/DruidMultipliers.cpp  |     6 +
  .../playerbot/strategy/druid/DruidMultipliers.h    |     6 +
  .../strategy/druid/DruidShapeshiftActions.h        |    53 +
@@ -490,7 +500,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  .../strategy/values/EnemyHealerTargetValue.h       |    15 +
  .../playerbot/strategy/values/EnemyPlayerValue.cpp |    34 +
  .../playerbot/strategy/values/EnemyPlayerValue.h   |    15 +
- .../playerbot/strategy/values/Formations.cpp       |   346 +
+ .../playerbot/strategy/values/Formations.cpp       |   377 +
  src/plugins/playerbot/strategy/values/Formations.h |    52 +
  .../playerbot/strategy/values/GrindTargetValue.cpp |   126 +
  .../playerbot/strategy/values/GrindTargetValue.h   |    20 +
@@ -586,8 +596,8 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  .../strategy/warrior/GenericWarriorStrategy.h      |    19 +
  .../strategy/warrior/TankWarriorStrategy.cpp       |   126 +
  .../strategy/warrior/TankWarriorStrategy.h         |    18 +
- .../playerbot/strategy/warrior/WarriorActions.cpp  |    30 +
- .../playerbot/strategy/warrior/WarriorActions.h    |   210 +
+ .../playerbot/strategy/warrior/WarriorActions.cpp  |    15 +
+ .../playerbot/strategy/warrior/WarriorActions.h    |   207 +
  .../strategy/warrior/WarriorAiObjectContext.cpp    |   192 +
  .../strategy/warrior/WarriorAiObjectContext.h      |    12 +
  .../strategy/warrior/WarriorMultipliers.cpp        |     6 +
@@ -663,7 +673,7 @@ Subject: [PATCH] 2015_11_29-LordPsyanBots
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/CMakeLists.txt              |     1 +
  src/server/worldserver/worldserver.conf.dist       |   156 +-
- 659 files changed, 79473 insertions(+), 25 deletions(-)
+ 659 files changed, 79530 insertions(+), 25 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_lordpsyanbots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_lordpsyanbots.sql
  create mode 100644 src/plugins/CMakeLists.txt
@@ -13546,7 +13556,7 @@ index 0000000..4b704fb
 +#define auctionbot ahbot::AhBot::instance()
 diff --git a/src/plugins/ahbot/AhBotConfig.cpp b/src/plugins/ahbot/AhBotConfig.cpp
 new file mode 100644
-index 0000000..561b652
+index 0000000..02d5f65
 --- /dev/null
 +++ b/src/plugins/ahbot/AhBotConfig.cpp
 @@ -0,0 +1,58 @@
@@ -13591,10 +13601,10 @@ index 0000000..561b652
 +    guid = (uint64)config.GetIntDefault("AhBot.GUID", 0);
 +    updateInterval = config.GetIntDefault("AhBot.UpdateIntervalInSeconds", 300);
 +    historyDays = config.GetIntDefault("AhBot.History.Days", 30);
-+    itemBuyMinInterval = config.GetIntDefault("AhBot.ItemBuyMinInterval", 7200);
-+    itemBuyMaxInterval = config.GetIntDefault("AhBot.ItemBuyMaxInterval", 28800);
-+    itemSellMinInterval = config.GetIntDefault("AhBot.ItemSellMinInterval", 7200);
-+    itemSellMaxInterval = config.GetIntDefault("AhBot.ItemSellMaxInterval", 28800);
++    itemBuyMinInterval = config.GetIntDefault("AhBot.ItemBuyMinInterval", 600);
++    itemBuyMaxInterval = config.GetIntDefault("AhBot.ItemBuyMaxInterval", 7200);
++    itemSellMinInterval = config.GetIntDefault("AhBot.ItemSellMinInterval", 600);
++    itemSellMaxInterval = config.GetIntDefault("AhBot.ItemSellMaxInterval", 7200);
 +    maxSellInterval = config.GetIntDefault("AhBot.MaxSellInterval", 3600 * 8);
 +    alwaysAvailableMoney = config.GetIntDefault("AhBot.AlwaysAvailableMoney", 200000);
 +    priceMultiplier = config.GetFloatDefault("AhBot.PriceMultiplier", 1.0f);
@@ -16590,10 +16600,10 @@ index 0000000..3084cdd
 +};
 diff --git a/src/plugins/playerbot/GuildTaskMgr.cpp b/src/plugins/playerbot/GuildTaskMgr.cpp
 new file mode 100644
-index 0000000..ff70875
+index 0000000..f1c8bf3
 --- /dev/null
 +++ b/src/plugins/playerbot/GuildTaskMgr.cpp
-@@ -0,0 +1,697 @@
+@@ -0,0 +1,726 @@
 +#include "../pchdef.h"
 +#include "playerbot.h"
 +#include "PlayerbotAIConfig.h"
@@ -16821,18 +16831,41 @@ index 0000000..ff70875
 +    if (!leader)
 +        return false;
 +
-+    uint32 itemTask = GetTaskValue(owner, guildId, "itemTask");
++    uint32 validIn;
++    uint32 itemTask = GetTaskValue(owner, guildId, "itemTask", &validIn);
 +    if (itemTask)
-+        return SendItemAdvertisement(itemTask, owner, guildId);
++        return SendItemAdvertisement(itemTask, owner, guildId, validIn);
 +
-+    uint32 killTask = GetTaskValue(owner, guildId, "killTask");
++    uint32 killTask = GetTaskValue(owner, guildId, "killTask", &validIn);
 +    if (killTask)
-+        return SendKillAdvertisement(killTask, owner, guildId);
++        return SendKillAdvertisement(killTask, owner, guildId, validIn);
 +
 +    return false;
 +}
 +
-+bool GuildTaskMgr::SendItemAdvertisement(uint32 itemId, uint32 owner, uint32 guildId)
++string formatTime(uint32 secs)
++{
++    ostringstream out;
++    if (secs < 3600)
++    {
++        out << secs / 60 << " min";
++    }
++    else if (secs < 7200)
++    {
++        out << "1 hr " << (secs - 3600) / 60 << " min";
++    }
++    else if (secs < 3600 * 24)
++    {
++        out << secs / 3600 << " hr";
++    } else
++    {
++        out << secs / 3600 / 24 << " days";
++    }
++
++    return out.str();
++}
++
++bool GuildTaskMgr::SendItemAdvertisement(uint32 itemId, uint32 owner, uint32 guildId, uint32 validIn)
 +{
 +    Guild *guild = sGuildMgr->GetGuildById(guildId);
 +    Player* player = sObjectMgr->GetPlayerByLowGUID(owner);
@@ -16853,18 +16886,22 @@ index 0000000..ff70875
 +    else
 +        body << "some ";
 +    body << "we'd really appreciate that and pay a high price.\n";
++    body << "The task will expire in " << formatTime(validIn) << "\n";
 +    body << "\n";
 +    body << "Best Regards,\n";
 +    body << guild->GetName() << "\n";
 +    body << leader->GetName() << "\n";
-+    MailDraft("Guild Task Advertisement", body.str()).SendMailTo(trans, MailReceiver(player), MailSender(leader));
++
++    ostringstream subject;
++    subject << "Guild Task: " << proto->Name1;
++    MailDraft(subject.str(), body.str()).SendMailTo(trans, MailReceiver(player), MailSender(leader));
 +    CharacterDatabase.CommitTransaction(trans);
 +
 +    return true;
 +}
 +
 +
-+bool GuildTaskMgr::SendKillAdvertisement(uint32 creatureId, uint32 owner, uint32 guildId)
++bool GuildTaskMgr::SendKillAdvertisement(uint32 creatureId, uint32 owner, uint32 guildId, uint32 validIn)
 +{
 +    Guild *guild = sGuildMgr->GetGuildById(guildId);
 +    Player* player = sObjectMgr->GetPlayerByLowGUID(owner);
@@ -16880,11 +16917,15 @@ index 0000000..ff70875
 +    body << "\n";
 +    body << "As you probably know " << proto->Name << " is wanted dead for the crimes it did against our guild. If you should kill it ";
 +    body << "we'd really appreciate that.\n";
++    body << "The task will expire in " << formatTime(validIn) << "\n";
 +    body << "\n";
 +    body << "Best Regards,\n";
 +    body << guild->GetName() << "\n";
 +    body << leader->GetName() << "\n";
-+    MailDraft("Guild Task Advertisement", body.str()).SendMailTo(trans, MailReceiver(player), MailSender(leader));
++
++    ostringstream subject;
++    subject << "Guild Task: " << proto->Name;
++    MailDraft(subject.str(), body.str()).SendMailTo(trans, MailReceiver(player), MailSender(leader));
 +    CharacterDatabase.CommitTransaction(trans);
 +
 +    return true;
@@ -17187,6 +17228,7 @@ index 0000000..ff70875
 +                bot->GetGuild()->GetName().c_str(), ownerPlayer->GetName().c_str());
 +        SetTaskValue(owner, guildId, "reward", 1,
 +                urand(sPlayerbotAIConfig.minGuildTaskRewardTime, sPlayerbotAIConfig.maxGuildTaskRewardTime));
++        ChatHandler(ownerPlayer->GetSession()).PSendSysMessage("You have completed a guild task");
 +    }
 +    else
 +    {
@@ -17249,16 +17291,12 @@ index 0000000..ff70875
 +    SQLTransaction trans = CharacterDatabase.BeginTransaction();
 +    MailDraft draft("Thank You", body.str());
 +
-+    uint32 count = urand(1, 3);
-+    for (uint32 i = 0; i < count; ++i)
++    uint32 itemId = sRandomItemMgr.GetRandomItem(RANDOM_ITEM_GUILD_TASK_REWARD);
++    if (itemId)
 +    {
-+        uint32 itemId = sRandomItemMgr.GetRandomItem(RANDOM_ITEM_GUILD_TASK_REWARD);
-+        if (itemId)
-+        {
-+            Item* item = Item::CreateItem(itemId, 1, leader);
-+            item->SaveToDB(trans);
-+            draft.AddItem(item);
-+        }
++        Item* item = Item::CreateItem(itemId, 1, leader);
++        item->SaveToDB(trans);
++        draft.AddItem(item);
 +    }
 +
 +    draft.AddMoney(GetTaskValue(owner, guildId, "payment")).SendMailTo(trans, MailReceiver(player), MailSender(leader));
@@ -17289,11 +17327,12 @@ index 0000000..ff70875
 +                guild->GetName().c_str(), player->GetName().c_str());
 +        SetTaskValue(owner, guildId, "reward", 1,
 +                urand(sPlayerbotAIConfig.minGuildTaskRewardTime, sPlayerbotAIConfig.maxGuildTaskRewardTime));
++        ChatHandler(player->GetSession()).PSendSysMessage("You have completed a guild task");
 +    }
 +}
 diff --git a/src/plugins/playerbot/GuildTaskMgr.h b/src/plugins/playerbot/GuildTaskMgr.h
 new file mode 100644
-index 0000000..5e78e9f
+index 0000000..ba74df7
 --- /dev/null
 +++ b/src/plugins/playerbot/GuildTaskMgr.h
 @@ -0,0 +1,45 @@
@@ -17330,8 +17369,8 @@ index 0000000..5e78e9f
 +        uint32 SetTaskValue(uint32 owner, uint32 guildId, string type, uint32 value, uint32 validIn);
 +        uint32 CreateTask(uint32 owner, uint32 guildId);
 +        bool SendAdvertisement(uint32 owner, uint32 guildId);
-+        bool SendItemAdvertisement(uint32 itemId, uint32 owner, uint32 guildId);
-+        bool SendKillAdvertisement(uint32 creatureId, uint32 owner, uint32 guildId);
++        bool SendItemAdvertisement(uint32 itemId, uint32 owner, uint32 guildId, uint32 validIn);
++        bool SendKillAdvertisement(uint32 creatureId, uint32 owner, uint32 guildId, uint32 validIn);
 +        bool SendThanks(uint32 owner, uint32 guildId);
 +        bool Reward(uint32 owner, uint32 guildId);
 +        bool CreateItemTask(uint32 owner, uint32 guildId);
@@ -19517,7 +19556,7 @@ index 0000000..8e72bf0
 +};
 diff --git a/src/plugins/playerbot/PlayerbotAIConfig.cpp b/src/plugins/playerbot/PlayerbotAIConfig.cpp
 new file mode 100644
-index 0000000..f1289a3
+index 0000000..4c47840
 --- /dev/null
 +++ b/src/plugins/playerbot/PlayerbotAIConfig.cpp
 @@ -0,0 +1,229 @@
@@ -19606,7 +19645,7 @@ index 0000000..f1289a3
 +    randomBotUpdateInterval = config.GetIntDefault("AiPlayerbot.RandomBotUpdateInterval", 60);
 +    randomBotCountChangeMinInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMinInterval", 24 * 3600);
 +    randomBotCountChangeMaxInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMaxInterval", 3 * 24 * 3600);
-+    minRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MinRandomBotInWorldTime", 2 * 3600);
++    minRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MinRandomBotInWorldTime", 24 * 3600);
 +    maxRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MaxRandomBotInWorldTime", 14 * 24 * 3600);
 +    minRandomBotRandomizeTime = config.GetIntDefault("AiPlayerbot.MinRandomBotRandomizeTime", 2 * 3600);
 +    maxRandomBotRandomizeTime = config.GetIntDefault("AiPlayerbot.MaxRandomRandomizeTime", 14 * 24 * 3600);
@@ -19653,10 +19692,10 @@ index 0000000..f1289a3
 +    guildTaskEnabled = config.GetBoolDefault("AiPlayerbot.EnableGuildTasks", true);
 +    minGuildTaskChangeTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskChangeTime", 2 * 24 * 3600);
 +    maxGuildTaskChangeTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskChangeTime", 5 * 24 * 3600);
-+    minGuildTaskAdvertisementTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskAdvertisementTime", 300);
-+    maxGuildTaskAdvertisementTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskAdvertisementTime", 8 * 3600);
-+    minGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskRewardTime", 300);
-+    maxGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskRewardTime", 1 * 3600);
++    minGuildTaskAdvertisementTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskAdvertisementTime", 8 * 3600);
++    maxGuildTaskAdvertisementTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskAdvertisementTime", 4 * 24 * 3600);
++    minGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MinGuildTaskRewardTime", 60);
++    maxGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskRewardTime", 600);
 +    sLog->outMessage("playerbot", LOG_LEVEL_INFO, "AI Playerbot configuration loaded");
 +    RandomPlayerbotFactory::CreateRandomBots();
 +
@@ -19972,10 +20011,10 @@ index 0000000..0ea66c7
 +#endif
 diff --git a/src/plugins/playerbot/PlayerbotFactory.cpp b/src/plugins/playerbot/PlayerbotFactory.cpp
 new file mode 100644
-index 0000000..adc7b23
+index 0000000..9e1e9cc
 --- /dev/null
 +++ b/src/plugins/playerbot/PlayerbotFactory.cpp
-@@ -0,0 +1,1723 @@
+@@ -0,0 +1,1745 @@
 +#include "../pchdef.h"
 +#include "playerbot.h"
 +#include "PlayerbotFactory.h"
@@ -21183,24 +21222,46 @@ index 0000000..adc7b23
 +    return guids[index];
 +}
 +
++void AddPrevQuests(uint32 questId, list<uint32>& questIds)
++{
++    Quest const *quest = sObjectMgr->GetQuestTemplate(questId);
++    for (Quest::PrevQuests::const_iterator iter = quest->prevQuests.begin(); iter != quest->prevQuests.end(); ++iter)
++    {
++        uint32 prevId = abs(*iter);
++        AddPrevQuests(prevId, questIds);
++        questIds.push_back(prevId);
++    }
++}
++
 +void PlayerbotFactory::InitQuests()
 +{
 +    ObjectMgr::QuestMap const& questTemplates = sObjectMgr->GetQuestTemplates();
++    list<uint32> questIds;
 +    for (ObjectMgr::QuestMap::const_iterator i = questTemplates.begin(); i != questTemplates.end(); ++i)
 +    {
 +        uint32 questId = i->first;
 +        Quest const *quest = i->second;
 +
-+        if (quest->GetMinLevel() > bot->getLevel() || quest->GetQuestLevel() == -1 ||
++        if (!quest->GetRequiredClasses() ||
++                quest->GetMinLevel() > bot->getLevel() ||
 +                quest->IsDailyOrWeekly() || quest->IsRepeatable() || quest->IsMonthly())
 +            continue;
 +
-+        bot->SetQuestStatus(questId, QUEST_STATUS_NONE);
++        AddPrevQuests(questId, questIds);
++        questIds.push_back(questId);
++    }
++
++    for (list<uint32>::iterator i = questIds.begin(); i != questIds.end(); ++i)
++    {
++        uint32 questId = *i;
++        Quest const *quest = sObjectMgr->GetQuestTemplate(questId);
 +
 +        if (!bot->SatisfyQuestClass(quest, false) ||
-+                !bot->SatisfyQuestRace(quest, false) ||
-+                !bot->SatisfyQuestStatus(quest, false))
++                !bot->SatisfyQuestRace(quest, false))
 +            continue;
++
++        bot->RemoveActiveQuest(questId, false);
++        bot->RemoveRewardedQuest(questId, false);
 +
 +        bot->SetQuestStatus(questId, QUEST_STATUS_COMPLETE);
 +        bot->RewardQuest(quest, 0, bot, false);
@@ -26479,7 +26540,7 @@ index 0000000..b70a526
 \ No newline at end of file
 diff --git a/src/plugins/playerbot/strategy/Strategy.cpp b/src/plugins/playerbot/strategy/Strategy.cpp
 new file mode 100644
-index 0000000..5275ae0
+index 0000000..65ba60f
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/Strategy.cpp
 @@ -0,0 +1,117 @@
@@ -26514,7 +26575,7 @@ index 0000000..5275ae0
 +    static ActionNode* melee(PlayerbotAI* ai)
 +    {
 +        return new ActionNode ("melee",
-+            /*P*/ NextAction::array(0, new NextAction("reach melee"), NULL),
++            /*P*/ NULL,
 +            /*A*/ NULL,
 +            /*C*/ NULL);
 +    }
@@ -27622,10 +27683,10 @@ index 0000000..402c50a
 +}
 diff --git a/src/plugins/playerbot/strategy/actions/AreaTriggerAction.cpp b/src/plugins/playerbot/strategy/actions/AreaTriggerAction.cpp
 new file mode 100644
-index 0000000..45518b7
+index 0000000..0d427c3
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/actions/AreaTriggerAction.cpp
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,73 @@
 +#include "../../../pchdef.h"
 +#include "../../playerbot.h"
 +#include "AreaTriggerAction.h"
@@ -27662,8 +27723,6 @@ index 0000000..45518b7
 +        return true;
 +    }
 +
-+    ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
-+
 +    MotionMaster &mm = *bot->GetMotionMaster();
 +    mm.Clear();
 +	mm.MovePoint(atEntry->mapid, atEntry->x, atEntry->y, atEntry->z);
@@ -27692,11 +27751,6 @@ index 0000000..45518b7
 +    AreaTrigger const* at = sObjectMgr->GetAreaTrigger(triggerId);
 +    if (!at)
 +        return true;
-+
-+    ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
-+
-+    MotionMaster &mm = *bot->GetMotionMaster();
-+    mm.Clear();
 +
 +    WorldPacket p(CMSG_AREATRIGGER);
 +    p << triggerId;
@@ -32169,7 +32223,7 @@ index 0000000..51e1f23
 \ No newline at end of file
 diff --git a/src/plugins/playerbot/strategy/actions/MovementActions.cpp b/src/plugins/playerbot/strategy/actions/MovementActions.cpp
 new file mode 100644
-index 0000000..f1fcfc0
+index 0000000..ac828b5
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/actions/MovementActions.cpp
 @@ -0,0 +1,373 @@
@@ -32373,7 +32427,7 @@ index 0000000..f1fcfc0
 +    if (target->IsFriendlyTo(bot) && bot->IsMounted() && AI_VALUE(list<ObjectGuid>, "possible targets").empty())
 +        distance += angle;
 +
-+    if (bot->GetDistance(target) <= sPlayerbotAIConfig.followDistance)
++    if (bot->GetDistance2d(target) <= sPlayerbotAIConfig.followDistance)
 +        return false;
 +
 +    if (bot->IsSitState())
@@ -36569,10 +36623,10 @@ index 0000000..ef65561
 +}
 diff --git a/src/plugins/playerbot/strategy/actions/UseMeetingStoneAction.cpp b/src/plugins/playerbot/strategy/actions/UseMeetingStoneAction.cpp
 new file mode 100644
-index 0000000..fd42c37
+index 0000000..f7d959c
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/actions/UseMeetingStoneAction.cpp
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,86 @@
 +#include "../../../pchdef.h"
 +#include "../../playerbot.h"
 +#include "UseMeetingStoneAction.h"
@@ -36604,7 +36658,11 @@ index 0000000..fd42c37
 +        return false;
 +    }
 +
-+    GameObject *gameObject = ai->GetGameObject(guid);
++    Map* map = master->GetMap();
++    if (!map)
++        return NULL;
++
++    GameObject *gameObject = map->GetGameObject(guid);
 +    if (!gameObject)
 +        return false;
 +
@@ -36652,7 +36710,8 @@ index 0000000..fd42c37
 +        }
 +    }
 +
-+    return true;
++    ai->TellMasterNoFacing("There is not enough place to summon me");
++    return false;
 +}
 diff --git a/src/plugins/playerbot/strategy/actions/UseMeetingStoneAction.h b/src/plugins/playerbot/strategy/actions/UseMeetingStoneAction.h
 new file mode 100644
@@ -36997,7 +37056,7 @@ index 0000000..268f2d6
 +};
 diff --git a/src/plugins/playerbot/strategy/druid/BearTankDruidStrategy.cpp b/src/plugins/playerbot/strategy/druid/BearTankDruidStrategy.cpp
 new file mode 100644
-index 0000000..fa86bb1
+index 0000000..18ae75a
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/druid/BearTankDruidStrategy.cpp
 @@ -0,0 +1,171 @@
@@ -37107,7 +37166,7 @@ index 0000000..fa86bb1
 +    static ActionNode* growl(PlayerbotAI* ai)
 +    {
 +        return new ActionNode ("growl",
-+            /*P*/ NextAction::array(0, new NextAction("reach spell"), NULL),
++            /*P*/ NULL,
 +            /*A*/ NULL,
 +            /*C*/ NULL);
 +    }
@@ -38207,10 +38266,10 @@ index 0000000..81bc8ab
 +}
 diff --git a/src/plugins/playerbot/strategy/druid/DruidCatActions.h b/src/plugins/playerbot/strategy/druid/DruidCatActions.h
 new file mode 100644
-index 0000000..90f50c9
+index 0000000..89a3e66
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/druid/DruidCatActions.h
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,64 @@
 +#pragma once
 +
 +namespace ai {
@@ -38243,11 +38302,6 @@ index 0000000..90f50c9
 +	{
 +	public:
 +		CastRakeAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "rake") {}
-+
-+        virtual NextAction** getPrerequisites()
-+        {
-+            return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), CastDebuffSpellAction::getPrerequisites());
-+        }
 +	};
 +
 +
@@ -38791,7 +38845,7 @@ index 0000000..82cba15
 +}
 diff --git a/src/plugins/playerbot/strategy/druid/GenericDruidStrategy.cpp b/src/plugins/playerbot/strategy/druid/GenericDruidStrategy.cpp
 new file mode 100644
-index 0000000..e4f1921
+index 0000000..3ba9308
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/druid/GenericDruidStrategy.cpp
 @@ -0,0 +1,132 @@
@@ -38822,7 +38876,7 @@ index 0000000..e4f1921
 +    static ActionNode* melee(PlayerbotAI* ai)
 +    {
 +        return new ActionNode ("melee",
-+            /*P*/ NextAction::array(0, new NextAction("reach melee"), NULL),
++            /*P*/ NULL,
 +            /*A*/ NULL,
 +            /*C*/ NULL);
 +    }
@@ -47475,7 +47529,7 @@ index 0000000..e5d4ff1
 +}
 diff --git a/src/plugins/playerbot/strategy/shaman/MeleeShamanStrategy.cpp b/src/plugins/playerbot/strategy/shaman/MeleeShamanStrategy.cpp
 new file mode 100644
-index 0000000..34eab8c
+index 0000000..d9563aa
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/shaman/MeleeShamanStrategy.cpp
 @@ -0,0 +1,93 @@
@@ -47539,7 +47593,7 @@ index 0000000..34eab8c
 +
 +    triggers.push_back(new TriggerNode(
 +        "searing totem",
-+        NextAction::array(0, new NextAction("searing totem", 22.0f), NULL)));
++        NextAction::array(0, new NextAction("reach melee", 22.0f), new NextAction("searing totem", 22.0f), NULL)));
 +
 +    triggers.push_back(new TriggerNode(
 +        "shock",
@@ -49944,7 +49998,7 @@ index 0000000..063456b
 +}
 diff --git a/src/plugins/playerbot/strategy/triggers/RangeTriggers.h b/src/plugins/playerbot/strategy/triggers/RangeTriggers.h
 new file mode 100644
-index 0000000..08aba8f
+index 0000000..0a948f5
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/triggers/RangeTriggers.h
 @@ -0,0 +1,81 @@
@@ -49970,7 +50024,7 @@ index 0000000..08aba8f
 +        virtual bool IsActive()
 +		{
 +			Unit* target = AI_VALUE(Unit*, "current target");
-+            return target && AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.contactDistance;
++            return target && AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.contactDistance / 2;
 +        }
 +    };
 +
@@ -51140,7 +51194,7 @@ index 0000000..6b9fb69
 +}
 diff --git a/src/plugins/playerbot/strategy/values/DistanceValue.h b/src/plugins/playerbot/strategy/values/DistanceValue.h
 new file mode 100644
-index 0000000..43277fd
+index 0000000..aee094f
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/values/DistanceValue.h
 @@ -0,0 +1,35 @@
@@ -51169,13 +51223,13 @@ index 0000000..43277fd
 +                if (!obj)
 +                    return 0.0f;
 +
-+                return ai->GetBot()->GetDistance(obj);
++                return ai->GetBot()->GetDistance2d(obj);
 +            }
 +            Unit* target = AI_VALUE(Unit*, qualifier);
 +            if (!target || !target->IsInWorld())
 +                return 0.0f;
 +
-+            return ai->GetBot()->GetDistance(target);
++            return ai->GetBot()->GetDistance2d(target);
 +        }
 +    };
 +}
@@ -51415,10 +51469,10 @@ index 0000000..ea50739
 +}
 diff --git a/src/plugins/playerbot/strategy/values/Formations.cpp b/src/plugins/playerbot/strategy/values/Formations.cpp
 new file mode 100644
-index 0000000..9294253
+index 0000000..808cffe
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/values/Formations.cpp
-@@ -0,0 +1,346 @@
+@@ -0,0 +1,377 @@
 +#include "../../../pchdef.h"
 +#include "../../playerbot.h"
 +#include "Formations.h"
@@ -51443,6 +51497,32 @@ index 0000000..9294253
 +        QueueFormation(PlayerbotAI* ai) : FollowFormation(ai, "queue") {}
 +        virtual string GetTargetName() { return "line target"; }
 +    };
++
++    class NearFormation : public MoveFormation
++    {
++    public:
++        NearFormation(PlayerbotAI* ai) : MoveFormation(ai, "near") {}
++        virtual WorldLocation GetLocation()
++        {
++            Player* master = GetMaster();
++            if (!master)
++                return WorldLocation();
++
++            float range = sPlayerbotAIConfig.followDistance;
++            float angle = GetFollowAngle();
++            float x = master->GetPositionX() + cos(angle) * range;
++            float y = master->GetPositionY() + sin(angle) * range;
++            float z = master->GetPositionZ();
++            float ground = master->GetMap()->GetHeight(x, y, z + 0.5f);
++            if (ground <= INVALID_HEIGHT)
++                return Formation::NullLocation;
++
++            return WorldLocation(master->GetMapId(), x, y, ground + 0.5f);
++        }
++
++        virtual float GetMaxDistance() { return sPlayerbotAIConfig.followDistance; }
++    };
++
 +
 +    class ChaosFormation : public MoveFormation
 +    {
@@ -51640,7 +51720,7 @@ index 0000000..9294253
 +    return 0;
 +}
 +
-+FormationValue::FormationValue(PlayerbotAI* ai) : ManualSetValue<Formation*>(ai, new MeleeFormation(ai), "formation")
++FormationValue::FormationValue(PlayerbotAI* ai) : ManualSetValue<Formation*>(ai, new NearFormation(ai), "formation")
 +{
 +}
 +
@@ -51656,7 +51736,7 @@ index 0000000..9294253
 +        return true;
 +    }
 +
-+    if (formation == "melee" || formation == "default")
++    if (formation == "melee")
 +    {
 +        if (value->Get()) delete value->Get();
 +        value->Set(new MeleeFormation(ai));
@@ -51691,11 +51771,16 @@ index 0000000..9294253
 +        if (value->Get()) delete value->Get();
 +        value->Set(new ArrowFormation(ai));
 +    }
++    else if (formation == "near" || formation == "default")
++    {
++        if (value->Get()) delete value->Get();
++        value->Set(new NearFormation(ai));
++    }
 +    else
 +    {
 +        ostringstream str; str << "Invalid formation: |cffff0000" << formation;
 +        ai->TellMaster(str);
-+        ai->TellMaster("Please set to any of:|cffffffff melee (default), queue, chaos, circle, line, shield, arrow");
++        ai->TellMaster("Please set to any of:|cffffffff melee (default), queue, chaos, circle, line, shield, arrow, near");
 +        return false;
 +    }
 +
@@ -56379,7 +56464,7 @@ index 0000000..0ef2dcf
 +}
 diff --git a/src/plugins/playerbot/strategy/warrior/TankWarriorStrategy.cpp b/src/plugins/playerbot/strategy/warrior/TankWarriorStrategy.cpp
 new file mode 100644
-index 0000000..5bf206c
+index 0000000..d37c08d
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/warrior/TankWarriorStrategy.cpp
 @@ -0,0 +1,126 @@
@@ -56407,7 +56492,7 @@ index 0000000..5bf206c
 +    static ActionNode* melee(PlayerbotAI* ai)
 +    {
 +        return new ActionNode ("melee",
-+            /*P*/ NextAction::array(0, new NextAction("defensive stance"), new NextAction("reach melee"), NULL),
++            /*P*/ NextAction::array(0, new NextAction("defensive stance"), NULL),
 +            /*A*/ NULL,
 +            /*C*/ NULL);
 +    }
@@ -56535,34 +56620,19 @@ index 0000000..0f98946
 +}
 diff --git a/src/plugins/playerbot/strategy/warrior/WarriorActions.cpp b/src/plugins/playerbot/strategy/warrior/WarriorActions.cpp
 new file mode 100644
-index 0000000..b6d44fe
+index 0000000..12ab057
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/warrior/WarriorActions.cpp
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,15 @@
 +#include "../../../pchdef.h"
 +#include "../../playerbot.h"
 +#include "WarriorActions.h"
 +
 +using namespace ai;
 +
-+NextAction** CastRendAction::getPrerequisites()
-+{
-+    return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), CastDebuffSpellAction::getPrerequisites());
-+}
-+
-+NextAction** CastRendOnAttackerAction::getPrerequisites()
-+{
-+    return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), CastDebuffSpellOnAttackerAction::getPrerequisites());
-+}
-+
 +NextAction** CastDisarmAction::getPrerequisites()
 +{
-+    return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), new NextAction("defensive stance"), NULL), CastDebuffSpellAction::getPrerequisites());
-+}
-+
-+NextAction** CastSunderArmorAction::getPrerequisites()
-+{
-+    return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), CastDebuffSpellAction::getPrerequisites());
++    return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastDebuffSpellAction::getPrerequisites());
 +}
 +
 +NextAction** CastRevengeAction::getPrerequisites()
@@ -56571,10 +56641,10 @@ index 0000000..b6d44fe
 +}
 diff --git a/src/plugins/playerbot/strategy/warrior/WarriorActions.h b/src/plugins/playerbot/strategy/warrior/WarriorActions.h
 new file mode 100644
-index 0000000..65ac0ae
+index 0000000..d51ddb4
 --- /dev/null
 +++ b/src/plugins/playerbot/strategy/warrior/WarriorActions.h
-@@ -0,0 +1,210 @@
+@@ -0,0 +1,207 @@
 +#pragma once
 +#include "../actions/GenericActions.h"
 +
@@ -56694,14 +56764,12 @@ index 0000000..65ac0ae
 +
 +    //debuffs
 +    BEGIN_DEBUFF_ACTION(CastRendAction, "rend")
-+        virtual NextAction** getPrerequisites();
 +    END_SPELL_ACTION()
 +
 +    class CastRendOnAttackerAction : public CastDebuffSpellOnAttackerAction
 +    {
 +    public:
 +        CastRendOnAttackerAction(PlayerbotAI* ai) : CastDebuffSpellOnAttackerAction(ai, "rend") {}
-+        virtual NextAction** getPrerequisites();
 +    };
 +
 +    BEGIN_DEBUFF_ACTION(CastDisarmAction, "disarm")
@@ -56709,7 +56777,6 @@ index 0000000..65ac0ae
 +    END_SPELL_ACTION()
 +
 +    BEGIN_DEBUFF_ACTION(CastSunderArmorAction, "sunder armor") // 5 times
-+        virtual NextAction** getPrerequisites();
 +    END_SPELL_ACTION()
 +
 +    class CastDemoralizingShoutAction : public CastDebuffSpellAction {
@@ -83553,7 +83620,7 @@ index fb27fea..e601a12 100644
  }
  
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 63de39f..930ccf7 100644
+index 4fedf80..a1d1e6d 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -255,6 +255,13 @@ Unit::Unit(bool isWorldObject) :
@@ -84167,7 +84234,7 @@ index 63de39f..930ccf7 100644
  
      if (!(spellInfo->HasAttribute(SPELL_ATTR0_ABILITY) || spellInfo->HasAttribute(SPELL_ATTR0_TRADESPELL) || spellInfo->HasAttribute(SPELL_ATTR3_NO_DONE_BONUS)) &&
          ((GetTypeId() == TYPEID_PLAYER && spellInfo->SpellFamilyName) || GetTypeId() == TYPEID_UNIT))
-@@ -14162,6 +14494,13 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
+@@ -14164,6 +14496,13 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                      ToPlayer()->AddComboPoints(target, 1);
                      StartReactiveTimer(REACTIVE_OVERPOWER);
                  }
@@ -84181,7 +84248,7 @@ index 63de39f..930ccf7 100644
              }
          }
      }
-@@ -14719,6 +15058,29 @@ void Unit::ClearComboPointHolders()
+@@ -14721,6 +15060,29 @@ void Unit::ClearComboPointHolders()
      }
  }
  
@@ -84211,7 +84278,7 @@ index 63de39f..930ccf7 100644
  void Unit::ClearAllReactives()
  {
      for (uint8 i = 0; i < MAX_REACTIVE; ++i)
-@@ -14827,6 +15189,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
+@@ -14829,6 +15191,9 @@ uint32 Unit::GetCastingTimeForBonus(SpellInfo const* spellProto, DamageEffectTyp
  {
      // Not apply this to creature cast spells with casttime == 0
      if (CastingTime == 0 && GetTypeId() == TYPEID_UNIT && !IsPet())
@@ -84221,7 +84288,7 @@ index 63de39f..930ccf7 100644
          return 3500;
  
      if (CastingTime > 7000) CastingTime = 7000;
-@@ -15470,6 +15835,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
+@@ -15472,6 +15837,9 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
  
          // only if not player and not controlled by player pet. And not at BG
          if ((durabilityLoss && !player && !victim->ToPlayer()->InBattleground()) || (player && sWorld->getBoolConfig(CONFIG_DURABILITY_LOSS_IN_PVP)))
@@ -84231,7 +84298,7 @@ index 63de39f..930ccf7 100644
          {
              TC_LOG_DEBUG("entities.unit", "We are dead, losing %f percent durability", sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH));
              plrVictim->DurabilityLossAll(sWorld->getRate(RATE_DURABILITY_LOSS_ON_DEATH), false);
-@@ -16409,6 +16777,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16411,6 +16779,21 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      //calculate miss chance
      float missChance = victim->GetUnitMissChance(attType);
  
@@ -84253,7 +84320,7 @@ index 63de39f..930ccf7 100644
      if (!spellId && haveOffhandWeapon())
          missChance += 19;
  
-@@ -16437,6 +16820,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
+@@ -16439,6 +16822,11 @@ float Unit::MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, i
      else
          missChance -= m_modMeleeHitChance;
  
@@ -84265,7 +84332,7 @@ index 63de39f..930ccf7 100644
      // Limit miss chance from 0 to 60%
      if (missChance < 0.0f)
          return 0.0f;
-@@ -16753,6 +17141,183 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
+@@ -16755,6 +17143,183 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
          }
      }
  
@@ -84450,7 +84517,7 @@ index 63de39f..930ccf7 100644
      SpellShapeshiftEntry const* formEntry = sSpellShapeshiftStore.LookupEntry(form);
      if (formEntry && formEntry->modelID_A)
 diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
-index 2500f32..17f45ad 100644
+index 72f3a66..13a6fa9 100644
 --- a/src/server/game/Entities/Unit/Unit.h
 +++ b/src/server/game/Entities/Unit/Unit.h
 @@ -2125,6 +2125,18 @@ class Unit : public WorldObject
