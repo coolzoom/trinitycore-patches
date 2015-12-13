@@ -1,3 +1,6 @@
+* **We are moving to git! https://bitbucket.org/lordpsyan/lordpsyan-patches If GitHub stops being a pain, I will have a mirror there as well.**
+
+
 Official test server:
 set realmlist logon.realmsofwarcraft.com
 Test realm: Dark Psyon
