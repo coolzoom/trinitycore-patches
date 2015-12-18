@@ -1,7 +1,7 @@
-From eb5f9c314524d81d2b6e3af3f4d0838d0925b433 Mon Sep 17 00:00:00 2001
+From 215405141f521906d1103e34d68b30150d3c98e5 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 9 Dec 2015 12:08:42 -0600
-Subject: [PATCH 1/2] 335a_prepatch
+Date: Fri, 18 Dec 2015 11:26:09 -0600
+Subject: [PATCH] 335a_prepatch
 
 ---
  npc-entry-list.txt                                 |  36 +++
@@ -9,7 +9,7 @@ Subject: [PATCH 1/2] 335a_prepatch
  .../Database/Implementation/CharacterDatabase.h    |  24 ++
  src/server/game/Accounts/RBAC.h                    |  24 ++
  src/server/game/Entities/Object/Position.h         |   2 +-
- src/server/game/Entities/Player/Player.cpp         | 123 ++++++++++-
+ src/server/game/Entities/Player/Player.cpp         | 124 ++++++++++-
  src/server/game/Entities/Player/Player.h           |  49 ++++-
  src/server/game/Handlers/BattleGroundHandler.cpp   |  25 ++-
  src/server/game/Handlers/CharacterHandler.cpp      |  50 ++++-
@@ -21,7 +21,7 @@ Subject: [PATCH 1/2] 335a_prepatch
  src/server/game/World/World.h                      |  92 ++++++++
  src/server/scripts/Custom/CMakeLists.txt           |   4 +-
  src/server/worldserver/worldserver.conf.dist       |  27 +++
- 17 files changed, 909 insertions(+), 19 deletions(-)
+ 17 files changed, 909 insertions(+), 20 deletions(-)
  create mode 100644 npc-entry-list.txt
 
 diff --git a/npc-entry-list.txt b/npc-entry-list.txt
@@ -184,7 +184,7 @@ index b3e474f..a145230 100644
  
  public:
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f476193..2aa09b4 100644
+index ceab7d0..64ae071 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -81,7 +81,31 @@
@@ -220,10 +220,11 @@ index f476193..2aa09b4 100644
  #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
  
  #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
-@@ -1535,6 +1559,30 @@ void Player::Update(uint32 p_time)
+@@ -1535,7 +1559,30 @@ void Player::Update(uint32 p_time)
      //because we don't want player's ghost teleported from graveyard
      if (IsHasDelayedTeleport() && IsAlive())
          TeleportTo(m_teleport_dest, m_teleport_options);
+-
 +    // Prepatch by LordPsyan
 +    // 81
 +    // 82
@@ -251,7 +252,7 @@ index f476193..2aa09b4 100644
  }
  
  void Player::setDeathState(DeathState s)
-@@ -6787,6 +6835,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6797,6 +6844,30 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
      }
  
      honor_f *= sWorld->getRate(RATE_HONOR);
@@ -282,7 +283,7 @@ index f476193..2aa09b4 100644
      // Back to int now
      honor = int32(honor_f);
      // honor - for show honor points in log
-@@ -12145,6 +12217,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
+@@ -12155,6 +12226,30 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
  {
      if (Item* it = GetItemByPos(bag, slot))
      {
@@ -313,7 +314,7 @@ index f476193..2aa09b4 100644
          ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
          RemoveItem(bag, slot, update);
          it->SetNotRefundable(this, false);
-@@ -14874,7 +14970,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -14884,7 +14979,30 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
      for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
          AddPct(XP, (*i)->GetAmount());
@@ -346,10 +347,10 @@ index f476193..2aa09b4 100644
      if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
          GiveXP(XP, NULL);
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 7f72bff..57945e5 100644
+index 26944de..f0affdc 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -2224,7 +2224,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2226,7 +2226,30 @@ class Player : public Unit, public GridObject<Player>
  
          std::string GetMapAreaAndZoneString();
          std::string GetCoordsMapAreaAndZoneString();
@@ -381,7 +382,7 @@ index 7f72bff..57945e5 100644
      protected:
          // Gamemaster whisper whitelist
          GuidList WhisperList;
-@@ -2555,6 +2578,30 @@ class Player : public Unit, public GridObject<Player>
+@@ -2557,6 +2580,30 @@ class Player : public Unit, public GridObject<Player>
          uint32 manaBeforeDuel;
  
          WorldLocation _corpseLocation;
@@ -951,7 +952,7 @@ index 47a23de..4ea8583 100644
  #endif
  }
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index c41caa8..76f841f 100644
+index bcfd105..534eb2b 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -64,7 +64,30 @@
@@ -1051,10 +1052,10 @@ index c41caa8..76f841f 100644
      if (reload)
          sScriptMgr->OnConfigLoad(reload);
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 133ac3f..600bd79 100644
+index c76b112..3cc706e 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
-@@ -160,6 +160,30 @@ enum WorldBoolConfigs
+@@ -161,6 +161,30 @@ enum WorldBoolConfigs
      CONFIG_STATS_LIMITS_ENABLE,
      CONFIG_INSTANCES_RESET_ANNOUNCE,
      CONFIG_IP_BASED_ACTION_LOGGING,
@@ -1085,7 +1086,7 @@ index 133ac3f..600bd79 100644
      CONFIG_ALLOW_TRACK_BOTH_RESOURCES,
      CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA,
      CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA,
-@@ -185,6 +209,50 @@ enum WorldFloatConfigs
+@@ -186,6 +210,50 @@ enum WorldFloatConfigs
      CONFIG_STATS_LIMITS_PARRY,
      CONFIG_STATS_LIMITS_BLOCK,
      CONFIG_STATS_LIMITS_CRIT,
@@ -1136,7 +1137,7 @@ index 133ac3f..600bd79 100644
      FLOAT_CONFIG_VALUE_COUNT
  };
  
-@@ -351,6 +419,30 @@ enum WorldIntConfigs
+@@ -352,6 +420,30 @@ enum WorldIntConfigs
      CONFIG_CHARTER_COST_ARENA_5v5,
      CONFIG_NO_GRAY_AGGRO_ABOVE,
      CONFIG_NO_GRAY_AGGRO_BELOW,
