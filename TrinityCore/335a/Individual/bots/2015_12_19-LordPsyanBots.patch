@@ -1,7 +1,7 @@
-From 2d9232ae27061543adf56144496eb5a3015cd2b0 Mon Sep 17 00:00:00 2001
+From ecbb43d7b167663f92b154c0e005a2835893b691 Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Fri, 18 Dec 2015 12:20:50 -0600
-Subject: [PATCH] 2015_12_18-LordPsyanBots
+Date: Sat, 19 Dec 2015 08:05:12 -0600
+Subject: [PATCH] 2015_12_190LordPsyanBots
 
 ---
  .../Bots/character_lordpsyanbots.sql               | 10771 +++++++++++++++++++
@@ -653,7 +653,7 @@ Subject: [PATCH] 2015_12_18-LordPsyanBots
  src/server/game/Server/WorldSession.h              |     7 +-
  src/server/game/Spells/Spell.cpp                   |    20 +
  src/server/game/Spells/SpellInfo.cpp               |     5 +
- src/server/game/World/World.cpp                    |    43 +-
+ src/server/game/World/World.cpp                    |    44 +-
  src/server/game/World/World.h                      |     2 +
  src/server/scripts/CMakeLists.txt                  |     1 +
  src/server/scripts/Commands/cs_ahbot.cpp           |     4 +
@@ -663,7 +663,7 @@ Subject: [PATCH] 2015_12_18-LordPsyanBots
  src/server/scripts/Spells/spell_priest.cpp         |     4 +
  src/server/worldserver/CMakeLists.txt              |     1 +
  src/server/worldserver/worldserver.conf.dist       |   156 +-
- 659 files changed, 79530 insertions(+), 24 deletions(-)
+ 659 files changed, 79530 insertions(+), 25 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/Bots/character_lordpsyanbots.sql
  create mode 100644 sql/TrinityCore-Patches/Bots/world_lordpsyanbots.sql
  create mode 100644 src/plugins/CMakeLists.txt
@@ -85521,7 +85521,7 @@ index 6486a7e..5e70233 100644
      powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
      if (powerCost < 0)
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 534eb2b..122f318 100644
+index 6c19772..d2d56a8 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -82,7 +82,12 @@
@@ -85538,7 +85538,7 @@ index 534eb2b..122f318 100644
  // 19
  // 20
  // Visit http://www.realmsofwarcraft.com/bb for forums and information
-@@ -1292,6 +1297,9 @@ void World::LoadConfigSettings(bool reload)
+@@ -1297,6 +1302,9 @@ void World::LoadConfigSettings(bool reload)
          m_timers[WUPDATE_AUTOBROADCAST].Reset();
      }
  
@@ -85548,7 +85548,7 @@ index 534eb2b..122f318 100644
      // MySQL ping time interval
      m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
  
-@@ -1330,6 +1338,7 @@ void World::LoadConfigSettings(bool reload)
+@@ -1335,6 +1343,7 @@ void World::LoadConfigSettings(bool reload)
  
      // AHBot
      m_int_configs[CONFIG_AHBOT_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("AuctionHouseBot.Update.Interval", 20);
@@ -85556,7 +85556,7 @@ index 534eb2b..122f318 100644
  
      m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
      m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
-@@ -1554,6 +1563,9 @@ void World::SetInitialWorldSettings()
+@@ -1559,6 +1568,9 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Loading Creature templates...");
      sObjectMgr->LoadCreatureTemplates();
  
@@ -85566,7 +85566,7 @@ index 534eb2b..122f318 100644
      TC_LOG_INFO("server.loading", "Loading Equipment templates...");           // must be after LoadCreatureTemplates
      sObjectMgr->LoadEquipmentTemplates();
  
-@@ -1951,6 +1963,18 @@ void World::SetInitialWorldSettings()
+@@ -1956,6 +1968,18 @@ void World::SetInitialWorldSettings()
  
      if (uint32 realmId = sConfigMgr->GetIntDefault("RealmID", 0)) // 0 reserved for auth
          sLog->SetRealmId(realmId);
@@ -85585,9 +85585,11 @@ index 534eb2b..122f318 100644
  }
  
  void World::DetectDBCLang()
-@@ -2129,12 +2153,23 @@ void World::Update(uint32 diff)
+@@ -2132,14 +2156,24 @@ void World::Update(uint32 diff)
+         m_timers[WUPDATE_AUCTIONS_PENDING].Reset();
+ 
          sAuctionMgr->UpdatePendingAuctions();
-     }
+-    }
  
 -    /// <li> Handle AHBot operations
 +        // ahbot mod
@@ -85610,7 +85612,7 @@ index 534eb2b..122f318 100644
  
      /// <li> Handle session updates when the timer has passed
      ResetTimeDiffRecord();
-@@ -2699,6 +2734,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
+@@ -2704,6 +2738,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std:
          ShutdownMsg(true, nullptr, reason);
      }
  
@@ -85622,7 +85624,7 @@ index 534eb2b..122f318 100644
  }
  
 diff --git a/src/server/game/World/World.h b/src/server/game/World/World.h
-index 3cc706e..03bd8bc 100644
+index 80838a8..125af15 100644
 --- a/src/server/game/World/World.h
 +++ b/src/server/game/World/World.h
 @@ -144,6 +144,7 @@ enum WorldBoolConfigs
@@ -85633,7 +85635,7 @@ index 3cc706e..03bd8bc 100644
      CONFIG_ALLOW_TICKETS,
      CONFIG_DELETE_CHARACTER_TICKET_TRACE,
      CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
-@@ -414,6 +415,7 @@ enum WorldIntConfigs
+@@ -418,6 +419,7 @@ enum WorldIntConfigs
      CONFIG_BIRTHDAY_TIME,
      CONFIG_CREATURE_PICKPOCKET_REFILL,
      CONFIG_AHBOT_UPDATE_INTERVAL,
@@ -85922,7 +85924,7 @@ index 78f39e0..a2c7596 100644
    g3dlib
    gsoap
 diff --git a/src/server/worldserver/worldserver.conf.dist b/src/server/worldserver/worldserver.conf.dist
-index 43afe08..ee08bb0 100644
+index 8edd644..4fe53b3 100644
 --- a/src/server/worldserver/worldserver.conf.dist
 +++ b/src/server/worldserver/worldserver.conf.dist
 @@ -23,6 +23,24 @@
@@ -85950,7 +85952,7 @@ index 43afe08..ee08bb0 100644
  ###################################################################################################
  
  ###################################################################################################
-@@ -2655,12 +2673,12 @@ PlayerStart.MapsExplored = 0
+@@ -2695,12 +2713,12 @@ PlayerStart.MapsExplored = 0
  HonorPointsAfterDuel = 0
  
  #
@@ -85966,7 +85968,7 @@ index 43afe08..ee08bb0 100644
  
  #    ResetDuelHealthMana
  #        Description: Reset health and mana before duel starts and restore them when duel ends.
-@@ -2864,6 +2882,16 @@ NoGrayAggro.Below = 0
+@@ -2904,6 +2922,16 @@ NoGrayAggro.Below = 0
  ###################################################################################################
  # AUCTION HOUSE BOT SETTINGS
  #
@@ -85983,7 +85985,7 @@ index 43afe08..ee08bb0 100644
  #    AuctionHouseBot.Update.Interval
  #       Description: Interval in seconds for AHBot to get updated
  #       Default:     20
-@@ -3448,6 +3476,128 @@ PacketSpoof.BanDuration = 86400
+@@ -3488,6 +3516,128 @@ PacketSpoof.BanDuration = 86400
  #
  ###################################################################################################
  
