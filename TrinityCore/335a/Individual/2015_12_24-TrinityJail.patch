@@ -1,7 +1,7 @@
-From 5fbce44ca14cabcac605f859bd4988f56f5ac721 Mon Sep 17 00:00:00 2001
+From 1a948d5bc9975ab7437f10d538f2cde290fecb3b Mon Sep 17 00:00:00 2001
 From: LordPsyan <realmsofwarcraft@gmail.com>
-Date: Wed, 9 Dec 2015 12:33:30 -0600
-Subject: [PATCH 2/2] 2015_12_09-TrinityJail
+Date: Thu, 24 Dec 2015 08:29:37 -0600
+Subject: [PATCH] 2015_12_24-TrinityJail
 
 ---
  sql/TrinityCore-Patches/TrinityJail/auth.jail.sql  |  13 +
@@ -13,7 +13,7 @@ Subject: [PATCH 2/2] 2015_12_09-TrinityJail
  .../Database/Implementation/CharacterDatabase.cpp  |   1 +
  .../Database/Implementation/CharacterDatabase.h    |   1 +
  src/server/game/Accounts/RBAC.h                    |   5 +-
- src/server/game/Entities/Player/Player.cpp         | 213 ++++++++++-
+ src/server/game/Entities/Player/Player.cpp         | 217 +++++++++++-
  src/server/game/Entities/Player/Player.h           |  19 +
  src/server/game/Globals/ObjectMgr.cpp              | 115 ++++++
  src/server/game/Globals/ObjectMgr.h                |  23 ++
@@ -21,7 +21,7 @@ Subject: [PATCH 2/2] 2015_12_09-TrinityJail
  src/server/game/Scripting/ScriptLoader.cpp         |   2 +
  src/server/game/World/World.cpp                    |   4 +
  src/server/scripts/Commands/cs_jail.cpp            | 390 +++++++++++++++++++++
- 17 files changed, 948 insertions(+), 2 deletions(-)
+ 17 files changed, 951 insertions(+), 3 deletions(-)
  create mode 100644 sql/TrinityCore-Patches/TrinityJail/auth.jail.sql
  create mode 100644 sql/TrinityCore-Patches/TrinityJail/characters_jail.sql
  create mode 100644 sql/TrinityCore-Patches/TrinityJail/world_command_Deutsch.sql
@@ -249,7 +249,7 @@ index 7fe503d..c0ffed1 100644
      // 03
      // 04
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 2aa09b4..ebe4d55 100644
+index 64ae071..cf633bb 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -314,8 +314,24 @@ std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi)
@@ -363,11 +363,14 @@ index 2aa09b4..ebe4d55 100644
  
      time_t now = time(NULL);
  
-@@ -1456,7 +1544,15 @@ void Player::Update(uint32 p_time)
-     if (m_deathState == JUST_DIED)
-         KillPlayer();
+@@ -1454,9 +1542,19 @@ void Player::Update(uint32 p_time)
+     }
  
--    if (m_nextSave > 0)
+     if (m_deathState == JUST_DIED)
+-        KillPlayer();
++//        KillPlayer();
++    {
++
 +        // Prevent death of jailed players
 +        if (!m_jail_isjailed) KillPlayer();
 +        else
@@ -375,12 +378,14 @@ index 2aa09b4..ebe4d55 100644
 +            m_deathState = ALIVE;
 +            RegenerateAll();
 +        }
-+
++    }
+ 
+-    if (m_nextSave > 0)
 +    if (m_nextSave > 0 && !m_jail_isjailed)
      {
          if (p_time >= m_nextSave)
          {
-@@ -1827,6 +1923,7 @@ uint8 Player::GetChatTag() const
+@@ -1827,6 +1925,7 @@ uint8 Player::GetChatTag() const
      if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DEVELOPER))
          tag |= CHAT_TAG_DEV;
  
@@ -388,7 +393,7 @@ index 2aa09b4..ebe4d55 100644
      return tag;
  }
  
-@@ -1865,6 +1962,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -1865,6 +1964,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
      if (!InBattleground() && mEntry->IsBattlegroundOrArena())
          return false;
  
@@ -396,7 +401,7 @@ index 2aa09b4..ebe4d55 100644
      // client without expansion support
      if (GetSession()->Expansion() < mEntry->Expansion())
      {
-@@ -2013,6 +2111,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2013,6 +2113,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
              if (pet)
                  UnsummonPetTemporaryIfAny();
  
@@ -404,7 +409,7 @@ index 2aa09b4..ebe4d55 100644
              // remove all dyn objects
              RemoveAllDynObjects();
  
-@@ -2033,6 +2132,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
+@@ -2033,6 +2134,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                  if (Transport* transport = GetTransport())
                      data << transport->GetEntry() << GetMapId();
  
@@ -412,7 +417,7 @@ index 2aa09b4..ebe4d55 100644
                  GetSession()->SendPacket(&data);
              }
  
-@@ -3087,6 +3187,7 @@ void Player::SendInitialSpells()
+@@ -3098,6 +3200,7 @@ void Player::SendInitialSpells()
  
      GetSpellHistory()->WritePacket<Player>(data);
  
@@ -420,7 +425,7 @@ index 2aa09b4..ebe4d55 100644
      GetSession()->SendPacket(&data);
  
      TC_LOG_DEBUG("network", "CHARACTER: Sent Initial Spells");
-@@ -5069,6 +5170,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
+@@ -5080,6 +5183,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
                  if (!guild->HandleMemberWithdrawMoney(GetSession(), costs, true))
                      return TotalCost;
  
@@ -428,7 +433,7 @@ index 2aa09b4..ebe4d55 100644
                  TotalCost = costs;
              }
              else if (!HasEnoughMoney(costs))
-@@ -5217,6 +5319,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
+@@ -5228,6 +5332,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
                      if (channel->flags & CHANNEL_DBC_FLAG_CITY_ONLY && usedChannel)
                          continue;                            // Already on the channel, as city channel names are not changing
  
@@ -436,7 +441,7 @@ index 2aa09b4..ebe4d55 100644
                      char new_channel_name_buf[100];
                      char const* currentNameExt;
  
-@@ -5290,6 +5393,7 @@ void Player::HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, floa
+@@ -5301,6 +5406,7 @@ void Player::HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, floa
      else // PCT_MOD
          ApplyPercentModFloatVar(m_auraBaseMod[modGroup][modType], amount, apply);
  
@@ -444,7 +449,7 @@ index 2aa09b4..ebe4d55 100644
      if (!CanModifyStats())
          return;
  
-@@ -6353,6 +6457,7 @@ bool Player::UpdatePosition(float x, float y, float z, float orientation, bool t
+@@ -6362,6 +6468,7 @@ bool Player::UpdatePosition(float x, float y, float z, float orientation, bool t
      if (GetGroup())
          SetGroupUpdateFlag(GROUP_UPDATE_FLAG_POSITION);
  
@@ -452,7 +457,7 @@ index 2aa09b4..ebe4d55 100644
      CheckAreaExploreAndOutdoor();
  
      return true;
-@@ -6805,6 +6910,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6814,6 +6921,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
  
              honor_f = std::ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
  
@@ -460,7 +465,7 @@ index 2aa09b4..ebe4d55 100644
              // count the number of playerkills in one day
              ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
              // and those in a lifetime
-@@ -6908,6 +7014,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
+@@ -6917,6 +7025,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
          }
      }
  
@@ -468,7 +473,7 @@ index 2aa09b4..ebe4d55 100644
      return true;
  }
  
-@@ -7020,6 +7127,7 @@ uint32 Player::GetZoneIdFromDB(ObjectGuid guid)
+@@ -7029,6 +7138,7 @@ uint32 Player::GetZoneIdFromDB(ObjectGuid guid)
      stmt->setUInt32(0, guidLow);
      PreparedQueryResult result = CharacterDatabase.Query(stmt);
  
@@ -476,7 +481,7 @@ index 2aa09b4..ebe4d55 100644
      if (!result)
          return 0;
      Field* fields = result->Fetch();
-@@ -7368,6 +7476,7 @@ void Player::_ApplyItemMods(Item* item, uint8 slot, bool apply)
+@@ -7377,6 +7487,7 @@ void Player::_ApplyItemMods(Item* item, uint8 slot, bool apply)
      if (proto->Socket[0].Color)                              //only (un)equipping of items with sockets can influence metagems, so no need to waste time with normal items
          CorrectMetaGemEnchants(slot, apply);
  
@@ -484,7 +489,7 @@ index 2aa09b4..ebe4d55 100644
      if (attacktype < MAX_ATTACK)
          _ApplyWeaponDependentAuraMods(item, WeaponAttackType(attacktype), apply);
  
-@@ -8661,10 +8770,12 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
+@@ -8670,10 +8781,12 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
      // need know merged fishing/corpse loot type for achievements
      loot->loot_type = loot_type;
  
@@ -497,7 +502,7 @@ index 2aa09b4..ebe4d55 100644
          WorldPacket data(SMSG_LOOT_RESPONSE, (9 + 50));           // we guess size
          data << uint64(guid);
          data << uint8(loot_type);
-@@ -15508,6 +15619,7 @@ bool Player::SatisfyQuestPrevChain(Quest const* qInfo, bool msg)
+@@ -15517,6 +15630,7 @@ bool Player::SatisfyQuestPrevChain(Quest const* qInfo, bool msg)
      {
          QuestStatusMap::const_iterator itr = m_QuestStatus.find(*iter);
  
@@ -505,7 +510,7 @@ index 2aa09b4..ebe4d55 100644
          // If any of the previous quests in chain active, return false
          if (itr != m_QuestStatus.end() && itr->second.Status != QUEST_STATUS_NONE)
          {
-@@ -16174,6 +16286,7 @@ void Player::KilledMonsterCredit(uint32 entry, ObjectGuid guid /*= ObjectGuid::E
+@@ -16183,6 +16297,7 @@ void Player::KilledMonsterCredit(uint32 entry, ObjectGuid guid /*= ObjectGuid::E
  
                      uint32 reqkill = qInfo->RequiredNpcOrGo[j];
  
@@ -513,7 +518,7 @@ index 2aa09b4..ebe4d55 100644
                      if (reqkill == real_entry)
                      {
                          uint32 reqkillcount = qInfo->RequiredNpcOrGoCount[j];
-@@ -16202,6 +16315,7 @@ void Player::KilledPlayerCredit()
+@@ -16211,6 +16326,7 @@ void Player::KilledPlayerCredit()
  {
      uint16 addkillcount = 1;
  
@@ -521,7 +526,7 @@ index 2aa09b4..ebe4d55 100644
      for (uint8 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
      {
          uint32 questid = GetQuestSlotQuestId(i);
-@@ -17261,6 +17375,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -17270,6 +17386,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
          }
      }
  
@@ -529,7 +534,7 @@ index 2aa09b4..ebe4d55 100644
      SetMap(map);
      StoreRaidMapDifficulty();
  
-@@ -17410,6 +17525,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -17419,6 +17536,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
      LearnDefaultSkills();
      LearnCustomSpells();
  
@@ -537,7 +542,7 @@ index 2aa09b4..ebe4d55 100644
      // must be before inventory (some items required reputation check)
      m_reputationMgr->LoadFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_REPUTATION));
  
-@@ -17523,9 +17639,77 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
+@@ -17532,9 +17650,77 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
  
      _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_EQUIPMENT_SETS));
  
@@ -615,7 +620,7 @@ index 2aa09b4..ebe4d55 100644
  bool Player::isAllowedToLoot(const Creature* creature)
  {
      if (!creature->isDead() || !creature->IsDamageEnoughForLootingAndReward())
-@@ -17612,6 +17796,7 @@ void Player::_LoadAuras(PreparedQueryResult result, uint32 timediff)
+@@ -17621,6 +17807,7 @@ void Player::_LoadAuras(PreparedQueryResult result, uint32 timediff)
                                                      maxDuration, remainTime, remainCharges FROM character_aura WHERE guid = '%u'", GetGUID().GetCounter());
      */
  
@@ -623,7 +628,7 @@ index 2aa09b4..ebe4d55 100644
      if (result)
      {
          do
-@@ -18175,6 +18360,7 @@ void Player::_LoadQuestStatus(PreparedQueryResult result)
+@@ -18184,6 +18371,7 @@ void Player::_LoadQuestStatus(PreparedQueryResult result)
                  questStatusData.ItemCount[3] = fields[11].GetUInt16();
                  questStatusData.PlayerCount = fields[12].GetUInt16();
  
@@ -631,7 +636,7 @@ index 2aa09b4..ebe4d55 100644
                  // add to quest log
                  if (slot < MAX_QUEST_LOG_SIZE && questStatusData.Status != QUEST_STATUS_NONE)
                  {
-@@ -18320,6 +18506,7 @@ void Player::_LoadSeasonalQuestStatus(PreparedQueryResult result)
+@@ -18329,6 +18517,7 @@ void Player::_LoadSeasonalQuestStatus(PreparedQueryResult result)
  {
      m_seasonalquests.clear();
  
@@ -639,7 +644,7 @@ index 2aa09b4..ebe4d55 100644
      if (result)
      {
          do
-@@ -18344,6 +18531,7 @@ void Player::_LoadMonthlyQuestStatus(PreparedQueryResult result)
+@@ -18353,6 +18542,7 @@ void Player::_LoadMonthlyQuestStatus(PreparedQueryResult result)
  {
      m_monthlyquests.clear();
  
@@ -647,7 +652,7 @@ index 2aa09b4..ebe4d55 100644
      if (result)
      {
          do
-@@ -18885,8 +19073,21 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
+@@ -18894,8 +19084,21 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
  /***                   SAVE SYSTEM                     ***/
  /*********************************************************/
  
@@ -669,7 +674,7 @@ index 2aa09b4..ebe4d55 100644
      // delay auto save at any saves (manual, in code, or autosave)
      m_nextSave = sWorld->getIntConfig(CONFIG_INTERVAL_SAVE);
  
-@@ -18942,6 +19143,7 @@ void Player::SaveToDB(bool create /*=false*/)
+@@ -18951,6 +19154,7 @@ void Player::SaveToDB(bool create /*=false*/)
              transLowGUID = GetTransport()->GetGUID().GetCounter();
          stmt->setUInt32(index++, transLowGUID);
  
@@ -677,7 +682,7 @@ index 2aa09b4..ebe4d55 100644
          std::ostringstream ss;
          ss << m_taxi;
          stmt->setString(index++, ss.str());
-@@ -21091,6 +21293,7 @@ void Player::ContinueTaxiFlight()
+@@ -21100,6 +21304,7 @@ void Player::ContinueTaxiFlight()
      if (!mountDisplayId)
          return;
  
@@ -685,7 +690,7 @@ index 2aa09b4..ebe4d55 100644
      uint32 path = m_taxi.GetCurrentTaxiPath();
  
      // search appropriate start path node
-@@ -21139,6 +21342,7 @@ void Player::InitDataForForm(bool reapplyMods)
+@@ -21148,6 +21353,7 @@ void Player::InitDataForForm(bool reapplyMods)
  {
      ShapeshiftForm form = GetShapeshiftForm();
  
@@ -693,7 +698,7 @@ index 2aa09b4..ebe4d55 100644
      SpellShapeshiftEntry const* ssEntry = sSpellShapeshiftStore.LookupEntry(form);
      if (ssEntry && ssEntry->attackSpeed)
      {
-@@ -21903,9 +22107,11 @@ bool Player::IsNeverVisible() const
+@@ -21912,9 +22118,11 @@ bool Player::IsNeverVisible() const
      if (Unit::IsNeverVisible())
          return true;
  
@@ -705,7 +710,7 @@ index 2aa09b4..ebe4d55 100644
      return false;
  }
  
-@@ -21931,6 +22137,7 @@ bool Player::IsAlwaysDetectableFor(WorldObject const* seer) const
+@@ -21940,6 +22148,7 @@ bool Player::IsAlwaysDetectableFor(WorldObject const* seer) const
          if (IsGroupVisibleFor(seerPlayer))
              return !(seerPlayer->duel && seerPlayer->duel->startTime != 0 && seerPlayer->duel->opponent == this);
  
@@ -713,7 +718,7 @@ index 2aa09b4..ebe4d55 100644
      return false;
  }
  
-@@ -23657,6 +23864,7 @@ int32 Player::CalculateCorpseReclaimDelay(bool load)
+@@ -23666,6 +23875,7 @@ int32 Player::CalculateCorpseReclaimDelay(bool load)
  
          uint64 count = 0;
  
@@ -721,7 +726,7 @@ index 2aa09b4..ebe4d55 100644
          if ((pvp && sWorld->getBoolConfig(CONFIG_DEATH_CORPSE_RECLAIM_DELAY_PVP)) ||
             (!pvp && sWorld->getBoolConfig(CONFIG_DEATH_CORPSE_RECLAIM_DELAY_PVE)))
          {
-@@ -24505,11 +24713,14 @@ void Player::_LoadSkills(PreparedQueryResult result)
+@@ -24514,11 +24724,14 @@ void Player::_LoadSkills(PreparedQueryResult result)
                  TC_LOG_ERROR("entities.player", "Character %u has skill %u with value 0. Will be deleted.", GetGUID().GetCounter(), skill);
  
                  PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHARACTER_SKILL);
@@ -737,10 +742,10 @@ index 2aa09b4..ebe4d55 100644
                  continue;
              }
 diff --git a/src/server/game/Entities/Player/Player.h b/src/server/game/Entities/Player/Player.h
-index 57945e5..cc5062a 100644
+index f0affdc..b57ec1a 100644
 --- a/src/server/game/Entities/Player/Player.h
 +++ b/src/server/game/Entities/Player/Player.h
-@@ -1999,6 +1999,25 @@ class Player : public Unit, public GridObject<Player>
+@@ -2001,6 +2001,25 @@ class Player : public Unit, public GridObject<Player>
  
          bool IsImmuneToEnvironmentalDamage();
          uint32 EnvironmentalDamage(EnviromentalDamage type, uint32 damage);
@@ -767,10 +772,10 @@ index 57945e5..cc5062a 100644
          /*********************************************************/
          /***               FLOOD FILTER SYSTEM                 ***/
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index b2be5c4..ed81ef7 100644
+index 6f5368e..8750341 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -6494,6 +6494,121 @@ uint32 ObjectMgr::GeneratePetNumber()
+@@ -6505,6 +6505,121 @@ uint32 ObjectMgr::GeneratePetNumber()
      return ++_hiPetNumber;
  }
  
@@ -893,7 +898,7 @@ index b2be5c4..ed81ef7 100644
  {
      if (_creatureSpawnId >= uint32(0xFFFFFF))
 diff --git a/src/server/game/Globals/ObjectMgr.h b/src/server/game/Globals/ObjectMgr.h
-index 396be44..705a9fd 100644
+index f557c04..e68ed05 100644
 --- a/src/server/game/Globals/ObjectMgr.h
 +++ b/src/server/game/Globals/ObjectMgr.h
 @@ -1043,6 +1043,29 @@ class ObjectMgr
@@ -994,10 +999,10 @@ index 4ea8583..6c9365c 100644
      AddSC_lookup_commandscript();
      AddSC_lfg_commandscript();
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 76f841f..412727a 100644
+index 6c19772..951e6e3 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -1811,6 +1811,10 @@ void World::SetInitialWorldSettings()
+@@ -1816,6 +1816,10 @@ void World::SetInitialWorldSettings()
      TC_LOG_INFO("server.loading", "Returning old mails...");
      sObjectMgr->ReturnOrDeleteOldMails(false);
  
